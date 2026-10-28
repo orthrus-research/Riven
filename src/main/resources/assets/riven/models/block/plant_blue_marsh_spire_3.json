@@ -1,0 +1,6 @@
+{
+  "parent": "block/cross",
+  "textures": {
+    "cross": "riven:blocks/decor/blue_marsh_spire_3"
+  }
+}

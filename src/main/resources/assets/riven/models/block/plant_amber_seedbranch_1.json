@@ -1,0 +1,6 @@
+{
+  "parent": "block/cross",
+  "textures": {
+    "cross": "riven:blocks/decor/amber_seedbranch_1"
+  }
+}

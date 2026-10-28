@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_creosote_0"
+      },
+      {
+        "model": "riven:plant_creosote_1"
+      },
+      {
+        "model": "riven:plant_creosote_2"
+      },
+      {
+        "model": "riven:plant_creosote_3"
+      }
+    ]
+  }
+}

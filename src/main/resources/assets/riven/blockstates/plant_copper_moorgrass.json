@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_copper_moorgrass_0"
+      },
+      {
+        "model": "riven:plant_copper_moorgrass_1"
+      },
+      {
+        "model": "riven:plant_copper_moorgrass_2"
+      },
+      {
+        "model": "riven:plant_copper_moorgrass_3"
+      }
+    ]
+  }
+}

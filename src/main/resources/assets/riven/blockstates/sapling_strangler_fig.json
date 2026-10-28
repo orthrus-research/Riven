@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "stage=0": {
+      "model": "riven:sapling_strangler_fig"
+    },
+    "stage=1": {
+      "model": "riven:sapling_strangler_fig"
+    }
+  }
+}

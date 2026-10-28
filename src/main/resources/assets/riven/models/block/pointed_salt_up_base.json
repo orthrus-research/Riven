@@ -1,0 +1,6 @@
+{
+  "parent": "block/cross",
+  "textures": {
+    "cross": "riven:blocks/pointed_salt_up_base"
+  }
+}

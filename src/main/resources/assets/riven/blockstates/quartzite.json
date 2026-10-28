@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:quartzite_0"
+      },
+      {
+        "model": "riven:quartzite_1"
+      }
+    ]
+  }
+}

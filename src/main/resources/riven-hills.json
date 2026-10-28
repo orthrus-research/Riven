@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "skewHeadingPolicy": "REGIONAL",
+  "variationSeed": "48494c4c53494e31",
+  "cacheSets": 32,
+  "cacheWays": 4,
+  "maximumCertificateColumns": 300000,
+  "families": {
+    "SKEW_HILLS": {"weight": 1, "widthFactor": 1.0, "gain": 1.0, "aspect": 1.8, "occurrence": 0.85, "directionJitter": 0.65, "roughness": 0.07, "skirt": 0.28},
+    "BRANCH_SPURS": {"weight": 1, "widthFactor": 0.99, "gain": 0.75, "aspect": 1.7, "occurrence": 0.85, "directionJitter": 0.65, "roughness": 0.07, "skirt": 0.28},
+    "DISSECTED_UPLAND": {"weight": 1, "widthFactor": 0.58, "gain": 1.15, "aspect": 1.45, "occurrence": 0.85, "directionJitter": 0.65, "roughness": 0.07, "skirt": 0.28},
+    "WARPED_SHOULDERS": {"weight": 1, "widthFactor": 1.0, "gain": 0.85, "aspect": 1.5, "occurrence": 0.85, "directionJitter": 0.65, "roughness": 0.07, "skirt": 0.28}
+  },
+  "note": "One reviewed hill family per shared Sites owner. Width factors fit the existing exclusive support budget before geometry is built. Parent/reservation certification reads the shared site-certificate lattice (riven-terrain.json, v56) over the support disk plus a one-block halo, with the shared height margin and analytic water clearance; it is not an assertion about the continuous plane. Cold plan construction and native acceptance remain unqualified."
+}

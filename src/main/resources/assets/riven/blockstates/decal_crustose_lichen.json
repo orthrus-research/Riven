@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:decal_crustose_lichen_0"
+      },
+      {
+        "model": "riven:decal_crustose_lichen_1"
+      },
+      {
+        "model": "riven:decal_crustose_lichen_2"
+      },
+      {
+        "model": "riven:decal_crustose_lichen_3"
+      }
+    ]
+  }
+}

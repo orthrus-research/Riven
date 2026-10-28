@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:blueschist_0"
+      },
+      {
+        "model": "riven:blueschist_1"
+      }
+    ]
+  }
+}

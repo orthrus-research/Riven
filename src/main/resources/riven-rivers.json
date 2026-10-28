@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "variationSeed": "5249564552533031",
+  "familyWeights": {"BEND": 1, "SPLIT": 1, "POCKET": 1, "JUNCTION": 1},
+  "bendWidths": 1.6,
+  "widthVariation": 0.16,
+  "poolFraction": 0.28,
+  "barFraction": 0.65,
+  "splitWidths": 1.1,
+  "bankSkirtBlocks": 2,
+  "branchSeparationWidths": 1.25,
+  "minimumSplitLowland": 0.45,
+  "maximumSplitRuggedness": 0.4,
+  "minimumPocketRuggedness": 0.08,
+  "maximumOwnerCertificateColumns": 65536,
+  "note": "One immutable family draw per earlier native segment after the lake outlet. Bounded reaches retain supplied legacy bridges at both ends, fit their full banks and second feather inside the earlier corridor, and certify every native column of their box against earlier intent. Junctions plan a supplied anabranch from the existing upstream trunk back into its interior; no new catchment or independent water supply is inferred. Rejected reaches retain their earlier plain geometry. Width reference bounds scale horizontally once; input route coordinates are physical. Fractional queries retain the earlier river for this layer."
+}

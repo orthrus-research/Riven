@@ -1,0 +1,16 @@
+[
+  {"label": "massif-panorama", "x": 300.5, "y": 300, "z": -1250.5, "yaw": 122, "pitch": 10, "commands": ["gamerule doDaylightCycle false", "weather clear 100000", "time set 1000"]},
+  {"label": "folded-belts", "x": -345.9, "y": 263, "z": -1578.0, "yaw": 120, "pitch": 6, "commands": ["time set 1000"]},
+  {"label": "tepui-from-peaks", "x": -751.0, "y": 289, "z": -1632.7, "yaw": 150, "pitch": 4, "commands": ["time set 1000"]},
+  {"label": "tepui-skyline", "x": -1336.0, "y": 203, "z": -1452.0, "yaw": 180, "pitch": 8, "commands": ["time set 11000"]},
+  {"label": "tepui-north-face", "x": -1379.1, "y": 189, "z": -2440.0, "yaw": 300, "pitch": -6, "commands": ["time set 11000"]},
+  {"label": "river-mouth", "x": 286.0, "y": 122, "z": -3084.3, "yaw": 150, "pitch": 8, "commands": ["time set 1000"]},
+  {"label": "tiankeng", "x": 383.0, "y": 165, "z": -4.0, "yaw": 0, "pitch": 56, "commands": ["time set 6000"]},
+  {"label": "chasm", "x": 1024.5, "y": 175, "z": -1095.5, "yaw": 180, "pitch": 40, "commands": ["time set 6000"]},
+  {"label": "woodland", "x": 980.5, "y": 108, "z": -1150.5, "yaw": 90, "pitch": 0, "commands": ["time set 11500"]},
+  {"label": "sea-cliffs", "x": 3560.5, "y": 90, "z": -2580.5, "yaw": 259, "pitch": -6, "commands": ["time set 11000"]},
+  {"label": "dune-coast", "x": 2626.0, "y": 108, "z": -3634.8, "yaw": 210, "pitch": 9, "commands": ["time set 11000"]},
+  {"label": "polar-cirque", "x": -2049.8, "y": 97, "z": 2423.0, "yaw": 240, "pitch": -11, "commands": ["time set 11000"]},
+  {"label": "great-cavern", "x": -271.5, "y": -54, "z": -1263.5, "yaw": 345, "pitch": 20, "commands": ["effect {player} minecraft:night_vision 100000 0 true", "time set 6000"]},
+  {"label": "lava-river", "x": -719.5, "y": -463, "z": -1519.5, "yaw": 60, "pitch": 20, "commands": ["effect {player} clear", "time set 6000"]}
+]

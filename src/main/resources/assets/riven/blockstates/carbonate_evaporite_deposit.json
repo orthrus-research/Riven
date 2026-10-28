@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:carbonate_evaporite_deposit_0"
+      },
+      {
+        "model": "riven:carbonate_evaporite_deposit_1"
+      }
+    ]
+  }
+}

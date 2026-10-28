@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "revision": 3,
+  "about": "The descent (user decisions 2026-10-25 and 2026-10-26). The crust, from the surface to the crust floor (height reference allocation minY), holds four realms by rock and depth, as riven-caves.json defines them: the weathered skin near the surface, the layered deep in sedimentary rock, the broken basement in crystalline rock and the molten root below the deep surface. Each crust realm reports depth biomes chosen by the rules under crust. Below the crust floor, horizontal realms continue to the world floor (allocation worldMinY), each with its own riven: biome and rock. Biomes report per 4x4x4 cell, so World.getBiome follows depth. Boundaries are open: below each deep realm's top, the rock above thins out over a dithered band, and every top below the crust floor undulates. Each deep realm is built of its own rocks (riven-content.json rocks, Art Requisition 05): the Beneath of granulite and migmatite over blueschist and eclogite over peridotite and serpentinite, lit by moonstone seams; the Infernal Deep of infernal rock, cinder rock and ash shale over slag and jasper with brimstone pods, lit by molten seams and soul ash. Its boundary rock rims the band below its top. The deep realms' caves and life are not designed yet.",
+  "seed": "0x5265616c6d73",
+  "transition": {
+    "band": 40,
+    "boundaryAmplitude": 32,
+    "boundaryWavelength": 512,
+    "ditherCell": 6
+  },
+  "realms": [
+    {
+      "id": "beneath",
+      "biome": "beneath",
+      "top": -512,
+      "rock": "GRANULITE",
+      "transition": "CRUST_FLOOR_TRANSITION",
+      "geology": {
+        "zoneWarpBlocks": 40,
+        "zoneWavelengthBlocks": 160,
+        "bodyBlocks": 48,
+        "bodyStretchY": 0.45,
+        "bodyWarpBlocks": 20,
+        "zones": [
+          {"toDepth": 170, "rocks": {"GRANULITE": 3, "MIGMATITE": 2}},
+          {"toDepth": 360, "rocks": {"BLUESCHIST": 2, "ECLOGITE": 2, "GRANULITE": 1}},
+          {"rocks": {"PERIDOTITE": 4, "SERPENTINITE": 2, "ECLOGITE": 1}}
+        ],
+        "inclusions": [
+          {"host": "PERIDOTITE", "rock": "CHROMITE_PERIDOTITE", "form": "pods", "share": 0.06, "scaleBlocks": 7},
+          {"host": "ECLOGITE", "rock": "GARNET_ROCK", "form": "pods", "share": 0.12, "scaleBlocks": 5},
+          {"host": "SERPENTINITE", "rock": "JADEITE_SERPENTINITE", "form": "veins", "width": 0.03, "scaleBlocks": 18}
+        ],
+        "seams": [
+          {"rock": "MOONSTONE_FAINT", "core": "MOONSTONE_BRIGHT", "scaleBlocks": 56, "width": 0.016, "presence": 0.25, "presenceBlocks": 120}
+        ]
+      }
+    },
+    {
+      "id": "nether",
+      "biome": "nether",
+      "top": -1088,
+      "rock": "INFERNAL_ROCK",
+      "transition": "BENEATH_INFERNAL_TRANSITION",
+      "geology": {
+        "zoneWarpBlocks": 48,
+        "zoneWavelengthBlocks": 192,
+        "bodyBlocks": 40,
+        "bodyStretchY": 0.45,
+        "bodyWarpBlocks": 18,
+        "zones": [
+          {"toDepth": 200, "rocks": {"INFERNAL_ROCK": 3, "CINDER_ROCK": 2, "ASH_SHALE": 2}},
+          {"toDepth": 420, "rocks": {"INFERNAL_ROCK": 3, "SLAG_STONE": 2, "JASPER_BANDS": 1}},
+          {"rocks": {"SLAG_STONE": 3, "INFERNAL_ROCK": 2, "JASPER_BANDS": 1}}
+        ],
+        "inclusions": [
+          {"host": "CINDER_ROCK", "rock": "SOUL_ASH", "form": "pods", "share": 0.15, "scaleBlocks": 6},
+          {"host": "SLAG_STONE", "rock": "BRIMSTONE", "form": "pods", "share": 0.12, "scaleBlocks": 9}
+        ],
+        "seams": [
+          {"rock": "MOLTEN_SEAMS", "scaleBlocks": 50, "width": 0.015, "presence": 0.3, "presenceBlocks": 96}
+        ]
+      }
+    }
+  ],
+  "crust": {
+    "surfaceBandBlocks": 8,
+    "biomes": {
+      "root_hollows": {"floor": "litter", "ceiling": "roots", "mud": true, "dripstone": true, "life": true},
+      "frost_hollows": {"floor": "ice", "formation": "ice", "frozen": true},
+      "dust_hollows": {"floor": "sand", "ceiling": "cobwebs", "dripstone": true},
+      "drowned_galleries": {"floor": "litter", "mud": true, "dripstone": true, "life": true},
+      "salt_halls": {"floor": "salt", "formation": "salt"},
+      "karst_galleries": {"floor": "litter", "mud": true, "dripstone": true, "life": true},
+      "layered_deep": {"floor": "litter", "mud": true, "dripstone": true, "life": true},
+      "broken_basement": {"floor": "gravel", "ceiling": "cobwebs", "faultDripstone": true, "life": true},
+      "lava_shores": {"floor": "magma", "formation": "basalt"},
+      "molten_root": {"floor": "ash"}
+    },
+    "rules": [
+      {"realm": "skin", "units": ["evaporite"], "biome": "salt_halls"},
+      {"realm": "skin", "temperature": ["FROZEN"], "biome": "frost_hollows"},
+      {"realm": "skin", "moisture": ["DRY"], "biome": "dust_hollows"},
+      {"realm": "skin", "biome": "root_hollows"},
+      {"realm": "layered", "flooded": true, "biome": "drowned_galleries"},
+      {"realm": "layered", "units": ["evaporite"], "biome": "salt_halls"},
+      {"realm": "layered", "minimumSolubility": 0.5, "biome": "karst_galleries"},
+      {"realm": "layered", "biome": "layered_deep"},
+      {"realm": "basement", "biome": "broken_basement"},
+      {"realm": "root", "units": ["magma"], "biome": "lava_shores"},
+      {"realm": "root", "aboveLavaBlocks": 8, "biome": "lava_shores"},
+      {"realm": "root", "biome": "molten_root"}
+    ]
+  },
+  "contract": [
+    "deep realms: rock is the realm's representative rock, which the distant preview draws for the whole realm. In a realm's band (transition band blocks below its top) a block takes the rock above where the dither exceeds its depth over the band, the realm's transition rock where the dither still exceeds the cube of that fraction, and the realm's own rock below. The own rock is its geology. Rock bodies fill cells bodyBlocks wide and bodyBlocks times bodyStretchY tall, their walls pushed by up to bodyWarpBlocks of smooth noise. A body lies in the first zone whose toDepth its centre's depth below the realm's top, moved by up to zoneWarpBlocks of smooth noise zoneWavelengthBlocks across, has not reached (the last zone has no toDepth and runs to the realm's floor), so zones meet along body walls, and takes a rock by the zone's weights, which are volume shares. An inclusion replaces its host: pods take share of the host's cells scaleBlocks wide; veins lie within width of the zero sheet of gradient noise scaleBlocks across (about 2 x width x scaleBlocks blocks thick). A seam crosses every rock where its presence noise (presenceBlocks across) exceeds one minus presence, within width of such a sheet, its core rock within a third of that width.",
+    "crust realms: a block below the deep surface, or inside a magma chamber, lies in the root (formations decide realms as they decide rules); otherwise within riven-caves.json's skin depth of the surface of a dry land column (not marine, not under surface water) it lies in the skin; otherwise basement units lie in the basement and everything else in the layered deep. Under the sea and surface water the skin takes its rock's realm.",
+    "crust rules: a block takes the biome of the first rule of its realm whose conditions all hold; the last rule of each realm has none. Rules read the block's formation, not its bed: an interbed (and a layer in the deep gabbro) reads as the main unit of the formation it lies in, so a biome holds across thin beds. temperature and moisture name the surface column's climate cores; units name rock units; minimumSolubility and minimumPermeability test the formation's unit; floodBandBlocks holds from that many blocks below the water table up to it; flooded holds in a flood cell's band (riven-caves.json fill), where caves hold water; aboveLavaBlocks holds up to that many blocks above the lava level.",
+    "crust biomes: what each depth biome's caves hold (riven-cave-decor.json gives the thresholds). floor is litter (dirt patches, with toadstools and portobellos where life is on), sand, salt (white sand patches), ice (packed ice), gravel, ash (ash, or gravel on the other side of the patch noise), magma or none; evaporite floors are white sand and, where mud is on, floors near the water table are mud, before the floor kind applies. ceiling is roots (root mats), cobwebs or none. dripstone allows calcite formations in soluble rock and faultDripstone allows them along faults in any rock; formation names another formation material (ice, salt in evaporite, basalt), which basalt roofs (lava tubes) grow anywhere; life allows mushrooms, Miner's Delight, glowshrooms and algae; frozen turns a flooded void that lies in the biome to ice. A cave's floor and ceiling follow the depth biome reported where the space they bound lies (the 4-block cell rows of the void's lowest and highest block), so they match the biome a player stands in even where a void cuts down to the formation below. Nothing decorates a floor or ceiling of lava.",
+    "Reporting: a cube whose every block lies below the ground of all 256 of its columns (the highest block that is neither air nor fluid, after entrances) reports a biome per 4x4x4 cell from the cell's centre column; a cell whose centre lies at least surfaceBandBlocks below that column's ground takes its depth biome, others the column's own biome. Cubes that hold any ground keep the column biome, so surfaces, open entrances and the sky above them are unchanged."
+  ]
+}

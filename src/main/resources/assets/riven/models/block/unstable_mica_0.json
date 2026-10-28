@@ -1,0 +1,9 @@
+{
+  "parent": "riven:block/unstable",
+  "textures": {
+    "side": "riven:blocks/stone/mica_0_side",
+    "top": "riven:blocks/stone/mica_0_top",
+    "bottom": "riven:blocks/stone/mica_0_top",
+    "overlay": "riven:blocks/unstable_overlay"
+  }
+}

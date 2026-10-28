@@ -1,0 +1,11 @@
+The stateless 64-bit mix() finalizer and unit() increment follow SplitMix64's
+standard constants and bit mixing. Reference: Sebastiano Vigna, 2015,
+https://prng.di.unimi.it/splitmix64.c (accessed 2026-10-19).
+
+That reference dedicates its software to the public domain worldwide to the
+extent legally possible and grants permission to use, copy, modify and
+distribute for any purpose with or without a fee, with a warranty disclaimer.
+No shared/stateful generator or terrain implementation is imported.
+
+All terrain geometry in this contribution is independently authored.
+The MIT grant in LICENSE applies to this contribution's original material.

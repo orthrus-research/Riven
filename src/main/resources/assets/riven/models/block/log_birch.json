@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "side": "riven:blocks/wood/birch_bark",
+    "end": "riven:blocks/wood/birch_end"
+  }
+}

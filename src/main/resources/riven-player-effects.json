@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "about": "Player effects from the subsurface climate (user request 2026-10-26: the mechanism first, effects to be designed). Every intervalTicks, each survival or adventure player underground in a Riven world (below the crust's surface band, or in a realm below the crust floor) takes every effect whose conditions all hold at its feet. The effects below are a first, mild set to exercise the mechanism. This file ships as config/riven/player-effects.json, written on first run and never overwritten; the server reads that copy at start and on /riven effects reload. config/riven.cfg playerEffects turns the router off.",
+  "intervalTicks": 40,
+  "effects": [
+    {"id": "heat", "when": {"celsius": [40, 100000]}, "unless": ["minecraft:fire_resistance"], "exhaustionPerSecond": 0.04},
+    {"id": "scorching", "when": {"celsius": [70, 100000]}, "unless": ["minecraft:fire_resistance"], "potions": [{"effect": "minecraft:slowness", "amplifier": 0}]},
+    {"id": "frostbite", "when": {"celsius": [-100000, -5]}, "potions": [{"effect": "minecraft:slowness", "amplifier": 0}], "exhaustionPerSecond": 0.02},
+    {"id": "foul air", "when": {"air": [0, 0.1]}, "potions": [{"effect": "minecraft:weakness", "amplifier": 0}]}
+  ],
+  "contract": [
+    "when: every condition present must hold. celsius, humidity and air are [lowest, highest] ranges of the subsurface climate (riven-subsurface-climate.json); frozen and steam match its states; realms lists crust realms (skin, layered, basement, root) or realms below the crust floor (beneath, nether); depthBiomes lists crust depth biomes.",
+    "unless: the effect skips a player who has any of these potion effects.",
+    "potions: each is given for intervalTicks plus 30 ticks (so it holds while the condition does and fades soon after), as an ambient effect without particles; amplifier 0 is level I. exhaustionPerSecond adds food exhaustion at that rate.",
+    "Every key must be one listed here and every potion must be registered (any mod's, as namespace:name); a copy that breaks either, or is not valid JSON, is refused with the reason in the log and the command reply, and the effects in force stay.",
+    "Effects are gameplay, not generated content: changing this file needs no fresh world."
+  ]
+}

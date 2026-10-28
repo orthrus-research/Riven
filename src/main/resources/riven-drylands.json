@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "variationSeed": "4452594c414e4431",
+  "widthScale": 1.0,
+  "magnitudeScale": 1.0,
+  "occurrence": 0.8,
+  "warp": 0.2,
+  "crossingAngle": 0.95,
+  "leeFraction": 0.25,
+  "aridityStart": 0.55,
+  "aridityFull": 0.82,
+  "regionInPlainWidths": 1.5,
+  "headroomInTerraceHeights": 1.0,
+  "featureProtectionInTerraceHeights": 1.0,
+  "familyWeights": {"CRESCENTS": 1, "CROSSING_RIDGES": 1, "DEFLATION_PAVEMENT": 1, "YARDANGS": 1},
+  "note": "Four MIT dryland fields blend with earlier continuous weights, one unchanged parent, one world-constant wind frame and a convex budget. Earlier material permissions come only from riven-substrate.json through SubstrateMap. Preserve full shore and water supports. Widths receive TerrainScale.HORIZONTAL once; heights stay physical. Runtime qualification remains pending."
+}

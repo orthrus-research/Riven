@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "end": "riven:blocks/stone/graphite_1_top",
+    "side": "riven:blocks/stone/graphite_1_side"
+  }
+}

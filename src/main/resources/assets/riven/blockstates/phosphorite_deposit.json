@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:phosphorite_deposit_0"
+      },
+      {
+        "model": "riven:phosphorite_deposit_1"
+      }
+    ]
+  }
+}

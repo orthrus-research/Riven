@@ -1,0 +1,174 @@
+{
+  "schema": 1,
+  "revision": 3,
+  "variationSeed": "0x47454f4c4f475931",
+  "units": {
+    "gneiss":    {"block": "GNEISS",         "color": "#8c8a86", "solubility": 0,    "permeability": 0.1, "strength": 0.95, "hosts": ["veins", "pegmatite"]},
+    "schist":    {"block": "MICA_SCHIST",      "color": "#6f7a74", "solubility": 0,    "permeability": 0.1, "strength": 0.7,  "hosts": ["veins", "gold"]},
+    "granite":   {"block": "GRANITE",       "color": "#b98472", "solubility": 0,    "permeability": 0.1, "strength": 0.95, "hosts": ["porphyry", "tin", "tungsten"]},
+    "dolerite":  {"block": "ANDESITE",      "color": "#2f3a36", "solubility": 0,    "permeability": 0.05,"strength": 0.95, "hosts": ["veins", "native-copper"]},
+    "limestone": {"block": "LIMESTONE",       "color": "#e3e0d6", "solubility": 0.9,  "permeability": 0.6, "strength": 0.6,  "hosts": ["skarn", "lead-zinc", "karst-bauxite"]},
+    "dolostone": {"block": "LIMESTONE",         "color": "#c9c2ad", "solubility": 0.55, "permeability": 0.5, "strength": 0.75, "hosts": ["lead-zinc"]},
+    "shale":     {"block": "SHALE",      "color": "#5b5f63", "solubility": 0,    "permeability": 0.05,"strength": 0.35, "hosts": ["coal", "phosphorite", "fossils"]},
+    "sandstone": {"block": "SANDSTONE",     "color": "#d8c690", "solubility": 0,    "permeability": 0.85,"strength": 0.4,  "hosts": ["roll-front"]},
+    "redbeds":   {"block": "RED_SANDSTONE", "color": "#b8623d", "solubility": 0,    "permeability": 0.5, "strength": 0.4,  "hosts": ["red-bed-copper", "evaporite"]},
+    "ironstone": {"block": "QUARTZITE",         "color": "#7a4a3a", "solubility": 0,    "permeability": 0.1, "strength": 0.85, "hosts": ["banded-iron"]},
+    "evaporite": {"block": "DIORITE",       "color": "#f1e2dc", "solubility": 1.0,  "permeability": 0.0, "strength": 0.3,  "hosts": ["salt", "potash", "sulfur"]},
+    "loosesand": {"block": "SAND",          "color": "#efe0a8", "solubility": 0,    "permeability": 0.95,"strength": 0.0,  "hosts": ["placer"]},
+    "gravel":    {"block": "GRAVEL",        "color": "#9a938a", "solubility": 0,    "permeability": 0.95,"strength": 0.0,  "hosts": ["placer"]},
+    "basalt":    {"block": "LEUCOBASALT",      "color": "#3b3a3e", "solubility": 0,    "permeability": 0.3, "strength": 0.9,  "hosts": ["massive-sulfide", "native-copper"]},
+    "gabbro":    {"block": "GABBRO",      "color": "#2c3330", "solubility": 0,    "permeability": 0.02,"strength": 0.98, "hosts": ["chromite", "nickel"]},
+    "anorthosite": {"block": "ANORTHOSITE",     "color": "#cfd3d6", "solubility": 0,    "permeability": 0.02,"strength": 0.95, "hosts": ["platinum-reef"]},
+    "kimberlite": {"block": "KIMBERLITE",        "color": "#4f6a73", "solubility": 0,    "permeability": 0.1, "strength": 0.6,  "hosts": ["diamond"]},
+    "magma":     {"block": "LAVA",          "color": "#e0581c", "solubility": 0,    "permeability": 0,   "strength": 0,    "hosts": []}
+  },
+  "lowerSequence": [
+    {"name": "Grey shale",        "unit": "shale",     "thickness": 30, "interbed": "sandstone", "bed": 5, "share": 0.3},
+    {"name": "White marker",      "unit": "limestone", "thickness": 10},
+    {"name": "Coal measures",     "unit": "shale",     "thickness": 38, "interbed": "sandstone", "bed": 4, "share": 0.4},
+    {"name": "Quartz sandstone",  "unit": "sandstone", "thickness": 24, "interbed": "shale",     "bed": 6, "share": 0.15},
+    {"name": "Reef limestone",    "unit": "limestone", "thickness": 58, "interbed": "dolostone", "bed": 7, "share": 0.2},
+    {"name": "Red marker",        "unit": "redbeds",   "thickness": 7},
+    {"name": "Dolostone",         "unit": "dolostone", "thickness": 34, "interbed": "limestone", "bed": 6, "share": 0.25},
+    {"name": "Banded ironstone",  "unit": "ironstone", "thickness": 14, "interbed": "shale",     "bed": 3, "share": 0.35},
+    {"name": "Basal sandstone",   "unit": "sandstone", "thickness": 20}
+  ],
+  "upperSequence": [
+    {"name": "Dune sands",        "unit": "sandstone", "thickness": 18, "interbed": "loosesand", "bed": 4, "share": 0.25},
+    {"name": "Flood basalt",      "unit": "basalt",    "thickness": 24, "volcanic": true},
+    {"name": "Evaporite beds",    "unit": "evaporite", "thickness": 14, "interbed": "redbeds",   "bed": 3, "share": 0.3},
+    {"name": "Upper red beds",    "unit": "redbeds",   "thickness": 30, "interbed": "gravel",    "bed": 3, "share": 0.12},
+    {"name": "Basal gravel",      "unit": "gravel",    "thickness": 6,  "interbed": "sandstone", "bed": 2, "share": 0.4}
+  ],
+  "basement": {
+    "unit": "gneiss",
+    "belt": {"unit": "schist", "wavelengthBlocks": 180, "stretch": 6, "threshold": 0.35},
+    "pluton": {"unit": "granite", "wavelengthBlocks": 1400, "threshold": 0.55}
+  },
+  "datum": {
+    "erosionWavelengthBlocks": 3200,
+    "minimumErosionBlocks": 0,
+    "maximumErosionBlocks": 160,
+    "erosionPerCompression": 110,
+    "erosionPerBlockAboveY": 0.6,
+    "erosionAboveY": 140,
+    "thinningPerCompression": 0.25,
+    "coastFloorY": 100,
+    "coastBlendBlocks": 200
+  },
+  "thickness": {"wavelengthBlocks": 5200, "minimumScale": 0.25, "maximumScale": 1.4, "variation": 0.25, "variationWavelengthBlocks": 900},
+  "folds": {
+    "minimumAmplitudeBlocks": 4,
+    "amplitudePerUplift": 70,
+    "acrossWavelengthBlocks": 320,
+    "alongStretch": 5,
+    "orientationWavelengthBlocks": 6000,
+    "chevron": 0.7
+  },
+  "faults": {
+    "cellBlocks": 1536,
+    "perCell": 1.4,
+    "boundaryReachBlocks": 2500,
+    "boundaryBoost": 1.6,
+    "halfLengthBlocks": [250, 1100],
+    "throwBlocks": [8, 55],
+    "riftThrowBlocks": [30, 110],
+    "slipBlocks": [0, 20],
+    "shearSlipBlocks": [30, 120],
+    "tipTaper": 0.3,
+    "angleJitter": 0.5
+  },
+  "thrusts": {
+    "wavelengthBlocks": 2200,
+    "threshold": -0.15,
+    "minimumCompression": 0.3,
+    "depthBlocks": 70,
+    "shiftBlocks": 85,
+    "rampBlocks": 400
+  },
+  "plutons": {
+    "cellBlocks": 2048,
+    "chance": 0.22,
+    "arcChance": 0.75,
+    "arcReachBlocks": 2500,
+    "radiusBlocks": [140, 380],
+    "roofTopY": [20, 230],
+    "domeBlocks": 45,
+    "dikes": [3, 9],
+    "dikeLengthBlocks": [250, 900],
+    "dikeWidthBlocks": [2, 4],
+    "dikeReachAboveRoofBlocks": 260
+  },
+  "deep": {
+    "levelY": -300,
+    "variationBlocks": 40,
+    "wavelengthBlocks": 2800,
+    "riseUnderRiftBlocks": 110,
+    "layeredWavelengthBlocks": 3600,
+    "layeredThreshold": 0.15,
+    "layerUnit": "anorthosite",
+    "layerBlocks": 9,
+    "layerShare": 0.3,
+    "lavaLevelY": -470,
+    "lavaRiseUnderRiftBlocks": 170
+  },
+  "volcanics": {
+    "riftReachBlocks": 1600,
+    "fullRiftExtension": 0.45,
+    "chamberCellBlocks": 2048,
+    "riftChance": 0.8,
+    "arcChance": 0.5,
+    "chance": 0.15,
+    "chamberCentreY": [-380, -160],
+    "chamberRadiusBlocks": [40, 95],
+    "chamberHalfHeightBlocks": [16, 40],
+    "feederRadiusBlocks": [5, 13],
+    "kimberliteCellBlocks": 3072,
+    "kimberliteChance": 0.2,
+    "kimberliteTopRadiusBlocks": [26, 55],
+    "kimberliteRootRadiusBlocks": [3, 7],
+    "kimberliteTopY": 140,
+    "kimberliteFlare": 1.6
+  },
+  "upper": {
+    "erosionWavelengthBlocks": 2600,
+    "minimumErosionBlocks": 0,
+    "maximumErosionBlocks": 70,
+    "erosionPerCompression": 90,
+    "thicknessWavelengthBlocks": 3000,
+    "minimumScale": 0,
+    "maximumScale": 1.3
+  },
+  "tint": {
+    "depthBlocks": 24,
+    "bandBlocks": 4,
+    "regions": {
+      "HOT_DRY": "arid", "WARM_DRY": "arid"
+    },
+    "palettes": {
+      "arid": {
+        "shale": ["TERRACOTTA", "TERRACOTTA_ORANGE", "TERRACOTTA_BROWN", "TERRACOTTA_WHITE", "TERRACOTTA_RED", "TERRACOTTA_YELLOW"],
+        "limestone": ["TERRACOTTA_WHITE", "TERRACOTTA_YELLOW"],
+        "redbeds": ["TERRACOTTA_RED", "TERRACOTTA_ORANGE", "RED_SANDSTONE"],
+        "dolostone": ["TERRACOTTA_YELLOW", "TERRACOTTA"],
+        "evaporite": ["TERRACOTTA_WHITE"],
+        "basalt": ["TERRACOTTA_BLACK", "TERRACOTTA_GRAY"]
+      }
+    }
+  },
+  "contract": [
+    "Phases 1a-1b of the subsurface design (docs/DECISIONS.md, Subsurface): a geological history evaluated per block. Every rock is a pure function of seed, definitions and coordinates. Each event is a height surface or a plan-view object of the column, so a column's rock is a short stack and its runs are exact.",
+    "units: rock units with their vanilla block, slice colour and the properties later phases read (solubility drives karst, permeability water-bearing rock, strength spans and collapse, hosts the ore origins). loosesand and gravel are falling blocks: buried lenses and the basal gravel collapse when undercut.",
+    "lowerSequence: formations from top to bottom. Each is thickness blocks thick times the regional thickness scale (minimumScale to maximumScale over wavelengthBlocks) and a local variation; an interbed unit occupies share of beds bed blocks thick, chosen per bed. Bed and formation surfaces stay parallel, so they follow every fold, fault and thrust.",
+    "datum: the lower sequence top lies above the column's smooth base elevation by the rock erosion has removed: a broad regional erosion depth between minimumErosionBlocks and maximumErosionBlocks over erosionWavelengthBlocks, plus erosionPerCompression times compression (plate uplift clamped to 0..1), plus erosionPerBlockAboveY per block of base elevation above erosionAboveY. The base elevation blends to coastFloorY over the last coastBlendBlocks of land and stays there under the sea, so beds continue under it. Sequences thin by thinningPerCompression under full compression.",
+    "folds: the datum is displaced by minimumAmplitudeBlocks plus amplitudePerUplift times compression, times a fold pattern acrossWavelengthBlocks wide and alongStretch times longer, blended between three fixed orientations over orientationWavelengthBlocks, sharpened toward chevrons by chevron.",
+    "faults: steep fault traces from cells cellBlocks wide, perCell on average, boundaryBoost times more within boundaryReachBlocks of a plate boundary. Each has a half length, a vertical throw (larger at rifts) and a horizontal slip along its trace (larger at transforms). Each side moves half, tapering to nothing over tipTaper of the half length at its tips, so beds break only across the trace. They displace the lower sequence; the unconformity and the upper sequence postdate them.",
+    "thrusts: where compression exceeds minimumCompression and a sheet noise exceeds threshold, a thrust surface lies depthBlocks below the lower datum and rises over rampBlocks toward the sheet's edge, where it reaches the surface as a thrust front; the sequence above it is lifted by shiftBlocks, so older beds rest on younger.",
+    "plutons: per cell, chance (arcChance near converging plate margins) of a granite body of a given radius with a domed roof whose top lies in roofTopY; some are unroofed, some buried. Each sends dikes of dolerite outward, dikeWidthBlocks wide, reaching dikeReachAboveRoofBlocks above the roof. Both cut the lower sequence and stop at the unconformity.",
+    "upper: above an erosion surface (the unconformity) lies a flat upper sequence: its top sits above the base elevation by an erosion depth of its own (minimumErosionBlocks to maximumErosionBlocks, plus erosionPerCompression times compression) and it is minimumScale to maximumScale of its nominal thickness, so it is thick in basins and absent elsewhere. The unconformity never lies above the lower sequence's top: where that top is lower, the upper sequence rests on it and builds upward. Above its top the upper sequence repeats in cycles of its nominal thickness (cyclic basin fill), so high ground cuts banded young cover. Everything below the unconformity is truncated by it. Ground above the upper top continues its top formation.",
+    "deep: below a deep surface (levelY, varied by variationBlocks over wavelengthBlocks, rising riseUnderRiftBlocks under rifts) the basement is gabbro; where a broad noise exceeds layeredThreshold it is a layered intrusion, with layerUnit beds layerBlocks thick taking layerShare of the layers. The lava level (lavaLevelY, rising lavaRiseUnderRiftBlocks under rifts) is a field the cave phase floods with lava.",
+    "volcanics: rift weight follows the smooth extension of the blended plate velocities, full at fullRiftExtension. Chamber cells count as near a rift or a converging margin within riftReachBlocks of that plate boundary. Chamber cells hold a magma chamber with riftChance, arcChance near converging margins, else chance: a lava-filled ellipsoid around chamberCentreY with a basalt feeder pipe rising from its centre to the surface. The upper sequence's volcanic formations (flood basalt) thicken with rift weight and are left out of its repeating cycles. Kimberlite cells hold, with kimberliteChance, a carrot-shaped pipe from the floor (kimberliteRootRadiusBlocks) flaring to kimberliteTopRadiusBlocks at kimberliteTopY; pipes cut every other rock. The water table is the column's groundwater head, a field for the cave phase.",
+    "basement: below the lower sequence, gneiss, with schist belts where a stretched noise exceeds threshold and old granite where a broad noise exceeds its threshold; both are vertical.",
+    "tint: within depthBlocks of the surface, a climate region's palette re-colours vanilla blocks in horizontal bands bandBlocks thick (mesa banding in arid climates). Below the tint depth every unit keeps its own block, so deep rock can always host ore."
+  ]
+}

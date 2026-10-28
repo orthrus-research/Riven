@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "end": "riven:blocks/stone/lignite_deposit_0_top",
+    "side": "riven:blocks/stone/lignite_deposit_0_side"
+  }
+}

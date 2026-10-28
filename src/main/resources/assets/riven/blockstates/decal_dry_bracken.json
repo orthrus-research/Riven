@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:decal_dry_bracken_0"
+      },
+      {
+        "model": "riven:decal_dry_bracken_1"
+      },
+      {
+        "model": "riven:decal_dry_bracken_2"
+      },
+      {
+        "model": "riven:decal_dry_bracken_3"
+      }
+    ]
+  }
+}

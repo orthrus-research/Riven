@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:slag_stone_0"
+      },
+      {
+        "model": "riven:slag_stone_1"
+      }
+    ]
+  }
+}

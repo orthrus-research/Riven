@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "revision": 3,
+  "minimumLandWeight": 0.15,
+  "shoreReservationInCoastalPlainWidths": 0.1,
+  "variationSeed": "47454e4355545331",
+  "erodibility": 0.9,
+  "cacheSets": 32,
+  "cacheWays": 4,
+  "maximumCertificateColumns": 750000,
+  "familyWeights": {"RIBBON_RAVINE": 1, "BRANCH_GULLY": 1, "PINCHED_SLOT": 1, "BREACH_SADDLE": 1},
+  "profiles": {
+    "RIBBON_RAVINE": {"occurrence": 0.39, "widthScale": 1.0, "depthScale": 1.0, "lengthRatio": 5.8, "reliefShare": 0.65, "coastGuard": 64, "waterGuard": 32},
+    "BRANCH_GULLY": {"occurrence": 0.33, "widthScale": 1.0, "depthScale": 1.5, "lengthRatio": 2.5, "reliefShare": 0.35, "coastGuard": 64, "waterGuard": 32},
+    "PINCHED_SLOT": {"occurrence": 0.24, "widthScale": 0.8, "depthScale": 1.1, "lengthRatio": 7.0, "reliefShare": 0.75, "coastGuard": 64, "waterGuard": 32},
+    "BREACH_SADDLE": {"occurrence": 0.27, "widthScale": 1.0, "depthScale": 1.8, "lengthRatio": 2.6, "reliefShare": 0.5, "coastGuard": 64, "waterGuard": 32}
+  },
+  "note": "All four MIT families share the existing carver budget through an explicit native-column API. Earlier relief comes from every native column in a 256-block oriented corridor. Breaches require two-sided shoulders/lower-side probes. Erodibility is a prototype permission, not geology. Full native shore/guard disks, earlier water geometry and support minima qualify plans. Fractional final queries preserve this layer's parent. No drainage, water or 3D void is inferred. Runtime/cost/occurrence qualification remains pending."
+}

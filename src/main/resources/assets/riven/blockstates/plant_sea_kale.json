@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_sea_kale_0"
+      },
+      {
+        "model": "riven:plant_sea_kale_1"
+      },
+      {
+        "model": "riven:plant_sea_kale_2"
+      },
+      {
+        "model": "riven:plant_sea_kale_3"
+      }
+    ]
+  }
+}

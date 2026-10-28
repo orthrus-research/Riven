@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_sand_paddle_cactus_0"
+      },
+      {
+        "model": "riven:plant_sand_paddle_cactus_1"
+      },
+      {
+        "model": "riven:plant_sand_paddle_cactus_2"
+      },
+      {
+        "model": "riven:plant_sand_paddle_cactus_3"
+      }
+    ]
+  }
+}

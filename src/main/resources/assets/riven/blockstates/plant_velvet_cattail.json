@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_velvet_cattail_0"
+      },
+      {
+        "model": "riven:plant_velvet_cattail_1"
+      },
+      {
+        "model": "riven:plant_velvet_cattail_2"
+      },
+      {
+        "model": "riven:plant_velvet_cattail_3"
+      }
+    ]
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "profile": "cleanroom",
+  "minecraft": "1.12.2",
+  "cleanroom": {
+    "version": "0.7.9-alpha",
+    "url": "https://github.com/CleanroomMC/Cleanroom/releases/tag/0.7.9-alpha",
+    "assets": {
+      "cleanroom-0.7.9-alpha-installer.jar": "sha256:83598a23c062c232018ed2b7166bec8f661d8ac118c940522169ebb45454e45a",
+      "cleanroom-0.7.9-alpha-universal.jar": "sha256:079a7e64ee558926391587da0d04c8f77ad10a633440a5276342cc650708f085",
+      "cleanroom-0.7.9-alpha.zip": "sha256:99f132ae66af447ffc344f8d1925a5bc6d4c2bddbba7ddad2fc0c43be5dea4fd"
+    }
+  },
+  "java": {
+    "major": 26,
+    "version": "openjdk version \"26.0.2.1\"",
+    "maxHeapGiB": 8,
+    "collector": "ZGC"
+  },
+  "distances": {
+    "serverHorizontal": 12,
+    "serverVertical": 12,
+    "clientRender": 12,
+    "clientVertical": 12
+  },
+  "mods": [
+    {
+      "file": "dev/pins/Cubature-cleanroom.jar",
+      "sha256": "55ef2208109f31dbd171bf677cdb027de8bb7cf4b5a39a3f4d71d591ac1e30cf",
+      "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
+      "name": "Cubature",
+      "sourcePin": "dev/cc.lock.json"
+    },
+    {
+      "file": "dev/pins/Scalar Legacy-1.0.1.jar",
+      "version": "1.0.1",
+      "sha256": "350d1c378f3b0ac8e7b3df0432482bbb5341c79d07df843c747be1d5fdc23cfe",
+      "download": "https://mediafilez.forgecdn.net/files/6842/491/Scalar%20Legacy-1.0.1.jar",
+      "url": "https://www.curseforge.com/minecraft/mc-mods/scalar-legacy/files/6842491",
+      "reason": "User-requested Scala 2.11 provider"
+    },
+    {
+      "file": "dev/pins/+Fugue-0.25.5.jar",
+      "version": "0.25.5",
+      "sha256": "002bc5dd1e9ba954e8eb6bd14a85a6dc32525ae90c2613aa577c67067c820af3",
+      "download": "https://github.com/CleanroomMC/Fugue/releases/download/0.25.5/%2BFugue-0.25.5.jar",
+      "url": "https://github.com/CleanroomMC/Fugue/releases/tag/0.25.5",
+      "reason": "User explicitly retained Fugue as the modern-Java compatibility layer; no current Riven, CC or DH dependency has been demonstrated"
+    },
+    {
+      "file": "dev/pins/DistantHorizons-3.3.3-1.12.2-forge.jar",
+      "version": "3.3.3-1.12.2",
+      "sha256": "48c3ace5c35c471893d3dc78de79e3dde229df0179a59352307a2e1c8f60e613",
+      "download": "https://cdn.modrinth.com/data/uCdwusMi/versions/1PczaQGZ/DistantHorizons-3.3.3-1.12.2-forge.jar",
+      "url": "https://modrinth.com/mod/distanthorizons/version/3.3.3-1.12.2",
+      "distribution": "unmodified-upstream",
+      "sides": [
+        "server",
+        "client"
+      ],
+      "reason": "Official upstream distant terrain renderer and delivery; Cubature supplies runtime compatibility/optimization patches and Riven supplies terrain content",
+      "sourcePin": "dev/dh.lock.json"
+    },
+    {
+      "file": "dev/pins/BiomesOPlenty-1.12.2-7.0.1.2445-universal.jar",
+      "version": "1.12.2-7.0.1.2445",
+      "sha256": "1c53d3ee39f557162591f618c58b79dc6861d24522ef785794ee4a815f8a3908",
+      "download": "https://mediafilez.forgecdn.net/files/3558/882/BiomesOPlenty-1.12.2-7.0.1.2445-universal.jar",
+      "url": "https://www.curseforge.com/minecraft/mc-mods/biomes-o-plenty/files/3558882",
+      "distribution": "unmodified-upstream",
+      "sides": [
+        "server",
+        "client"
+      ],
+      "reason": "Optional decoration provider (decided 2026-10-23): Riven maps its biomes to BoP biomes for biome IDs, surface blocks and vegetation; BoP never shapes terrain. CC BY-NC-ND 4.0; not redistributed or modified"
+    },
+    {
+      "file": "dev/pins/CodeChickenLib-1.12.2-3.2.3.358-universal.jar",
+      "version": "1.12.2-3.2.3.358",
+      "sha256": "5f8499f7ee2590e45110bbf296b2bf101aec15897e28d5e9759cf8f2387d8a74",
+      "download": "https://mediafilez.forgecdn.net/files/2779/848/CodeChickenLib-1.12.2-3.2.3.358-universal.jar",
+      "url": "https://www.curseforge.com/minecraft/mc-mods/codechicken-lib-1-8/files/2779848",
+      "distribution": "unmodified-upstream",
+      "sides": [
+        "server",
+        "client"
+      ],
+      "reason": "Required by GregTech CE Unofficial (required-after:codechickenlib@[3.2.3,)). LGPL-2.1; not redistributed or modified"
+    },
+    {
+      "file": "dev/pins/gregtech-1.12.2-2.8.10-beta.jar",
+      "version": "1.12.2-2.8.10-beta",
+      "sha256": "54744bb11ea4679df4b55846d8073e9bb2ef8c1c53aae8aee41cda3fc22d927e",
+      "download": "https://mediafilez.forgecdn.net/files/5519/22/gregtech-1.12.2-2.8.10-beta.jar",
+      "url": "https://www.curseforge.com/minecraft/mc-mods/gregtech-ce-unofficial/files/5519022",
+      "distribution": "unmodified-upstream",
+      "sides": [
+        "server",
+        "client"
+      ],
+      "reason": "Optional ore catalogue provider (decided 2026-10-24): Riven reads GTCEu's vein and deposit definitions and places ore with its own geology-driven generators; GTCEu's own world generator never runs (vanilla chunk generators stay off). Same version as the Supersymmetry pack. LGPL-3.0; not redistributed or modified"
+    },
+    {
+      "file": "dev/pins/Demonica-0.9.0.jar",
+      "sha256": "241632b96fa241b670d7c5c29110d8e7c870bda9693d2967e680cf357e1a619d",
+      "download": "https://github.com/ndellagrotte/Demonica/releases/download/v0.9.0/Demonica-0.9.0.jar",
+      "sides": [
+        "client"
+      ],
+      "optional": "shaders",
+      "version": "0.9.0",
+      "source": "https://github.com/ndellagrotte/Demonica/releases/tag/v0.9.0",
+      "purpose": "Iris shader pipeline on Celeritas for Cleanroom 0.7.4+; binds DH 3.3.3's shader accessor. Installed only by runtime.py prepare --shaders."
+    }
+  ],
+  "shaderPacks": [
+    {
+      "name": "bsl",
+      "file": "dev/pins/shaderpacks/BSL_v10.1.8.zip",
+      "version": "10.1.8",
+      "sha256": "36b0a50ff7918bf10e9422c401d93779f9d0088a26acea975b435243f96930b5",
+      "source": "https://modrinth.com/shader/bsl-shaders/version/Y68yiql9",
+      "license": "All rights reserved; local use only, never redistributed"
+    },
+    {
+      "name": "complementary-reimagined",
+      "file": "dev/pins/shaderpacks/ComplementaryReimagined_r5.9.3.zip",
+      "version": "r5.9.3",
+      "sha256": "fed6c879e732cf7fc7bc6570ebb1def43235aa7e96f62859fbdbdbfa0b484b38",
+      "source": "https://modrinth.com/shader/complementary-reimagined/version/Bqen1mJX",
+      "license": "Complementary License Agreement 1.7; used unmodified, never redistributed"
+    },
+    {
+      "name": "complementary-unbound",
+      "file": "dev/pins/shaderpacks/ComplementaryUnbound_r5.9.3.zip",
+      "version": "r5.9.3",
+      "sha256": "98ac741dee294d2a3c82d153349148c3bb7fb688c30eb3b49c3b9ac37e968c5a",
+      "source": "https://modrinth.com/shader/complementary-unbound/version/B1kyfoUZ",
+      "license": "Complementary License Agreement 1.7; used unmodified, never redistributed"
+    }
+  ],
+  "sourceMod": "riven",
+  "scope": "Official unchanged Cleanroom with Riven, Cubature, Scalar Legacy, Fugue and the official DH JAR on client and server. Cubature supplies DH runtime patches; Riven owns terrain and biome generation. All third-party licenses remain applicable.",
+  "projectPolicy": "docs/PROJECT-COMMITMENTS.md"
+}

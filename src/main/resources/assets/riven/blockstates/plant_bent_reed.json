@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_bent_reed_0"
+      },
+      {
+        "model": "riven:plant_bent_reed_1"
+      },
+      {
+        "model": "riven:plant_bent_reed_2"
+      },
+      {
+        "model": "riven:plant_bent_reed_3"
+      }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "variationSeed": "4553545541525931",
+  "familyWeights": {"LOBED_LAGOON": 1, "CRESCENT_LAGOON": 1, "BRANCHING_ESTUARY": 1, "FUNNEL_ESTUARY": 1},
+  "lengthInLakeWidths": 2.0,
+  "depthInLakeDepths": 0.5,
+  "inletHalfWidthInRiverWidths": 0.75,
+  "skirtInRiverWidths": 1.0,
+  "lobeVariation": 0.1,
+  "branchSpread": 0.28,
+  "channelBend": 0.045,
+  "barStrength": 0.65,
+  "shelterGain": 3,
+  "maximumCertificateColumns": 1048576,
+  "note": "Upgrade existing ocean-supplied lagoon sites with one family draw and no retry. Keep the reference-derived feature scale, expanding its reservation rather than shrinking geometry to the earlier plain basin. A bounded continental bracket locates the frame; actual marine ownership is supplied per native column. Estuaries require a five-point projection of an existing same-head incoming river; receiver strips certify every possible seeded mouth. Dry foundations and barriers require complete earlier shore/earthwork and reservation checks. Preserve existing wet reservations exactly; keep the earlier plain owner on rejection and for fractional queries. Width references scale horizontally once; native tuning scales the authored footprint envelope, while voxel bank guards remain physical."
+}

@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "form=0,half=lower": {
+      "model": "riven:tall_foxglove_spike_0_bottom"
+    },
+    "form=0,half=upper": {
+      "model": "riven:tall_foxglove_spike_0_top"
+    },
+    "form=1,half=lower": {
+      "model": "riven:tall_foxglove_spike_1_bottom"
+    },
+    "form=1,half=upper": {
+      "model": "riven:tall_foxglove_spike_1_top"
+    },
+    "form=2,half=lower": {
+      "model": "riven:tall_foxglove_spike_2_bottom"
+    },
+    "form=2,half=upper": {
+      "model": "riven:tall_foxglove_spike_2_top"
+    },
+    "form=3,half=lower": {
+      "model": "riven:tall_foxglove_spike_3_bottom"
+    },
+    "form=3,half=upper": {
+      "model": "riven:tall_foxglove_spike_3_top"
+    }
+  }
+}

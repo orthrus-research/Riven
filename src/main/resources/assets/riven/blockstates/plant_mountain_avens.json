@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_mountain_avens_0"
+      },
+      {
+        "model": "riven:plant_mountain_avens_1"
+      },
+      {
+        "model": "riven:plant_mountain_avens_2"
+      },
+      {
+        "model": "riven:plant_mountain_avens_3"
+      }
+    ]
+  }
+}

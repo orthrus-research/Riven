@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "revision": 5,
+  "status": "adopted generator contract; individual feature implementation remains explicit",
+  "units": "Minecraft blocks; no Earth elevation calibration",
+  "datum": {
+    "engineSeaLevelY": 63,
+    "highestOceanWaterBlockY": 62,
+    "waterSurfaceBoundaryY": 63,
+    "heightmap": "highest solid block Y; its geometric top is Y + 1",
+    "average": "authored target arithmetic mean: core highest-solid samples for elevation, diagnostic windows for relief, feature instances for width, and core samples for relative magnitude; exclude blend margins; not measured means or specified probability distributions",
+    "elevation": "inclusive planning envelope of core highest-solid heights; store offsets from engineSeaLevelY, the unchanged Y63 elevation datum",
+    "relief": "P95 minus P05 highest-solid height in a 256-block-wide interior diagnostic window; narrow forms use a 256-by-feature-width corridor",
+    "width": "short-axis footprint including flanks; not noise wavelength, spacing, or diagnostic resolution",
+    "feather": "vertical width of each soft eligibility margin inside the elevation envelope; not a horizontal terrain blend distance"
+  },
+  "allocation": {
+    "minY": -512,
+    "worldMinY": -1664,
+    "maxYExclusive": 384,
+    "lowestReferenceSurfaceY": -112,
+    "highestReferenceSurfaceY": 351,
+    "note": "Reserve 32 air blocks above the highest surface. The crust floor (minY) sits 400 blocks below the lowest surface (decided 2026-10-24): rock for geology, ore bodies and caves under every column, including the deepest sea floor. Realms continue below it to the world floor (worldMinY, user decision 2026-10-25; riven-realms.json), for a world 2048 blocks tall."
+  },
+  "atmosphere": {
+    "cloudBaseY": 256,
+    "note": "Cloud base for vanilla clouds and shader packs (WorldType.getCloudHeight). Above plateau tops (Y240); mountains and higher peaks rise through it, as vanilla mountains reach Y128 clouds."
+  },
+  "sources": [
+    {"path": "src/main/java/cc/orthrus/riven/worldgen/TerrainHeightReference.java", "role": "loads this contract: allocated bounds, sea datum, water top and the feature envelopes the terrain stages read"},
+    {"url": "https://grass.osgeo.org/grass-stable/manuals/r.geomorphon.html", "role": "relative landform shape and observation scale; no numerical targets copied"},
+    {"url": "https://github.com/OpenCubicChunks/CubicChunks", "role": "CC capacity context; Riven allocation verified in local source"}
+  ],
+  "primaryFeatures": [
+    {"id":"ocean_trench", "name":"Ocean trench", "family":"marine", "elevationOffset":{"min":-175,"targetAverage":-159,"max":-143}, "relief":{"min":8,"targetAverage":16,"max":32}, "width":{"min":64,"targetAverage":128,"max":256}, "elevationFeather":4, "shape":"elongated concave floor with steep flanks; connectivity required separately"},
+    {"id":"deep_ocean", "name":"Deep ocean floor", "family":"marine", "elevationOffset":{"min":-143,"targetAverage":-111,"max":-79}, "relief":{"min":0,"targetAverage":4,"max":12}, "width":{"min":512,"targetAverage":1536,"max":4096}, "elevationFeather":8, "shape":"broad low-relief submerged floor"},
+    {"id":"continental_slope", "name":"Continental slope", "family":"marine", "elevationOffset":{"min":-95,"targetAverage":-63,"max":-31}, "relief":{"min":16,"targetAverage":32,"max":64}, "width":{"min":128,"targetAverage":256,"max":512}, "elevationFeather":8, "shape":"directed descent joining shelf and deeper floor"},
+    {"id":"continental_shelf", "name":"Continental shelf", "family":"marine", "elevationOffset":{"min":-47,"targetAverage":-23,"max":-7}, "relief":{"min":0,"targetAverage":4,"max":12}, "width":{"min":256,"targetAverage":512,"max":1536}, "elevationFeather":4, "shape":"broad gently varying shallow submerged bench"},
+    {"id":"shoal", "name":"Shoal / shallow margin", "family":"marine", "elevationOffset":{"min":-15,"targetAverage":-7,"max":-1}, "relief":{"min":0,"targetAverage":2,"max":6}, "width":{"min":16,"targetAverage":64,"max":128}, "elevationFeather":2, "shape":"submerged low ridge or bank; marine ownership remains explicit"},
+    {"id":"beach", "name":"Beach / shore bench", "family":"coast", "elevationOffset":{"min":0,"targetAverage":2,"max":5}, "relief":{"min":0,"targetAverage":1,"max":3}, "width":{"min":8,"targetAverage":24,"max":64}, "elevationFeather":1, "shape":"low-relief connected shore corridor; sediment and exposure qualify separately"},
+    {"id":"coastal_plain", "name":"Coastal plain", "family":"coast", "elevationOffset":{"min":1,"targetAverage":9,"max":25}, "relief":{"min":0,"targetAverage":3,"max":8}, "width":{"min":128,"targetAverage":512,"max":1536}, "elevationFeather":3, "shape":"broad low-relief land near a connected coast"},
+    {"id":"inland_plain", "name":"Inland plain", "family":"land", "elevationOffset":{"min":9,"targetAverage":25,"max":49}, "relief":{"min":0,"targetAverage":6,"max":16}, "width":{"min":256,"targetAverage":768,"max":2048}, "elevationFeather":4, "shape":"low-relief interior with no mandatory coast connection"},
+    {"id":"rolling_hills", "name":"Rolling hills", "family":"land", "elevationOffset":{"min":25,"targetAverage":49,"max":89}, "relief":{"min":8,"targetAverage":20,"max":40}, "width":{"min":128,"targetAverage":256,"max":512}, "elevationFeather":8, "shape":"rounded alternating convex crests and concave hollows"},
+    {"id":"foothills", "name":"Foothills", "family":"land", "elevationOffset":{"min":49,"targetAverage":81,"max":121}, "relief":{"min":16,"targetAverage":36,"max":64}, "width":{"min":256,"targetAverage":512,"max":1024}, "elevationFeather":8, "shape":"dissected transition toward a mountain parent; adjacency matters"},
+    {"id":"uplands", "name":"Dissected uplands", "family":"land", "elevationOffset":{"min":73,"targetAverage":105,"max":145}, "relief":{"min":8,"targetAverage":24,"max":48}, "width":{"min":512,"targetAverage":1024,"max":2048}, "elevationFeather":8, "shape":"raised rolling shoulders interrupted by valleys"},
+    {"id":"plateau", "name":"Plateau interior", "family":"land", "elevationOffset":{"min":97,"targetAverage":129,"max":177}, "relief":{"min":0,"targetAverage":6,"max":16}, "width":{"min":256,"targetAverage":768,"max":1536}, "elevationFeather":8, "shape":"raised low-relief interior; scarp margins are separate relative features"},
+    {"id":"mountains", "name":"Mountains", "family":"land", "elevationOffset":{"min":113,"targetAverage":161,"max":225}, "relief":{"min":32,"targetAverage":64,"max":112}, "width":{"min":512,"targetAverage":1024,"max":2048}, "elevationFeather":12, "shape":"connected ridges, shoulders and saddles with substantial local relief"},
+    {"id":"high_mountains", "name":"High mountain core", "family":"land", "elevationOffset":{"min":177,"targetAverage":217,"max":257}, "relief":{"min":24,"targetAverage":48,"max":80}, "width":{"min":768,"targetAverage":1536,"max":3072}, "elevationFeather":12, "shape":"high-elevation core within a coherent mountain system"},
+    {"id":"exceptional_peaks", "name":"Exceptional peak core", "family":"land", "elevationOffset":{"min":225,"targetAverage":257,"max":288}, "relief":{"min":16,"targetAverage":32,"max":56}, "width":{"min":128,"targetAverage":256,"max":512}, "elevationFeather":8, "shape":"localized summit core; parent mountain supplies the lower flanks; rarity remains unassigned"}
+  ],
+  "relativeFeatures": [
+    {"id":"knoll", "name":"Knoll / small hill", "parent":"land surface", "operation":"raise", "magnitude":{"min":4,"targetAverage":12,"max":24}, "width":{"min":32,"targetAverage":96,"max":192}},
+    {"id":"dune", "name":"Dune", "parent":"land surface", "operation":"raise", "magnitude":{"min":2,"targetAverage":6,"max":16}, "width":{"min":16,"targetAverage":48,"max":128}},
+    {"id":"ridge_spur", "name":"Secondary ridge / spur", "parent":"land surface", "operation":"raise", "magnitude":{"min":8,"targetAverage":24,"max":64}, "width":{"min":32,"targetAverage":128,"max":256}},
+    {"id":"mesa_butte", "name":"Mesa / butte", "parent":"land surface", "operation":"raise", "magnitude":{"min":16,"targetAverage":40,"max":80}, "width":{"min":64,"targetAverage":192,"max":512}},
+    {"id":"volcanic_cone", "name":"Volcanic cone", "parent":"land surface", "operation":"raise", "magnitude":{"min":24,"targetAverage":64,"max":128}, "width":{"min":128,"targetAverage":384,"max":1024}},
+    {"id":"scarp", "name":"Scarp / cliff face", "parent":"land surface", "operation":"drop", "magnitude":{"min":8,"targetAverage":24,"max":80}, "width":{"min":8,"targetAverage":24,"max":64}},
+    {"id":"terrace", "name":"Terrace riser", "parent":"land surface", "operation":"drop", "magnitude":{"min":2,"targetAverage":6,"max":16}, "width":{"min":4,"targetAverage":12,"max":32}},
+    {"id":"hollow_basin", "name":"Hollow / closed basin", "parent":"land surface", "operation":"cut", "magnitude":{"min":2,"targetAverage":8,"max":24}, "width":{"min":64,"targetAverage":192,"max":512}},
+    {"id":"valley", "name":"Broad valley", "parent":"land surface", "operation":"cut", "magnitude":{"min":8,"targetAverage":24,"max":64}, "width":{"min":128,"targetAverage":384,"max":1024}},
+    {"id":"gorge", "name":"Gorge / canyon", "parent":"land surface", "operation":"cut", "magnitude":{"min":24,"targetAverage":56,"max":112}, "width":{"min":32,"targetAverage":96,"max":256}},
+    {"id":"cirque", "name":"Cirque / U-shaped trough", "parent":"land surface", "operation":"cut", "magnitude":{"min":16,"targetAverage":40,"max":80}, "width":{"min":128,"targetAverage":384,"max":768}},
+    {"id":"crater", "name":"Crater / caldera hollow", "parent":"land surface", "operation":"cut", "magnitude":{"min":4,"targetAverage":16,"max":48}, "width":{"min":32,"targetAverage":128,"max":384}},
+    {"id":"stream_bed", "name":"Stream bed", "parent":"local water surface", "operation":"water_depth", "magnitude":{"min":1,"targetAverage":2,"max":4}, "width":{"min":1,"targetAverage":3,"max":6}},
+    {"id":"river_bed", "name":"River channel bed", "parent":"local water surface", "operation":"water_depth", "magnitude":{"min":2,"targetAverage":4,"max":8}, "width":{"min":4,"targetAverage":12,"max":32}},
+    {"id":"pond_bed", "name":"Pond bed", "parent":"local water surface", "operation":"water_depth", "magnitude":{"min":1,"targetAverage":3,"max":6}, "width":{"min":8,"targetAverage":24,"max":64}},
+    {"id":"lake_bed", "name":"Lake bed", "parent":"local water surface", "operation":"water_depth", "magnitude":{"min":4,"targetAverage":12,"max":32}, "width":{"min":64,"targetAverage":256,"max":1024}},
+    {"id":"deep_lake_bed", "name":"Deep lake bed", "parent":"local water surface", "operation":"water_depth", "magnitude":{"min":16,"targetAverage":32,"max":64}, "width":{"min":128,"targetAverage":512,"max":1536}},
+    {"id":"wetland_pool", "name":"Wetland pool", "parent":"local water surface", "operation":"water_depth", "magnitude":{"min":0,"targetAverage":1,"max":2}, "width":{"min":8,"targetAverage":32,"max":128}},
+    {"id":"waterfall", "name":"Waterfall drop", "parent":"upstream water surface", "operation":"water_drop", "magnitude":{"min":4,"targetAverage":12,"max":48}, "width":{"min":1,"targetAverage":4,"max":16}}
+  ],
+  "composition": [
+    "Select broad landform intent from current continental, tectonic, geological and climate fields; elevation eligibility alone is insufficient.",
+    "Use overlapping soft windows and normalize qualified weights. Leave an explicit unresolved outcome if no geometry and context qualify; never force an elevation-only class.",
+    "Evaluate local relief and slope as model diagnostics or reuse declared prepared evidence; this reference adds no runtime neighborhood scans.",
+    "Apply relief within the selected parent footprint. Do not sum every feature maximum or impose a separate fixed world-Y band on a relative feature.",
+    "Admit a relative shape only when its full envelope, support and blend fit the world and geological headroom. Resize or reject it before evaluation rather than flattening overflow at a hard ceiling.",
+    "Water depth D below highest occupied water block W gives highest-solid bed Y = W - D; D=0 means no occupied water block above that bed.",
+    "Connectivity, supplied water, receiving levels, bed support, groundwater and climate qualification remain separate requirements; a height window supplies none of these proofs.",
+    "Caves, overhangs, arches and flooded caves require three-dimensional density/occupancy definitions. Springs, groundwater and snowlines have no universal heightmap band.",
+    "Referenced recipes adopt the broad height composition and habitat intent. Unimplemented local features, water proofs and future shape qualification remain explicit; this contract does not expand the world or change CC behavior."
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_flax_0"
+      },
+      {
+        "model": "riven:plant_flax_1"
+      },
+      {
+        "model": "riven:plant_flax_2"
+      },
+      {
+        "model": "riven:plant_flax_3"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_frost_edged_spear_0"
+      },
+      {
+        "model": "riven:plant_frost_edged_spear_1"
+      },
+      {
+        "model": "riven:plant_frost_edged_spear_2"
+      },
+      {
+        "model": "riven:plant_frost_edged_spear_3"
+      }
+    ]
+  }
+}

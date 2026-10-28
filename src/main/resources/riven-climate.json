@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "revision": 3,
+  "temperature": {
+    "meanCelsius": 10,
+    "noiseAmplitudeCelsius": 7,
+    "scaleBlocks": 2500,
+    "detailWeight": 0.3,
+    "detailScaleFraction": 0.43,
+    "warpScaleInScales": 1.7222222222222223,
+    "warpAmplitudeInScales": 0.1527777777777778,
+    "beltPeriodBlocks": 16000,
+    "beltAmplitudeCelsius": 19.5,
+    "beltOffsetBlocks": 4000
+  },
+  "moisture": {
+    "broadBlocks": 2000,
+    "detailBlocks": 800,
+    "detailWeight": 0.35,
+    "beltPeriodBlocks": 16000,
+    "beltAmplitude": 0.15,
+    "beltOffsetBlocks": 4000
+  },
+  "contract": [
+    "Surface temperature = meanCelsius + beltAmplitudeCelsius * cos(2 pi z / beltPeriodBlocks) + noiseAmplitudeCelsius * (broad + detailWeight * detail) / (1 + detailWeight), with broad noise at scaleBlocks and detail at scaleBlocks * detailScaleFraction, both on domain-warped coordinates that ClimateMap shares. A belt period of 0 disables the belt.",
+    "Background moisture = 0.5 + 0.5 * (broad + detailWeight * detail) / (1 + detailWeight) + beltAmplitude * cos(2 pi (x + beltOffsetBlocks) / beltPeriodBlocks), clamped to 0..1, on the same warped coordinates, broad at broadBlocks and detail at detailBlocks, before upwind forcing (riven-climate-forcing.json). The moisture belt runs east-west, across the temperature belt, so every climate band spans dry to wet; a belt period of 0 disables it.",
+    "Temperature reads no altitude, plates, water or biome; later layers consume it.",
+    "Tuned for 8 km worlds (32 km maximum): a 16 km belt with the origin on the mean gives every 8 km world half a cycle and a 32 km world two cycles; target blend about 20% cold (FROZEN), 60% temperate (COOL, MILD, WARM), 20% hot (HOT). Moisture (climate-v3): features at 2,000 and 800 blocks give an 8 km world several wet and dry lobes, and the belt (wet west, dry east, half a cycle per 8 km world) keeps them from lining up with the temperature bands; over six seeds dry land (riven-biomes.json cores) is 16-31% and forest climates 50-75%."
+  ]
+}

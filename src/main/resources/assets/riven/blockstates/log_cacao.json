@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "riven:log_cacao"
+    },
+    "axis=z": {
+      "model": "riven:log_cacao",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "riven:log_cacao",
+      "x": 90,
+      "y": 90
+    },
+    "axis=none": {
+      "model": "riven:log_cacao_bark"
+    }
+  }
+}

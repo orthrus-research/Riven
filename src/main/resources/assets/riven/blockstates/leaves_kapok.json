@@ -1,0 +1,36 @@
+{
+  "variants": {
+    "check_decay=false,decayable=false": [
+      {
+        "model": "riven:leaves_kapok_1"
+      },
+      {
+        "model": "riven:leaves_kapok_2"
+      }
+    ],
+    "check_decay=false,decayable=true": [
+      {
+        "model": "riven:leaves_kapok_1"
+      },
+      {
+        "model": "riven:leaves_kapok_2"
+      }
+    ],
+    "check_decay=true,decayable=false": [
+      {
+        "model": "riven:leaves_kapok_1"
+      },
+      {
+        "model": "riven:leaves_kapok_2"
+      }
+    ],
+    "check_decay=true,decayable=true": [
+      {
+        "model": "riven:leaves_kapok_1"
+      },
+      {
+        "model": "riven:leaves_kapok_2"
+      }
+    ]
+  }
+}

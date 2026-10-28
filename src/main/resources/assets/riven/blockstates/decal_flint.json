@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:decal_flint_0"
+      },
+      {
+        "model": "riven:decal_flint_1"
+      },
+      {
+        "model": "riven:decal_flint_2"
+      },
+      {
+        "model": "riven:decal_flint_3"
+      }
+    ]
+  }
+}

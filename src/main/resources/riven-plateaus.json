@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "variationSeed": "504c415445415531",
+  "cacheSets": 32,
+  "cacheWays": 4,
+  "maximumCertificateColumns": 400000,
+  "widthScale": 1.0,
+  "reliefScale": 1.0,
+  "skirtFraction": 0.18,
+  "warp": 0.10,
+  "dissection": 0.75,
+  "aridityFloor": 0.35,
+  "erodibility": 1.0,
+  "protectionInScarpWidths": 2.0,
+  "familyWeights": {"WARPED_CAP": 1, "MESA_REMNANTS": 1, "BROKEN_SCARP": 1, "BRANCH_BADLANDS": 1},
+  "note": "One family per shared owner. Convert reference widths with TerrainScale.HORIZONTAL once; keep elevations and relief unchanged. Certify the integer support disk and anchor against the acyclic earlier parent. Erodibility is an authored surface-cut eligibility control, not simulated geology. Runtime and continuous-domain qualification remain pending."
+}

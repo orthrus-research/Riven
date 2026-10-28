@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_tumbleweed_0"
+      },
+      {
+        "model": "riven:plant_tumbleweed_1"
+      },
+      {
+        "model": "riven:plant_tumbleweed_2"
+      },
+      {
+        "model": "riven:plant_tumbleweed_3"
+      }
+    ]
+  }
+}

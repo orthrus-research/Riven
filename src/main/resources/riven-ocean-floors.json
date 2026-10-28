@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "revision": 4,
+  "variationSeed": "4f4345414e424544",
+  "shelfScale": 1.0,
+  "slopeScale": 1.0,
+  "detail": 0.85,
+  "ridgeChance": 0.72,
+  "trenchChance": 0.5,
+  "bankChance": 0.65,
+  "relief": 1.0,
+  "note": "Isolated MIT ocean kernels, composed before hydrology reservations. Nominal offshore widths finish inside the continental kernel's negative transition band before candidate-window changes. They are not exact physical shoreline distances. Marine beds are capped at highest ocean water minus one so a qualified native Y62 connection has occupied water throughout. Ownership alone supplies no water. Banks fade offshore; deep detail has a longer wavelength. No packet-size or throughput benefit is implied. Nearshore shoaling (v4): the bed rises toward a ramp from the shore to the shoal floor over a reach from minimumReachInShoalWidths (reflective coasts) to maximumReachInShoalWidths (dissipative coasts) shoal widths, by the outline's shoaling trait, and blends back to the shelf by that reach.",
+  "shoaling": {
+    "minimumReachInShoalWidths": 0.75,
+    "maximumReachInShoalWidths": 2.75
+  }
+}

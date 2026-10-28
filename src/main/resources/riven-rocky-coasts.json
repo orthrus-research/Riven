@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "variationSeed": "0x524f434b595f4331",
+  "familyWeights": {"CLIFF_PLATFORM": 1, "STEPPED_HEADLAND": 1, "JOINT_COVES": 1, "STACK_ARCH": 1},
+  "profiles": {
+    "CLIFF_PLATFORM": {"occurrence": 0.78, "widthScale": 1.0, "reliefScale": 1.25, "detail": 0.08},
+    "STEPPED_HEADLAND": {"occurrence": 0.65, "widthScale": 1.1, "reliefScale": 1.5, "detail": 0.09},
+    "JOINT_COVES": {"occurrence": 0.60, "widthScale": 0.9, "reliefScale": 1.2, "detail": 0.10},
+    "STACK_ARCH": {"occurrence": 0.12, "widthScale": 1.0, "reliefScale": 1.5, "detail": 0.06}
+  },
+  "coveDepth": 0.85,
+  "minimumRock": 0.55,
+  "minimumExposure": 0.25,
+  "anchorReachInWidths": 4,
+  "archFraction": 0.35,
+  "cacheSets": 2048,
+  "cacheWays": 4,
+  "maximumCertificateColumns": 131072,
+  "maximumBodyColumns": 16384,
+  "maximumCertificateVoxels": 1048576,
+  "contract": [
+    "Select one authored family at an existing shared exclusive rocky site; no independent occurrence grid or rejected-site reroll.",
+    "Reference widths receive horizontal scale once. Heights, drops and minimum roof thickness remain physical.",
+    "A complete backing-land witness strip supplies a conservative rocky intent/exposure floor, including the submerged toe. This is a geometric material opportunity, not a lithology simulation.",
+    "Canonical native columns and actual pre-shore land relief certify the whole proposal box. Original cliff targets blend into the existing shoreline once; 3D uses actual earlier canonical column parents.",
+    "Full water-support clearance protects beds, banks and inlet skirts. A 3D body additionally needs whole-footprint core permission, solid foundations and exclusion of saturated pockets.",
+    "Stacks require an earlier occupied marine-water moat. Arches require unchanged mainland contact, connected native solid support, both piers, roof thickness and a clear six-neighbor through-path inside the authored tunnel cylinder.",
+    "Native cubes resolve actual KEEP/SOLID/VOID before fluids and cover. DH uses the same predicate and at most four exact volume transition boundaries; no height-envelope-only arch approximation.",
+    "Memoize compact immutable decisions only. Temporary earlier body columns and occupancy workspaces are discarded. No recursive final-terrain query, job or retained raster is introduced.",
+    "No builds, tests, models or native launches were run for this integration. Occurrence, costs, Java 26 runtime and native/DH parity remain unqualified."
+  ]
+}

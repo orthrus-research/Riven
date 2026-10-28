@@ -1,0 +1,31 @@
+.gradle/
+build/
+run/
+.local/
+dev/CubicChunks/
+dev/DistantHorizons/
+dev/pins/*.jar
+dev/pins/shaderpacks/
+__pycache__/
+*.log
+
+# Editors, operating systems and virtual environments
+.idea/
+*.iml
+.vscode/
+out/
+.venv/
+venv/
+.DS_Store
+Thumbs.db
+
+# Agent tooling: local only, never committed
+AGENTS.md
+CLAUDE.md
+CLAUDE.local.md
+GEMINI.md
+.mcp.json
+.claude/
+.codex/
+.cursor/
+.agents/

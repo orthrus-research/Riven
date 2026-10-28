@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:decal_oak_litter_0"
+      },
+      {
+        "model": "riven:decal_oak_litter_1"
+      },
+      {
+        "model": "riven:decal_oak_litter_2"
+      },
+      {
+        "model": "riven:decal_oak_litter_3"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_fernleaf_scrub_0"
+      },
+      {
+        "model": "riven:plant_fernleaf_scrub_1"
+      },
+      {
+        "model": "riven:plant_fernleaf_scrub_2"
+      },
+      {
+        "model": "riven:plant_fernleaf_scrub_3"
+      }
+    ]
+  }
+}

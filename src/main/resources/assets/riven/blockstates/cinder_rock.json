@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:cinder_rock_0"
+      },
+      {
+        "model": "riven:cinder_rock_1"
+      }
+    ]
+  }
+}

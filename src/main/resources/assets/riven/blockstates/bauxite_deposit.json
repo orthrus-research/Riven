@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:bauxite_deposit_0"
+      },
+      {
+        "model": "riven:bauxite_deposit_1"
+      }
+    ]
+  }
+}

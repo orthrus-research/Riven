@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_bronze_rush_0"
+      },
+      {
+        "model": "riven:plant_bronze_rush_1"
+      },
+      {
+        "model": "riven:plant_bronze_rush_2"
+      },
+      {
+        "model": "riven:plant_bronze_rush_3"
+      }
+    ]
+  }
+}

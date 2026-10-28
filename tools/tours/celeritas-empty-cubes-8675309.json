@@ -1,0 +1,9 @@
+[
+  {"label": "cavern-a-arrive", "x": -120.5, "y": -232, "z": -330.5, "yaw": 90, "pitch": 0, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000", "effect {player} clear"]},
+  {"label": "cavern-a-day", "x": -120.5, "y": -232, "z": -344.5, "yaw": 90, "pitch": 0},
+  {"label": "cavern-b-day", "x": -184.5, "y": -200, "z": 120.5, "yaw": 180, "pitch": 0},
+  {"label": "lava-shores", "x": 74.5, "y": -293, "z": 106.5, "yaw": 30, "pitch": 10},
+  {"label": "woodland-floor", "x": -319.5, "y": 106, "z": -320.5, "yaw": 0, "pitch": 5},
+  {"label": "woodland-floor-2", "x": -319.5, "y": 106, "z": -340.5, "yaw": 0, "pitch": 5},
+  {"label": "cavern-a-night", "x": -120.5, "y": -232, "z": -344.5, "yaw": 90, "pitch": 0, "commands": ["time set 18000"]}
+]

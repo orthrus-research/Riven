@@ -1,0 +1,40 @@
+[
+  {"label": "setup", "x": 40, "y": 222, "z": -20, "yaw": 0, "pitch": 0, "commands": [
+    "time set 6000", "gamerule doDaylightCycle false", "gamerule doMobSpawning false", "weather clear 100000",
+    "gamerule randomTickSpeed 400",
+    "fill 0 218 0 30 218 6 minecraft:stone",
+    "fill 0 226 0 20 226 6 minecraft:stone",
+    "fill 0 227 0 8 228 6 minecraft:glass 0 hollow",
+    "fill 1 227 1 7 227 5 minecraft:water",
+    "fill 9 227 0 16 228 6 minecraft:glass 0 hollow",
+    "fill 10 227 1 15 227 5 minecraft:lava",
+    "setblock 2 225 3 riven:pointed_dripstone 1",
+    "fill 4 223 3 4 225 3 riven:pointed_dripstone 1",
+    "setblock 4 219 3 minecraft:cauldron",
+    "fill 6 221 3 6 225 3 riven:pointed_dripstone 1",
+    "fill 6 219 3 6 220 3 riven:pointed_dripstone 0",
+    "fill 11 223 3 11 225 3 riven:pointed_dripstone 1",
+    "fill 13 224 3 13 225 3 riven:pointed_dripstone 1",
+    "fill 15 219 3 15 221 3 riven:pointed_dripstone 0",
+    "fill 19 223 3 19 225 3 riven:pointed_dripstone 1",
+    "fill 24 219 3 24 221 3 riven:pointed_dripstone 0",
+    "setblock 1 219 1 riven:dripstone_block"
+  ]},
+  {"label": "scene", "x": 10.5, "y": 222.5, "z": -12, "yaw": 0, "pitch": 0},
+  {"label": "falling-stalactite", "x": 19.5, "y": 222, "z": -6, "yaw": 0, "pitch": 15, "commands": [
+    "summon minecraft:sheep 19.5 219 3.5 {NoAI:1b,CustomName:\"under_stalactite\"}",
+    "summon minecraft:sheep 17.5 219 3.5 {NoAI:1b,CustomName:\"beside_stalactite\"}",
+    "setblock 19 226 3 minecraft:air"
+  ]},
+  {"label": "stalagmite-landing", "x": 26, "y": 224, "z": -8, "yaw": 0, "pitch": 15, "commands": [
+    "testfor @e[type=minecraft:sheep,name=under_stalactite]",
+    "testfor @e[type=minecraft:sheep,name=beside_stalactite]",
+    "summon minecraft:sheep 24.5 228 3.5 {CustomName:\"onto_stalagmite\"}",
+    "summon minecraft:sheep 27.5 228 3.5 {CustomName:\"onto_floor\"}"
+  ]},
+  {"label": "cauldron", "x": 4.5, "y": 221.5, "z": 1.5, "yaw": 0, "pitch": 60, "commands": [
+    "testfor @e[type=minecraft:sheep,name=onto_stalagmite]",
+    "testfor @e[type=minecraft:sheep,name=onto_floor]",
+    "testforblock 4 219 3 minecraft:cauldron 0"
+  ]}
+]

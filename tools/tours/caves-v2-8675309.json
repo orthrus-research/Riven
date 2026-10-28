@@ -1,0 +1,8 @@
+[
+  {"label": "root-pillar-hall", "x": 688, "y": -450, "z": 224, "yaw": 45, "pitch": 15, "commands": ["effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "root-lava-river", "x": -704, "y": -466, "z": -1536, "yaw": 0, "pitch": 35},
+  {"label": "root-geode", "x": 1216, "y": -388, "z": 224, "yaw": 90, "pitch": 0},
+  {"label": "basement-joint-maze", "x": 1056, "y": -150, "z": 1456, "yaw": 0, "pitch": -40},
+  {"label": "basement-vein-gallery", "x": -784, "y": -250, "z": 1360, "yaw": 0, "pitch": 70},
+  {"label": "layered-bedding-plane", "x": -352, "y": 82, "z": -1184, "yaw": 0, "pitch": 10}
+]

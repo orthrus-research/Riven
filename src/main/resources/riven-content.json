@@ -1,0 +1,4520 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "lang": {
+    "generator.riven": "Riven"
+  },
+  "blocks": [
+    {
+      "id": "dripstone_block",
+      "kind": "stone",
+      "name": "Dripstone Block",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "all": "dripstone_block"
+      }
+    },
+    {
+      "id": "pointed_dripstone",
+      "kind": "pointed_dripstone",
+      "name": "Pointed Dripstone",
+      "creativeTab": "decorations",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "behaviour": {
+        "fallDamagePerBlock": 6.0,
+        "fallDamageMax": 40,
+        "stalagmiteExtraFallBlocks": 2.0,
+        "stalagmiteDamageMultiplier": 2.0,
+        "dripChance": 0.12,
+        "cauldronFillChance": 0.17,
+        "cauldronReachBlocks": 11
+      },
+      "textures": {
+        "item": "pointed_dripstone_item"
+      }
+    },
+    {
+      "id": "pointed_ice",
+      "kind": "pointed_dripstone",
+      "name": "Pointed Ice",
+      "creativeTab": "decorations",
+      "hardness": 0.5,
+      "resistance": 0.5,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "behaviour": {
+        "fallDamagePerBlock": 6.0,
+        "fallDamageMax": 40,
+        "stalagmiteExtraFallBlocks": 2.0,
+        "stalagmiteDamageMultiplier": 2.0,
+        "dripChance": 0.12,
+        "cauldronFillChance": 0.17,
+        "cauldronReachBlocks": 11
+      },
+      "textures": {
+        "item": "pointed_ice_item"
+      }
+    },
+    {
+      "id": "pointed_salt",
+      "kind": "pointed_dripstone",
+      "name": "Pointed Salt",
+      "creativeTab": "decorations",
+      "hardness": 1.2,
+      "resistance": 2.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "behaviour": {
+        "fallDamagePerBlock": 6.0,
+        "fallDamageMax": 40,
+        "stalagmiteExtraFallBlocks": 2.0,
+        "stalagmiteDamageMultiplier": 2.0,
+        "dripChance": 0.12,
+        "cauldronFillChance": 0.17,
+        "cauldronReachBlocks": 11
+      },
+      "textures": {
+        "item": "pointed_salt_item"
+      }
+    },
+    {
+      "id": "pointed_basalt",
+      "kind": "pointed_dripstone",
+      "name": "Pointed Basalt",
+      "creativeTab": "decorations",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "behaviour": {
+        "fallDamagePerBlock": 6.0,
+        "fallDamageMax": 40,
+        "stalagmiteExtraFallBlocks": 2.0,
+        "stalagmiteDamageMultiplier": 2.0,
+        "dripChance": 0.12,
+        "cauldronFillChance": 0.17,
+        "cauldronReachBlocks": 11
+      },
+      "textures": {
+        "item": "pointed_basalt_item"
+      }
+    },
+    {
+      "id": "gabbro",
+      "kind": "stone",
+      "name": "Gabbro",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-gabbro-main"
+          },
+          {
+            "all": "req06-gabbro-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "gneiss",
+      "kind": "stone",
+      "name": "Gneiss",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-gneiss-main-side",
+            "top": "req06-gneiss-main-top"
+          },
+          {
+            "side": "req06-gneiss-alternate-side",
+            "top": "req06-gneiss-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "graphite",
+      "kind": "stone",
+      "name": "Graphite Schist",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-graphite-schist-main-side",
+            "top": "req06-graphite-schist-main-top"
+          },
+          {
+            "side": "req06-graphite-schist-alternate-side",
+            "top": "req06-graphite-schist-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "limestone",
+      "kind": "stone",
+      "name": "Limestone",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-limestone-main-side",
+            "top": "req06-limestone-main-top"
+          },
+          {
+            "side": "req06-limestone-alternate-side",
+            "top": "req06-limestone-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mica",
+      "kind": "stone",
+      "name": "Mica Schist",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-mica-schist-main-side",
+            "top": "req06-mica-schist-main-top"
+          },
+          {
+            "side": "req06-mica-schist-alternate-side",
+            "top": "req06-mica-schist-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "phyllite",
+      "kind": "stone",
+      "name": "Phyllite",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-phyllite-main-side",
+            "top": "req06-phyllite-main-top"
+          },
+          {
+            "side": "req06-phyllite-alternate-side",
+            "top": "req06-phyllite-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "quartzite",
+      "kind": "stone",
+      "name": "Quartzite",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-quartzite-main-side",
+            "top": "req06-quartzite-main-top"
+          },
+          {
+            "side": "req06-quartzite-alternate-side",
+            "top": "req06-quartzite-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "shale",
+      "kind": "stone",
+      "name": "Shale",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-shale-main-side",
+            "top": "req06-shale-main-top"
+          },
+          {
+            "side": "req06-shale-alternate-side",
+            "top": "req06-shale-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "slate",
+      "kind": "stone",
+      "name": "Slate",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-slate-main-side",
+            "top": "req06-slate-main-top"
+          },
+          {
+            "side": "req06-slate-alternate-side",
+            "top": "req06-slate-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "soapstone",
+      "kind": "stone",
+      "name": "Soapstone",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-soapstone-main"
+          },
+          {
+            "all": "req06-soapstone-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "kimberlite",
+      "kind": "stone",
+      "name": "Kimberlite",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-kimberlite-main"
+          },
+          {
+            "all": "req06-kimberlite-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "anorthosite",
+      "kind": "stone",
+      "name": "Anorthosite",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-anorthosite-main"
+          },
+          {
+            "all": "req06-anorthosite-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "leucobasalt",
+      "kind": "stone",
+      "name": "Leucobasalt",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 6.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-leucobasalt-main"
+          },
+          {
+            "all": "req06-leucobasalt-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "coal_deposit",
+      "kind": "stone",
+      "name": "Coal Seam",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-coal-side-main",
+            "top": "req06-coal-top-main"
+          },
+          {
+            "side": "req06-coal-side-alternate",
+            "top": "req06-coal-top-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lignite_deposit",
+      "kind": "stone",
+      "name": "Lignite Seam",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-lignite-side-main",
+            "top": "req06-lignite-top-main"
+          },
+          {
+            "side": "req06-lignite-side-alternate",
+            "top": "req06-lignite-top-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "anthracite_deposit",
+      "kind": "stone",
+      "name": "Anthracite Seam",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-anthracite-side-main",
+            "top": "req06-anthracite-top-main"
+          },
+          {
+            "side": "req06-anthracite-side-alternate",
+            "top": "req06-anthracite-top-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "halide_evaporite_deposit",
+      "kind": "stone",
+      "name": "Halide Evaporite",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-05",
+        "faces": [
+          {
+            "side": "req05-bedded-rock-salt-main-side",
+            "top": "req05-bedded-rock-salt-main-top"
+          },
+          {
+            "side": "req05-bedded-rock-salt-alternate-side",
+            "top": "req05-bedded-rock-salt-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "sulfate_evaporite_deposit",
+      "kind": "stone",
+      "name": "Sulfate Evaporite",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-05",
+        "faces": [
+          {
+            "all": "req05-anhydrite-main"
+          },
+          {
+            "all": "req05-anhydrite-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "carbonate_evaporite_deposit",
+      "kind": "stone",
+      "name": "Carbonate Evaporite",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-carbonate-evaporite-main-side",
+            "top": "req06-carbonate-evaporite-main-top"
+          },
+          {
+            "side": "req06-carbonate-evaporite-alternate-side",
+            "top": "req06-carbonate-evaporite-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "non_marine_evaporite_deposit",
+      "kind": "stone",
+      "name": "Non-Marine Evaporite",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "side": "req06-non-marine-evaporite-main-side",
+            "top": "req06-non-marine-evaporite-main-top"
+          },
+          {
+            "side": "req06-non-marine-evaporite-alternate-side",
+            "top": "req06-non-marine-evaporite-alternate-top"
+          }
+        ]
+      }
+    },
+    {
+      "id": "potash_deposit",
+      "kind": "stone",
+      "name": "Potash",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-05",
+        "faces": [
+          {
+            "all": "req05-sylvite-main"
+          },
+          {
+            "all": "req05-sylvite-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "bauxite_deposit",
+      "kind": "stone",
+      "name": "Bauxite",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-bauxite-main"
+          },
+          {
+            "all": "req06-bauxite-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "caliche_deposit",
+      "kind": "stone",
+      "name": "Caliche",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-caliche-main"
+          },
+          {
+            "all": "req06-caliche-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "phosphorite_deposit",
+      "kind": "stone",
+      "name": "Phosphorite",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-phosphorite-main"
+          },
+          {
+            "all": "req06-phosphorite-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "sulfur_deposit",
+      "kind": "stone",
+      "name": "Sulfur Deposit",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-volcanic-sulfur-main"
+          },
+          {
+            "all": "req06-volcanic-sulfur-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "native_copper_deposit",
+      "kind": "stone",
+      "name": "Native Copper",
+      "creativeTab": "building",
+      "hardness": 1.5,
+      "resistance": 3.0,
+      "tool": "pickaxe",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-native-copper-main"
+          },
+          {
+            "all": "req06-native-copper-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "platinum_placer_deposit",
+      "kind": "stone",
+      "name": "Platinum Placer",
+      "creativeTab": "building",
+      "hardness": 0.8,
+      "resistance": 3.0,
+      "tool": "shovel",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-platinum-placer-main"
+          },
+          {
+            "all": "req06-platinum-placer-alternate"
+          }
+        ]
+      }
+    },
+    {
+      "id": "gold_alluvial_deposit",
+      "kind": "stone",
+      "name": "Gold Alluvium",
+      "creativeTab": "building",
+      "hardness": 0.8,
+      "resistance": 3.0,
+      "tool": "shovel",
+      "harvestLevel": 0,
+      "textures": {
+        "source": "riven-resources/requisition-06",
+        "faces": [
+          {
+            "all": "req06-gold-alluvium-main"
+          },
+          {
+            "all": "req06-gold-alluvium-alternate"
+          }
+        ]
+      }
+    }
+  ],
+  "textures": {
+    "dripstone_block": {
+      "painter": "dripstone_block"
+    },
+    "pointed_dripstone_item": {
+      "painter": "pointed_dripstone_item"
+    },
+    "pointed_ice_item": {
+      "painter": "pointed_item",
+      "args": {
+        "material": "ice"
+      }
+    },
+    "pointed_ice_{direction}_{thickness}": {
+      "painter": "pointed",
+      "args": {
+        "material": "ice"
+      },
+      "for": {
+        "direction": [
+          "up",
+          "down"
+        ],
+        "thickness": [
+          "tip_merge",
+          "tip",
+          "frustum",
+          "middle",
+          "base"
+        ]
+      }
+    },
+    "pointed_salt_item": {
+      "painter": "pointed_item",
+      "args": {
+        "material": "salt"
+      }
+    },
+    "pointed_salt_{direction}_{thickness}": {
+      "painter": "pointed",
+      "args": {
+        "material": "salt"
+      },
+      "for": {
+        "direction": [
+          "up",
+          "down"
+        ],
+        "thickness": [
+          "tip_merge",
+          "tip",
+          "frustum",
+          "middle",
+          "base"
+        ]
+      }
+    },
+    "pointed_basalt_item": {
+      "painter": "pointed_item",
+      "args": {
+        "material": "basalt"
+      }
+    },
+    "pointed_basalt_{direction}_{thickness}": {
+      "painter": "pointed",
+      "args": {
+        "material": "basalt"
+      },
+      "for": {
+        "direction": [
+          "up",
+          "down"
+        ],
+        "thickness": [
+          "tip_merge",
+          "tip",
+          "frustum",
+          "middle",
+          "base"
+        ]
+      }
+    },
+    "pointed_dripstone_{direction}_{thickness}": {
+      "painter": "pointed_dripstone",
+      "for": {
+        "direction": [
+          "up",
+          "down"
+        ],
+        "thickness": [
+          "tip_merge",
+          "tip",
+          "frustum",
+          "middle",
+          "base"
+        ]
+      }
+    },
+    "ore_overlay_dull": {
+      "painter": "ore_overlay",
+      "args": {
+        "shine": "dull"
+      }
+    },
+    "ore_overlay_shiny": {
+      "painter": "ore_overlay",
+      "args": {
+        "shine": "shiny"
+      }
+    },
+    "unstable_overlay": {
+      "painter": "unstable_overlay"
+    }
+  },
+  "provenance": {
+    "author": "Riven",
+    "license": "NRR-1.0",
+    "method": "Original art painted by tools/content/painters.py from these definitions; behaviour reimplemented from observed modern Minecraft gameplay. No Mojang code, textures, models or sounds.",
+    "riven-resources": "Textures under riven-resources/ are original commissioned Riven artwork from the Riven Resources project, imported unchanged under Riven's terms (NRR-1.0); each set's PROVENANCE.md names its source archive and hash."
+  },
+  "contract": [
+    "Riven's own content (blocks, items and their assets). Every block declares an id (registry riven:<id>), a kind that selects its Java implementation, its English name, creative tab, hardness, resistance, harvest tool and level, behaviour values for its kind, and textures by name.",
+    "textures: each named texture comes from a painter in tools/content/painters.py (with fixed args, or expanded over 'for' values) or a committed file under tools/content/; a name with {placeholders} expands over its 'for' values. tools/content/build_content.py writes blockstates, models, item models, textures and the lang file under assets/riven from this file, and --check proves the committed assets match.",
+    "kinds. stone: a full rock block, either one texture by name (all) or Riven Resources face sets (textures.source, a folder under tools/content/, and faces: all, or side and top with the top also below; the main set first), one set by position so wide walls do not repeat. pointed_dripstone: a stalactite (direction down) or stalagmite (direction up) whose thickness (tip_merge, tip, frustum, middle, base) follows its neighbours along its direction. A stalactite that loses the block it hangs from falls; a falling piece hurts what it lands on with fallDamagePerBlock per block fallen, at most fallDamageMax, and breaks on landing. A stalagmite that loses its base breaks. Landing on a stalagmite tip deals fall damage for the distance plus stalagmiteExtraFallBlocks, times stalagmiteDamageMultiplier. A stalactite tip drips water or lava (dripChance per display tick) when that fluid sits on top of the block its column hangs from, and a water drip fills a cauldron up to cauldronReachBlocks below (cauldronFillChance per random tick). The same kind serves every pointed formation material (pointed_ice, pointed_salt, pointed_basalt): a piece's thickness follows only neighbours of its own block, so two materials never merge into one column.",
+    "ores: one block riven:ore_<mineral> per mineral, its host property indexing hosts (Riven's host stones); each state draws its host stone's face sets, one by position as the host shows them, under an overlay (ore_overlay_<shine>) tinted with the mineral's color. With GTCEu, a mineral naming a gregtech material drops that material's GTCEu ore, so GTCEu processing applies; otherwise the block drops itself. Minerals with gregtech null are Supersymmetry minerals GTCEu lacks.",
+    "unstable: one block riven:unstable_<host> per host rock, named Unstable <host>: the host's own faces under an untinted crack overlay (overlay, a texture). block and meta name the host's registered state (what it drops and how it maps), terrain the generator's rock (TerrainBlock) it replaces where a cave floor is unstable (riven-cave-decor.json unstable), and dust the colour of the dust it sheds into open space below (dustChance per display tick). A Riven host takes its block's face sets and name; another names its textures (all, or top, bottom and side). A player who steps or lands on it without sneaking sets it off: it creaks and, after triggerDelayTicks, the unstable stone joined to it within spreadRadiusBlocks (at most maximumBlocks, any host) falls ring by ring outward, spreadTicksPerBlock apart, each column from the bottom up. A falling piece hurts what it lands on (fallDamagePerBlock per block fallen, at most fallDamageMax) and shatters, dropping its host's drops at debrisDropChance. Mined it drops its host's drops; silk touch keeps it, and placed again it behaves the same. Unstable stone holds otherwise: no neighbour change or missing support sets it off."
+  ],
+  "ores": {
+    "hosts": [
+      "gabbro",
+      "gneiss",
+      "graphite",
+      "limestone",
+      "mica",
+      "phyllite",
+      "quartzite",
+      "shale",
+      "slate",
+      "soapstone",
+      "kimberlite",
+      "anorthosite",
+      "leucobasalt"
+    ],
+    "hardness": 3.0,
+    "resistance": 5.0,
+    "harvestLevel": 1,
+    "minerals": {
+      "coal": {
+        "name": "Coal",
+        "color": "#2b2b2b",
+        "shine": "dull",
+        "gregtech": "coal"
+      },
+      "graphite": {
+        "name": "Graphite",
+        "color": "#505050",
+        "shine": "shiny",
+        "gregtech": "graphite"
+      },
+      "diamond": {
+        "name": "Diamond",
+        "color": "#c8fff8",
+        "shine": "shiny",
+        "gregtech": "diamond"
+      },
+      "brown_limonite": {
+        "name": "Brown Limonite",
+        "color": "#8b5a2b",
+        "shine": "dull",
+        "gregtech": "brown_limonite"
+      },
+      "yellow_limonite": {
+        "name": "Yellow Limonite",
+        "color": "#c8a23c",
+        "shine": "dull",
+        "gregtech": "yellow_limonite"
+      },
+      "banded_iron": {
+        "name": "Banded Iron",
+        "color": "#915a5a",
+        "shine": "shiny",
+        "gregtech": "banded_iron"
+      },
+      "magnetite": {
+        "name": "Magnetite",
+        "color": "#1e1e1e",
+        "shine": "shiny",
+        "gregtech": "magnetite"
+      },
+      "vanadium_magnetite": {
+        "name": "Vanadium Magnetite",
+        "color": "#23233c",
+        "shine": "shiny",
+        "gregtech": "vanadium_magnetite"
+      },
+      "ilmenite": {
+        "name": "Ilmenite",
+        "color": "#463732",
+        "shine": "shiny",
+        "gregtech": "ilmenite"
+      },
+      "gold": {
+        "name": "Gold",
+        "color": "#ffe650",
+        "shine": "shiny",
+        "gregtech": "gold"
+      },
+      "silver": {
+        "name": "Silver",
+        "color": "#dcdcff",
+        "shine": "shiny",
+        "gregtech": "silver"
+      },
+      "pyrite": {
+        "name": "Pyrite",
+        "color": "#968c46",
+        "shine": "shiny",
+        "gregtech": "pyrite"
+      },
+      "chalcopyrite": {
+        "name": "Chalcopyrite",
+        "color": "#a07828",
+        "shine": "shiny",
+        "gregtech": "chalcopyrite"
+      },
+      "bornite": {
+        "name": "Bornite",
+        "color": "#97662b",
+        "shine": "shiny",
+        "gregtech": "bornite"
+      },
+      "chalcocite": {
+        "name": "Chalcocite",
+        "color": "#353535",
+        "shine": "shiny",
+        "gregtech": "chalcocite"
+      },
+      "malachite": {
+        "name": "Malachite",
+        "color": "#055f05",
+        "shine": "dull",
+        "gregtech": "malachite"
+      },
+      "copper": {
+        "name": "Copper",
+        "color": "#ff6400",
+        "shine": "shiny",
+        "gregtech": "copper"
+      },
+      "sphalerite": {
+        "name": "Sphalerite",
+        "color": "#ffffff",
+        "shine": "dull",
+        "gregtech": "sphalerite"
+      },
+      "galena": {
+        "name": "Galena",
+        "color": "#643c64",
+        "shine": "shiny",
+        "gregtech": "galena"
+      },
+      "cassiterite": {
+        "name": "Cassiterite",
+        "color": "#dcdcdc",
+        "shine": "shiny",
+        "gregtech": "cassiterite"
+      },
+      "cassiterite_sand": {
+        "name": "Cassiterite Sand",
+        "color": "#dcdcdc",
+        "shine": "dull",
+        "gregtech": "cassiterite_sand"
+      },
+      "garnet_sand": {
+        "name": "Garnet Sand",
+        "color": "#c86400",
+        "shine": "dull",
+        "gregtech": "garnet_sand"
+      },
+      "stibnite": {
+        "name": "Stibnite",
+        "color": "#464646",
+        "shine": "shiny",
+        "gregtech": "stibnite"
+      },
+      "cinnabar": {
+        "name": "Cinnabar",
+        "color": "#960000",
+        "shine": "shiny",
+        "gregtech": "cinnabar"
+      },
+      "realgar": {
+        "name": "Realgar",
+        "color": "#9d2123",
+        "shine": "dull",
+        "gregtech": "realgar"
+      },
+      "redstone": {
+        "name": "Redstone",
+        "color": "#c80000",
+        "shine": "dull",
+        "gregtech": "redstone"
+      },
+      "ruby": {
+        "name": "Ruby",
+        "color": "#ff6464",
+        "shine": "shiny",
+        "gregtech": "ruby"
+      },
+      "lazurite": {
+        "name": "Lazurite",
+        "color": "#507dd2",
+        "shine": "dull",
+        "gregtech": "lazurite"
+      },
+      "sodalite": {
+        "name": "Sodalite",
+        "color": "#1414ff",
+        "shine": "dull",
+        "gregtech": "sodalite"
+      },
+      "lapis": {
+        "name": "Lapis",
+        "color": "#4646dc",
+        "shine": "dull",
+        "gregtech": "lapis"
+      },
+      "calcite": {
+        "name": "Calcite",
+        "color": "#fae6dc",
+        "shine": "dull",
+        "gregtech": "calcite"
+      },
+      "talc": {
+        "name": "Talc",
+        "color": "#5ab45a",
+        "shine": "dull",
+        "gregtech": "talc"
+      },
+      "asbestos": {
+        "name": "Asbestos",
+        "color": "#e6e6e6",
+        "shine": "dull",
+        "gregtech": "asbestos"
+      },
+      "mica": {
+        "name": "Mica",
+        "color": "#c3c3cd",
+        "shine": "dull",
+        "gregtech": "mica"
+      },
+      "kyanite": {
+        "name": "Kyanite",
+        "color": "#6e6efa",
+        "shine": "shiny",
+        "gregtech": "kyanite"
+      },
+      "almandine": {
+        "name": "Almandine",
+        "color": "#ff0000",
+        "shine": "shiny",
+        "gregtech": "almandine"
+      },
+      "pyrope": {
+        "name": "Pyrope",
+        "color": "#783264",
+        "shine": "shiny",
+        "gregtech": "pyrope"
+      },
+      "grossular": {
+        "name": "Grossular",
+        "color": "#c86400",
+        "shine": "shiny",
+        "gregtech": "grossular"
+      },
+      "spessartine": {
+        "name": "Spessartine",
+        "color": "#ff6464",
+        "shine": "shiny",
+        "gregtech": "spessartine"
+      },
+      "sapphire": {
+        "name": "Sapphire",
+        "color": "#6464c8",
+        "shine": "shiny",
+        "gregtech": "sapphire"
+      },
+      "green_sapphire": {
+        "name": "Green Sapphire",
+        "color": "#64c882",
+        "shine": "shiny",
+        "gregtech": "green_sapphire"
+      },
+      "garnet_red": {
+        "name": "Garnet Red",
+        "color": "#c85050",
+        "shine": "shiny",
+        "gregtech": "garnet_red"
+      },
+      "garnet_yellow": {
+        "name": "Garnet Yellow",
+        "color": "#c8c850",
+        "shine": "shiny",
+        "gregtech": "garnet_yellow"
+      },
+      "apatite": {
+        "name": "Apatite",
+        "color": "#c8c8ff",
+        "shine": "shiny",
+        "gregtech": "apatite"
+      },
+      "tricalcium_phosphate": {
+        "name": "Tricalcium Phosphate",
+        "color": "#ffff00",
+        "shine": "dull",
+        "gregtech": "tricalcium_phosphate"
+      },
+      "pyrochlore": {
+        "name": "Pyrochlore",
+        "color": "#2b1100",
+        "shine": "dull",
+        "gregtech": "pyrochlore"
+      },
+      "pentlandite": {
+        "name": "Pentlandite",
+        "color": "#a59605",
+        "shine": "dull",
+        "gregtech": "pentlandite"
+      },
+      "garnierite": {
+        "name": "Garnierite",
+        "color": "#32c846",
+        "shine": "shiny",
+        "gregtech": "garnierite"
+      },
+      "nickel": {
+        "name": "Nickel",
+        "color": "#c8c8fa",
+        "shine": "shiny",
+        "gregtech": "nickel"
+      },
+      "cobaltite": {
+        "name": "Cobaltite",
+        "color": "#5050fa",
+        "shine": "shiny",
+        "gregtech": "cobaltite"
+      },
+      "cooperite": {
+        "name": "Cooperite",
+        "color": "#ffffc8",
+        "shine": "shiny",
+        "gregtech": "cooperite"
+      },
+      "olivine": {
+        "name": "Olivine",
+        "color": "#96ff96",
+        "shine": "shiny",
+        "gregtech": "olivine"
+      },
+      "bentonite": {
+        "name": "Bentonite",
+        "color": "#f5d7d2",
+        "shine": "dull",
+        "gregtech": "bentonite"
+      },
+      "magnesite": {
+        "name": "Magnesite",
+        "color": "#fafab4",
+        "shine": "dull",
+        "gregtech": "magnesite"
+      },
+      "glauconite_sand": {
+        "name": "Glauconite Sand",
+        "color": "#82b43c",
+        "shine": "dull",
+        "gregtech": "glauconite_sand"
+      },
+      "rock_salt": {
+        "name": "Rock Salt",
+        "color": "#f0c8c8",
+        "shine": "dull",
+        "gregtech": "rock_salt"
+      },
+      "salt": {
+        "name": "Salt",
+        "color": "#fafafa",
+        "shine": "dull",
+        "gregtech": "salt"
+      },
+      "gypsum": {
+        "name": "Gypsum",
+        "color": "#e6e6fa",
+        "shine": "dull",
+        "gregtech": "gypsum"
+      },
+      "lepidolite": {
+        "name": "Lepidolite",
+        "color": "#f0328c",
+        "shine": "dull",
+        "gregtech": "lepidolite"
+      },
+      "spodumene": {
+        "name": "Spodumene",
+        "color": "#bea5a5",
+        "shine": "dull",
+        "gregtech": "spodumene"
+      },
+      "diatomite": {
+        "name": "Diatomite",
+        "color": "#e1e1e1",
+        "shine": "dull",
+        "gregtech": "diatomite"
+      },
+      "saltpeter": {
+        "name": "Saltpeter",
+        "color": "#e6e6e6",
+        "shine": "dull",
+        "gregtech": "saltpeter"
+      },
+      "pyrolusite": {
+        "name": "Pyrolusite",
+        "color": "#9696aa",
+        "shine": "dull",
+        "gregtech": "pyrolusite"
+      },
+      "tantalite": {
+        "name": "Tantalite",
+        "color": "#915028",
+        "shine": "shiny",
+        "gregtech": "tantalite"
+      },
+      "basaltic_mineral_sand": {
+        "name": "Basaltic Mineral Sand",
+        "color": "#283228",
+        "shine": "dull",
+        "gregtech": "basaltic_mineral_sand"
+      },
+      "granitic_mineral_sand": {
+        "name": "Granitic Mineral Sand",
+        "color": "#283c3c",
+        "shine": "dull",
+        "gregtech": "granitic_mineral_sand"
+      },
+      "fullers_earth": {
+        "name": "Fullers Earth",
+        "color": "#a0a078",
+        "shine": "dull",
+        "gregtech": "fullers_earth"
+      },
+      "zeolite": {
+        "name": "Zeolite",
+        "color": "#f0e6e6",
+        "shine": "dull",
+        "gregtech": "zeolite"
+      },
+      "amethyst": {
+        "name": "Amethyst",
+        "color": "#d232d2",
+        "shine": "shiny",
+        "gregtech": "amethyst"
+      },
+      "opal": {
+        "name": "Opal",
+        "color": "#0000ff",
+        "shine": "shiny",
+        "gregtech": "opal"
+      },
+      "pollucite": {
+        "name": "Pollucite",
+        "color": "#f0d2d2",
+        "shine": "dull",
+        "gregtech": "pollucite"
+      },
+      "anglesite": {
+        "name": "Anglesite",
+        "color": "#e0ded5",
+        "shine": "dull",
+        "gregtech": null
+      },
+      "cerussite": {
+        "name": "Cerussite",
+        "color": "#e0d9ba",
+        "shine": "dull",
+        "gregtech": null
+      },
+      "chlorapatite": {
+        "name": "Chlorapatite",
+        "color": "#c7af85",
+        "shine": "shiny",
+        "gregtech": null
+      },
+      "fluorapatite": {
+        "name": "Fluorapatite",
+        "color": "#cc9681",
+        "shine": "shiny",
+        "gregtech": null
+      },
+      "hydroxyapatite": {
+        "name": "Hydroxyapatite",
+        "color": "#c7afaa",
+        "shine": "shiny",
+        "gregtech": null
+      },
+      "arsenopyrite": {
+        "name": "Arsenopyrite",
+        "color": "#7d7269",
+        "shine": "shiny",
+        "gregtech": null
+      },
+      "raw_electrum": {
+        "name": "Electrum",
+        "color": "#fcf403",
+        "shine": "dull",
+        "gregtech": null
+      },
+      "fluorite": {
+        "name": "Fluorite",
+        "color": "#9c7ad6",
+        "shine": "shiny",
+        "gregtech": null
+      },
+      "proustite": {
+        "name": "Proustite",
+        "color": "#73142d",
+        "shine": "shiny",
+        "gregtech": null
+      },
+      "pyrargyrite": {
+        "name": "Pyrargyrite",
+        "color": "#362a2a",
+        "shine": "shiny",
+        "gregtech": null
+      },
+      "acanthite": {
+        "name": "Acanthite",
+        "color": "#2c332d",
+        "shine": "shiny",
+        "gregtech": null
+      },
+      "sperrylite": {
+        "name": "Sperrylite",
+        "color": "#b3af86",
+        "shine": "shiny",
+        "gregtech": null
+      },
+      "braggite": {
+        "name": "Braggite",
+        "color": "#686b5f",
+        "shine": "dull",
+        "gregtech": null
+      },
+      "smithsonite": {
+        "name": "Smithsonite",
+        "color": "#6aadab",
+        "shine": "dull",
+        "gregtech": null
+      },
+      "vanadinite": {
+        "name": "Vanadinite",
+        "color": "#bf5915",
+        "shine": "shiny",
+        "gregtech": null
+      }
+    }
+  },
+  "unstable": {
+    "hardness": 0.8,
+    "resistance": 2.0,
+    "harvestLevel": 0,
+    "overlay": "unstable_overlay",
+    "behaviour": {
+      "triggerDelayTicks": 10,
+      "spreadTicksPerBlock": 2,
+      "spreadRadiusBlocks": 3,
+      "maximumBlocks": 64,
+      "dustChance": 0.25,
+      "debrisDropChance": 0.25,
+      "fallDamagePerBlock": 0.5,
+      "fallDamageMax": 4
+    },
+    "hosts": {
+      "stone": {
+        "name": "Stone",
+        "block": "minecraft:stone",
+        "meta": 0,
+        "terrain": "STONE",
+        "dust": "#7d7d7d",
+        "textures": {
+          "all": "minecraft:blocks/stone"
+        }
+      },
+      "granite": {
+        "name": "Granite",
+        "block": "minecraft:stone",
+        "meta": 1,
+        "terrain": "GRANITE",
+        "dust": "#9b6e5c",
+        "textures": {
+          "all": "minecraft:blocks/stone_granite"
+        }
+      },
+      "diorite": {
+        "name": "Diorite",
+        "block": "minecraft:stone",
+        "meta": 3,
+        "terrain": "DIORITE",
+        "dust": "#bfbfc2",
+        "textures": {
+          "all": "minecraft:blocks/stone_diorite"
+        }
+      },
+      "andesite": {
+        "name": "Andesite",
+        "block": "minecraft:stone",
+        "meta": 5,
+        "terrain": "ANDESITE",
+        "dust": "#8a8a8d",
+        "textures": {
+          "all": "minecraft:blocks/stone_andesite"
+        }
+      },
+      "sandstone": {
+        "name": "Sandstone",
+        "block": "minecraft:sandstone",
+        "meta": 0,
+        "terrain": "SANDSTONE",
+        "dust": "#d9cf9e",
+        "textures": {
+          "top": "minecraft:blocks/sandstone_top",
+          "bottom": "minecraft:blocks/sandstone_bottom",
+          "side": "minecraft:blocks/sandstone_normal"
+        }
+      },
+      "red_sandstone": {
+        "name": "Red Sandstone",
+        "block": "minecraft:red_sandstone",
+        "meta": 0,
+        "terrain": "RED_SANDSTONE",
+        "dust": "#b8662a",
+        "textures": {
+          "top": "minecraft:blocks/red_sandstone_top",
+          "bottom": "minecraft:blocks/red_sandstone_bottom",
+          "side": "minecraft:blocks/red_sandstone_normal"
+        }
+      },
+      "gabbro": {
+        "block": "riven:gabbro",
+        "meta": 0,
+        "terrain": "GABBRO",
+        "dust": "#515e57"
+      },
+      "gneiss": {
+        "block": "riven:gneiss",
+        "meta": 0,
+        "terrain": "GNEISS",
+        "dust": "#9f9686"
+      },
+      "graphite": {
+        "block": "riven:graphite",
+        "meta": 0,
+        "terrain": "GRAPHITE_SCHIST",
+        "dust": "#575c5d"
+      },
+      "limestone": {
+        "block": "riven:limestone",
+        "meta": 0,
+        "terrain": "LIMESTONE",
+        "dust": "#bcbaac"
+      },
+      "mica": {
+        "block": "riven:mica",
+        "meta": 0,
+        "terrain": "MICA_SCHIST",
+        "dust": "#929690"
+      },
+      "phyllite": {
+        "block": "riven:phyllite",
+        "meta": 0,
+        "terrain": "PHYLLITE",
+        "dust": "#626c65"
+      },
+      "quartzite": {
+        "block": "riven:quartzite",
+        "meta": 0,
+        "terrain": "QUARTZITE",
+        "dust": "#c4c1b7"
+      },
+      "shale": {
+        "block": "riven:shale",
+        "meta": 0,
+        "terrain": "SHALE",
+        "dust": "#62635e"
+      },
+      "slate": {
+        "block": "riven:slate",
+        "meta": 0,
+        "terrain": "SLATE",
+        "dust": "#59666e"
+      },
+      "soapstone": {
+        "block": "riven:soapstone",
+        "meta": 0,
+        "terrain": "SOAPSTONE",
+        "dust": "#8b9586"
+      },
+      "kimberlite": {
+        "block": "riven:kimberlite",
+        "meta": 0,
+        "terrain": "KIMBERLITE",
+        "dust": "#78827b"
+      },
+      "anorthosite": {
+        "block": "riven:anorthosite",
+        "meta": 0,
+        "terrain": "ANORTHOSITE",
+        "dust": "#bec4ba"
+      },
+      "leucobasalt": {
+        "block": "riven:leucobasalt",
+        "meta": 0,
+        "terrain": "LEUCOBASALT",
+        "dust": "#9ea39f"
+      }
+    }
+  },
+  "woods": {
+    "source": "riven-resources/decoration-library-01",
+    "planksSource": "riven-resources/requisition-02",
+    "about": "Tree sets from Riven Resources (Decoration Library 01, and Art Requisition 02 for the species naming it as their source and for every species' planks; see each folder's PROVENANCE.md), textures unchanged. Each species registers log_<id> (bark sides, end-grain caps, any axis), leaves_<id> (its two foliage textures at random, cutout, decaying away from logs, dropping its sapling 1 in saplingChance), sapling_<id> (grows into one of the wood's riven-trees.json species, four in a square into its 2 x 2 species where it has one), litter_<id> (a thin ground decal with no collision that plants and blocks replace) and planks_<id>; a log crafts into four of its planks and smelts to charcoal. architecture names the wood's form (broadleaf, conifer, palm or fern; a palm's sapling also takes sand); riven-trees.json draws its trees.",
+    "log": {
+      "hardness": 2.0,
+      "resistance": 2.0
+    },
+    "leaves": {
+      "hardness": 0.2,
+      "resistance": 0.2,
+      "saplingChance": 20
+    },
+    "litter": {
+      "hardness": 0.0,
+      "resistance": 0.0
+    },
+    "planks": {
+      "hardness": 2.0,
+      "resistance": 5.0
+    },
+    "species": {
+      "oak": {
+        "name": "Broad Oak",
+        "architecture": "broadleaf"
+      },
+      "beech": {
+        "name": "Silver Beech",
+        "architecture": "broadleaf"
+      },
+      "birch": {
+        "name": "Paper Birch",
+        "architecture": "broadleaf"
+      },
+      "alder": {
+        "name": "River Alder",
+        "architecture": "broadleaf"
+      },
+      "aspen": {
+        "name": "Quaking Aspen",
+        "architecture": "broadleaf"
+      },
+      "maple": {
+        "name": "Copper Maple",
+        "architecture": "broadleaf"
+      },
+      "rowan": {
+        "name": "Mountain Rowan",
+        "architecture": "broadleaf"
+      },
+      "hazel": {
+        "name": "Coppice Hazel",
+        "architecture": "broadleaf"
+      },
+      "willow": {
+        "name": "Weeping Willow",
+        "architecture": "broadleaf"
+      },
+      "cypress": {
+        "name": "Swamp Cypress",
+        "architecture": "conifer"
+      },
+      "spruce": {
+        "name": "Blue Spruce",
+        "architecture": "conifer"
+      },
+      "fir": {
+        "name": "Highland Fir",
+        "architecture": "conifer"
+      },
+      "pine": {
+        "name": "Scots Pine",
+        "architecture": "conifer"
+      },
+      "cedar": {
+        "name": "Red Cedar",
+        "architecture": "conifer"
+      },
+      "mangrove": {
+        "name": "Tidal Mangrove",
+        "architecture": "broadleaf"
+      },
+      "baobab": {
+        "name": "Dryland Baobab",
+        "architecture": "broadleaf"
+      },
+      "kapok": {
+        "name": "Kapok",
+        "architecture": "broadleaf",
+        "source": "riven-resources/requisition-02"
+      },
+      "mahogany": {
+        "name": "Mahogany",
+        "architecture": "broadleaf",
+        "source": "riven-resources/requisition-02"
+      },
+      "strangler_fig": {
+        "name": "Strangler Fig",
+        "architecture": "broadleaf",
+        "source": "riven-resources/requisition-02"
+      },
+      "rubber": {
+        "name": "Rubber Tree",
+        "architecture": "broadleaf",
+        "source": "riven-resources/requisition-02"
+      },
+      "tree_fern": {
+        "name": "Tree Fern",
+        "architecture": "fern",
+        "source": "riven-resources/requisition-02"
+      },
+      "cacao": {
+        "name": "Cacao",
+        "architecture": "broadleaf",
+        "source": "riven-resources/requisition-02"
+      },
+      "coconut_palm": {
+        "name": "Coconut Palm",
+        "architecture": "palm",
+        "source": "riven-resources/requisition-02"
+      },
+      "date_palm": {
+        "name": "Date Palm",
+        "architecture": "palm",
+        "source": "riven-resources/requisition-02"
+      },
+      "umbrella_acacia": {
+        "name": "Umbrella Acacia",
+        "architecture": "broadleaf",
+        "source": "riven-resources/requisition-02"
+      },
+      "mesquite": {
+        "name": "Mesquite",
+        "architecture": "broadleaf",
+        "source": "riven-resources/requisition-02"
+      },
+      "olive": {
+        "name": "Olive",
+        "architecture": "broadleaf",
+        "source": "riven-resources/requisition-02"
+      },
+      "juniper": {
+        "name": "Juniper",
+        "architecture": "conifer",
+        "source": "riven-resources/requisition-02"
+      }
+    }
+  },
+  "decorations": {
+    "about": "Ground decorations from Riven Resources (Decoration Library 01, Art Requisitions 02 and 03; see each folder's PROVENANCE.md), textures unchanged. Each subject registers one block: plant_<id> (crossed planes, offset within its block like vanilla flowers), decal_<id> (a thin plane on the ground like leaf litter) or tall_<id> (a two-block plant whose bottom and top pieces join, its form chosen where it grows). A plant or decal shows one of its four forms by position. ground names what it stands on (grass, dirt including mud, sand, gravel, snow, stone); without that ground it drops. replaceable ones give way to placed blocks, like tall grass. None has collision; all burn like vanilla plants but those marked flammable false. riven-ground-cover.json places them.",
+    "subjects": {
+      "pebbles": {
+        "name": "Pebbles",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "props-pebbles-1",
+          "props-pebbles-2",
+          "props-pebbles-3",
+          "props-pebbles-4"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true,
+        "flammable": false
+      },
+      "flint": {
+        "name": "Flint Shards",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "props-flint-1",
+          "props-flint-2",
+          "props-flint-3",
+          "props-flint-4"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true,
+        "flammable": false
+      },
+      "shells": {
+        "name": "Seashells",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "props-shells-1",
+          "props-shells-2",
+          "props-shells-3",
+          "props-shells-4"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true,
+        "flammable": false
+      },
+      "fossil": {
+        "name": "Fossil Shards",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "props-fossil-1",
+          "props-fossil-2",
+          "props-fossil-3",
+          "props-fossil-4"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true,
+        "flammable": false
+      },
+      "cones": {
+        "name": "Fallen Cones",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "props-cones-1",
+          "props-cones-2",
+          "props-cones-3",
+          "props-cones-4"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true
+      },
+      "acorns": {
+        "name": "Acorns",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "props-acorns-1",
+          "props-acorns-2",
+          "props-acorns-3",
+          "props-acorns-4"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true
+      },
+      "driftchips": {
+        "name": "Driftwood Chips",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "props-driftchips-1",
+          "props-driftchips-2",
+          "props-driftchips-3",
+          "props-driftchips-4"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true
+      },
+      "reedlitter": {
+        "name": "Reed Litter",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "props-reedlitter-1",
+          "props-reedlitter-2",
+          "props-reedlitter-3",
+          "props-reedlitter-4"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true
+      },
+      "bolete": {
+        "name": "Bolete",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-bolete-01",
+          "forest-bolete-02",
+          "forest-bolete-03",
+          "forest-bolete-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "agaric": {
+        "name": "Fly Agaric",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-agaric-01",
+          "forest-agaric-02",
+          "forest-agaric-03",
+          "forest-agaric-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "chanterelle": {
+        "name": "Chanterelle",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-chanterelle-01",
+          "forest-chanterelle-02",
+          "forest-chanterelle-03",
+          "forest-chanterelle-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "morel": {
+        "name": "Morel",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-morel-01",
+          "forest-morel-02",
+          "forest-morel-03",
+          "forest-morel-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "inkcap": {
+        "name": "Inkcap",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-inkcap-01",
+          "forest-inkcap-02",
+          "forest-inkcap-03",
+          "forest-inkcap-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "oyster": {
+        "name": "Oyster Mushroom",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-oyster-01",
+          "forest-oyster-02",
+          "forest-oyster-03",
+          "forest-oyster-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "polypore": {
+        "name": "Polypore",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-polypore-01",
+          "forest-polypore-02",
+          "forest-polypore-03",
+          "forest-polypore-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "puffball": {
+        "name": "Puffball",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-puffball-01",
+          "forest-puffball-02",
+          "forest-puffball-03",
+          "forest-puffball-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "coral_fungus": {
+        "name": "Coral Fungus",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-coral-fungus-01",
+          "forest-coral-fungus-02",
+          "forest-coral-fungus-03",
+          "forest-coral-fungus-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "cup_fungus": {
+        "name": "Cup Fungus",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-cup-fungus-01",
+          "forest-cup-fungus-02",
+          "forest-cup-fungus-03",
+          "forest-cup-fungus-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "earthstar": {
+        "name": "Earthstar",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-earthstar-01",
+          "forest-earthstar-02",
+          "forest-earthstar-03",
+          "forest-earthstar-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "ghostcap": {
+        "name": "Ghostcap",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-ghostcap-01",
+          "forest-ghostcap-02",
+          "forest-ghostcap-03",
+          "forest-ghostcap-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "cushion_moss": {
+        "name": "Cushion Moss",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-cushion-moss-01",
+          "forest-cushion-moss-02",
+          "forest-cushion-moss-03",
+          "forest-cushion-moss-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "stone",
+          "gravel"
+        ],
+        "replaceable": true
+      },
+      "star_moss": {
+        "name": "Star Moss",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-star-moss-01",
+          "forest-star-moss-02",
+          "forest-star-moss-03",
+          "forest-star-moss-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "stone",
+          "gravel"
+        ],
+        "replaceable": true
+      },
+      "fern_moss": {
+        "name": "Fern Moss",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-fern-moss-01",
+          "forest-fern-moss-02",
+          "forest-fern-moss-03",
+          "forest-fern-moss-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "stone",
+          "gravel"
+        ],
+        "replaceable": true
+      },
+      "sphagnum": {
+        "name": "Sphagnum",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-sphagnum-01",
+          "forest-sphagnum-02",
+          "forest-sphagnum-03",
+          "forest-sphagnum-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "stone",
+          "gravel"
+        ],
+        "replaceable": true
+      },
+      "club_moss": {
+        "name": "Club Moss",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-club-moss-01",
+          "forest-club-moss-02",
+          "forest-club-moss-03",
+          "forest-club-moss-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "stone",
+          "gravel"
+        ],
+        "replaceable": true
+      },
+      "crustose_lichen": {
+        "name": "Crustose Lichen",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-crustose-lichen-01",
+          "forest-crustose-lichen-02",
+          "forest-crustose-lichen-03",
+          "forest-crustose-lichen-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "stone",
+          "gravel"
+        ],
+        "replaceable": true
+      },
+      "reindeer_lichen": {
+        "name": "Reindeer Lichen",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-reindeer-lichen-01",
+          "forest-reindeer-lichen-02",
+          "forest-reindeer-lichen-03",
+          "forest-reindeer-lichen-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "stone",
+          "gravel"
+        ],
+        "replaceable": true
+      },
+      "shield_lichen": {
+        "name": "Shield Lichen",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-shield-lichen-01",
+          "forest-shield-lichen-02",
+          "forest-shield-lichen-03",
+          "forest-shield-lichen-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "stone",
+          "gravel"
+        ],
+        "replaceable": true
+      },
+      "oak_litter": {
+        "name": "Oak Litter",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-oak-litter-01",
+          "forest-oak-litter-02",
+          "forest-oak-litter-03",
+          "forest-oak-litter-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "maple_samaras": {
+        "name": "Maple Samaras",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-maple-samaras-01",
+          "forest-maple-samaras-02",
+          "forest-maple-samaras-03",
+          "forest-maple-samaras-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "pine_duff": {
+        "name": "Pine Duff",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-pine-duff-01",
+          "forest-pine-duff-02",
+          "forest-pine-duff-03",
+          "forest-pine-duff-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "birch_litter": {
+        "name": "Birch Litter",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-birch-litter-01",
+          "forest-birch-litter-02",
+          "forest-birch-litter-03",
+          "forest-birch-litter-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "beech_litter": {
+        "name": "Beech Litter",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-beech-litter-01",
+          "forest-beech-litter-02",
+          "forest-beech-litter-03",
+          "forest-beech-litter-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "dry_bracken": {
+        "name": "Dry Bracken",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-dry-bracken-01",
+          "forest-dry-bracken-02",
+          "forest-dry-bracken-03",
+          "forest-dry-bracken-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "seed_pods": {
+        "name": "Seed Pods",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-seed-pods-01",
+          "forest-seed-pods-02",
+          "forest-seed-pods-03",
+          "forest-seed-pods-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "pinecone": {
+        "name": "Pinecone Litter",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-pinecone-01",
+          "forest-pinecone-02",
+          "forest-pinecone-03",
+          "forest-pinecone-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "forked_twig": {
+        "name": "Forked Twig",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-forked-twig-01",
+          "forest-forked-twig-02",
+          "forest-forked-twig-03",
+          "forest-forked-twig-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "bark_shards": {
+        "name": "Bark Shards",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-bark-shards-01",
+          "forest-bark-shards-02",
+          "forest-bark-shards-03",
+          "forest-bark-shards-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "wood_splinters": {
+        "name": "Wood Splinters",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-wood-splinters-01",
+          "forest-wood-splinters-02",
+          "forest-wood-splinters-03",
+          "forest-wood-splinters-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "rotting_branch": {
+        "name": "Rotting Branch",
+        "kind": "decal",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "forest-rotting-branch-01",
+          "forest-rotting-branch-02",
+          "forest-rotting-branch-03",
+          "forest-rotting-branch-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "prairie_fescue": {
+        "name": "Prairie Fescue",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-prairie_fescue-01",
+          "meadow-prairie_fescue-02",
+          "meadow-prairie_fescue-03",
+          "meadow-prairie_fescue-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "blue_bunchgrass": {
+        "name": "Blue Bunchgrass",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-blue_bunchgrass-01",
+          "meadow-blue_bunchgrass-02",
+          "meadow-blue_bunchgrass-03",
+          "meadow-blue_bunchgrass-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "wild_oats": {
+        "name": "Wild Oats",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-wild_oats-01",
+          "meadow-wild_oats-02",
+          "meadow-wild_oats-03",
+          "meadow-wild_oats-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "feather_grass": {
+        "name": "Feather Grass",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-feather_grass-01",
+          "meadow-feather_grass-02",
+          "meadow-feather_grass-03",
+          "meadow-feather_grass-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "bottlebrush_grass": {
+        "name": "Bottlebrush Grass",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-bottlebrush_grass-01",
+          "meadow-bottlebrush_grass-02",
+          "meadow-bottlebrush_grass-03",
+          "meadow-bottlebrush_grass-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "silver_hairgrass": {
+        "name": "Silver Hairgrass",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-silver_hairgrass-01",
+          "meadow-silver_hairgrass-02",
+          "meadow-silver_hairgrass-03",
+          "meadow-silver_hairgrass-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "copper_moorgrass": {
+        "name": "Copper Moorgrass",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-copper_moorgrass-01",
+          "meadow-copper_moorgrass-02",
+          "meadow-copper_moorgrass-03",
+          "meadow-copper_moorgrass-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "woodland_sedge": {
+        "name": "Woodland Sedge",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-woodland_sedge-01",
+          "meadow-woodland_sedge-02",
+          "meadow-woodland_sedge-03",
+          "meadow-woodland_sedge-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "bracken": {
+        "name": "Bracken",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-bracken-01",
+          "meadow-bracken-02",
+          "meadow-bracken-03",
+          "meadow-bracken-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "maidenhair": {
+        "name": "Maidenhair",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-maidenhair-01",
+          "meadow-maidenhair-02",
+          "meadow-maidenhair-03",
+          "meadow-maidenhair-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "harts_tongue": {
+        "name": "Hart's Tongue",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-harts_tongue-01",
+          "meadow-harts_tongue-02",
+          "meadow-harts_tongue-03",
+          "meadow-harts_tongue-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "deer_fern": {
+        "name": "Deer Fern",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-deer_fern-01",
+          "meadow-deer_fern-02",
+          "meadow-deer_fern-03",
+          "meadow-deer_fern-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "daisy": {
+        "name": "Daisy",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-daisy-01",
+          "meadow-daisy-02",
+          "meadow-daisy-03",
+          "meadow-daisy-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "cornflower": {
+        "name": "Cornflower",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-cornflower-01",
+          "meadow-cornflower-02",
+          "meadow-cornflower-03",
+          "meadow-cornflower-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "poppy": {
+        "name": "Poppy",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-poppy-01",
+          "meadow-poppy-02",
+          "meadow-poppy-03",
+          "meadow-poppy-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "harebell": {
+        "name": "Harebell",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-harebell-01",
+          "meadow-harebell-02",
+          "meadow-harebell-03",
+          "meadow-harebell-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "foxglove": {
+        "name": "Foxglove",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-foxglove-01",
+          "meadow-foxglove-02",
+          "meadow-foxglove-03",
+          "meadow-foxglove-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "lupine": {
+        "name": "Lupine",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-lupine-01",
+          "meadow-lupine-02",
+          "meadow-lupine-03",
+          "meadow-lupine-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "yarrow": {
+        "name": "Yarrow",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-yarrow-01",
+          "meadow-yarrow-02",
+          "meadow-yarrow-03",
+          "meadow-yarrow-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "laceflower": {
+        "name": "Laceflower",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-laceflower-01",
+          "meadow-laceflower-02",
+          "meadow-laceflower-03",
+          "meadow-laceflower-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "chicory": {
+        "name": "Chicory",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-chicory-01",
+          "meadow-chicory-02",
+          "meadow-chicory-03",
+          "meadow-chicory-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "fireweed": {
+        "name": "Fireweed",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-fireweed-01",
+          "meadow-fireweed-02",
+          "meadow-fireweed-03",
+          "meadow-fireweed-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "meadowsweet": {
+        "name": "Meadowsweet",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-meadowsweet-01",
+          "meadow-meadowsweet-02",
+          "meadow-meadowsweet-03",
+          "meadow-meadowsweet-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "goldenrod": {
+        "name": "Goldenrod",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-goldenrod-01",
+          "meadow-goldenrod-02",
+          "meadow-goldenrod-03",
+          "meadow-goldenrod-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "buttercup": {
+        "name": "Buttercup",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-buttercup-01",
+          "meadow-buttercup-02",
+          "meadow-buttercup-03",
+          "meadow-buttercup-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "iris": {
+        "name": "Iris",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-iris-01",
+          "meadow-iris-02",
+          "meadow-iris-03",
+          "meadow-iris-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "flax": {
+        "name": "Flax",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-flax-01",
+          "meadow-flax-02",
+          "meadow-flax-03",
+          "meadow-flax-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "clover": {
+        "name": "Clover",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-clover-01",
+          "meadow-clover-02",
+          "meadow-clover-03",
+          "meadow-clover-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "sorrel": {
+        "name": "Sorrel",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-sorrel-01",
+          "meadow-sorrel-02",
+          "meadow-sorrel-03",
+          "meadow-sorrel-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "violet": {
+        "name": "Violet",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-violet-01",
+          "meadow-violet-02",
+          "meadow-violet-03",
+          "meadow-violet-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "celandine": {
+        "name": "Celandine",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-celandine-01",
+          "meadow-celandine-02",
+          "meadow-celandine-03",
+          "meadow-celandine-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "aster": {
+        "name": "Aster",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-aster-01",
+          "meadow-aster-02",
+          "meadow-aster-03",
+          "meadow-aster-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "thistle": {
+        "name": "Thistle",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-thistle-01",
+          "meadow-thistle-02",
+          "meadow-thistle-03",
+          "meadow-thistle-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "heather": {
+        "name": "Heather",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-heather-01",
+          "meadow-heather-02",
+          "meadow-heather-03",
+          "meadow-heather-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "lavender": {
+        "name": "Lavender",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-lavender-01",
+          "meadow-lavender-02",
+          "meadow-lavender-03",
+          "meadow-lavender-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "sage": {
+        "name": "Sage",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-sage-01",
+          "meadow-sage-02",
+          "meadow-sage-03",
+          "meadow-sage-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "mint": {
+        "name": "Mint",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-mint-01",
+          "meadow-mint-02",
+          "meadow-mint-03",
+          "meadow-mint-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "rosemary": {
+        "name": "Rosemary",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-rosemary-01",
+          "meadow-rosemary-02",
+          "meadow-rosemary-03",
+          "meadow-rosemary-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "thyme": {
+        "name": "Thyme",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-thyme-01",
+          "meadow-thyme-02",
+          "meadow-thyme-03",
+          "meadow-thyme-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "wormwood": {
+        "name": "Wormwood",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "meadow-wormwood-01",
+          "meadow-wormwood-02",
+          "meadow-wormwood-03",
+          "meadow-wormwood-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "bronze_rush": {
+        "name": "Bronze Rush",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-bronze-rush-v01",
+          "wilds-bronze-rush-v02",
+          "wilds-bronze-rush-v03",
+          "wilds-bronze-rush-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "bent_reed": {
+        "name": "Bent Reed",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-bent-reed-v01",
+          "wilds-bent-reed-v02",
+          "wilds-bent-reed-v03",
+          "wilds-bent-reed-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "velvet_cattail": {
+        "name": "Velvet Cattail",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-velvet-cattail-v01",
+          "wilds-velvet-cattail-v02",
+          "wilds-velvet-cattail-v03",
+          "wilds-velvet-cattail-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "fork_sedge": {
+        "name": "Fork Sedge",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-fork-sedge-v01",
+          "wilds-fork-sedge-v02",
+          "wilds-fork-sedge-v03",
+          "wilds-fork-sedge-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "copper_seedrush": {
+        "name": "Copper Seedrush",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-copper-seedrush-v01",
+          "wilds-copper-seedrush-v02",
+          "wilds-copper-seedrush-v03",
+          "wilds-copper-seedrush-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "ribbon_bulrush": {
+        "name": "Ribbon Bulrush",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-ribbon-bulrush-v01",
+          "wilds-ribbon-bulrush-v02",
+          "wilds-ribbon-bulrush-v03",
+          "wilds-ribbon-bulrush-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "arrow_waterleaf": {
+        "name": "Arrow Waterleaf",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-arrow-waterleaf-v01",
+          "wilds-arrow-waterleaf-v02",
+          "wilds-arrow-waterleaf-v03",
+          "wilds-arrow-waterleaf-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "marsh_spearleaf": {
+        "name": "Marsh Spearleaf",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-marsh-spearleaf-v01",
+          "wilds-marsh-spearleaf-v02",
+          "wilds-marsh-spearleaf-v03",
+          "wilds-marsh-spearleaf-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "blue_marsh_spire": {
+        "name": "Blue Marsh Spire",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-blue-marsh-spire-v01",
+          "wilds-blue-marsh-spire-v02",
+          "wilds-blue-marsh-spire-v03",
+          "wilds-blue-marsh-spire-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "duskberry_shrub": {
+        "name": "Duskberry Shrub",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-duskberry-shrub-v01",
+          "wilds-duskberry-shrub-v02",
+          "wilds-duskberry-shrub-v03",
+          "wilds-duskberry-shrub-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "emberberry_shrub": {
+        "name": "Emberberry Shrub",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-emberberry-shrub-v01",
+          "wilds-emberberry-shrub-v02",
+          "wilds-emberberry-shrub-v03",
+          "wilds-emberberry-shrub-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "pale_berry_thicket": {
+        "name": "Pale Berry Thicket",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-pale-berry-thicket-v01",
+          "wilds-pale-berry-thicket-v02",
+          "wilds-pale-berry-thicket-v03",
+          "wilds-pale-berry-thicket-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "violet_heath": {
+        "name": "Violet Heath",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-violet-heath-v01",
+          "wilds-violet-heath-v02",
+          "wilds-violet-heath-v03",
+          "wilds-violet-heath-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "dune_bog_heath": {
+        "name": "Dune Bog Heath",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-dune-bog-heath-v01",
+          "wilds-dune-bog-heath-v02",
+          "wilds-dune-bog-heath-v03",
+          "wilds-dune-bog-heath-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "fernleaf_scrub": {
+        "name": "Fernleaf Scrub",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-fernleaf-scrub-v01",
+          "wilds-fernleaf-scrub-v02",
+          "wilds-fernleaf-scrub-v03",
+          "wilds-fernleaf-scrub-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "silver_willow_spray": {
+        "name": "Silver Willow Spray",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-silver-willow-spray-v01",
+          "wilds-silver-willow-spray-v02",
+          "wilds-silver-willow-spray-v03",
+          "wilds-silver-willow-spray-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "weathered_twig_thicket": {
+        "name": "Weathered Twig Thicket",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-weathered-twig-thicket-v01",
+          "wilds-weathered-twig-thicket-v02",
+          "wilds-weathered-twig-thicket-v03",
+          "wilds-weathered-twig-thicket-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "hookthorn_shrub": {
+        "name": "Hookthorn Shrub",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-hookthorn-shrub-v01",
+          "wilds-hookthorn-shrub-v02",
+          "wilds-hookthorn-shrub-v03",
+          "wilds-hookthorn-shrub-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "amber_seedbranch": {
+        "name": "Amber Seedbranch",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-amber-seedbranch-v01",
+          "wilds-amber-seedbranch-v02",
+          "wilds-amber-seedbranch-v03",
+          "wilds-amber-seedbranch-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "deep_waxleaf": {
+        "name": "Deep Waxleaf",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-deep-waxleaf-v01",
+          "wilds-deep-waxleaf-v02",
+          "wilds-deep-waxleaf-v03",
+          "wilds-deep-waxleaf-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "copperleaf_scrub": {
+        "name": "Copperleaf Scrub",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-copperleaf-scrub-v01",
+          "wilds-copperleaf-scrub-v02",
+          "wilds-copperleaf-scrub-v03",
+          "wilds-copperleaf-scrub-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "sage_stone_rosette": {
+        "name": "Sage Stone Rosette",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-sage-stone-rosette-v01",
+          "wilds-sage-stone-rosette-v02",
+          "wilds-sage-stone-rosette-v03",
+          "wilds-sage-stone-rosette-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "sand_paddle_cactus": {
+        "name": "Sand Paddle Cactus",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-sand-paddle-cactus-v01",
+          "wilds-sand-paddle-cactus-v02",
+          "wilds-sand-paddle-cactus-v03",
+          "wilds-sand-paddle-cactus-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "ribbed_desert_pillar": {
+        "name": "Ribbed Desert Pillar",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-ribbed-desert-pillar-v01",
+          "wilds-ribbed-desert-pillar-v02",
+          "wilds-ribbed-desert-pillar-v03",
+          "wilds-ribbed-desert-pillar-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "frost_edged_spear": {
+        "name": "Frost Edged Spear",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-frost-edged-spear-v01",
+          "wilds-frost-edged-spear-v02",
+          "wilds-frost-edged-spear-v03",
+          "wilds-frost-edged-spear-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "windthorn_cushion": {
+        "name": "Windthorn Cushion",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-windthorn-cushion-v01",
+          "wilds-windthorn-cushion-v02",
+          "wilds-windthorn-cushion-v03",
+          "wilds-windthorn-cushion-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "dry_seed_fan": {
+        "name": "Dry Seed Fan",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-dry-seed-fan-v01",
+          "wilds-dry-seed-fan-v02",
+          "wilds-dry-seed-fan-v03",
+          "wilds-dry-seed-fan-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "silver_alpine_cushion": {
+        "name": "Silver Alpine Cushion",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-silver-alpine-cushion-v01",
+          "wilds-silver-alpine-cushion-v02",
+          "wilds-silver-alpine-cushion-v03",
+          "wilds-silver-alpine-cushion-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "sulfur_rim_tuft": {
+        "name": "Sulfur Rim Tuft",
+        "kind": "plant",
+        "source": "riven-resources/decoration-library-01",
+        "textures": [
+          "wilds-sulfur-rim-tuft-v01",
+          "wilds-sulfur-rim-tuft-v02",
+          "wilds-sulfur-rim-tuft-v03",
+          "wilds-sulfur-rim-tuft-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "elephant_ear_1": {
+        "name": "Elephant Ear I",
+        "kind": "plant",
+        "source": "riven-resources/requisition-02",
+        "textures": [
+          "jungle-elephant-ear-01-01",
+          "jungle-elephant-ear-01-02",
+          "jungle-elephant-ear-01-03",
+          "jungle-elephant-ear-01-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "elephant_ear_2": {
+        "name": "Elephant Ear II",
+        "kind": "plant",
+        "source": "riven-resources/requisition-02",
+        "textures": [
+          "jungle-elephant-ear-02-01",
+          "jungle-elephant-ear-02-02",
+          "jungle-elephant-ear-02-03",
+          "jungle-elephant-ear-02-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "philodendron_1": {
+        "name": "Philodendron I",
+        "kind": "plant",
+        "source": "riven-resources/requisition-02",
+        "textures": [
+          "jungle-philodendron-01-01",
+          "jungle-philodendron-01-02",
+          "jungle-philodendron-01-03",
+          "jungle-philodendron-01-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "philodendron_2": {
+        "name": "Philodendron II",
+        "kind": "plant",
+        "source": "riven-resources/requisition-02",
+        "textures": [
+          "jungle-philodendron-02-01",
+          "jungle-philodendron-02-02",
+          "jungle-philodendron-02-03",
+          "jungle-philodendron-02-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "jungle_litter_1": {
+        "name": "Jungle Leaf Litter I",
+        "kind": "decal",
+        "source": "riven-resources/requisition-02",
+        "textures": [
+          "jungle-leaf-litter-01-01",
+          "jungle-leaf-litter-01-02",
+          "jungle-leaf-litter-01-03",
+          "jungle-leaf-litter-01-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "jungle_litter_2": {
+        "name": "Jungle Leaf Litter II",
+        "kind": "decal",
+        "source": "riven-resources/requisition-02",
+        "textures": [
+          "jungle-leaf-litter-02-01",
+          "jungle-leaf-litter-02-02",
+          "jungle-leaf-litter-02-03",
+          "jungle-leaf-litter-02-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "jungle_litter_3": {
+        "name": "Jungle Leaf Litter III",
+        "kind": "decal",
+        "source": "riven-resources/requisition-02",
+        "textures": [
+          "jungle-leaf-litter-03-01",
+          "jungle-leaf-litter-03-02",
+          "jungle-leaf-litter-03-03",
+          "jungle-leaf-litter-03-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "jungle_litter_4": {
+        "name": "Jungle Leaf Litter IV",
+        "kind": "decal",
+        "source": "riven-resources/requisition-02",
+        "textures": [
+          "jungle-leaf-litter-04-01",
+          "jungle-leaf-litter-04-02",
+          "jungle-leaf-litter-04-03",
+          "jungle-leaf-litter-04-04"
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "cotton_grass": {
+        "name": "Cotton grass",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-cotton-grass-v01",
+          "req03-cotton-grass-v02",
+          "req03-cotton-grass-v03",
+          "req03-cotton-grass-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "snow",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true
+      },
+      "arctic_willow": {
+        "name": "Arctic willow",
+        "kind": "decal",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-arctic-willow-v01",
+          "req03-arctic-willow-v02",
+          "req03-arctic-willow-v03",
+          "req03-arctic-willow-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "snow",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true
+      },
+      "purple_saxifrage": {
+        "name": "Purple saxifrage",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-purple-saxifrage-v01",
+          "req03-purple-saxifrage-v02",
+          "req03-purple-saxifrage-v03",
+          "req03-purple-saxifrage-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "snow",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "arctic_poppy": {
+        "name": "Arctic poppy",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-arctic-poppy-v01",
+          "req03-arctic-poppy-v02",
+          "req03-arctic-poppy-v03",
+          "req03-arctic-poppy-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "snow",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "mountain_avens": {
+        "name": "Mountain avens",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-mountain-avens-v01",
+          "req03-mountain-avens-v02",
+          "req03-mountain-avens-v03",
+          "req03-mountain-avens-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "snow",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "crowberry": {
+        "name": "Crowberry",
+        "kind": "decal",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-crowberry-v01",
+          "req03-crowberry-v02",
+          "req03-crowberry-v03",
+          "req03-crowberry-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "snow",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true
+      },
+      "bearberry": {
+        "name": "Bearberry",
+        "kind": "decal",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-bearberry-v01",
+          "req03-bearberry-v02",
+          "req03-bearberry-v03",
+          "req03-bearberry-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "snow",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true
+      },
+      "moss_campion": {
+        "name": "Moss campion",
+        "kind": "decal",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-moss-campion-v01",
+          "req03-moss-campion-v02",
+          "req03-moss-campion-v03",
+          "req03-moss-campion-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "snow",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true
+      },
+      "frost_heaved_stones": {
+        "name": "Frost-heaved stones",
+        "kind": "decal",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-frost-heaved-stones-v01",
+          "req03-frost-heaved-stones-v02",
+          "req03-frost-heaved-stones-v03",
+          "req03-frost-heaved-stones-v04"
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "snow",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true,
+        "flammable": false
+      },
+      "barrel_cactus": {
+        "name": "Barrel cactus",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-barrel-cactus-v01",
+          "req03-barrel-cactus-v02",
+          "req03-barrel-cactus-v03",
+          "req03-barrel-cactus-v04"
+        ],
+        "ground": [
+          "sand",
+          "dirt",
+          "grass",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "agave": {
+        "name": "Agave",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-agave-v01",
+          "req03-agave-v02",
+          "req03-agave-v03",
+          "req03-agave-v04"
+        ],
+        "ground": [
+          "sand",
+          "dirt",
+          "grass",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "yucca": {
+        "name": "Yucca",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-yucca-v01",
+          "req03-yucca-v02",
+          "req03-yucca-v03",
+          "req03-yucca-v04"
+        ],
+        "ground": [
+          "sand",
+          "dirt",
+          "grass",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "ocotillo": {
+        "name": "Ocotillo",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-ocotillo-v01",
+          "req03-ocotillo-v02",
+          "req03-ocotillo-v03",
+          "req03-ocotillo-v04"
+        ],
+        "ground": [
+          "sand",
+          "dirt",
+          "grass",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "desert_marigold": {
+        "name": "Desert marigold",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-desert-marigold-v01",
+          "req03-desert-marigold-v02",
+          "req03-desert-marigold-v03",
+          "req03-desert-marigold-v04"
+        ],
+        "ground": [
+          "sand",
+          "dirt",
+          "grass",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "brittlebush": {
+        "name": "Brittlebush",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-brittlebush-v01",
+          "req03-brittlebush-v02",
+          "req03-brittlebush-v03",
+          "req03-brittlebush-v04"
+        ],
+        "ground": [
+          "sand",
+          "dirt",
+          "grass",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "saltbush": {
+        "name": "Saltbush",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-saltbush-v01",
+          "req03-saltbush-v02",
+          "req03-saltbush-v03",
+          "req03-saltbush-v04"
+        ],
+        "ground": [
+          "sand",
+          "dirt",
+          "grass",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "creosote": {
+        "name": "Creosote",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-creosote-v01",
+          "req03-creosote-v02",
+          "req03-creosote-v03",
+          "req03-creosote-v04"
+        ],
+        "ground": [
+          "sand",
+          "dirt",
+          "grass",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "tumbleweed": {
+        "name": "Dry tumbleweed",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-tumbleweed-v01",
+          "req03-tumbleweed-v02",
+          "req03-tumbleweed-v03",
+          "req03-tumbleweed-v04"
+        ],
+        "ground": [
+          "sand",
+          "dirt",
+          "grass",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false
+      },
+      "desert_varnish_pebbles": {
+        "name": "Desert varnish pebbles",
+        "kind": "decal",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-desert-varnish-pebbles-v01",
+          "req03-desert-varnish-pebbles-v02",
+          "req03-desert-varnish-pebbles-v03",
+          "req03-desert-varnish-pebbles-v04"
+        ],
+        "ground": [
+          "sand",
+          "dirt",
+          "grass",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": true,
+        "flammable": false
+      },
+      "marram_grass": {
+        "name": "Marram grass",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-marram-grass-v01",
+          "req03-marram-grass-v02",
+          "req03-marram-grass-v03",
+          "req03-marram-grass-v04"
+        ],
+        "ground": [
+          "sand",
+          "gravel",
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "sea_oats": {
+        "name": "Sea oats",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-sea-oats-v01",
+          "req03-sea-oats-v02",
+          "req03-sea-oats-v03",
+          "req03-sea-oats-v04"
+        ],
+        "ground": [
+          "sand",
+          "gravel",
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "beach_pea": {
+        "name": "Beach pea",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-beach-pea-v01",
+          "req03-beach-pea-v02",
+          "req03-beach-pea-v03",
+          "req03-beach-pea-v04"
+        ],
+        "ground": [
+          "sand",
+          "gravel",
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "sea_rocket": {
+        "name": "Sea rocket",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-sea-rocket-v01",
+          "req03-sea-rocket-v02",
+          "req03-sea-rocket-v03",
+          "req03-sea-rocket-v04"
+        ],
+        "ground": [
+          "sand",
+          "gravel",
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "thrift": {
+        "name": "Thrift",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-thrift-v01",
+          "req03-thrift-v02",
+          "req03-thrift-v03",
+          "req03-thrift-v04"
+        ],
+        "ground": [
+          "sand",
+          "gravel",
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "sea_holly": {
+        "name": "Sea holly",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-sea-holly-v01",
+          "req03-sea-holly-v02",
+          "req03-sea-holly-v03",
+          "req03-sea-holly-v04"
+        ],
+        "ground": [
+          "sand",
+          "gravel",
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "sea_kale": {
+        "name": "Sea kale",
+        "kind": "plant",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-sea-kale-v01",
+          "req03-sea-kale-v02",
+          "req03-sea-kale-v03",
+          "req03-sea-kale-v04"
+        ],
+        "ground": [
+          "sand",
+          "gravel",
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "strandline_wrack": {
+        "name": "Strandline wrack",
+        "kind": "decal",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          "req03-strandline-wrack-v01",
+          "req03-strandline-wrack-v02",
+          "req03-strandline-wrack-v03",
+          "req03-strandline-wrack-v04"
+        ],
+        "ground": [
+          "sand",
+          "gravel",
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "meadow_grass": {
+        "name": "Tall Meadow Grass",
+        "kind": "tall",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          [
+            "req03-tall-meadow-grass-v01-bottom",
+            "req03-tall-meadow-grass-v01-top"
+          ],
+          [
+            "req03-tall-meadow-grass-v02-bottom",
+            "req03-tall-meadow-grass-v02-top"
+          ],
+          [
+            "req03-tall-meadow-grass-v03-bottom",
+            "req03-tall-meadow-grass-v03-top"
+          ],
+          [
+            "req03-tall-meadow-grass-v04-bottom",
+            "req03-tall-meadow-grass-v04-top"
+          ]
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": true
+      },
+      "reed": {
+        "name": "Tall Reed",
+        "kind": "tall",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          [
+            "req03-tall-reed-v01-bottom",
+            "req03-tall-reed-v01-top"
+          ],
+          [
+            "req03-tall-reed-v02-bottom",
+            "req03-tall-reed-v02-top"
+          ],
+          [
+            "req03-tall-reed-v03-bottom",
+            "req03-tall-reed-v03-top"
+          ],
+          [
+            "req03-tall-reed-v04-bottom",
+            "req03-tall-reed-v04-top"
+          ]
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "cattail": {
+        "name": "Tall Cattail",
+        "kind": "tall",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          [
+            "req03-tall-cattail-v01-bottom",
+            "req03-tall-cattail-v01-top"
+          ],
+          [
+            "req03-tall-cattail-v02-bottom",
+            "req03-tall-cattail-v02-top"
+          ],
+          [
+            "req03-tall-cattail-v03-bottom",
+            "req03-tall-cattail-v03-top"
+          ],
+          [
+            "req03-tall-cattail-v04-bottom",
+            "req03-tall-cattail-v04-top"
+          ]
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand"
+        ],
+        "replaceable": false
+      },
+      "giant_fern": {
+        "name": "Giant Fern",
+        "kind": "tall",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          [
+            "req03-giant-fern-v01-bottom",
+            "req03-giant-fern-v01-top"
+          ],
+          [
+            "req03-giant-fern-v02-bottom",
+            "req03-giant-fern-v02-top"
+          ],
+          [
+            "req03-giant-fern-v03-bottom",
+            "req03-giant-fern-v03-top"
+          ],
+          [
+            "req03-giant-fern-v04-bottom",
+            "req03-giant-fern-v04-top"
+          ]
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "foxglove_spike": {
+        "name": "Foxglove Spike",
+        "kind": "tall",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          [
+            "req03-foxglove-spike-v01-bottom",
+            "req03-foxglove-spike-v01-top"
+          ],
+          [
+            "req03-foxglove-spike-v02-bottom",
+            "req03-foxglove-spike-v02-top"
+          ],
+          [
+            "req03-foxglove-spike-v03-bottom",
+            "req03-foxglove-spike-v03-top"
+          ],
+          [
+            "req03-foxglove-spike-v04-bottom",
+            "req03-foxglove-spike-v04-top"
+          ]
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "banana": {
+        "name": "Banana",
+        "kind": "tall",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          [
+            "req03-banana-v01-bottom",
+            "req03-banana-v01-top"
+          ],
+          [
+            "req03-banana-v02-bottom",
+            "req03-banana-v02-top"
+          ],
+          [
+            "req03-banana-v03-bottom",
+            "req03-banana-v03-top"
+          ],
+          [
+            "req03-banana-v04-bottom",
+            "req03-banana-v04-top"
+          ]
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      },
+      "angelica": {
+        "name": "Angelica",
+        "kind": "tall",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          [
+            "req03-angelica-v01-bottom",
+            "req03-angelica-v01-top"
+          ],
+          [
+            "req03-angelica-v02-bottom",
+            "req03-angelica-v02-top"
+          ],
+          [
+            "req03-angelica-v03-bottom",
+            "req03-angelica-v03-top"
+          ],
+          [
+            "req03-angelica-v04-bottom",
+            "req03-angelica-v04-top"
+          ]
+        ],
+        "ground": [
+          "grass",
+          "dirt"
+        ],
+        "replaceable": false
+      }
+    }
+  },
+  "rocks": {
+    "about": "Rocks of the deep realms and their boundaries from Art Requisition 05 (riven-resources/requisition-05, PROVENANCE.md), textures unchanged. Each registers one block that shows its main or alternate face by position, so wide walls of one rock do not repeat; light is the level it gives (moonstone, molten seams, soul ash, the heat-cracked boundary), animated faces keep their frames. riven-realms.json places them.",
+    "source": "riven-resources/requisition-05",
+    "hardness": 2.0,
+    "resistance": 6.0,
+    "harvestLevel": 1,
+    "subjects": {
+      "granulite": {
+        "name": "Granulite",
+        "faces": [
+          "req05-granulite-main",
+          "req05-granulite-alternate"
+        ]
+      },
+      "migmatite": {
+        "name": "Migmatite",
+        "faces": [
+          "req05-migmatite-main",
+          "req05-migmatite-alternate"
+        ]
+      },
+      "eclogite": {
+        "name": "Eclogite",
+        "faces": [
+          "req05-eclogite-main",
+          "req05-eclogite-alternate"
+        ]
+      },
+      "peridotite": {
+        "name": "Peridotite",
+        "faces": [
+          "req05-peridotite-main",
+          "req05-peridotite-alternate"
+        ]
+      },
+      "serpentinite": {
+        "name": "Serpentinite",
+        "faces": [
+          "req05-serpentinite-main",
+          "req05-serpentinite-alternate"
+        ]
+      },
+      "blueschist": {
+        "name": "Blueschist",
+        "faces": [
+          "req05-blueschist-main",
+          "req05-blueschist-alternate"
+        ]
+      },
+      "garnet_rock": {
+        "name": "Garnet-Studded Rock",
+        "faces": [
+          "req05-garnet-studded-main",
+          "req05-garnet-studded-alternate"
+        ]
+      },
+      "chromite_peridotite": {
+        "name": "Chromite Pods in Peridotite",
+        "faces": [
+          "req05-chromite-pods-main",
+          "req05-chromite-pods-alternate"
+        ]
+      },
+      "jadeite_serpentinite": {
+        "name": "Jadeite Veins in Serpentinite",
+        "faces": [
+          "req05-jadeite-veins-main",
+          "req05-jadeite-veins-alternate"
+        ]
+      },
+      "moonstone_faint": {
+        "name": "Faint Moonstone Seam",
+        "faces": [
+          "req05-moonstone-faint-main",
+          "req05-moonstone-faint-alternate"
+        ],
+        "light": 4
+      },
+      "moonstone_bright": {
+        "name": "Bright Moonstone Seam",
+        "faces": [
+          "req05-moonstone-bright-main",
+          "req05-moonstone-bright-alternate"
+        ],
+        "light": 7
+      },
+      "infernal_rock": {
+        "name": "Infernal Rock",
+        "faces": [
+          "req05-infernal-rock-main",
+          "req05-infernal-rock-alternate"
+        ]
+      },
+      "slag_stone": {
+        "name": "Slag Stone",
+        "faces": [
+          "req05-slag-stone-main",
+          "req05-slag-stone-alternate"
+        ]
+      },
+      "brimstone": {
+        "name": "Brimstone",
+        "faces": [
+          "req05-brimstone-main",
+          "req05-brimstone-alternate"
+        ]
+      },
+      "cinder_rock": {
+        "name": "Cinder Rock",
+        "faces": [
+          "req05-cinder-rock-main",
+          "req05-cinder-rock-alternate"
+        ]
+      },
+      "ash_shale": {
+        "name": "Ash Shale",
+        "faces": [
+          "req05-ash-shale-main",
+          "req05-ash-shale-alternate"
+        ]
+      },
+      "jasper_bands": {
+        "name": "Jasper Bands",
+        "faces": [
+          "req05-jasper-bands-main",
+          "req05-jasper-bands-alternate"
+        ]
+      },
+      "molten_seams": {
+        "name": "Molten Seams",
+        "faces": [
+          "req05-molten-seams-main",
+          "req05-molten-seams-alternate"
+        ],
+        "light": 12,
+        "animated": true
+      },
+      "soul_ash": {
+        "name": "Soul Ash",
+        "faces": [
+          "req05-soul-ash-main",
+          "req05-soul-ash-alternate"
+        ],
+        "light": 3
+      },
+      "crust_floor_transition": {
+        "name": "Leucobasalt with Granulite Inclusions",
+        "faces": [
+          "req05-crust-floor-transition-main",
+          "req05-crust-floor-transition-alternate"
+        ]
+      },
+      "beneath_infernal_transition": {
+        "name": "Heat-Cracked Eclogite",
+        "faces": [
+          "req05-beneath-infernal-transition-main",
+          "req05-beneath-infernal-transition-alternate"
+        ],
+        "light": 6
+      }
+    }
+  }
+}

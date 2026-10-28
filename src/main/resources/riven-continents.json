@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "revision": 17,
+  "variationSeed": "0x434f4e54494e3331",
+  "family": "PER_CONTINENT",
+  "familyWeights": {
+    "HARMONIC": 1,
+    "SPINE": 1,
+    "CELLULAR": 1,
+    "POTENTIAL": 1
+  },
+  "tuning": {
+    "spacing": 3000,
+    "radius": 1350,
+    "detailAmplitude": 60,
+    "detailWavelength": 520,
+    "warpAmplitude": 226,
+    "warpWavelength": 2001,
+    "occurrence": 1.0,
+    "eligibilityFloor": 0.0,
+    "bridgeHalfWidth": 180,
+    "bayDepth": 900,
+    "bayHalfWidth": 170,
+    "corridorHalfWidth": 100,
+    "transitionScale": 1,
+    "corridorOffsetInSpacings": 6,
+    "corridorPeriodInSpacings": 12,
+    "stratifiedOccupancy": 4
+  },
+  "variation": {
+    "anchorJitter": 0.25,
+    "sizeMin": 0.8,
+    "sizeMax": 1.5,
+    "sizeSplit": 1.0,
+    "largeShare": 0.3,
+    "elongationMax": 2.2,
+    "roughnessMin": 0.4,
+    "roughnessMax": 3.0,
+    "bayProbability": 0.0,
+    "shelterReach": 450,
+    "shelterFloor": 0.2,
+    "shelterConcavity": 0.8,
+    "straitBlend": 800
+  },
+  "skeleton": {
+    "rangeShare": 0.75,
+    "strengthMin": 1.0,
+    "strengthMax": 1.4,
+    "crestHalfWidthInRadii": 0.9,
+    "crestLengthInRadii": 0.8,
+    "crestBendInRadii": 0.3,
+    "coastClearInRadii": 0.6
+  },
+  "styles": {
+    "HARMONIC": {
+      "harmonicStrength": 1,
+      "satelliteScale": 1
+    },
+    "SPINE": {
+      "widthScale": 0.8,
+      "spurScale": 1
+    },
+    "CELLULAR": {
+      "insetScale": 1.5,
+      "connectionProbability": 0.4
+    },
+    "POTENTIAL": {
+      "mainlandThreshold": 0.19,
+      "islandThreshold": 0.16
+    }
+  },
+  "shelfFraction": 0.35,
+  "normalBandInCoastalPlainWidths": 1.5,
+  "contract": [
+    "Choose one authored outline alternative per world, explicitly or by seed; do not blend incompatible scores or preserve the old continental grid underneath it.",
+    "Continental dimensions are physical. Only the reference-derived coastal transition receives TerrainScale.HORIZONTAL.",
+    "Marine ownership includes exact zero. Every marine column holds water to the sea datum; marine areas enclosed by land are inland seas at that datum (Coast-first landforms, 2026-10-22).",
+    "Earlier admission/island fields are immutable seeded geographic opportunity fields, not finished terrain, hydrology or geological certificates.",
+    "Later ocean receivers read marine ownership as supply; later edits preserve the earlier reserved scaffold. Native/DH share the same water and material resolver.",
+    "All offshore profile transitions finish within the kernel transition band before negative score-window changes. Local finite-difference normals are not exact shoreline distances.",
+    "The original source import was not runtime-qualified. Require fresh worlds after definition changes; standalone admission checks do not establish final fluid topology, native/DH parity or visual acceptance.",
+    "The ocean corridor lattice (every corridorPeriodInSpacings, 3 in the original kernel) is shifted by corridorOffsetInSpacings; at 12 and 6 with the 3,000-block lattice its nearest lines fall 18 km from the origin, outside a 32 km world even with the warp (up to warpAmplitude). Enclosed seas are allowed, so corridors no longer need to be dense.",
+    "Tuned for 8 km worlds (revision 11): a 3,000-block lattice with radius 0.45 spacing and every cell occupied (stratifiedOccupancy 4) gives 8 km worlds 41-46% land by family on 64 seeds, with the largest landmass 34-46% of land (radius 0.533 gave 54-60% and merged neighbours across the map); Spine width, Potential thresholds and Cellular inset even out the families. stratifiedOccupancy 1-3 fixes how many cells of each 2 x 2 block hold land.",
+    "PER_CONTINENT (revision 12): every admitted continent draws its outline family by familyWeights, a radius multiplier (sizeMin-sizeMax), an area-preserving axis ratio (1-elongationMax, squared draw so most stay near round), and a coast roughness (roughnessMin-roughnessMax) scaling three rotated detail octaves of detailAmplitude at detailWavelength, /2.3 and /5.3. Anchors jitter by anchorJitter spacings each way; the candidate search widens so every anchor whose support can reach a column is searched. WORLD_SEEDED or an explicit family keeps the earlier single-family outline exactly and ignores variation.",
+    "Shelter is read from the outline, not carved: within shelterReach of the coast, the owner continent's shape score (before detail) is sampled at four points shelterReach / 2 away; its Laplacian times that step is about 0 on a straight coast, +step / r in a bay or between lobes of radius r and negative off headlands. Shelter rises from 0 at shelterFloor (mild lobe curvature stays open) to 1 at shelterConcavity and is 0 on straight or convex coasts and in straits between continents. The probes must also find the shore (a sea column needs land at two, a land column sea at one), so creases a family's score carries out to sea never read as bays.",
+    "straitBlend (v59): where the union is sea, varied continents meet through a polynomial smooth maximum of width straitBlend, never rising above half the hard depth, so a strait floor is rounded instead of creased along its midline (the creases drew straight deep lines between continents). Candidates are visited nearest first and skipped when their support bound cannot reach the union (or, at sea, come within straitBlend of it); skipping changes no result. Bays become a per-continent draw (bayProbability, 0 by default); where one exists its legacy shelter still applies.",
+    "skeleton (revisions 13-14): a rangeShare of built mainland continents carries a crest in its shape frame (Spine continents along their six nodes, others a three-point line crestLengthInRadii long, bent up to crestBendInRadii), strength strengthMin..strengthMax times its size. A column's crest weight is that strength, tapered over the outer quarter of the crest, times a smooth falloff over crestHalfWidthInRadii (wandering 20% along the crest, distance jittered 8%), faded to zero over coastClearInRadii scaled radii from the coast. A column takes the largest crest of any continent in its window, each faded by its own size, so merged land has no seam where ownership switches. Base elevation reads it as uplift (riven-base-elevation.json crestWeight).",
+    "Bays cut only their own continent before the union (kernel v3): a neighbor may refill one, closing it into an inland sea, and a bay never deepens existing sea."
+  ],
+  "shoaling": {
+    "wavelengthBlocks": 1400,
+    "noiseStart": -0.3,
+    "noiseWidth": 0.6
+  }
+}

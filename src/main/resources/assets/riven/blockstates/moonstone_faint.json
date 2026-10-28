@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:moonstone_faint_0"
+      },
+      {
+        "model": "riven:moonstone_faint_1"
+      }
+    ]
+  }
+}

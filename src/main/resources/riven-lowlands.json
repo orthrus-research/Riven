@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "variationSeed": "4c4f574c414e4431",
+  "reliefFraction": 0.40,
+  "broadInPlainWidths": 0.80,
+  "patchInHollowWidths": 0.65,
+  "cellInKnollWidths": 0.90,
+  "warpFraction": 0.18,
+  "patchDensity": 0.78,
+  "slopeStart": 0.025,
+  "slopeEnd": 0.12,
+  "note": "All four MIT lowland families blend using the same earlier parent and normalized continuous weights. Reference dimensions are horizontally scaled once. Shore bands and complete hydrology supports remain reserved. Native qualification and measured regional relief remain pending."
+}

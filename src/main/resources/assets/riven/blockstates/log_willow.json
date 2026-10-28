@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "riven:log_willow"
+    },
+    "axis=z": {
+      "model": "riven:log_willow",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "riven:log_willow",
+      "x": 90,
+      "y": 90
+    },
+    "axis=none": {
+      "model": "riven:log_willow_bark"
+    }
+  }
+}

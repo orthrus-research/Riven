@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:sulfur_deposit_0"
+      },
+      {
+        "model": "riven:sulfur_deposit_1"
+      }
+    ]
+  }
+}

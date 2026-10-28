@@ -1,0 +1,8 @@
+[
+  {"label": "arrive", "x": -832.5, "y": 225, "z": -1222, "yaw": 180, "pitch": 50, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000"]},
+  {"label": "mobs-leaves-south", "x": -832.5, "y": 203, "z": -1222, "yaw": 180, "pitch": 30, "commands": ["fill -840 200 -1240 -824 206 -1220 minecraft:air", "fill -840 199 -1240 -824 199 -1220 minecraft:grass", "fill -836 200 -1238 -829 200 -1234 minecraft:leaves 4", "fill -834 201 -1237 -831 201 -1235 minecraft:leaves 4", "summon minecraft:cow -834.5 200 -1229.5 {NoAI:1b}", "summon minecraft:pig -831.5 200 -1228.5 {NoAI:1b}", "summon minecraft:sheep -828.5 200 -1230.5 {NoAI:1b}", "summon minecraft:chicken -836.5 200 -1231.5 {NoAI:1b}"]},
+  {"label": "mobs-leaves-east", "x": -823.5, "y": 200, "z": -1231, "yaw": 90, "pitch": 15, "commands": ["testfor @e[type=!player,x=-832,y=200,z=-1230,r=16]"]},
+  {"label": "deep-arrive", "x": -840.5, "y": -690, "z": -1229.5, "yaw": 270, "pitch": 0, "commands": ["effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "deep-occluded", "x": -852.5, "y": -700, "z": -1229.5, "yaw": 270, "pitch": 0, "commands": ["fill -853 -700 -1231 -851 -698 -1229 minecraft:air", "fill -820 -700 -1231 -814 -698 -1228 minecraft:air", "summon minecraft:cow -818.5 -700 -1229.5 {NoAI:1b}", "summon minecraft:pig -816.5 -700 -1230.5 {NoAI:1b}", "summon minecraft:sheep -814.5 -700 -1228.5 {NoAI:1b}", "summon minecraft:chicken -819.5 -700 -1230.5 {NoAI:1b}"]},
+  {"label": "deep-open", "x": -842.5, "y": -700, "z": -1229.5, "yaw": 270, "pitch": 0, "commands": ["testfor @e[type=!player,x=-817,y=-700,z=-1230,r=8]", "fill -851 -700 -1230 -820 -699 -1229 minecraft:air"]}
+]

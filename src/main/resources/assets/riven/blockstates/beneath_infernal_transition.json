@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:beneath_infernal_transition_0"
+      },
+      {
+        "model": "riven:beneath_infernal_transition_1"
+      }
+    ]
+  }
+}

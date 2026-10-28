@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_polypore_0"
+      },
+      {
+        "model": "riven:plant_polypore_1"
+      },
+      {
+        "model": "riven:plant_polypore_2"
+      },
+      {
+        "model": "riven:plant_polypore_3"
+      }
+    ]
+  }
+}

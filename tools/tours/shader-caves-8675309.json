@@ -1,0 +1,6 @@
+[
+  {"label": "dripstone-dark", "x": -1184, "y": 137, "z": -2016, "yaw": 0, "pitch": -15, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000", "effect {player} clear"]},
+  {"label": "dripstone-lit", "x": -1143.5, "y": 137, "z": -1979.5, "yaw": 345, "pitch": -10, "commands": ["effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "great-cavern-lit", "x": -271.5, "y": -54, "z": -1263.5, "yaw": 345, "pitch": 20},
+  {"label": "great-cavern-dark", "x": -311.5, "y": -74, "z": -1263.5, "yaw": 300, "pitch": -10, "commands": ["effect {player} clear"]}
+]

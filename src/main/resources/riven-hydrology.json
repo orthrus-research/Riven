@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "revision": "bounded-water-layers-v11",
+  "oceanReceiverPolicy": "Require independent native marine supply; preserve the earlier connected ocean scaffold before local beds, banks, basins and lenses.",
+  "variationSeed": "0x485944524f303031",
+  "cellBlocks": 2048,
+  "sourceAttempts": 48,
+  "networksPerCell": 4,
+  "directions": 12,
+  "routeSegments": 16,
+  "cacheSets": 128,
+  "cacheWays": 4,
+  "minimumMoisture": 0.38,
+  "maximumRouteBlocks": 1228,
+  "maximumCutBlocks": 56,
+  "maximumFillBlocks": 14,
+  "bankWidthInRiverWidths": 1.5,
+  "freeboardBlocks": 2,
+  "layers": {
+    "attempts": 6,
+    "wetlandMoisture": 0.6,
+    "oasisMaximumMoisture": 0.35,
+    "oasisMinimumCelsius": 25,
+    "aquiferChance": 0.8,
+    "aquiferRoofBlocks": 8,
+    "lakes": {"minimumMoisture": 0.3, "domeScale": 1.5, "shellBlocks": 2, "lowestY": -100, "belowFloodBlocks": 24}
+  },
+  "notes": "Canonical Shore height supplies every bed, bank, groundwater and route admission. Sheltered lagoons may be ocean-fed independently of rivers; their explicit seaward mouths require marine receivers. Coastal marsh candidates retain earlier groundwater/storage supply checks. All plan searches remain bounded and read earlier intent only. Rivers meander with a seeded lateral offset that is zero at every route node (half-wave and amplitude in channel radii); river heads try source attempts in descending upland score (high, middle and uplift weights); the mouth is the first route node at sea level and marks a mouth weight within mouthRadiusBlocks. Tuned for 8 km worlds (hydro-v6): 2,048-block owner cells, 8 source attempts, 12 route directions and a 0.38 moisture floor double river density (about 4.5 rivers per 8 km world); routes stay within 0.6 cell widths. Drainage (hydro-v11, terrain-v91; drainage): every built continent routes its own land to the sea on a grid of cellBlocks, over its intent height plus a routing relief (amplitudeBlocks of noise at wavelengthBlocks with weights) that gathers flats into valleys, with a priority flood: hollows fill and spill, and each cell drains to the sea, or to the network lake or route that receives it. A coarse scan (four cells apart, or a 96th of the support in larger layouts) finds the continent's own land first, and the grid coarsens to at most maximumCellsPerSide cells a side, keeping the head area in blocks. Rain-weighted area (runoff: (moisture - dryMoisture) / moistureSpan within minimum..maximum per cell) accumulates downstream; a channel begins where it passes channelAreaCells and continues the upstream channel that brings it the most water, so heads join into creeks and rivers. Width is head plus perRootSquareKilometre times the growth of the square root of the drained area (square kilometres) past the head, at most maximum; depth likewise. A channel's level is the running minimum of the intent ground less one block from its head, never below the water it joins; its points sit at seeded spots within each grid cell and are smoothed smoothingPasses times; meanders resample the course every stepBlocks and move it sideways by a wave of wavelengthInWidths channel widths (at least minimumWavelengthBlocks, drifting along wanderBlocks) and amplitudeInWavelengths of it, easing from flatGradient to none at steepGradient, with a skew harmonic that leans bends downstream. Pools hold the water flat for at least minimumInWidths widths (and minimumBlocks) until the course has fallen dropBlocks, and a riffle at each pool's foot takes the fall over riffleBlocksPerDrop blocks per block of fall, shallow over gravel. Beds are sand where the channel falls less than sandBelowGradient and gravel elsewhere; the inside of a bend at least pointBarStrength of its full curve holds a point bar of the same material. Braids: a channel fromWidthBlocks to fullWidthBlocks wide or more, over ground colder than coldBelowCelsius or drier than dryBelowMoisture and falling within gradientRange (fading to none at twice its upper bound), spreads into a gravel bed bedInWidths more radii wide, where channels shallow channels weave at wavelengthInBeds bed radii across bars that stand at the water's level; an estuary's funnel fades braids out; a tributary ends on its main channel's centreline at that channel's level. Channels at least riverWidthBlocks wide are rivers: they reserve their bed, bank and a valley valleyInCutDepths times their intent cut, like any river, and mark mouth weights; narrower streams reserve nothing (no landform reads them), leave the land's biome, and like rivers have their bank and valley cut from each column's own height at the hydrology constraint: the valley widens by valleyInCutDepths per block the ground stands above the water, at most streamValleyMaximumBlocks, and the columns within 1.5 blocks of a bed stand level with the highest water beside them (flush banks, as for network lakes and routes, whose banks no drainage valley cuts into). A river reaching a shoaling coast flares into a funnel estuary (estuary). Networks are memoized per continent (continentMemo) and binned (binBlocks). They replace hydro-v7's crest trunk rivers. Network routes march out to the first supplied sea within their reach and end one segment past the coast (v9); before, a fixed-length ray ran on across the seabed and mostly left its owner cell. Hydro-v10: a cell holds up to networksPerCell networks from sourceAttempts upland-ordered sources; each takes its first route that keeps clear of those already taken (lakes, banks, meanders and valleys plus two river widths) and whose lake takes a natural shape (the legacy ellipse stood in steep walls on slopes). A network's level is the running minimum of the ground less one block from its lake head, like a trunk: it never fills, crosses hollows at their floor, cuts rises as gorges within the cut limit and widens its bank into a valley 2.5 times the cut; its outlet nodes hold the lake head (filling up to the fill limit) and run straight into the lake's outlet channel. A route has one node per reach step, at least four, so short routes keep room for the lake outlet. Underground lakes (layers.lakes): at aquiferChance in a cell under a groundwater basin or where moisture is at least minimumMoisture, an elliptical chamber holds still water up to one waterline (its centre) and an air dome domeScale times as tall above it; it lies above lowestY (clear of the magma chambers) and at least belowFloodBlocks below every flood band (riven-caves.json fill), and caves keep shellBlocks of rock around it below the waterline, so they may open only into its dome.",
+  "meander": {
+    "halfWaveInChannelRadii": 40,
+    "amplitudeInChannelRadii": 3.0
+  },
+  "riverHeads": {
+    "highWeight": 1.0,
+    "middleWeight": 0.4,
+    "upliftWeight": 0.5
+  },
+  "mouthRadiusBlocks": 192,
+  "drainage": {"cellBlocks": 32, "maximumCellsPerSide": 256, "routingRelief": {"amplitudeBlocks": 12, "wavelengthBlocks": [800, 400, 200], "weights": [1.0, 0.5, 0.25]}, "runoff": {"dryMoisture": 0.12, "moistureSpan": 0.5, "minimum": 0.1, "maximum": 1.5}, "channelAreaCells": 18, "widthBlocks": {"head": 1.5, "perRootSquareKilometre": 14, "maximum": 48}, "depthBlocks": {"head": 1, "perRootSquareKilometre": 4, "maximum": 8}, "riverWidthBlocks": 6, "valleyInCutDepths": 2.5, "streamValleyMaximumBlocks": 48, "smoothingPasses": 2, "meanders": {"wavelengthInWidths": 11, "minimumWavelengthBlocks": 24, "amplitudeInWavelengths": 0.3, "flatGradient": 0.004, "steepGradient": 0.03, "skew": 0.15, "stepBlocks": 3, "wanderBlocks": 300}, "pools": {"dropBlocks": 3, "minimumInWidths": 5, "minimumBlocks": 16, "riffleBlocksPerDrop": 3}, "bars": {"sandBelowGradient": 0.01, "pointBarStrength": 0.6}, "braids": {"fromWidthBlocks": 4, "fullWidthBlocks": 8, "bedInWidths": 3, "coldBelowCelsius": 2, "dryBelowMoisture": 0.3, "gradientRange": [0.003, 0.06], "channels": 3, "wavelengthInBeds": 5}, "binBlocks": 64, "continentMemo": 256},
+  "estuary": {
+    "lengthBlocks": 320,
+    "flareInWidths": 3.5
+  }
+}

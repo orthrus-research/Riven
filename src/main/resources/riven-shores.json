@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "revision": 5,
+  "variationSeed": "0x53484f5245303031",
+  "cliffChance": 0.35,
+  "beachWidthScale": 1.5,
+  "cliffWidthScale": 1.5,
+  "bluffInCliffWidths": 3,
+  "rockSlopeStart": 0.08,
+  "rockSlopeEnd": 0.24,
+  "marshMoisture": 0.52,
+  "marshMinimumCelsius": 5,
+  "envelope": {
+    "inlandFeature": "rolling_hills",
+    "reachInCoastalPlainWidths": 1.0,
+    "steepFactor": 6,
+    "kneeFraction": 0.5,
+    "majorReachInCoastalPlainWidths": 1.5
+  },
+  "contract": [
+    "Seeded continental geometry, climate and broad terrain classify the shore before hydrology, biome selection or shaping.",
+    "Distance and inward normal are local finite-difference estimates of the selected outline field, not analytic derivatives or a global distance transform.",
+    "Consume the outline kernel's inherited landWeight exactly. Marine ownership does not imply supplied ocean water.",
+    "Beach, coastal plain and scarp dimensions come from the shared height reference in physical blocks.",
+    "Shore.shape is the sole broad coastal height used by water planners and final terrain.",
+    "The coastal envelope bounds feature raises near the coast: from the beach maximum at the shoreline to the inland feature's target height one reach inland, steeper on rocky and cliff shores. It softly caps raises and never lowers the parent; families that use it no longer exclude coastal columns.",
+    "Major features (volcanic, cold, plateaus, mountains; shores-v4) use a steeper major envelope on the continental score: from the beach maximum at the coast to the highest planned surface majorReachInCoastalPlainWidths inland, with the same soft knee. They keep water and marine-support exclusions but no shore-zone exclusion. Cuts, lowlands and drylands keep theirs, because lowering near the sea could open dry basins below the datum.",
+    "Marsh is a supplied-water opportunity. It cannot independently create swamp water or a wetland biome.",
+    "Later water reservations describe additional banks and shores without rewriting original ocean ownership."
+  ]
+}

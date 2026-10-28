@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:leucobasalt_0"
+      },
+      {
+        "model": "riven:leucobasalt_1"
+      }
+    ]
+  }
+}

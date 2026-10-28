@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_fork_sedge_0"
+      },
+      {
+        "model": "riven:plant_fork_sedge_1"
+      },
+      {
+        "model": "riven:plant_fork_sedge_2"
+      },
+      {
+        "model": "riven:plant_fork_sedge_3"
+      }
+    ]
+  }
+}

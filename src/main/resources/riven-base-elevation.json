@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "revision": 3,
+  "regionalSeed": "544552524547494f",
+  "stateOffset": 0.4,
+  "upliftWeight": 0.3,
+  "regionalWeight": 0.3,
+  "regionalInMountainWidths": 2.0,
+  "crestWeight": 1.0,
+  "note": "Mean elevation and band policy. Uses smooth plate intent, one seeded regional field, the owner continent's crest weight from the outline (revision 2: crestWeight 1.0 with plates reduced from 0.65 to 0.3 and stateOffset raised from 0.28 to 0.40, so high ground follows continent crests) and the adopted height reference. No relief, marine admission, climate or local water queries. Elevation bands are allocations, not final terrain or footprint certificates. Revision 3: the crest term saturates softly, crestCap * (1 - exp(-crestWeight * crest / crestCap)) with crestCap 0.45, so crest cores form a dome (position about 2.4-2.8) instead of a table clamped at position 3.",
+  "crestCap": 0.45
+}

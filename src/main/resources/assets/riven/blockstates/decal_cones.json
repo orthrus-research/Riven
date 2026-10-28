@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:decal_cones_0"
+      },
+      {
+        "model": "riven:decal_cones_1"
+      },
+      {
+        "model": "riven:decal_cones_2"
+      },
+      {
+        "model": "riven:decal_cones_3"
+      }
+    ]
+  }
+}

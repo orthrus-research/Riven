@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:chromite_peridotite_0"
+      },
+      {
+        "model": "riven:chromite_peridotite_1"
+      }
+    ]
+  }
+}

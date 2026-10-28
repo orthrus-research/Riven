@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "variationSeed": "4c414b4553485031",
+  "familyWeights": {"HARMONIC": 1, "LOBES": 1, "SWEPT": 1, "CELLULAR": 1},
+  "aspect": 1.25,
+  "coreRadiusFraction": 0.82,
+  "detail": 0.16,
+  "shelfFraction": 0.24,
+  "skirtFraction": 0.10,
+  "islandChance": 0.35,
+  "islandRadius": 0.115,
+  "outletWidthFraction": 0.05,
+  "deepLakeChance": 0.15,
+  "deepLakeMinimumSupply": 0.65,
+  "maximumCertificateColumns": 65536,
+  "note": "Select one of four families and optional islands for existing supplied lake/pond owners. Earlier network supply may select a deep-lake profile. Fit connected lakes and their channel feather to the actual flat first river segment; its wet capsule must contain the complete terminal bank disk. The kernel owns the body and upstream outlet; the existing river resumes at the terminal plane. Certify the full integer owner box against earlier shore and earthwork limits. No new water supply, sites, routes, raster or retries; rejection retains the earlier plain body. Reference widths scale horizontally once; owner radii and routes retain their earlier dimensions."
+}

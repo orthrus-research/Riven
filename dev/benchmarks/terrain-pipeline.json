@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "id": "terrain-pipeline-fixed-v1",
+  "description": "Fixed coastal-plain view in the minimal official-DH runtime. Measures native full-view completion and rendered-frame intervals while normal distant generation runs. Spawn and initial viewer dependencies can be warm; this is not presentation latency or a demanding mountain/cave workload.",
+  "seed": 8675309,
+  "camera": [8102.5, 144, 4552.5, 69.02373717056172, 25.89446550536386],
+  "warmupTicks": 40,
+  "idleTicks": 240,
+  "timeoutSeconds": 300,
+  "scenarios": {"write": ["full-view", "idle"]}
+}

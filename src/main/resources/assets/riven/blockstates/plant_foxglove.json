@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_foxglove_0"
+      },
+      {
+        "model": "riven:plant_foxglove_1"
+      },
+      {
+        "model": "riven:plant_foxglove_2"
+      },
+      {
+        "model": "riven:plant_foxglove_3"
+      }
+    ]
+  }
+}

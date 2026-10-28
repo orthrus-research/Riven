@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:limestone_0"
+      },
+      {
+        "model": "riven:limestone_1"
+      }
+    ]
+  }
+}

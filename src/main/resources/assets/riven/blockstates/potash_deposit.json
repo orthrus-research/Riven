@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:potash_deposit_0"
+      },
+      {
+        "model": "riven:potash_deposit_1"
+      }
+    ]
+  }
+}

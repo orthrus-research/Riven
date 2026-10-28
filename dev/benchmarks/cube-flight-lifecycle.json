@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "id": "cube-flight-lifecycle-v1",
+  "description": "Real client spectator velocity at 16 blocks/s for 60 wall seconds, after full-view preflight; moving service coverage, natural writes/unloads, final-view settling and explicit save/purge/flush. Instrumented lifecycle costs, not production acceptance.",
+  "seed": 8675309,
+  "camera": [8102.5, 144, 4552.5, -90, 15],
+  "warmupTicks": 40,
+  "timeoutSeconds": 300,
+  "spectatorFlight": {"durationSeconds": 60, "blocksPerSecond": 16, "settleSeconds": 20},
+  "scenarios": {"write": ["full-view", "spectator-flight", "lifecycle-settle", "lifecycle-save-purge"]}
+}

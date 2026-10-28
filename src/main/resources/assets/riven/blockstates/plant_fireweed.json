@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_fireweed_0"
+      },
+      {
+        "model": "riven:plant_fireweed_1"
+      },
+      {
+        "model": "riven:plant_fireweed_2"
+      },
+      {
+        "model": "riven:plant_fireweed_3"
+      }
+    ]
+  }
+}

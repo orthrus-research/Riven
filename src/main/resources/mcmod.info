@@ -1,0 +1,1 @@
+[{"modid":"riven","name":"Riven","description":"Deterministic terrain generation for Minecraft 1.12.2 cubic worlds. Research preview.","version":"${version}","mcversion":"1.12.2","url":"https://orthrus.cc/riven","authorList":["Orthrus Research"],"credits":"Original Riven material: NRR 1.0. Adapted erosion: MPL-2.0. See META-INF/NOTICE-RIVEN.md.","dependencies":["cubicchunks"]}]

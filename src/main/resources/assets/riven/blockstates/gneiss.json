@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:gneiss_0"
+      },
+      {
+        "model": "riven:gneiss_1"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "riven:blocks/decor/silver_willow_spray_0"
+  }
+}

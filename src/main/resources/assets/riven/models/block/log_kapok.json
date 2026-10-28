@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "side": "riven:blocks/wood/kapok_bark",
+    "end": "riven:blocks/wood/kapok_end"
+  }
+}

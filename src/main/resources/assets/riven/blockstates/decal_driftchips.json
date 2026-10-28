@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:decal_driftchips_0"
+      },
+      {
+        "model": "riven:decal_driftchips_1"
+      },
+      {
+        "model": "riven:decal_driftchips_2"
+      },
+      {
+        "model": "riven:decal_driftchips_3"
+      }
+    ]
+  }
+}

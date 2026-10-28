@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_silver_willow_spray_0"
+      },
+      {
+        "model": "riven:plant_silver_willow_spray_1"
+      },
+      {
+        "model": "riven:plant_silver_willow_spray_2"
+      },
+      {
+        "model": "riven:plant_silver_willow_spray_3"
+      }
+    ]
+  }
+}

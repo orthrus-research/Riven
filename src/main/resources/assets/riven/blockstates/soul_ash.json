@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:soul_ash_0"
+      },
+      {
+        "model": "riven:soul_ash_1"
+      }
+    ]
+  }
+}

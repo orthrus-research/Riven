@@ -1,0 +1,9 @@
+{
+  "parent": "riven:block/unstable",
+  "textures": {
+    "side": "riven:blocks/stone/shale_1_side",
+    "top": "riven:blocks/stone/shale_1_top",
+    "bottom": "riven:blocks/stone/shale_1_top",
+    "overlay": "riven:blocks/unstable_overlay"
+  }
+}

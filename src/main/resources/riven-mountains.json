@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "revision": 5,
+  "variationSeed": "4d4f554e54414931",
+  "widthMultiplier": 2.0,
+  "aspect": 2.2,
+  "reliefTargetMultiplier": 1.75,
+  "sharpness": 1.15,
+  "spurs": 0.72,
+  "warp": 0.12,
+  "passChance": 0.45,
+  "occurrence": 1.0,
+  "minMountainIntent": 0.55,
+  "minUplift": 0.25,
+  "familyWeights": {
+    "RIDGE_TREE": 1,
+    "FOLDED_BELTS": 1,
+    "SUMMIT_GRAPH": 1,
+    "WARPED_RIDGES": 1
+  },
+  "note": "Mountains-v4: one unchanged MIT mountain kernel per crest node. Every continent crest (riven-continents.json skeleton) carries a chain of nodes spaced nodeSpacingInHalfLengths range half-lengths apart along it, each a plan aligned with the crest tangent from earlier intent at the node; a column takes the largest raise of the nodes within one half-length. The kernel's own fades (mountain intent, uplift, parent band, headroom) and per-column water preservation keep ranges continuous, so the shared site lane and the whole-footprint certificate are gone. TerrainMap caps raises with the major coastal envelope (shores-v4). Mountains-v5: plans are twice as wide (widthMultiplier 2: 1,024 x 2,252-block ellipses), and massif relief covers the whole crest band: four octaves of isotropic ridged noise (wavelength 640 halving, amplitudes .5/.25/.15/.1, coordinates warped up to 160 blocks) times reliefBlocks 80 and a crest mask 1 - exp(-1.5 crest), under the mountain ceiling (Y288), fading over 64 blocks to water. Kernel peaks combine with it by maximum.",
+  "nodeSpacingInHalfLengths": 1.3,
+  "massif": {
+    "reliefBlocks": 80,
+    "wavelengthBlocks": 640,
+    "crestScale": 1.5,
+    "warpBlocks": 160,
+    "waterSkirtBlocks": 64
+  }
+}

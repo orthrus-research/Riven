@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_puffball_0"
+      },
+      {
+        "model": "riven:plant_puffball_1"
+      },
+      {
+        "model": "riven:plant_puffball_2"
+      },
+      {
+        "model": "riven:plant_puffball_3"
+      }
+    ]
+  }
+}

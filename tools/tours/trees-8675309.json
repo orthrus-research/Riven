@@ -1,0 +1,18 @@
+[
+  {"label": "warm_highlands", "x": -959.5, "y": 161, "z": -1319.5, "yaw": 0.0, "pitch": 30, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000", "execute {player} -960 133 -1280 riven -960 -1280"]},
+  {"label": "warm_woodland", "x": -1599.5, "y": 108, "z": -1319.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -1600 80 -1280 riven -1600 -1280", "execute {player} -960 133 -1280 riven trees 48"]},
+  {"label": "montane_forest", "x": -1279.5, "y": 182, "z": -1959.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -1280 154 -1920 riven -1280 -1920", "execute {player} -1600 80 -1280 riven trees 48"]},
+  {"label": "tropical_highlands", "x": -959.5, "y": 273, "z": -2279.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -960 245 -2240 riven -960 -2240", "execute {player} -1280 154 -1920 riven trees 48"]},
+  {"label": "mangrove_coast", "x": -639.5, "y": 96, "z": -2919.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -640 68 -2880 riven -640 -2880", "execute {player} -960 245 -2240 riven trees 48"]},
+  {"label": "savanna", "x": -319.5, "y": 96, "z": -2919.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -320 68 -2880 riven -320 -2880", "execute {player} -640 68 -2880 riven trees 48"]},
+  {"label": "delta_wetland", "x": -2239.5, "y": 97, "z": -1639.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -2240 69 -1600 riven -2240 -1600", "execute {player} -320 68 -2880 riven trees 48"]},
+  {"label": "subtropical_forest", "x": -3519.5, "y": 107, "z": -1319.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -3520 79 -1280 riven -3520 -1280", "execute {player} -2240 69 -1600 riven trees 48"]},
+  {"label": "temperate_rainforest", "x": -3519.5, "y": 95, "z": -999.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -3520 67 -960 riven -3520 -960", "execute {player} -3520 79 -1280 riven trees 48"]},
+  {"label": "temperate_rainforest-inside", "x": -3519.5, "y": 70, "z": -959.5, "yaw": 90.0, "pitch": -12, "commands": []},
+  {"label": "frozen_hills", "x": -1599.5, "y": 125, "z": 1880.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -1600 97 1920 riven -1600 1920", "execute {player} -3520 67 -960 riven trees 48"]},
+  {"label": "cold_uplands", "x": 3200.5, "y": 166, "z": 1240.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} 3200 138 1280 riven 3200 1280", "execute {player} -1600 97 1920 riven trees 48"]},
+  {"label": "tropical_rainforest", "x": 3200.5, "y": 100, "z": -3559.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} 3200 72 -3520 riven 3200 -3520", "execute {player} 3200 138 1280 riven trees 48"]},
+  {"label": "tropical_rainforest-inside", "x": 3200.5, "y": 75, "z": -3519.5, "yaw": 90.0, "pitch": -12, "commands": []},
+  {"label": "warm_beach", "x": 2560.5, "y": 91, "z": -3879.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} 2560 63 -3840 riven 2560 -3840", "execute {player} 3200 72 -3520 riven trees 48"]},
+  {"label": "warm_beach-wide", "x": 2600.5, "y": 93, "z": -3839.5, "yaw": 90.0, "pitch": 25, "commands": ["execute {player} 2560 63 -3840 riven trees 48"]}
+]

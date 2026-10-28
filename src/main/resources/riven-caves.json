@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "revision": 3,
+  "variationSeed": "0x4341564553524931",
+  "roofBlocks": 8,
+  "wetRoofBlocks": 16,
+  "floorMarginBlocks": 2,
+  "maximumIntervals": 48,
+  "maximumLinings": 16,
+  "lattice": {"horizontalBlocks": 4, "verticalBlocks": 4, "chunkCache": 128},
+  "realms": {
+    "skinDepthBlocks": 40,
+    "skinCavernPenalty": 0.16,
+    "skinTunnelNarrowing": 0.5,
+    "basementUnits": ["gneiss", "schist", "granite", "dolerite"]
+  },
+  "caverns": {
+    "wavelengthBlocks": 96,
+    "verticalSquash": 2.2,
+    "detailWavelengthBlocks": 36,
+    "detailWeight": 0.3,
+    "layeredThreshold": 0.6,
+    "basementThreshold": 0.6,
+    "solubleBonus": 0.12,
+    "weakBonus": 0.05,
+    "strongPenalty": 0.05
+  },
+  "pillarHalls": {
+    "wavelengthBlocks": 170,
+    "verticalSquash": 1.2,
+    "threshold": 0.3,
+    "detailWavelengthBlocks": 58,
+    "detailWeight": 0.35,
+    "pillarWavelengthBlocks": 15,
+    "pillarThreshold": 0.38
+  },
+  "tunnels": {"wavelengthBlocks": 88, "verticalSquash": 1.3, "width": 0.08, "weakWidening": 0.3, "basementNarrowing": 0.7},
+  "karst": {
+    "levels": 5,
+    "firstLevelAboveWaterTableBlocks": 30,
+    "levelSpacingBlocks": 22,
+    "levelWanderBlocks": 6,
+    "wavelengthBlocks": 110,
+    "tubeWidth": 0.08,
+    "tubeHalfHeightBlocks": 2.8,
+    "canyonWidth": 0.024,
+    "canyonHeightBlocks": 14,
+    "canyonThreshold": 0.05,
+    "minimumSolubility": 0.5
+  },
+  "beddingPlanes": {
+    "maskWavelengthBlocks": 70,
+    "threshold": 0.35,
+    "halfHeightBlocks": [1.0, 2.6]
+  },
+  "jointMazes": {
+    "spacingBlocks": [10, 18],
+    "widthBlocks": 2.0,
+    "widthVariation": 0.2,
+    "orientationWavelengthBlocks": 2400,
+    "secondSetAngle": 1.35,
+    "domainCellBlocks": 512, "domainJitter": 0.7, "maskWavelengthBlocks": 180, "maskThreshold": 0.1,
+    "segmentBlocks": [14, 48],
+    "openShare": 0.6,
+    "levelBlocks": 32,
+    "slotHeightBlocks": [5, 26],
+    "roomRadiusBlocks": 5,
+    "roomChance": 0.3, "shaftChance": 0.15
+  },
+  "veinGalleries": {"maskThreshold": -0.15},
+  "fissures": {
+    "minimumThrowBlocks": 8,
+    "widthBlocks": 1.3,
+    "chasmThrowBlocks": 32,
+    "chasmWidthBlocks": [4, 12],
+    "chasmWidthWavelengthBlocks": 140,
+    "bottomY": -420
+  },
+  "domes": {
+    "cellBlocks": 192,
+    "chance": 0.5,
+    "radiusBlocks": [14, 42],
+    "centreY": [-170, 70],
+    "maximumStrength": 0.55,
+    "flatFloor": 0.35,
+    "squash": 0.6
+  },
+  "saltHalls": {"wavelengthBlocks": 26, "threshold": 0.05},
+  "lavaTubes": {"wavelengthBlocks": 120, "width": 0.045, "clearanceBlocks": 3},
+  "lavaRivers": {"wavelengthBlocks": 150, "width": 0.05, "belowLavaBlocks": 3, "aboveLavaBlocks": 5, "widthVariation": 0.5, "ceilingVariation": 0.8},
+  "geodes": {
+    "cellBlocks": 96,
+    "chance": 0.35,
+    "radiusBlocks": [5, 12],
+    "centreY": [-500, -160],
+    "liningBlocks": 2,
+    "hosts": ["gabbro", "anorthosite", "basalt", "dolerite"],
+    "linings": ["DIORITE", "GRANITE", "RED_SANDSTONE"]
+  },
+  "chambers": {"airShare": 0.35},
+  "fill": {"cellBlocks": 96, "jitter": 0.7, "edgeWarpBlocks": 10, "edgeWarpWavelengthBlocks": 72, "floodBandBlocks": 40, "minimumPermeability": 0.45, "sealBlocks": 2, "floorWobbleBlocks": 3, "floorWobbleWavelengthBlocks": 48, "damHalfWidthBlocks": 1.0, "damSlope": 0.5, "damMaximumHalfWidthBlocks": 4},
+  "entrances": {
+    "sinkholeCellBlocks": 160,
+    "sinkholeChance": 0.25,
+    "sinkholeRadiusBlocks": [3, 8],
+    "sinkholeDepthBlocks": [24, 72],
+    "chasmMaskWavelengthBlocks": 260,
+    "chasmMaskThreshold": 0.25,
+    "chasmDepthBlocks": [60, 200]
+  },
+  "contract": [
+    "Phase 3 of the subsurface design: caves rooted in the geology (riven-geology.json). Every void is a pure function of seed, definitions and coordinates. Caves are carved into native chunk columns from 3D noise on a lattice (horizontalBlocks by verticalBlocks, trilinear, cached per chunk in chunkCache entries), each noise read through its own fixed rotation so no cave follows the world axes; the distant preview does not carve them, but sees every entrance.",
+    "Caves stop roofBlocks below the surface (wetRoofBlocks under water and the sea) and floorMarginBlocks above the floor. A column holds at most maximumIntervals voids and maximumLinings linings.",
+    "realms: every block belongs to a realm by its rock. Below the deep surface is the molten root; basementUnits above it are the broken basement; everything else is the layered deep. Within skinDepthBlocks of the surface (the skin) caverns need skinCavernPenalty more and tunnels narrow by skinTunnelNarrowing.",
+    "Layered deep: caverns over layeredThreshold (lowered by solubleBonus times solubility and weakBonus in weak rock), tunnels, karst tube levels with vadose canyons in rock at least minimumSolubility soluble (levels start firstLevelAboveWaterTableBlocks above the water table and step down levelSpacingBlocks), bedding-plane halls hugging formation boundaries where a mask exceeds threshold (halfHeightBlocks above and below the boundary, varied by the mask), collapse domes in rock no stronger than maximumStrength, and pillared salt halls in evaporite.",
+    "Broken basement: sparse caverns over basementThreshold (raised by strongPenalty in strong rock), narrower tunnels (basementNarrowing), joint mazes: the land splits into joint domains of about domainCellBlocks (jittered by domainJitter), each with two straight joint sets measured from its point, spacingBlocks apart (read from a slow field there; the second set turned secondSetAngle radians and 1.3 times as wide, both oriented by a slow field over orientationWavelengthBlocks). Slots are vertical, widthBlocks wide (swelling and pinching by widthVariation with a 3D noise, never so narrow that a diagonal slot breaks into cells meeting only at corners). Each joint plane breaks into segments of segmentBlocks with their own phase; the maze stacks in levels levelBlocks tall. In each level a segment opens whole when it draws openShare and a 2D mask at its midpoint (maskWavelengthBlocks) exceeds maskThreshold, and only when an open segment of the other set crosses it inside the same domain; open segments rise from the level's shared floor over their own slotHeightBlocks, and a share (shaftChance) reaches down to the floor of the level below, so every slot joins the maze. At a share (roomChance) of the crossings of two open slots, a round room up to roomRadiusBlocks opens around them, and vein galleries where dolerite dikes weathered out (mask over maskThreshold).",
+    "Molten root: pillar halls (a broad, tall noise, blended detailWeight with a second octave at detailWavelengthBlocks, over threshold, with rock pillars left where a fine plan noise exceeds pillarThreshold), lava rivers (channels from belowLavaBlocks under to aboveLavaBlocks over the lava level where a plan noise is within width of zero; a 3D noise varies the width by widthVariation and the roof by ceilingVariation), geodes (cells, chance, of a radius in host rock, lined liningBlocks thick with one of linings), and air rooms over magma chambers (the top airShare).",
+    "Everywhere: fissures along faults throwing at least minimumThrowBlocks and rift chasms along those throwing chasmThrowBlocks or more, from bottomY up; lava tubes inside basalt.",
+    "fill: a void below the lava level is lava. Flood cells: the land splits into cells of about cellBlocks on a grid, each nearest its own point, jittered within jitter of a cell; columns read their cell at a position warped by up to edgeWarpBlocks (edgeWarpWavelengthBlocks), so edges wander. A cell takes one flat level, its centre's water table, and floods when the formation at that level at its centre is at least minimumPermeability permeable and its band clears the lava: every void block above the band floor (floodBandBlocks below the level) up to the level is water (ice in a frozen depth biome). The band floor undulates by up to floorWobbleBlocks (floorWobbleWavelengthBlocks). Carving leaves rock to hold the water: sealBlocks under the band floor (a sump floor), and a dam along each edge a flooded cell shares, from below the lower band floor up to the higher level, damHalfWidthBlocks to each side at its crest and damSlope wider per block below it, up to damMaximumHalfWidthBlocks. The warp may never move a point by twice damHalfWidthBlocks in one block of travel, nor the floor by one block, so water cannot step past a seal. Entrance shafts end two blocks above any water their column holds or holds back. An underground lake (riven-hydrology.json layers.lakes) holds water up to its waterline and air above, whatever caves cross it; everything else is air.",
+    "entrances: sinkholes from cells (sinkholeChance) in soluble rock at the surface, sinkholeRadiusBlocks wide and sinkholeDepthBlocks deep; along faults throwing chasmThrowBlocks or more, where a mask exceeds chasmMaskThreshold, rift chasms open to the sky chasmDepthBlocks deep. Entrances are part of every column sample, so the preview shows them."
+  ]
+}

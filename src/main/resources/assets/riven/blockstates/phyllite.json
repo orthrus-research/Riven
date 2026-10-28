@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:phyllite_0"
+      },
+      {
+        "model": "riven:phyllite_1"
+      }
+    ]
+  }
+}

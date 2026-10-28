@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:infernal_rock_0"
+      },
+      {
+        "model": "riven:infernal_rock_1"
+      }
+    ]
+  }
+}

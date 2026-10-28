@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_oyster_0"
+      },
+      {
+        "model": "riven:plant_oyster_1"
+      },
+      {
+        "model": "riven:plant_oyster_2"
+      },
+      {
+        "model": "riven:plant_oyster_3"
+      }
+    ]
+  }
+}

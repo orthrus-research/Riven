@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "policy": "REGIONAL",
+  "bodySeed": "544552424f445931",
+  "detailSeed": "5445524445544149",
+  "wideSeed": "4241534557494431",
+  "bodyInFoothillWidths": 1.0,
+  "detailInHillWidths": 0.5,
+  "wideInBodyScales": 4.0,
+  "legacyAmplitudeFraction": 0.65,
+  "legacyBodyShare": 0.8,
+  "legacyFineShare": 0.2,
+  "note": "Relief and spectral composition consume the earlier BaseElevationMap. Elevation settings now belong only to riven-base-elevation.json. REGIONAL retains the four RegionalProfileMap controls; LEGACY is the exact comparator and skips profile queries and the wide band. Spectral scales and phases are unchanged. Reference widths receive TerrainScale.HORIZONTAL once."
+}

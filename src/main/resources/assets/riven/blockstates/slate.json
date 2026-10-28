@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:slate_0"
+      },
+      {
+        "model": "riven:slate_1"
+      }
+    ]
+  }
+}

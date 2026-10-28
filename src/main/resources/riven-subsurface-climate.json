@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "about": "The subsurface climate (user request 2026-10-26): temperature, humidity and air at every block below the ground, built from the land's climate, the depth below the ground and the geology's water table, lava level, rift strength, magma chambers, faults and rock. It is the parameter space for underground biomes and the input of player effects (riven-player-effects.json). A pure function of seed, definitions and coordinates; generated blocks do not read it yet, so it changes no terrain. The realms below the crust floor have placeholder climates until their content is designed.",
+  "temperature": {
+    "gradientPerBlock": 0.05,
+    "riftGradientBoost": 1.5,
+    "lava": {"celsius": 70, "reachBlocks": 40},
+    "chambers": {"celsius": 50, "reachBlocks": 48},
+    "riftFaults": {"celsius": 25, "reachBlocks": 16},
+    "realms": {
+      "beneath": {"celsiusAtTop": 45, "gradientPerBlock": 0.02},
+      "nether": {"celsiusAtTop": 90, "gradientPerBlock": 0.04}
+    }
+  },
+  "humidity": {
+    "fringeBlocks": 30,
+    "saturation": {"fringeBlocks": 20, "aquiferReachBlocks": 400},
+    "rainReachBlocks": 48,
+    "rockBase": 0.15,
+    "rockPermeabilityWeight": 0.45,
+    "recharge": {"base": 0.5, "moistureWeight": 1.0},
+    "faults": {"humidity": 0.7, "reachBlocks": 20},
+    "evaporiteFactor": 0.4,
+    "dryingCelsius": 45,
+    "dryingScaleCelsius": 30
+  },
+  "air": {
+    "depthScaleBlocks": 220,
+    "floor": 0.1,
+    "faultBoost": 0.35,
+    "faultReachBlocks": 24,
+    "gasCelsius": 55,
+    "gasScaleCelsius": 25
+  },
+  "states": {"frozenCelsius": 0, "steamCelsius": 60, "steamHumidity": 0.6},
+  "contract": [
+    "Depth is the blocks between a block and its column's ground (the sampled surface), never negative. Faults count only where they have thrown, by the block's distance to the fault.",
+    "temperature (Celsius), in the crust: the land's mean temperature, plus gradientPerBlock for every block of depth (steeper by riftGradientBoost times the rift strength, 0 to 1), plus lava celsius at and below the lava level, falling off over reachBlocks above it, plus chambers celsius falling off over reachBlocks with distance from the nearest magma chamber's lens (0 inside it), plus riftFaults celsius times the rift strength falling off over reachBlocks from a fault (hot water rising along rift faults). Cold land keeps frozen ground down to where the gradient lifts it above freezing. Below the crust floor: the realm's celsiusAtTop at its nominal top, rising by its gradientPerBlock with depth below that top (placeholders).",
+    "humidity (0 to 1): the largest of the water table (1 at it, falling off over fringeBlocks above it; below it the larger of saturation fringeBlocks falling off from the table and the formation's permeability falling off over aquiferReachBlocks, so permeable formations stay wet deep down as confined aquifers while shales and crystalline rock dry), rain (the land's moisture, falling off over rainReachBlocks of depth), the rock ((rockBase plus rockPermeabilityWeight times the formation's permeability) times recharge (base plus moistureWeight times the land's moisture), so rock under wet land is damper) and faults (humidity falling off over reachBlocks from a fault: water runs along fractures). Evaporite formations multiply it by evaporiteFactor. Above dryingCelsius everything but the water table's and the faults' share dries off over dryingScaleCelsius, so hot rock near water stays humid and hot faults steam.",
+    "air (0 to 1, freshness): floor plus the rest falling off over depthScaleBlocks of depth, plus faultBoost falling off over faultReachBlocks from a fault, then reduced by gas above gasCelsius over gasScaleCelsius (magma and lava foul the air).",
+    "states: frozen at or below frozenCelsius; steam at or above steamCelsius with humidity at or above steamHumidity.",
+    "Biome rules may test the climate at a block (riven-realms.json crust rules: celsius, humidity and air as [lowest, highest]); no packaged rule does yet."
+  ]
+}

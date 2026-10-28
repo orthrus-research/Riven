@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_dune_bog_heath_0"
+      },
+      {
+        "model": "riven:plant_dune_bog_heath_1"
+      },
+      {
+        "model": "riven:plant_dune_bog_heath_2"
+      },
+      {
+        "model": "riven:plant_dune_bog_heath_3"
+      }
+    ]
+  }
+}

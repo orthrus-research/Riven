@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_arrow_waterleaf_0"
+      },
+      {
+        "model": "riven:plant_arrow_waterleaf_1"
+      },
+      {
+        "model": "riven:plant_arrow_waterleaf_2"
+      },
+      {
+        "model": "riven:plant_arrow_waterleaf_3"
+      }
+    ]
+  }
+}

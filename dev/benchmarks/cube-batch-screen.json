@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "id": "cube-batch-screen-v1",
+  "description": "Exploratory packet cube-count screen in the fixed minimal official-DH view. Fresh JVM/world per case; initial viewer dependencies can be warm. Full 15625-cube residency plus 600 idle ticks; no rendering or performance acceptance.",
+  "seed": 8675309,
+  "camera": [8102.5, 144, 4552.5, 69.02373717056172, 25.89446550536386],
+  "warmupTicks": 40,
+  "idleTicks": 600,
+  "timeoutSeconds": 300,
+  "scenarios": {"write": ["full-view", "idle"]}
+}

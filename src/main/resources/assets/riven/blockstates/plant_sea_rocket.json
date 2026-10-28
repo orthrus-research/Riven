@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_sea_rocket_0"
+      },
+      {
+        "model": "riven:plant_sea_rocket_1"
+      },
+      {
+        "model": "riven:plant_sea_rocket_2"
+      },
+      {
+        "model": "riven:plant_sea_rocket_3"
+      }
+    ]
+  }
+}

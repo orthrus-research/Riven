@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "variationSeed": "0x574f4e4445525331",
+  "shoreReservationInCoastalPlainWidths": 0.25,
+  "waterSkirtBlocks": 40,
+  "headroomBlocks": 24,
+  "floorMarginBlocks": 8,
+  "families": {
+    "PILLAR_FOREST": {"occurrence": 1.0, "radius": [260, 420], "height": [55, 120], "spacing": [24, 34], "size": [5, 9.5], "depth": [6, 14], "overhang": [0.08, 0.16], "density": 0.8, "bare": false, "palette": "pillar"},
+    "TEPUI": {"occurrence": 1.0, "radius": [300, 420], "height": [70, 130], "spacing": [0, 0], "size": [30, 55], "depth": [0, 0], "overhang": [3, 6], "density": 0, "bare": false, "palette": "tepui"},
+    "HOODOO_FIELD": {"occurrence": 1.0, "radius": [160, 280], "height": [8, 8], "spacing": [8, 12], "size": [1.6, 3.0], "depth": [26, 48], "overhang": [0, 0], "density": 0.8, "bare": true, "palette": "hoodoo"},
+    "TOWER_KARST": {"occurrence": 1.0, "radius": [300, 420], "height": [45, 110], "spacing": [55, 85], "size": [16, 32], "depth": [0, 0], "overhang": [0, 0], "density": 0.75, "bare": false, "palette": "karst"},
+    "TIANKENG": {"occurrence": 1.0, "radius": [130, 180], "height": [60, 110], "spacing": [0, 0], "size": [38, 70], "depth": [0, 0], "overhang": [4, 10], "density": 0, "bare": false, "palette": "karst"},
+    "FIN_ARCHES": {"occurrence": 1.0, "radius": [170, 280], "height": [28, 58], "spacing": [14, 24], "size": [2.5, 5], "depth": [0, 0], "overhang": [0.45, 0.7], "density": 0, "bare": true, "palette": "entrada"},
+    "TSINGY": {"occurrence": 1.0, "radius": [160, 260], "height": [16, 32], "spacing": [9, 15], "size": [1, 2.5], "depth": [4, 10], "overhang": [0, 0], "density": 0, "bare": true, "palette": "karst"},
+    "RING_STRUCTURE": {"occurrence": 1.0, "radius": [340, 430], "height": [14, 30], "spacing": [0, 0], "size": [14, 26], "depth": [0, 0], "overhang": [0, 0], "density": 0, "bare": true, "palette": "richat"},
+    "BASALT_COLUMNS": {"occurrence": 1.0, "radius": [110, 200], "height": [45, 95], "spacing": [2.2, 3.2], "size": [28, 55], "depth": [0, 0], "overhang": [0, 0], "density": 0, "bare": true, "palette": "basalt"}
+  },
+  "regionWeights": {
+    "FROZEN_DRY":      [0,   0,   0,   0,   0,   0,   0,   0,   1],
+    "FROZEN_MODERATE": [0.3, 0,   0,   0,   0,   0,   0,   0,   1],
+    "FROZEN_WET":      [0.4, 0,   0,   0,   0,   0,   0,   0,   1],
+    "COOL_DRY":        [0,   0,   0.6, 0,   0,   0.4, 0,   0,   1],
+    "COOL_MODERATE":   [0.6, 0,   0,   0,   0.5, 0,   0,   0,   1],
+    "COOL_WET":        [1,   0,   0,   0,   0.6, 0,   0,   0,   0.6],
+    "MILD_DRY":        [0,   0,   1,   0,   0,   1,   0,   0.3, 0],
+    "MILD_MODERATE":   [1,   0,   0,   0.5, 0.8, 0,   0.4, 0,   0],
+    "MILD_WET":        [1,   0.5, 0,   0.7, 0.8, 0,   0,   0,   0],
+    "WARM_DRY":        [0,   0,   1,   0,   0,   1,   0,   0.6, 0],
+    "WARM_MODERATE":   [0.5, 0,   0,   1,   0.7, 0,   0.8, 0,   0],
+    "WARM_WET":        [0.6, 1,   0,   1,   0.8, 0,   0,   0,   0],
+    "HOT_DRY":         [0,   0,   0.8, 0,   0,   0.8, 0,   1,   0],
+    "HOT_MODERATE":    [0,   0.6, 0,   0.6, 0,   0,   1,   0,   0],
+    "HOT_WET":         [0,   1,   0,   0.8, 0.5, 0,   0.7, 0,   0]
+  },
+  "contract": [
+    "Wonders are rare exaggerated landforms on WONDER sites (riven-terrain.json laneDensity, maximumWonderRadiusInCells). A site's own decision reads one earlier column at its anchor: land, inland beyond shoreReservationInCoastalPlainWidths, dry, a climate region with a weighted family (regionWeights columns follow the families' order), occurrence and headroom (the form shrinks as a whole to stay headroomBlocks under the highest surface, or for a sinkhole floorMarginBlocks over the lowest).",
+    "Per family, ranges are drawn once per site: radius is the footprint; height the main rise (a sinkhole's depth); spacing and size the repeated element's pitch and radius (pillars, hoodoo necks, towers, fin pitch and half width, tsingy cell and wall thickness, basalt hexagon size and butte radius, tepui talus apron, sinkhole shaft, ring width); depth a floor lowering (pillar floors, hoodoo amphitheatres, tsingy corridors); overhang a share (pillar bridges, fin arches) or a width (tepui ledges, sinkhole undercuts); density the share of grid points that hold an element.",
+    "A wonder column has one surface and at most one void interval below it, kept under at least two solid blocks of the final surface; voids below the water level fill with water. Bare families are exposed rock; others keep soil on their tops. A palette names a riven-materials.json strata palette banded from the wonder's floor upward.",
+    "Relief eases to nothing within waterSkirtBlocks of surface water, voids only where clearance is full; raises are capped by the major coastal envelope."
+  ]
+}

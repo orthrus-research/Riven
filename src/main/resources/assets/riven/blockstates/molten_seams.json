@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:molten_seams_0"
+      },
+      {
+        "model": "riven:molten_seams_1"
+      }
+    ]
+  }
+}

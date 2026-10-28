@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "revision": 5,
+  "variationSeed": "0x4d4154455249414c",
+  "strata": {
+    "depthBlocks": 24,
+    "thicknessBlocks": 5,
+    "tiltBlocks": 9,
+    "tiltWavelengthBlocks": 420,
+    "palettes": {
+      "pillar": ["STONE", "ANDESITE", "STONE", "SANDSTONE", "STONE", "ANDESITE", "DIORITE"],
+      "tepui": ["SANDSTONE", "STONE", "RED_SANDSTONE", "STONE", "SANDSTONE", "GRANITE"],
+      "hoodoo": ["TERRACOTTA_ORANGE", "TERRACOTTA_WHITE", "TERRACOTTA_RED", "TERRACOTTA_ORANGE", "TERRACOTTA", "TERRACOTTA_WHITE", "RED_SANDSTONE"],
+      "karst": ["DIORITE", "STONE", "DIORITE", "ANDESITE", "DIORITE", "STONE"],
+      "entrada": ["RED_SANDSTONE", "TERRACOTTA_ORANGE", "RED_SANDSTONE", "SANDSTONE", "RED_SANDSTONE", "TERRACOTTA_RED"],
+      "richat": ["SANDSTONE", "TERRACOTTA_BROWN", "RED_SANDSTONE", "SANDSTONE", "TERRACOTTA", "TERRACOTTA_BROWN"],
+      "basalt": ["TERRACOTTA_GRAY", "ANDESITE", "TERRACOTTA_GRAY", "TERRACOTTA_BLACK", "TERRACOTTA_GRAY"]
+    }
+  },
+  "sandstoneDepthBlocks": 3,
+  "gravelBeachBelowShoaling": 0.25,
+  "coarseDirtAboveSlope": 0.12,
+  "gravelAboveSlope": 0.2,
+  "clayPatch": {"wavelengthBlocks": 48, "threshold": 0.35},
+  "contract": [
+    "Riven-owned block variety, shared by native cubes and the DH preview; no block changes the land's shape.",
+    "Named palettes are for wonders, which bring their own rock (riven-wonders.json): their strata band from the wonder's floor upward, under soil too.",
+    "Exposed rock and all rock below the soil come from the geology (riven-geology.json); these palettes serve only wonders, banded in their top depthBlocks: strata thicknessBlocks thick, tilted by up to tiltBlocks over tiltWavelengthBlocks, each band picked by a hash of the band index.",
+    "Soil Riven places as sand rests on sandstoneDepthBlocks of sandstone. A sandy shore whose coast shoals less than gravelBeachBelowShoaling (a steep, reflective coast) is gravel instead.",
+    "Grass on soil steeper than coarseDirtAboveSlope (the smoothed broad slope, which stays under about 0.2 on soil) is coarse dirt, and gravel above gravelAboveSlope: about 7% and 2% of soil on the main seed.",
+    "River and lake beds of dirt are clay in patches where a value noise of wavelengthBlocks exceeds threshold."
+  ]
+}

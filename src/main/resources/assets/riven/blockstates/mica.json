@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:mica_0"
+      },
+      {
+        "model": "riven:mica_1"
+      }
+    ]
+  }
+}

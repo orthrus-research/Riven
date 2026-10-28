@@ -1,0 +1,50 @@
+{
+  "schema": 2,
+  "version": "3.3.3-1.12.2",
+  "minecraft": "1.12.2",
+  "loader": "forge",
+  "distribution": "unmodified-upstream",
+  "artifact": "dev/pins/DistantHorizons-3.3.3-1.12.2-forge.jar",
+  "sha256": "48c3ace5c35c471893d3dc78de79e3dde229df0179a59352307a2e1c8f60e613",
+  "sha512": "57b0f5fc4f1a2fed17d8a8e33c8bc272ea2f2618e43fa373a1af6b30948b890dd007d3d59e9aa9dfe224fcd6c198d89f5b6446cbaf33d2af2ba6a9a45671baef",
+  "url": "https://modrinth.com/mod/distanthorizons/version/3.3.3-1.12.2",
+  "downloadUrl": "https://cdn.modrinth.com/data/uCdwusMi/versions/1PczaQGZ/DistantHorizons-3.3.3-1.12.2-forge.jar",
+  "modrinthVersionId": "1PczaQGZ",
+  "publishedAt": "2026-09-29T00:03:19.673869Z",
+  "latestCompatibleReleaseCheckedOn": "2026-10-19",
+  "repository": "https://gitlab.com/distant-horizons-team/distant-horizons.git",
+  "commit": "575517f261dfd04e302a37719f1459e9b5633d9f",
+  "core": {
+    "repository": "https://gitlab.com/jeseibel/distant-horizons-core.git",
+    "commit": "6c1be680011194b2cf04ef842ace40c50683b09c"
+  },
+  "policy": "Install the official upstream DH artifact byte-for-byte unchanged on disk. Cubature supplies the runtime compatibility and optimization patches through Mixins or ASM. Preserve applicable licenses, source and notices for every patch; runtime transformation is not a license exemption. Update this pin explicitly for newer compatible official releases.",
+  "qualification": {
+    "status": "Official artifact hash verified; fresh Java 26 server with Cubature generated and saved a Riven cubic world and stopped normally",
+    "limits": [
+      "Historical fork water/detail/scheduling fixes are absent",
+      "Previous fork qualification does not qualify this upstream runtime",
+      "No new client rendering, performance or restart claim"
+    ],
+    "runtime": "Java 26.0.2.1 / official Cleanroom 0.7.9-alpha",
+    "knownExistingWarning": "Missing MixinItemMap remains; held-map behavior unqualified"
+  },
+  "profile": {
+    "sharedWorkersPerJvm": 4,
+    "pauseIfMovingQuickly": false,
+    "limitIfServerUnhealthy": true,
+    "dhRadiusChunks": 256,
+    "playerBandwidthKBps": 2000,
+    "generationRequestRateLimit": 40
+  },
+  "runtimePatches": {
+    "provider": "Cubature",
+    "sourcePin": "dev/cc.lock.json",
+    "mechanisms": [
+      "Mixin",
+      "ASM"
+    ],
+    "upstreamJarUnchangedOnDisk": true,
+    "historicalForkOptimizationsPorted": false
+  }
+}

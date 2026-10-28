@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "direction=up,thickness=tip_merge": {
+      "model": "riven:pointed_ice_up_tip_merge"
+    },
+    "direction=up,thickness=tip": {
+      "model": "riven:pointed_ice_up_tip"
+    },
+    "direction=up,thickness=frustum": {
+      "model": "riven:pointed_ice_up_frustum"
+    },
+    "direction=up,thickness=middle": {
+      "model": "riven:pointed_ice_up_middle"
+    },
+    "direction=up,thickness=base": {
+      "model": "riven:pointed_ice_up_base"
+    },
+    "direction=down,thickness=tip_merge": {
+      "model": "riven:pointed_ice_down_tip_merge"
+    },
+    "direction=down,thickness=tip": {
+      "model": "riven:pointed_ice_down_tip"
+    },
+    "direction=down,thickness=frustum": {
+      "model": "riven:pointed_ice_down_frustum"
+    },
+    "direction=down,thickness=middle": {
+      "model": "riven:pointed_ice_down_middle"
+    },
+    "direction=down,thickness=base": {
+      "model": "riven:pointed_ice_down_base"
+    }
+  }
+}

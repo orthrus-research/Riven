@@ -1,0 +1,185 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "about": "Riven's own biomes (biomes-registry-v2). Every column reports one riven: biome, chosen from its habitat key: inland keys by climate region and calm elevation (lowland for LOW and MID, highland for HIGH), rugged keys by temperature band (hills for LOW and MID, peaks for HIGH), coast and water keys and river mouths by name. Underground, cells report the depth biomes and realms of riven-realms.json. Each biome extends the vanilla class of its kind (parent), which shader packs and other mods read as its category; temperature, rainfall and precipitation drive vanilla weather; underground (void-parent) biomes spawn only the vanilla mobs of their spawn table. Decoration and surface still come from each column's legacy look until Riven's feature families replace them.",
+  "biomes": [
+    {"id": "polar_barrens", "name": "Polar Barrens", "parent": "snow", "temperature": 0.0, "rainfall": 0.1, "precipitation": "snow", "types": ["COLD", "SNOWY", "DRY", "WASTELAND"]},
+    {"id": "tundra", "name": "Tundra", "parent": "snow", "temperature": 0.05, "rainfall": 0.3, "precipitation": "snow", "types": ["COLD", "SNOWY", "PLAINS"]},
+    {"id": "snow_taiga", "name": "Snow Taiga", "parent": "taiga", "temperature": 0.0, "rainfall": 0.6, "precipitation": "snow", "types": ["COLD", "SNOWY", "CONIFEROUS", "FOREST"]},
+    {"id": "cold_steppe", "name": "Cold Steppe", "parent": "plains", "temperature": 0.3, "rainfall": 0.2, "precipitation": "rain", "types": ["COLD", "DRY", "PLAINS"]},
+    {"id": "boreal_forest", "name": "Boreal Forest", "parent": "taiga", "temperature": 0.3, "rainfall": 0.6, "precipitation": "rain", "types": ["COLD", "CONIFEROUS", "FOREST"]},
+    {"id": "cold_rainforest", "name": "Cold Rainforest", "parent": "taiga", "temperature": 0.35, "rainfall": 0.9, "precipitation": "rain", "types": ["COLD", "WET", "CONIFEROUS", "FOREST"]},
+    {"id": "grassland", "name": "Grassland", "parent": "plains", "temperature": 0.7, "rainfall": 0.3, "precipitation": "rain", "types": ["PLAINS", "DRY"]},
+    {"id": "temperate_woodland", "name": "Temperate Woodland", "parent": "forest", "temperature": 0.7, "rainfall": 0.6, "precipitation": "rain", "types": ["FOREST"]},
+    {"id": "temperate_rainforest", "name": "Temperate Rainforest", "parent": "forest", "temperature": 0.7, "rainfall": 0.9, "precipitation": "rain", "types": ["FOREST", "WET", "DENSE"]},
+    {"id": "scrubland", "name": "Scrubland", "parent": "savanna", "temperature": 1.1, "rainfall": 0.1, "precipitation": "none", "types": ["SAVANNA", "DRY", "SPARSE"]},
+    {"id": "warm_woodland", "name": "Warm Woodland", "parent": "forest", "temperature": 0.9, "rainfall": 0.5, "precipitation": "rain", "types": ["FOREST"]},
+    {"id": "subtropical_forest", "name": "Subtropical Forest", "parent": "jungle", "temperature": 0.95, "rainfall": 0.85, "precipitation": "rain", "types": ["JUNGLE", "WET", "DENSE"]},
+    {"id": "hot_desert", "name": "Hot Desert", "parent": "desert", "temperature": 2.0, "rainfall": 0.0, "precipitation": "none", "types": ["HOT", "DRY", "SANDY"]},
+    {"id": "savanna", "name": "Savanna", "parent": "savanna", "temperature": 1.2, "rainfall": 0.0, "precipitation": "none", "types": ["SAVANNA", "HOT", "DRY", "SPARSE"]},
+    {"id": "tropical_rainforest", "name": "Tropical Rainforest", "parent": "jungle", "temperature": 0.95, "rainfall": 0.9, "precipitation": "rain", "types": ["JUNGLE", "HOT", "WET", "DENSE"]},
+
+    {"id": "polar_plateau", "name": "Polar Plateau", "parent": "snow", "temperature": -0.1, "rainfall": 0.1, "precipitation": "snow", "types": ["COLD", "SNOWY", "DRY", "MOUNTAIN"]},
+    {"id": "tundra_highlands", "name": "Tundra Highlands", "parent": "snow", "temperature": -0.1, "rainfall": 0.3, "precipitation": "snow", "types": ["COLD", "SNOWY", "MOUNTAIN"]},
+    {"id": "snow_taiga_highlands", "name": "Snow Taiga Highlands", "parent": "taiga", "temperature": -0.1, "rainfall": 0.6, "precipitation": "snow", "types": ["COLD", "SNOWY", "CONIFEROUS", "FOREST", "MOUNTAIN"]},
+    {"id": "cold_uplands", "name": "Cold Uplands", "parent": "hills", "temperature": 0.2, "rainfall": 0.2, "precipitation": "rain", "types": ["COLD", "DRY", "HILLS"]},
+    {"id": "boreal_highlands", "name": "Boreal Highlands", "parent": "taiga", "temperature": 0.2, "rainfall": 0.6, "precipitation": "rain", "types": ["COLD", "CONIFEROUS", "FOREST", "HILLS"]},
+    {"id": "misty_highlands", "name": "Misty Highlands", "parent": "taiga", "temperature": 0.25, "rainfall": 0.9, "precipitation": "rain", "types": ["COLD", "WET", "CONIFEROUS", "HILLS"]},
+    {"id": "dry_uplands", "name": "Dry Uplands", "parent": "hills", "temperature": 0.6, "rainfall": 0.3, "precipitation": "rain", "types": ["DRY", "HILLS"]},
+    {"id": "wooded_highlands", "name": "Wooded Highlands", "parent": "forest", "temperature": 0.6, "rainfall": 0.6, "precipitation": "rain", "types": ["FOREST", "HILLS"]},
+    {"id": "cloud_forest", "name": "Cloud Forest", "parent": "forest", "temperature": 0.6, "rainfall": 0.9, "precipitation": "rain", "types": ["FOREST", "WET", "DENSE", "HILLS"]},
+    {"id": "scrub_plateau", "name": "Scrub Plateau", "parent": "savanna", "temperature": 1.0, "rainfall": 0.0, "precipitation": "none", "types": ["SAVANNA", "DRY", "SPARSE", "PLATEAU"]},
+    {"id": "warm_highlands", "name": "Warm Highlands", "parent": "forest", "temperature": 0.8, "rainfall": 0.5, "precipitation": "rain", "types": ["FOREST", "HILLS"]},
+    {"id": "montane_forest", "name": "Montane Forest", "parent": "jungle", "temperature": 0.85, "rainfall": 0.85, "precipitation": "rain", "types": ["JUNGLE", "WET", "DENSE", "HILLS"]},
+    {"id": "desert_plateau", "name": "Desert Plateau", "parent": "mesa", "temperature": 2.0, "rainfall": 0.0, "precipitation": "none", "types": ["HOT", "DRY", "MESA", "PLATEAU"]},
+    {"id": "savanna_plateau", "name": "Savanna Plateau", "parent": "savanna", "temperature": 1.0, "rainfall": 0.0, "precipitation": "none", "types": ["SAVANNA", "HOT", "DRY", "PLATEAU"]},
+    {"id": "tropical_highlands", "name": "Tropical Highlands", "parent": "jungle", "temperature": 0.9, "rainfall": 0.9, "precipitation": "rain", "types": ["JUNGLE", "HOT", "WET", "HILLS"]},
+
+    {"id": "frozen_hills", "name": "Frozen Hills", "parent": "hills", "temperature": -0.2, "rainfall": 0.3, "precipitation": "snow", "types": ["COLD", "SNOWY", "HILLS"]},
+    {"id": "frozen_peaks", "name": "Frozen Peaks", "parent": "hills", "temperature": -0.5, "rainfall": 0.3, "precipitation": "snow", "types": ["COLD", "SNOWY", "MOUNTAIN"]},
+    {"id": "cold_hills", "name": "Cold Hills", "parent": "hills", "temperature": 0.2, "rainfall": 0.4, "precipitation": "rain", "types": ["COLD", "HILLS"]},
+    {"id": "cold_peaks", "name": "Cold Peaks", "parent": "hills", "temperature": 0.0, "rainfall": 0.4, "precipitation": "snow", "types": ["COLD", "SNOWY", "MOUNTAIN"]},
+    {"id": "rugged_hills", "name": "Rugged Hills", "parent": "hills", "temperature": 0.5, "rainfall": 0.4, "precipitation": "rain", "types": ["HILLS"]},
+    {"id": "mountain_peaks", "name": "Mountain Peaks", "parent": "hills", "temperature": 0.2, "rainfall": 0.4, "precipitation": "rain", "types": ["MOUNTAIN"]},
+    {"id": "warm_hills", "name": "Warm Hills", "parent": "hills", "temperature": 0.8, "rainfall": 0.4, "precipitation": "rain", "types": ["HILLS"]},
+    {"id": "warm_peaks", "name": "Warm Peaks", "parent": "hills", "temperature": 0.5, "rainfall": 0.4, "precipitation": "rain", "types": ["MOUNTAIN"]},
+    {"id": "badland_hills", "name": "Badland Hills", "parent": "mesa", "temperature": 2.0, "rainfall": 0.0, "precipitation": "none", "types": ["HOT", "DRY", "MESA", "HILLS"]},
+    {"id": "badland_peaks", "name": "Badland Peaks", "parent": "mesa", "temperature": 1.5, "rainfall": 0.0, "precipitation": "none", "types": ["HOT", "DRY", "MESA", "MOUNTAIN"]},
+
+    {"id": "beach", "name": "Beach", "parent": "beach", "temperature": 0.8, "rainfall": 0.4, "precipitation": "rain", "types": ["BEACH"]},
+    {"id": "snowy_beach", "name": "Snowy Beach", "parent": "beach", "temperature": 0.05, "rainfall": 0.3, "precipitation": "snow", "types": ["BEACH", "COLD", "SNOWY"]},
+    {"id": "rocky_shore", "name": "Rocky Shore", "parent": "stone_beach", "temperature": 0.2, "rainfall": 0.3, "precipitation": "rain", "types": ["BEACH"]},
+    {"id": "marsh", "name": "Marsh", "parent": "swamp", "temperature": 0.8, "rainfall": 0.9, "precipitation": "rain", "types": ["SWAMP", "WET"]},
+    {"id": "ocean", "name": "Ocean", "parent": "ocean", "temperature": 0.5, "rainfall": 0.5, "precipitation": "rain", "types": ["OCEAN"]},
+    {"id": "deep_ocean", "name": "Deep Ocean", "parent": "ocean", "temperature": 0.5, "rainfall": 0.5, "precipitation": "rain", "types": ["OCEAN"]},
+    {"id": "frozen_ocean", "name": "Frozen Ocean", "parent": "ocean", "temperature": 0.0, "rainfall": 0.5, "precipitation": "snow", "types": ["OCEAN", "COLD", "SNOWY"]},
+    {"id": "warm_shallows", "name": "Warm Shallows", "parent": "ocean", "temperature": 0.9, "rainfall": 0.5, "precipitation": "rain", "types": ["OCEAN", "HOT"]},
+    {"id": "river", "name": "River", "parent": "river", "temperature": 0.5, "rainfall": 0.5, "precipitation": "rain", "types": ["RIVER"]},
+    {"id": "frozen_river", "name": "Frozen River", "parent": "river", "temperature": 0.0, "rainfall": 0.5, "precipitation": "snow", "types": ["RIVER", "COLD", "SNOWY"]},
+    {"id": "lake", "name": "Lake", "parent": "river", "temperature": 0.5, "rainfall": 0.5, "precipitation": "rain", "types": ["WATER"]},
+    {"id": "wetland", "name": "Wetland", "parent": "swamp", "temperature": 0.6, "rainfall": 0.9, "precipitation": "rain", "types": ["SWAMP", "WET"]},
+    {"id": "oasis", "name": "Oasis", "parent": "jungle", "temperature": 0.95, "rainfall": 0.8, "precipitation": "rain", "types": ["HOT", "WET", "LUSH"]},
+
+    {"id": "frozen_delta", "name": "Frozen Delta", "parent": "river", "temperature": 0.0, "rainfall": 0.5, "precipitation": "snow", "types": ["RIVER", "COLD", "SNOWY"]},
+    {"id": "fjord_mouth", "name": "Fjord Mouth", "parent": "stone_beach", "temperature": 0.1, "rainfall": 0.5, "precipitation": "rain", "types": ["BEACH", "COLD"]},
+    {"id": "salt_marsh", "name": "Salt Marsh", "parent": "swamp", "temperature": 0.6, "rainfall": 0.8, "precipitation": "rain", "types": ["SWAMP", "BEACH", "WET"]},
+    {"id": "tidal_flat", "name": "Tidal Flat", "parent": "beach", "temperature": 0.8, "rainfall": 0.4, "precipitation": "rain", "types": ["BEACH"]},
+    {"id": "delta_wetland", "name": "Delta Wetland", "parent": "swamp", "temperature": 0.9, "rainfall": 0.9, "precipitation": "rain", "types": ["SWAMP", "RIVER", "WET"]},
+    {"id": "mangrove_coast", "name": "Mangrove Coast", "parent": "swamp", "temperature": 0.95, "rainfall": 0.9, "precipitation": "rain", "types": ["SWAMP", "HOT", "WET", "BEACH"]},
+    {"id": "sabkha", "name": "Sabkha", "parent": "desert", "temperature": 2.0, "rainfall": 0.0, "precipitation": "none", "types": ["HOT", "DRY", "SANDY", "BEACH"]},
+    {"id": "estuary", "name": "Estuary", "parent": "river", "temperature": 0.6, "rainfall": 0.6, "precipitation": "rain", "types": ["RIVER", "BEACH"]},
+    {"id": "beneath", "name": "The Beneath", "parent": "void", "temperature": 0.5, "rainfall": 0.0, "precipitation": "none", "types": ["DEAD", "SPOOKY"]},
+    {"id": "nether", "name": "Infernal Deep", "parent": "hell", "temperature": 2.0, "rainfall": 0.0, "precipitation": "none", "types": ["NETHER", "HOT", "DRY"]},
+
+    {"id": "root_hollows", "name": "Root Hollows", "parent": "void", "temperature": 0.6, "rainfall": 0.6, "precipitation": "none", "types": ["UNDERGROUND", "LUSH"], "spawns": "skin"},
+    {"id": "frost_hollows", "name": "Frost Hollows", "parent": "void", "temperature": 0.0, "rainfall": 0.3, "precipitation": "none", "types": ["UNDERGROUND", "COLD"], "spawns": "skin_frozen"},
+    {"id": "dust_hollows", "name": "Dust Hollows", "parent": "void", "temperature": 0.9, "rainfall": 0.0, "precipitation": "none", "types": ["UNDERGROUND", "DRY"], "spawns": "skin_dry"},
+    {"id": "drowned_galleries", "name": "Drowned Galleries", "parent": "void", "temperature": 0.6, "rainfall": 1.0, "precipitation": "none", "types": ["UNDERGROUND", "WET", "WATER"], "spawns": "layered"},
+    {"id": "salt_halls", "name": "Salt Halls", "parent": "void", "temperature": 0.7, "rainfall": 0.0, "precipitation": "none", "types": ["UNDERGROUND", "DRY", "SPARSE"], "spawns": "sterile"},
+    {"id": "karst_galleries", "name": "Karst Galleries", "parent": "void", "temperature": 0.6, "rainfall": 0.9, "precipitation": "none", "types": ["UNDERGROUND", "WET"], "spawns": "layered"},
+    {"id": "layered_deep", "name": "The Layered Deep", "parent": "void", "temperature": 0.7, "rainfall": 0.5, "precipitation": "none", "types": ["UNDERGROUND"], "spawns": "layered"},
+    {"id": "broken_basement", "name": "The Broken Basement", "parent": "void", "temperature": 0.9, "rainfall": 0.1, "precipitation": "none", "types": ["UNDERGROUND", "DRY", "SPOOKY"], "spawns": "basement"},
+    {"id": "lava_shores", "name": "Lava Shores", "parent": "void", "temperature": 2.0, "rainfall": 0.0, "precipitation": "none", "types": ["UNDERGROUND", "HOT", "DRY"], "spawns": "root"},
+    {"id": "molten_root", "name": "The Molten Root", "parent": "void", "temperature": 1.4, "rainfall": 0.0, "precipitation": "none", "types": ["UNDERGROUND", "HOT", "DRY", "DEAD"], "spawns": "root"}
+  ],
+  "spawnTables": {
+    "about": "Vanilla mobs for underground (void-parent) biomes, which otherwise spawn nothing. Life thins as the rock warms: the skin keeps the surface's night creatures for its climate, the layered deep loses witches, the basement belongs to spiders, the root to skeletons and endermen. Entries are [mob, weight, minimum group, maximum group]; ambient is bats.",
+    "skin": {
+      "monster": [["spider", 100, 4, 4], ["zombie", 95, 4, 4], ["zombie_villager", 5, 1, 1], ["skeleton", 100, 4, 4], ["creeper", 100, 4, 4], ["slime", 100, 4, 4], ["enderman", 10, 1, 4], ["witch", 5, 1, 1]],
+      "ambient": [["bat", 10, 8, 8]]
+    },
+    "skin_frozen": {
+      "monster": [["spider", 100, 4, 4], ["zombie", 95, 4, 4], ["zombie_villager", 5, 1, 1], ["stray", 80, 4, 4], ["skeleton", 20, 4, 4], ["creeper", 100, 4, 4], ["enderman", 10, 1, 4]],
+      "ambient": [["bat", 6, 8, 8]]
+    },
+    "skin_dry": {
+      "monster": [["spider", 100, 4, 4], ["husk", 80, 4, 4], ["zombie", 19, 4, 4], ["zombie_villager", 1, 1, 1], ["skeleton", 100, 4, 4], ["creeper", 100, 4, 4], ["enderman", 10, 1, 4]],
+      "ambient": [["bat", 10, 8, 8]]
+    },
+    "layered": {
+      "monster": [["spider", 100, 4, 4], ["zombie", 95, 4, 4], ["zombie_villager", 5, 1, 1], ["skeleton", 100, 4, 4], ["creeper", 100, 4, 4], ["slime", 100, 4, 4], ["enderman", 10, 1, 4]],
+      "ambient": [["bat", 10, 8, 8]]
+    },
+    "sterile": {
+      "monster": [["skeleton", 100, 4, 4], ["creeper", 60, 4, 4], ["zombie", 40, 4, 4], ["enderman", 15, 1, 4]],
+      "ambient": []
+    },
+    "basement": {
+      "monster": [["spider", 100, 4, 4], ["cave_spider", 40, 2, 4], ["skeleton", 100, 4, 4], ["zombie", 40, 4, 4], ["creeper", 60, 4, 4], ["enderman", 15, 1, 4]],
+      "ambient": [["bat", 5, 8, 8]]
+    },
+    "root": {
+      "monster": [["skeleton", 100, 4, 4], ["zombie", 30, 2, 4], ["creeper", 30, 2, 4], ["enderman", 20, 1, 4]],
+      "ambient": []
+    }
+  },
+  "inland": {
+    "FROZEN_DRY": {"lowland": "polar_barrens", "highland": "polar_plateau"},
+    "FROZEN_MODERATE": {"lowland": "tundra", "highland": "tundra_highlands"},
+    "FROZEN_WET": {"lowland": "snow_taiga", "highland": "snow_taiga_highlands"},
+    "COOL_DRY": {"lowland": "cold_steppe", "highland": "cold_uplands"},
+    "COOL_MODERATE": {"lowland": "boreal_forest", "highland": "boreal_highlands"},
+    "COOL_WET": {"lowland": "cold_rainforest", "highland": "misty_highlands"},
+    "MILD_DRY": {"lowland": "grassland", "highland": "dry_uplands"},
+    "MILD_MODERATE": {"lowland": "temperate_woodland", "highland": "wooded_highlands"},
+    "MILD_WET": {"lowland": "temperate_rainforest", "highland": "cloud_forest"},
+    "WARM_DRY": {"lowland": "scrubland", "highland": "scrub_plateau"},
+    "WARM_MODERATE": {"lowland": "warm_woodland", "highland": "warm_highlands"},
+    "WARM_WET": {"lowland": "subtropical_forest", "highland": "montane_forest"},
+    "HOT_DRY": {"lowland": "hot_desert", "highland": "desert_plateau"},
+    "HOT_MODERATE": {"lowland": "savanna", "highland": "savanna_plateau"},
+    "HOT_WET": {"lowland": "tropical_rainforest", "highland": "tropical_highlands"}
+  },
+  "rugged": {
+    "FROZEN": {"hills": "frozen_hills", "peaks": "frozen_peaks"},
+    "COOL": {"hills": "cold_hills", "peaks": "cold_peaks"},
+    "MILD": {"hills": "rugged_hills", "peaks": "mountain_peaks"},
+    "WARM": {"hills": "warm_hills", "peaks": "warm_peaks"},
+    "HOT": {"hills": "badland_hills", "peaks": "badland_peaks"}
+  },
+  "coast": {
+    "BEACH": "beach",
+    "BEACH_COLD": "snowy_beach",
+    "ROCKY_SHORE": "rocky_shore",
+    "MARSH": "marsh",
+    "OCEAN": "ocean",
+    "DEEP_OCEAN": "deep_ocean",
+    "FROZEN_OCEAN": "frozen_ocean",
+    "WARM_SHALLOWS": "warm_shallows",
+    "RIVER": "river",
+    "RIVER_FROZEN": "frozen_river",
+    "LAKE": "lake",
+    "WETLAND": "wetland",
+    "OASIS": "oasis"
+  },
+  "mouths": {
+    "FROZEN_DELTA": "frozen_delta",
+    "FJORD_MOUTH": "fjord_mouth",
+    "SALT_MARSH": "salt_marsh",
+    "TIDAL_FLAT": "tidal_flat",
+    "DELTA_WETLAND": "delta_wetland",
+    "MANGROVE": "mangrove_coast",
+    "SABKHA": "sabkha",
+    "ESTUARY": "estuary"
+  },
+  "categories": {
+    "about": "Intended biome_category for each parent: its vanilla kind. Demonica decides by Forge BiomeDictionary type first (SAVANNA, JUNGLE, OCEAN, RIVER, MESA, FOREST, PLAINS, MOUNTAIN, SWAMP, SANDY as DESERT), then by vanilla class; /riven shaderprops reports where it differs. BSL keys its 1.12 biome effects to biome IDs, not categories.",
+    "snow": "ICY",
+    "taiga": "TAIGA",
+    "plains": "PLAINS",
+    "forest": "FOREST",
+    "savanna": "SAVANNA",
+    "jungle": "JUNGLE",
+    "desert": "DESERT",
+    "hills": "EXTREME_HILLS",
+    "mesa": "MESA",
+    "beach": "BEACH",
+    "stone_beach": "BEACH",
+    "swamp": "SWAMP",
+    "ocean": "OCEAN",
+    "river": "RIVER",
+    "void": "NONE",
+    "hell": "NETHER"
+  },
+  "unsafeNameParts": ["end", "nether", "ice", "the_end", "void"]
+}

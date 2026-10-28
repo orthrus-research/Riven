@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_goldenrod_0"
+      },
+      {
+        "model": "riven:plant_goldenrod_1"
+      },
+      {
+        "model": "riven:plant_goldenrod_2"
+      },
+      {
+        "model": "riven:plant_goldenrod_3"
+      }
+    ]
+  }
+}

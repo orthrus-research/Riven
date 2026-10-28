@@ -1,0 +1,43 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "about": "/riven shaderprops adapts the client's active shader pack to a Riven world in a copy named <pack>-riven. A modded block joins the block.properties entry of the vanilla anchor it behaves like: the first matching rule wins, except that property rules add one entry per matching value. A riven: biome joins every numeric in(biome, ...) list in shaders.properties that holds its vanilla twin, looked up by parent/precipitation, then parent; a listed ID that is a riven: biome in this world stays only where its twin is listed. Rain hills, taiga and stone beaches have no twin: packs list their vanilla IDs as cold above vanilla snow lines (BSL: Y93 and Y123), which Riven terrain passes almost everywhere, so their own temperatures decide snow. lightAtLeast holds for a block whose default state gives at least that light: a full cube that gives light (the deep realms' moonstone, molten seams, soul ash and boundary rock) joins glowstone, which packs make emissive; BSL 10.1.8 lights a pixel by its brightness and saturation, so the glowing streaks of those textures shine and the rock around them does not. Shader IDs always come from the pack; an anchor the pack lacks is reported, not invented.",
+  "blockRules": [
+    {"anchor": "minecraft:leaves", "class": "net.minecraft.block.BlockLeaves"},
+    {"anchor": "minecraft:double_plant:half=lower", "materials": ["plants", "vine"], "property": "half=lower"},
+    {"anchor": "minecraft:double_plant:half=upper", "materials": ["plants", "vine"], "property": "half=upper"},
+    {"anchor": "minecraft:wheat", "class": "net.minecraft.block.BlockCrops"},
+    {"anchor": "minecraft:vine", "class": "net.minecraft.block.BlockVine"},
+    {"anchor": "minecraft:waterlily", "class": "net.minecraft.block.BlockLilyPad"},
+    {"anchor": "minecraft:red_flower", "materials": ["plants", "vine"], "nameContains": "flower", "fullCube": false},
+    {"anchor": "minecraft:sapling", "materials": ["plants", "vine"], "nameContains": "sapling", "fullCube": false},
+    {"anchor": "minecraft:tallgrass", "materials": ["plants", "vine"], "class": "net.minecraftforge.common.IShearable", "fullCube": false},
+    {"anchor": "minecraft:sapling", "class": "net.minecraft.block.BlockBush"},
+    {"anchor": "minecraft:sapling", "materials": ["plants", "vine"], "fullCube": false},
+    {"anchor": "minecraft:iron_ore", "oreDictPrefix": "ore"},
+    {"anchor": "minecraft:glowstone", "fullCube": true, "lightAtLeast": 1}
+  ],
+  "biomeTwins": {
+    "snow": "minecraft:ice_flats",
+    "taiga": null,
+    "taiga/snow": "minecraft:taiga_cold",
+    "plains": "minecraft:plains",
+    "forest": "minecraft:forest",
+    "savanna": "minecraft:savanna",
+    "jungle": "minecraft:jungle",
+    "desert": "minecraft:desert",
+    "hills": null,
+    "hills/snow": "minecraft:ice_mountains",
+    "mesa": "minecraft:mesa",
+    "beach": "minecraft:beaches",
+    "beach/snow": "minecraft:cold_beach",
+    "stone_beach": null,
+    "swamp": "minecraft:swampland",
+    "ocean": "minecraft:ocean",
+    "ocean/snow": "minecraft:frozen_ocean",
+    "river": "minecraft:river",
+    "river/snow": "minecraft:frozen_river",
+    "void": null,
+    "hell": "minecraft:hell"
+  }
+}

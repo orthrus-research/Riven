@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_daisy_0"
+      },
+      {
+        "model": "riven:plant_daisy_1"
+      },
+      {
+        "model": "riven:plant_daisy_2"
+      },
+      {
+        "model": "riven:plant_daisy_3"
+      }
+    ]
+  }
+}

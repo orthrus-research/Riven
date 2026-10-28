@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:native_copper_deposit_0"
+      },
+      {
+        "model": "riven:native_copper_deposit_1"
+      }
+    ]
+  }
+}

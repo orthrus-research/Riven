@@ -1,0 +1,12 @@
+[
+  {"label": "polar-erratic", "x": -2705.5, "y": 85, "z": 3175.5, "yaw": 30.0, "pitch": 25, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000"]},
+  {"label": "polar-field", "x": -2678.5, "y": 136, "z": 3129.5, "yaw": 30.0, "pitch": 40, "commands": ["execute {player} -2714 77 3190 riven boulders 48"]},
+  {"label": "shore-boulder", "x": 1342.5, "y": 134, "z": -3918.5, "yaw": -60.0, "pitch": 25, "commands": []},
+  {"label": "upland-tor", "x": 2502.5, "y": 161, "z": -593.5, "yaw": 140.0, "pitch": 20, "commands": ["execute {player} 1353 128 -3913 riven boulders 48"]},
+  {"label": "cold-tor", "x": 3360.5, "y": 168, "z": 964.5, "yaw": 200.0, "pitch": 22, "commands": ["execute {player} 2493 156 -605 riven boulders 48"]},
+  {"label": "savanna-outcrop", "x": 223.5, "y": 92, "z": -2239.5, "yaw": 45.0, "pitch": 22, "commands": ["execute {player} 3366 161 949 riven boulders 48"]},
+  {"label": "woodland-boulder", "x": 920.5, "y": 107, "z": -1713.5, "yaw": -120.0, "pitch": 25, "commands": ["execute {player} 214 87 -2230 riven boulders 48"]},
+  {"label": "steppe-erratic", "x": 2041.5, "y": 120, "z": 155.5, "yaw": 70.0, "pitch": 25, "commands": ["execute {player} 932 101 -1720 riven boulders 48", "execute {player} 932 101 -1720 riven trees 48"]},
+  {"label": "boreal-boulder", "x": -4092.5, "y": 91, "z": 2724.5, "yaw": 250.0, "pitch": 25, "commands": ["execute {player} 2026 113 161 riven boulders 48"]},
+  {"label": "boreal-boulder-wide", "x": -4092.5, "y": 103, "z": 2724.5, "yaw": 250.0, "pitch": 35, "commands": ["execute {player} -4081 79 2720 riven boulders 48"]}
+]

@@ -1,0 +1,9 @@
+[
+  {"label": "copper-vein", "x": 1120, "y": -294, "z": -1056, "yaw": 0, "pitch": -60, "commands": ["effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "garnet-skarn", "x": -1096, "y": -177, "z": -1096, "yaw": 0, "pitch": 60},
+  {"label": "redstone-vein", "x": 632, "y": -290, "z": 248, "yaw": 0, "pitch": -60},
+  {"label": "coal-measures", "x": -1200, "y": 42, "z": -1416, "yaw": 0, "pitch": 60},
+  {"label": "banded-iron", "x": -200, "y": -88, "z": -1320, "yaw": 0, "pitch": 60},
+  {"label": "dunite-lens", "x": 728, "y": -396, "z": -240, "yaw": 0, "pitch": 60},
+  {"label": "lapis-magnetite-skarn", "x": -1424, "y": -149, "z": -1264, "yaw": 0, "pitch": -60}
+]

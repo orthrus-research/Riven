@@ -1,0 +1,10 @@
+[
+  {"label": "coal-seam", "x": -792, "y": -53, "z": 1064, "yaw": 0, "pitch": -60, "commands": ["effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "lignite-seam", "x": -392, "y": 17, "z": -680, "yaw": 0, "pitch": -50},
+  {"label": "marine-evaporites", "x": -1320, "y": 126, "z": -1456, "yaw": 0, "pitch": -50},
+  {"label": "porphyry-copper", "x": 1232, "y": -312, "z": 1488, "yaw": 0, "pitch": -40},
+  {"label": "copper-vein", "x": -392, "y": -322, "z": -1312, "yaw": 0, "pitch": 50},
+  {"label": "vanadium-magnetite", "x": -80, "y": -377, "z": -1368, "yaw": 0, "pitch": 60},
+  {"label": "phyllite-belt", "x": 120, "y": -238, "z": -1016, "yaw": 0, "pitch": -40},
+  {"label": "lead-zinc", "x": -952, "y": -41, "z": -1056, "yaw": 0, "pitch": 60}
+]

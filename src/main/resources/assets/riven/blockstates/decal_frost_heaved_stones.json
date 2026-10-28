@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:decal_frost_heaved_stones_0"
+      },
+      {
+        "model": "riven:decal_frost_heaved_stones_1"
+      },
+      {
+        "model": "riven:decal_frost_heaved_stones_2"
+      },
+      {
+        "model": "riven:decal_frost_heaved_stones_3"
+      }
+    ]
+  }
+}

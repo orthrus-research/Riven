@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_sage_stone_rosette_0"
+      },
+      {
+        "model": "riven:plant_sage_stone_rosette_1"
+      },
+      {
+        "model": "riven:plant_sage_stone_rosette_2"
+      },
+      {
+        "model": "riven:plant_sage_stone_rosette_3"
+      }
+    ]
+  }
+}

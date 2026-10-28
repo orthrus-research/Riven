@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:shale_0"
+      },
+      {
+        "model": "riven:shale_1"
+      }
+    ]
+  }
+}

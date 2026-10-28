@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_blue_marsh_spire_0"
+      },
+      {
+        "model": "riven:plant_blue_marsh_spire_1"
+      },
+      {
+        "model": "riven:plant_blue_marsh_spire_2"
+      },
+      {
+        "model": "riven:plant_blue_marsh_spire_3"
+      }
+    ]
+  }
+}

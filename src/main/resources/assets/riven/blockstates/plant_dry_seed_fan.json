@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_dry_seed_fan_0"
+      },
+      {
+        "model": "riven:plant_dry_seed_fan_1"
+      },
+      {
+        "model": "riven:plant_dry_seed_fan_2"
+      },
+      {
+        "model": "riven:plant_dry_seed_fan_3"
+      }
+    ]
+  }
+}

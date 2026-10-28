@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "riven:blocks/decor/frost_edged_spear_0"
+  }
+}

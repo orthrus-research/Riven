@@ -1,0 +1,23 @@
+Riven's ErosionFilter.java adapts the Advanced Terrain Erosion Filter and Simple
+Phacelle Noise by Rune Skovbo Johansen, using the CPU reference port by Luke
+Mitchell, revision 57e79cc331d17e2a45c897bea9c4c022d1fc5551.
+
+https://blog.runevision.com/2026/03/fast-and-gorgeous-erosion-filter.html
+https://blog.runevision.com/2026/01/phacelle-cheap-directional-noise.html
+https://github.com/lpmitchell/AdvancedTerrainErosion
+
+Copyright (c) 2025 Rune Skovbo Johansen (Phacelle Noise).
+CPU reference port: Luke Mitchell, 2026.
+Java adaptation: Riven contributors, 2026.
+
+The adapted file is made available under MPL-2.0. Its source is included in
+Riven's matching sources JAR. Full upstream notices and license text accompany
+this notice as UPSTREAM-NOTICES.txt and MPL-2.0.txt.
+
+Riven changes include integer seeded cell hashing, physical block-unit controls,
+caller-owned scratch, three bounded octaves, a slope admission mask and a local
+landform-envelope displacement budget. Neither the approximate steering vector
+nor the ridge tendency is authoritative surface slope or connected hydrology.
+
+The base terrain, plate blending and temperature selection are independently
+implemented Riven code. No FT's Geology implementation or assets are used.

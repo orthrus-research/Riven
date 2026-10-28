@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "revision": 9,
+  "stoneAboveReference": "mountains",
+  "minimumMountainBlend": 0.5,
+  "soilDepth": 3,
+  "exposedCutDepthInSoilLayers": 1.0,
+  "exposePlateauCuts": true,
+  "exposeDrylandCuts": true,
+  "exposeColdCuts": true,
+  "exposeVolcanicCuts": true,
+  "exposeGeneralCuts": true,
+  "minimumDrylandCover": 0.2,
+  "rockyShore": {"splashBlocks": 20, "capeSplashBlocks": 20, "cliffFaceBlocks": 40},
+  "treeline": {"referenceCelsius": 5, "blocksPerDegree": 4, "lowestBelowStoneBlocks": 20, "highestAboveStoneBlocks": 96, "mountainBelowTreelineBlocks": 12},
+  "cutCover": {"aridMoisture": 0.18, "aridMoisturePerDegreeAbove10": 0.012, "moistureSpan": 0.15, "celsiusRange": [-6, 2], "growingCutBlocks": 48},
+  "note": "Certified rocky formations expose vanilla stone and resolve actual solid/void occupancy before fluids and cover. Their admission excludes supplied water and bank/inlet skirts. Authorized sediment replaces deposited volume and surface soil with sand. Earlier marine ownership and water heads remain unchanged; final authorized emergence is separate. Other exposed-stone rules retain precedence over dryland cover; deep general surface, yardang, cold-region and volcanic cuts expose stone. Earlier supplied water and wetland cover keep priority. Eligible dryland cover replaces soil with sand or gravel pavement above its threshold. Geometry supplies no ice, lava, new water, heat or reconstructed geological materials. Soil before rock (v90): a rocky shore shows rock only within splashBlocks of the water (plus capeSplashBlocks at full cape exposure) and on cliff faces within cliffFaceBlocks; inland of that it takes the ordinary cover. High ground shows rock above a treeline: the stone line (stoneAboveReference) at referenceCelsius, moved blocksPerDegree per degree of the column's temperature, at most lowestBelowStoneBlocks lower and highestAboveStoneBlocks higher; mountain landforms show rock only within mountainBelowTreelineBlocks of it. A cut shows rock when deeper than exposedCutDepthInSoilLayers soil layers where nothing grows back, rising to growingCutBlocks where plants return: as moisture climbs moistureSpan past an aridity threshold (aridMoisture, plus aridMoisturePerDegreeAbove10 per degree above 10 C) and temperature through celsiusRange."
+}

@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:caliche_deposit_0"
+      },
+      {
+        "model": "riven:caliche_deposit_1"
+      }
+    ]
+  }
+}

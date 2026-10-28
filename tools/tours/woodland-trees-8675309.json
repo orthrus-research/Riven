@@ -1,0 +1,50 @@
+[
+ {
+  "label": "spawn",
+  "x": 10.5,
+  "y": 150,
+  "z": -12,
+  "yaw": 0,
+  "pitch": 20,
+  "commands": [
+   "time set 6000",
+   "gamerule doDaylightCycle false",
+   "weather clear 100000"
+  ]
+ },
+ {
+  "label": "near",
+  "x": -832,
+  "y": 150,
+  "z": -1215,
+  "yaw": 180,
+  "pitch": 35
+ },
+ {
+  "label": "near-check",
+  "x": -832,
+  "y": 165,
+  "z": -1300,
+  "yaw": 180,
+  "pitch": 35
+ },
+ {
+  "label": "mid",
+  "x": -832,
+  "y": 200,
+  "z": -950,
+  "yaw": 180,
+  "pitch": 18,
+  "commands": [
+   "execute {player} ~ ~ ~ riven trees 32"
+  ]
+ },
+ {
+  "label": "far",
+  "x": -832,
+  "y": 230,
+  "z": -700,
+  "yaw": 180,
+  "pitch": 12
+ }
+]

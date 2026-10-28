@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "variationSeed": "0x534544494d454e31",
+  "familyWeights": {"BEACH_BENCH": 1, "SPIT": 1, "BARRIER": 1, "TOMBOLO": 1},
+  "tuning": {"widthScale": 1, "lengthScale": 0.68, "offsetScale": 0.23, "hook": 0.42, "roughness": 0.55, "bench": 0.65},
+  "minimumShoaling": 0.3,
+  "anchorReachInPlainWidths": 0.5,
+  "cacheSets": 2048,
+  "cacheWays": 4,
+  "maximumCertificateColumns": 262144,
+  "maximumIslandColumns": 65536,
+  "contract": [
+    "Use the shared exclusive Sites sediment lane. Select one family, with no reroll after rejection.",
+    "Reference widths receive the horizontal scale exactly once. Elevations remain in physical Y63 coordinates.",
+    "Shore guides and attachments come from earlier terrain. Sediment supply is lowland calmness, exposure is earlier geometric shelter; neither is a sediment budget or wave simulation.",
+    "Every integer proposal-box column reads the complete canonical pre-sediment surface. Reject unknown or guarded active columns as a whole; barriers alone may preserve explicit protected inlet capsules.",
+    "Tombolos require an earlier isolated native dry component after occupied ocean water. Exhaust a bounded eight-neighbor component; boundary contact rejects unknown topology. Four-neighbor final dry support connects both anchors and every emergent column.",
+    "Offshore bodies reject native marine water pockets wholly enclosed in the proposal box. This boundary-reach certificate does not prove global continuous or voxel ocean connectivity; barriers additionally require all active columns to inherit marine ownership.",
+    "No sediment proposal queries final terrain, another sediment plan, a biome, or native world state. Memo entries retain immutable geometry and summaries only.",
+    "Marine sediment permission is explicit. Emergence changes final biome and sand volume without rewriting earlier ocean ownership. No additional water source is created.",
+    "Native column certificates do not qualify continuous queries, native occurrence, costs, Java 26 runtime or DH parity. No builds or testing were performed for this integration."
+  ]
+}

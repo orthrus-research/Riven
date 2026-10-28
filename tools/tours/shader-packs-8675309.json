@@ -1,0 +1,8 @@
+[
+  {"label": "coast-day", "x": -300, "y": 120, "z": -40, "yaw": 0, "pitch": 10, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000"]},
+  {"label": "horizon-high", "x": -300, "y": 300, "z": -40, "yaw": 0, "pitch": 8},
+  {"label": "woodland", "x": -832, "y": 150, "z": -1215, "yaw": 180, "pitch": 35},
+  {"label": "chasm-sky", "x": 1024, "y": -60, "z": -1156, "yaw": 90, "pitch": -60},
+  {"label": "horizon-night", "x": 10.5, "y": 222.5, "z": -12, "yaw": 0, "pitch": 0, "commands": ["time set 18000"]},
+  {"label": "lights-night", "x": 40.5, "y": 236, "z": 52.5, "yaw": 180, "pitch": 40, "commands": ["fill 31 229 32 47 240 48 minecraft:air", "fill 31 229 32 47 229 48 minecraft:stone", "fill 34 228 35 36 228 37 minecraft:stone", "fill 34 229 35 36 229 37 minecraft:lava", "fill 38 229 35 40 229 37 minecraft:magma", "fill 42 229 35 44 229 37 minecraft:glowstone", "fill 34 229 39 36 229 41 riven:molten_seams", "fill 38 229 39 40 229 41 riven:moonstone_bright", "fill 42 229 39 44 229 41 riven:beneath_infernal_transition", "fill 38 229 43 40 229 45 minecraft:sea_lantern", "fill 42 229 43 44 229 45 riven:soul_ash", "setblock 35 230 44 minecraft:torch"]}
+]

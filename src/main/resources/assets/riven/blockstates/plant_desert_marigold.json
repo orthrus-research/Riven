@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_desert_marigold_0"
+      },
+      {
+        "model": "riven:plant_desert_marigold_1"
+      },
+      {
+        "model": "riven:plant_desert_marigold_2"
+      },
+      {
+        "model": "riven:plant_desert_marigold_3"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+[
+  {"label": "chasm-inside-up", "x": 1024, "y": 40, "z": -1156, "yaw": 90, "pitch": -60, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000", "effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "chasm-deep-up", "x": 1024, "y": -60, "z": -1156, "yaw": 90, "pitch": -60},
+  {"label": "chasm-deep", "x": 1024, "y": -60, "z": -1166, "yaw": 90, "pitch": 10},
+  {"label": "deep-cavern", "x": -1324, "y": -250, "z": -1644, "yaw": 90, "pitch": 5}
+]

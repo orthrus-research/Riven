@@ -1,0 +1,182 @@
+{
+  "schema": 1,
+  "revision": 4,
+  "temperature": {
+    "cores": [
+      "FROZEN",
+      "COOL",
+      "MILD",
+      "WARM",
+      "HOT"
+    ],
+    "boundaries": [
+      -5,
+      5,
+      15,
+      25
+    ],
+    "transitionHalfWidth": 1.0
+  },
+  "moisture": {
+    "cores": [
+      "DRY",
+      "MODERATE",
+      "WET"
+    ],
+    "boundaries": [
+      0.40,
+      0.62
+    ],
+    "transitionHalfWidth": 0.025
+  },
+  "elevation": {
+    "cores": [
+      "LOW",
+      "MID",
+      "HIGH"
+    ],
+    "boundariesAboveSea": [
+      43,
+      66
+    ],
+    "transitionHalfWidth": 3
+  },
+  "coastal": [
+    "BEACH",
+    "ROCKY_SHORE",
+    "MARSH"
+  ],
+  "water": [
+    "OCEAN",
+    "DEEP_OCEAN",
+    "FROZEN_OCEAN",
+    "WARM_SHALLOWS",
+    "RIVER",
+    "LAKE",
+    "WETLAND",
+    "OASIS"
+  ],
+  "vanilla": {
+    "BEACH": "beaches",
+    "BEACH_COLD": "cold_beach",
+    "ROCKY_SHORE": "stone_beach",
+    "MARSH": "swampland",
+    "OCEAN": "ocean",
+    "DEEP_OCEAN": "deep_ocean",
+    "FROZEN_OCEAN": "frozen_ocean",
+    "WARM_SHALLOWS": "ocean",
+    "RIVER": "river",
+    "RIVER_FROZEN": "frozen_river",
+    "LAKE": "river",
+    "WETLAND": "swampland",
+    "OASIS": "jungle_edge"
+  },
+  "contract": [
+    "The logical biome is locked at the end of TerrainMap.intent from temperature, moisture and base elevation; later stages read the lock and never recompute climate tests.",
+    "Each axis has core classes and a transition position of the given half-width at every core boundary: 9 temperature x 5 moisture x 5 elevation = 225 inland biomes, 3 coastal kinds x 9 temperatures, and 8 water biomes (260).",
+    "Tuned for 8 km worlds (biomes-v4): elevation boundaries Y106 and Y129 sit below the coastal-plain height pile and at the land's 70th percentile; moisture boundaries 0.40 and 0.62 sit at the land's 23rd and 61st percentiles (climate-v3, six seeds), favouring the moderate and wet climates that grow forest (50-75% of land per seed) over the dry ones (16-31%); half-widths of 1 C, 0.025 and 3 blocks, with every core in use.",
+    "Final resolution may override only with water (ocean, river, lake, wetland, oasis), shore (beach, rocky shore, marsh) and height: the elevation position moves at most one step toward the final surface's position.",
+    "Hybrid identity: logical biomes map to vanilla IDs (inland through riven-habitats.json palettes at the core on the value's side of each boundary); a registered subset is future work.",
+    "River mouths: where a river's mouth weight is at least mouthFavour (Hydro mouthRadiusBlocks), the first matching mouth rule by temperature and moisture core (and rocky shore where required) takes precedence over shore and shallow-water overrides, but not deep ocean. Mangrove and salt marsh have no 1.12 biome; they map to swampland until a registered subset exists."
+  ],
+  "mouthFavour": 0.35,
+  "mouths": [
+    {
+      "name": "FROZEN_DELTA",
+      "temperature": [
+        "FROZEN"
+      ],
+      "moisture": [
+        "DRY",
+        "MODERATE",
+        "WET"
+      ],
+      "vanilla": "frozen_river"
+    },
+    {
+      "name": "FJORD_MOUTH",
+      "temperature": [
+        "COOL"
+      ],
+      "moisture": [
+        "DRY",
+        "MODERATE",
+        "WET"
+      ],
+      "rockyShore": true,
+      "vanilla": "cold_beach"
+    },
+    {
+      "name": "SALT_MARSH",
+      "temperature": [
+        "COOL",
+        "MILD"
+      ],
+      "moisture": [
+        "MODERATE",
+        "WET"
+      ],
+      "vanilla": "swampland"
+    },
+    {
+      "name": "TIDAL_FLAT",
+      "temperature": [
+        "MILD",
+        "WARM"
+      ],
+      "moisture": [
+        "DRY"
+      ],
+      "vanilla": "beaches"
+    },
+    {
+      "name": "DELTA_WETLAND",
+      "temperature": [
+        "WARM"
+      ],
+      "moisture": [
+        "MODERATE",
+        "WET"
+      ],
+      "vanilla": "swampland"
+    },
+    {
+      "name": "MANGROVE",
+      "temperature": [
+        "HOT"
+      ],
+      "moisture": [
+        "MODERATE",
+        "WET"
+      ],
+      "vanilla": "swampland"
+    },
+    {
+      "name": "SABKHA",
+      "temperature": [
+        "HOT"
+      ],
+      "moisture": [
+        "DRY"
+      ],
+      "vanilla": "desert"
+    },
+    {
+      "name": "ESTUARY",
+      "temperature": [
+        "FROZEN",
+        "COOL",
+        "MILD",
+        "WARM",
+        "HOT"
+      ],
+      "moisture": [
+        "DRY",
+        "MODERATE",
+        "WET"
+      ],
+      "vanilla": "river"
+    }
+  ],
+  "mouthCoastBandBlocks": 96
+}

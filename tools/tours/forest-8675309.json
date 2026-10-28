@@ -1,0 +1,10 @@
+[
+  {"label": "temperate_woodland", "x": -319.5, "y": 133, "z": -362.5, "yaw": 0.0, "pitch": 30, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000", "execute {player} -320 103 -320 riven -320 -320"]},
+  {"label": "temperate_woodland-2", "x": -319.5, "y": 145, "z": -682.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -320 115 -640 riven -320 -640", "execute {player} -320 103 -320 riven trees 48", "execute {player} -320 103 -320 riven cover 32"]},
+  {"label": "boreal_forest", "x": 3520.5, "y": 141, "z": 1237.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} 3520 111 1280 riven 3520 1280", "execute {player} -320 115 -640 riven trees 48", "execute {player} -320 115 -640 riven cover 32"]},
+  {"label": "boreal_highlands", "x": 3200.5, "y": 168, "z": 1237.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} 3200 138 1280 riven 3200 1280", "execute {player} 3520 111 1280 riven trees 48", "execute {player} 3520 111 1280 riven cover 32"]},
+  {"label": "misty_highlands", "x": 3840.5, "y": 169, "z": 917.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} 3840 139 960 riven 3840 960", "execute {player} 3200 138 1280 riven trees 48", "execute {player} 3200 138 1280 riven cover 32"]},
+  {"label": "tundra", "x": -3199.5, "y": 96, "z": 2517.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -3200 66 2560 riven -3200 2560", "execute {player} 3840 139 960 riven trees 48", "execute {player} 3840 139 960 riven cover 32"]},
+  {"label": "snow_taiga", "x": -959.5, "y": 103, "z": 3157.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -960 73 3200 riven -960 3200", "execute {player} -3200 66 2560 riven trees 48", "execute {player} -3200 66 2560 riven cover 32"]},
+  {"label": "snow_taiga-wide", "x": -919.5, "y": 108, "z": 3200.5, "yaw": 90.0, "pitch": 30, "commands": ["execute {player} -960 73 3200 riven trees 48", "execute {player} -960 73 3200 riven cover 32"]}
+]

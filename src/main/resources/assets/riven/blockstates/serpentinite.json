@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:serpentinite_0"
+      },
+      {
+        "model": "riven:serpentinite_1"
+      }
+    ]
+  }
+}

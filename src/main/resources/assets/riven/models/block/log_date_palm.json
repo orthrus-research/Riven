@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "side": "riven:blocks/wood/date_palm_bark",
+    "end": "riven:blocks/wood/date_palm_end"
+  }
+}

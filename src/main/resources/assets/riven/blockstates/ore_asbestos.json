@@ -1,0 +1,267 @@
+{
+  "forge_marker": 1,
+  "defaults": {
+    "model": "riven:ore",
+    "textures": {
+      "overlay": "riven:blocks/ore_overlay_dull"
+    }
+  },
+  "variants": {
+    "host=0": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/gabbro_0",
+          "top": "riven:blocks/stone/gabbro_0",
+          "bottom": "riven:blocks/stone/gabbro_0"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/gabbro_1",
+          "top": "riven:blocks/stone/gabbro_1",
+          "bottom": "riven:blocks/stone/gabbro_1"
+        }
+      }
+    ],
+    "host=1": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/gneiss_0_side",
+          "top": "riven:blocks/stone/gneiss_0_top",
+          "bottom": "riven:blocks/stone/gneiss_0_top"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/gneiss_1_side",
+          "top": "riven:blocks/stone/gneiss_1_top",
+          "bottom": "riven:blocks/stone/gneiss_1_top"
+        }
+      }
+    ],
+    "host=2": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/graphite_0_side",
+          "top": "riven:blocks/stone/graphite_0_top",
+          "bottom": "riven:blocks/stone/graphite_0_top"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/graphite_1_side",
+          "top": "riven:blocks/stone/graphite_1_top",
+          "bottom": "riven:blocks/stone/graphite_1_top"
+        }
+      }
+    ],
+    "host=3": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/limestone_0_side",
+          "top": "riven:blocks/stone/limestone_0_top",
+          "bottom": "riven:blocks/stone/limestone_0_top"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/limestone_1_side",
+          "top": "riven:blocks/stone/limestone_1_top",
+          "bottom": "riven:blocks/stone/limestone_1_top"
+        }
+      }
+    ],
+    "host=4": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/mica_0_side",
+          "top": "riven:blocks/stone/mica_0_top",
+          "bottom": "riven:blocks/stone/mica_0_top"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/mica_1_side",
+          "top": "riven:blocks/stone/mica_1_top",
+          "bottom": "riven:blocks/stone/mica_1_top"
+        }
+      }
+    ],
+    "host=5": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/phyllite_0_side",
+          "top": "riven:blocks/stone/phyllite_0_top",
+          "bottom": "riven:blocks/stone/phyllite_0_top"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/phyllite_1_side",
+          "top": "riven:blocks/stone/phyllite_1_top",
+          "bottom": "riven:blocks/stone/phyllite_1_top"
+        }
+      }
+    ],
+    "host=6": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/quartzite_0_side",
+          "top": "riven:blocks/stone/quartzite_0_top",
+          "bottom": "riven:blocks/stone/quartzite_0_top"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/quartzite_1_side",
+          "top": "riven:blocks/stone/quartzite_1_top",
+          "bottom": "riven:blocks/stone/quartzite_1_top"
+        }
+      }
+    ],
+    "host=7": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/shale_0_side",
+          "top": "riven:blocks/stone/shale_0_top",
+          "bottom": "riven:blocks/stone/shale_0_top"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/shale_1_side",
+          "top": "riven:blocks/stone/shale_1_top",
+          "bottom": "riven:blocks/stone/shale_1_top"
+        }
+      }
+    ],
+    "host=8": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/slate_0_side",
+          "top": "riven:blocks/stone/slate_0_top",
+          "bottom": "riven:blocks/stone/slate_0_top"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/slate_1_side",
+          "top": "riven:blocks/stone/slate_1_top",
+          "bottom": "riven:blocks/stone/slate_1_top"
+        }
+      }
+    ],
+    "host=9": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/soapstone_0",
+          "top": "riven:blocks/stone/soapstone_0",
+          "bottom": "riven:blocks/stone/soapstone_0"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/soapstone_1",
+          "top": "riven:blocks/stone/soapstone_1",
+          "bottom": "riven:blocks/stone/soapstone_1"
+        }
+      }
+    ],
+    "host=10": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/kimberlite_0",
+          "top": "riven:blocks/stone/kimberlite_0",
+          "bottom": "riven:blocks/stone/kimberlite_0"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/kimberlite_1",
+          "top": "riven:blocks/stone/kimberlite_1",
+          "bottom": "riven:blocks/stone/kimberlite_1"
+        }
+      }
+    ],
+    "host=11": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/anorthosite_0",
+          "top": "riven:blocks/stone/anorthosite_0",
+          "bottom": "riven:blocks/stone/anorthosite_0"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/anorthosite_1",
+          "top": "riven:blocks/stone/anorthosite_1",
+          "bottom": "riven:blocks/stone/anorthosite_1"
+        }
+      }
+    ],
+    "host=12": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/leucobasalt_0",
+          "top": "riven:blocks/stone/leucobasalt_0",
+          "bottom": "riven:blocks/stone/leucobasalt_0"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/leucobasalt_1",
+          "top": "riven:blocks/stone/leucobasalt_1",
+          "bottom": "riven:blocks/stone/leucobasalt_1"
+        }
+      }
+    ],
+    "host=13": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/leucobasalt_0",
+          "top": "riven:blocks/stone/leucobasalt_0",
+          "bottom": "riven:blocks/stone/leucobasalt_0"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/leucobasalt_1",
+          "top": "riven:blocks/stone/leucobasalt_1",
+          "bottom": "riven:blocks/stone/leucobasalt_1"
+        }
+      }
+    ],
+    "host=14": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/leucobasalt_0",
+          "top": "riven:blocks/stone/leucobasalt_0",
+          "bottom": "riven:blocks/stone/leucobasalt_0"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/leucobasalt_1",
+          "top": "riven:blocks/stone/leucobasalt_1",
+          "bottom": "riven:blocks/stone/leucobasalt_1"
+        }
+      }
+    ],
+    "host=15": [
+      {
+        "textures": {
+          "side": "riven:blocks/stone/leucobasalt_0",
+          "top": "riven:blocks/stone/leucobasalt_0",
+          "bottom": "riven:blocks/stone/leucobasalt_0"
+        }
+      },
+      {
+        "textures": {
+          "side": "riven:blocks/stone/leucobasalt_1",
+          "top": "riven:blocks/stone/leucobasalt_1",
+          "bottom": "riven:blocks/stone/leucobasalt_1"
+        }
+      }
+    ]
+  }
+}

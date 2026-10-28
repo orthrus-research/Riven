@@ -1,0 +1,1987 @@
+{
+  "schema": 1,
+  "revision": 5,
+  "variationSeed": "0x4f52455352495631",
+  "maximumBodies": 96,
+  "richness": {
+    "densityScale": 1.0,
+    "deepGainFromY": 0,
+    "deepGainToY": -400,
+    "deepGain": 1.0
+  },
+  "nodes": {
+    "cellBlocks": 6,
+    "orePerNode": [
+      10,
+      30
+    ],
+    "megaChance": 0.08,
+    "megaOrePerNode": [
+      50,
+      90
+    ],
+    "padBlocks": 2,
+    "shapeVariation": 0.3
+  },
+  "layering": {
+    "sporadicShare": 0.12,
+    "primaryAbove": 0.55,
+    "secondaryBelow": 0.35
+  },
+  "minerals": {
+    "coal": "COAL",
+    "graphite": "COAL",
+    "diamond": "DIAMOND",
+    "brown_limonite": "IRON",
+    "yellow_limonite": "IRON",
+    "banded_iron": "IRON",
+    "magnetite": "IRON",
+    "vanadium_magnetite": "IRON",
+    "ilmenite": "IRON",
+    "gold": "GOLD",
+    "silver": "NONE",
+    "pyrite": "IRON",
+    "chalcopyrite": "NONE",
+    "bornite": "NONE",
+    "chalcocite": "NONE",
+    "malachite": "NONE",
+    "copper": "NONE",
+    "sphalerite": "NONE",
+    "galena": "NONE",
+    "cassiterite": "NONE",
+    "cassiterite_sand": "NONE",
+    "garnet_sand": "NONE",
+    "stibnite": "NONE",
+    "cinnabar": "REDSTONE",
+    "realgar": "NONE",
+    "redstone": "REDSTONE",
+    "ruby": "REDSTONE",
+    "lazurite": "LAPIS",
+    "sodalite": "LAPIS",
+    "lapis": "LAPIS",
+    "calcite": "NONE",
+    "talc": "NONE",
+    "asbestos": "NONE",
+    "mica": "NONE",
+    "kyanite": "NONE",
+    "almandine": "NONE",
+    "pyrope": "NONE",
+    "grossular": "NONE",
+    "spessartine": "NONE",
+    "sapphire": "NONE",
+    "green_sapphire": "EMERALD",
+    "garnet_red": "NONE",
+    "garnet_yellow": "NONE",
+    "apatite": "NONE",
+    "tricalcium_phosphate": "NONE",
+    "pyrochlore": "NONE",
+    "pentlandite": "IRON",
+    "garnierite": "IRON",
+    "nickel": "IRON",
+    "cobaltite": "IRON",
+    "cooperite": "NONE",
+    "olivine": "NONE",
+    "bentonite": "NONE",
+    "magnesite": "NONE",
+    "glauconite_sand": "NONE",
+    "rock_salt": "NONE",
+    "salt": "NONE",
+    "gypsum": "NONE",
+    "lepidolite": "NONE",
+    "spodumene": "NONE",
+    "diatomite": "NONE",
+    "saltpeter": "NONE",
+    "pyrolusite": "NONE",
+    "tantalite": "NONE",
+    "basaltic_mineral_sand": "NONE",
+    "granitic_mineral_sand": "NONE",
+    "fullers_earth": "NONE",
+    "zeolite": "NONE",
+    "amethyst": "NONE",
+    "opal": "NONE",
+    "pollucite": "NONE",
+    "anglesite": "NONE",
+    "cerussite": "NONE",
+    "chlorapatite": "NONE",
+    "fluorapatite": "NONE",
+    "hydroxyapatite": "NONE",
+    "arsenopyrite": "NONE",
+    "raw_electrum": "GOLD",
+    "fluorite": "NONE",
+    "proustite": "NONE",
+    "pyrargyrite": "NONE",
+    "acanthite": "NONE",
+    "sperrylite": "NONE",
+    "braggite": "NONE",
+    "smithsonite": "NONE",
+    "vanadinite": "NONE",
+    "coal_seam": "NONE",
+    "lignite_seam": "NONE",
+    "anthracite_seam": "NONE",
+    "halide_evaporite": "NONE",
+    "sulfate_evaporite": "NONE",
+    "carbonate_evaporite": "NONE",
+    "non_marine_evaporite": "NONE",
+    "potash": "NONE",
+    "bauxite_laterite": "NONE",
+    "caliche": "NONE",
+    "phosphorite_rock": "NONE",
+    "sulfur_rock": "NONE",
+    "native_copper": "NONE",
+    "platinum_placer": "NONE",
+    "gold_alluvium": "NONE",
+    "graphite_schist": "NONE",
+    "soapstone_rock": "NONE",
+    "slate_rock": "NONE",
+    "phyllite_rock": "NONE"
+  },
+  "blocks": {
+    "coal_seam": "riven:coal_deposit",
+    "lignite_seam": "riven:lignite_deposit",
+    "anthracite_seam": "riven:anthracite_deposit",
+    "halide_evaporite": "riven:halide_evaporite_deposit",
+    "sulfate_evaporite": "riven:sulfate_evaporite_deposit",
+    "carbonate_evaporite": "riven:carbonate_evaporite_deposit",
+    "non_marine_evaporite": "riven:non_marine_evaporite_deposit",
+    "potash": "riven:potash_deposit",
+    "bauxite_laterite": "riven:bauxite_deposit",
+    "caliche": "riven:caliche_deposit",
+    "phosphorite_rock": "riven:phosphorite_deposit",
+    "sulfur_rock": "riven:sulfur_deposit",
+    "native_copper": "riven:native_copper_deposit",
+    "platinum_placer": "riven:platinum_placer_deposit",
+    "gold_alluvium": "riven:gold_alluvial_deposit",
+    "graphite_schist": "riven:graphite",
+    "soapstone_rock": "riven:soapstone",
+    "slate_rock": "riven:slate",
+    "phyllite_rock": "riven:phyllite"
+  },
+  "deposits": [
+    {
+      "name": "lignite seams",
+      "type": "organic",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "shale"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 144,
+      "chance": 0.35,
+      "radiusBlocks": [
+        32,
+        72
+      ],
+      "thicknessBlocks": [
+        1.5,
+        4
+      ],
+      "fill": "solid",
+      "maxDepthBlocks": 120,
+      "layers": {
+        "primary": "lignite_seam",
+        "secondary": "lignite_seam",
+        "between": "lignite_seam",
+        "sporadic": "lignite_seam"
+      }
+    },
+    {
+      "name": "coal seams",
+      "type": "organic",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "shale"
+      ],
+      "y": [
+        -220,
+        384
+      ],
+      "cellBlocks": 128,
+      "chance": 0.5,
+      "radiusBlocks": [
+        40,
+        96
+      ],
+      "thicknessBlocks": [
+        2,
+        5
+      ],
+      "fill": "solid",
+      "layers": {
+        "primary": "coal_seam",
+        "secondary": "coal_seam",
+        "between": "coal_seam",
+        "sporadic": "pyrite"
+      }
+    },
+    {
+      "name": "anthracite seams",
+      "type": "organic",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "shale"
+      ],
+      "y": [
+        -512,
+        -80
+      ],
+      "cellBlocks": 160,
+      "chance": 0.5,
+      "radiusBlocks": [
+        32,
+        80
+      ],
+      "thicknessBlocks": [
+        1.5,
+        4
+      ],
+      "fill": "solid",
+      "layers": {
+        "primary": "anthracite_seam",
+        "secondary": "anthracite_seam",
+        "between": "anthracite_seam",
+        "sporadic": "graphite"
+      }
+    },
+    {
+      "name": "graphite schist",
+      "type": "metamorphic",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "schist",
+        "gneiss"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 160,
+      "chance": 0.45,
+      "radiusBlocks": [
+        24,
+        64
+      ],
+      "thicknessBlocks": [
+        3,
+        9
+      ],
+      "fill": "solid",
+      "layers": {
+        "primary": "graphite_schist",
+        "secondary": "graphite_schist",
+        "between": "graphite_schist",
+        "sporadic": "graphite"
+      }
+    },
+    {
+      "name": "banded iron formation",
+      "type": "marine",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "ironstone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 144,
+      "chance": 0.8,
+      "radiusBlocks": [
+        48,
+        110
+      ],
+      "thicknessBlocks": [
+        6,
+        15
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "banded_iron",
+        "secondary": "magnetite",
+        "between": "banded_iron",
+        "sporadic": "pyrolusite"
+      }
+    },
+    {
+      "name": "oolitic ironstone",
+      "type": "marine",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "shale",
+        "limestone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 160,
+      "chance": 0.4,
+      "radiusBlocks": [
+        32,
+        80
+      ],
+      "thicknessBlocks": [
+        3,
+        7
+      ],
+      "nodeChance": 0.9,
+      "layers": {
+        "primary": "brown_limonite",
+        "secondary": "yellow_limonite",
+        "between": "banded_iron",
+        "sporadic": "malachite"
+      }
+    },
+    {
+      "name": "phosphorite beds",
+      "type": "marine",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "shale",
+        "limestone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 160,
+      "chance": 0.4,
+      "radiusBlocks": [
+        28,
+        64
+      ],
+      "thicknessBlocks": [
+        2,
+        4
+      ],
+      "fill": "solid",
+      "layers": {
+        "primary": "phosphorite_rock",
+        "secondary": "phosphorite_rock",
+        "between": "phosphorite_rock",
+        "sporadic": "chlorapatite"
+      }
+    },
+    {
+      "name": "glauconite greensand",
+      "type": "marine",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "sandstone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 176,
+      "chance": 0.35,
+      "radiusBlocks": [
+        28,
+        64
+      ],
+      "thicknessBlocks": [
+        3,
+        7
+      ],
+      "nodeChance": 0.8,
+      "layers": {
+        "primary": "glauconite_sand",
+        "secondary": "glauconite_sand",
+        "between": "glauconite_sand",
+        "sporadic": "apatite"
+      }
+    },
+    {
+      "name": "sedimentary manganese",
+      "type": "marine",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "shale",
+        "redbeds"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 176,
+      "chance": 0.35,
+      "radiusBlocks": [
+        24,
+        56
+      ],
+      "thicknessBlocks": [
+        3,
+        6
+      ],
+      "nodeChance": 0.9,
+      "layers": {
+        "primary": "pyrolusite",
+        "secondary": "pyrolusite",
+        "between": "pyrolusite",
+        "sporadic": "banded_iron"
+      }
+    },
+    {
+      "name": "marine evaporite sequence",
+      "type": "marine",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "evaporite"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 128,
+      "chance": 0.7,
+      "radiusBlocks": [
+        40,
+        90
+      ],
+      "thicknessBlocks": [
+        6,
+        16
+      ],
+      "fill": "solid",
+      "layers": {
+        "primary": "halide_evaporite",
+        "secondary": "carbonate_evaporite",
+        "between": "sulfate_evaporite",
+        "sporadic": "rock_salt"
+      }
+    },
+    {
+      "name": "potash",
+      "type": "marine",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "evaporite"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 160,
+      "chance": 0.45,
+      "radiusBlocks": [
+        24,
+        56
+      ],
+      "thicknessBlocks": [
+        2,
+        4
+      ],
+      "fill": "solid",
+      "layers": {
+        "primary": "potash",
+        "secondary": "potash",
+        "between": "potash",
+        "sporadic": "salt"
+      }
+    },
+    {
+      "name": "lead-zinc carbonate",
+      "type": "marine",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "limestone",
+        "dolostone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 144,
+      "chance": 0.45,
+      "radiusBlocks": [
+        24,
+        60
+      ],
+      "thicknessBlocks": [
+        4,
+        10
+      ],
+      "nodeChance": 0.9,
+      "layers": {
+        "primary": "galena",
+        "secondary": "sphalerite",
+        "between": "smithsonite",
+        "sporadic": "cerussite"
+      }
+    },
+    {
+      "name": "oxidised lead cap",
+      "type": "marine",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "limestone",
+        "dolostone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 192,
+      "chance": 0.35,
+      "radiusBlocks": [
+        16,
+        40
+      ],
+      "thicknessBlocks": [
+        3,
+        6
+      ],
+      "nodeChance": 0.9,
+      "maxDepthBlocks": 70,
+      "layers": {
+        "primary": "anglesite",
+        "secondary": "cerussite",
+        "between": "vanadinite",
+        "sporadic": "smithsonite"
+      }
+    },
+    {
+      "name": "saltpeter caves",
+      "type": "marine",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "limestone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 192,
+      "chance": 0.3,
+      "radiusBlocks": [
+        16,
+        40
+      ],
+      "thicknessBlocks": [
+        2,
+        5
+      ],
+      "nodeChance": 0.8,
+      "maxDepthBlocks": 90,
+      "layers": {
+        "primary": "saltpeter",
+        "secondary": "saltpeter",
+        "between": "saltpeter",
+        "sporadic": "saltpeter"
+      }
+    },
+    {
+      "name": "red-bed copper",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "redbeds",
+        "sandstone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 160,
+      "chance": 0.4,
+      "radiusBlocks": [
+        24,
+        60
+      ],
+      "thicknessBlocks": [
+        2,
+        5
+      ],
+      "nodeChance": 0.9,
+      "layers": {
+        "primary": "malachite",
+        "secondary": "chalcopyrite",
+        "between": "chalcocite",
+        "sporadic": "bornite"
+      }
+    },
+    {
+      "name": "non-marine evaporite",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "redbeds",
+        "sandstone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 192,
+      "chance": 0.35,
+      "radiusBlocks": [
+        24,
+        56
+      ],
+      "thicknessBlocks": [
+        2,
+        5
+      ],
+      "fill": "solid",
+      "maxDepthBlocks": 60,
+      "layers": {
+        "primary": "non_marine_evaporite",
+        "secondary": "non_marine_evaporite",
+        "between": "non_marine_evaporite",
+        "sporadic": "gypsum"
+      }
+    },
+    {
+      "name": "kieselguhr",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "shale",
+        "sandstone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 192,
+      "chance": 0.3,
+      "radiusBlocks": [
+        24,
+        56
+      ],
+      "thicknessBlocks": [
+        2,
+        5
+      ],
+      "nodeChance": 0.9,
+      "maxDepthBlocks": 80,
+      "layers": {
+        "primary": "diatomite",
+        "secondary": "diatomite",
+        "between": "diatomite",
+        "sporadic": "fullers_earth"
+      }
+    },
+    {
+      "name": "caliche",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "sandstone",
+        "redbeds"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 176,
+      "chance": 0.35,
+      "radiusBlocks": [
+        24,
+        60
+      ],
+      "thicknessBlocks": [
+        1.5,
+        3
+      ],
+      "fill": "solid",
+      "maxDepthBlocks": 30,
+      "layers": {
+        "primary": "caliche",
+        "secondary": "caliche",
+        "between": "caliche",
+        "sporadic": "caliche"
+      }
+    },
+    {
+      "name": "bauxite laterite",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "limestone",
+        "redbeds",
+        "granite"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 192,
+      "chance": 0.35,
+      "radiusBlocks": [
+        24,
+        56
+      ],
+      "thicknessBlocks": [
+        3,
+        7
+      ],
+      "fill": "solid",
+      "maxDepthBlocks": 50,
+      "layers": {
+        "primary": "bauxite_laterite",
+        "secondary": "bauxite_laterite",
+        "between": "bauxite_laterite",
+        "sporadic": "ilmenite"
+      }
+    },
+    {
+      "name": "laterite nickel",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "basalt",
+        "gabbro",
+        "kimberlite"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 192,
+      "chance": 0.4,
+      "radiusBlocks": [
+        20,
+        48
+      ],
+      "thicknessBlocks": [
+        3,
+        6
+      ],
+      "nodeChance": 1.0,
+      "maxDepthBlocks": 50,
+      "layers": {
+        "primary": "garnierite",
+        "secondary": "garnierite",
+        "between": "garnierite",
+        "sporadic": "cobaltite"
+      }
+    },
+    {
+      "name": "bog iron",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "loosesand",
+        "gravel",
+        "sandstone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 176,
+      "chance": 0.4,
+      "radiusBlocks": [
+        20,
+        48
+      ],
+      "thicknessBlocks": [
+        2,
+        4
+      ],
+      "nodeChance": 0.9,
+      "maxDepthBlocks": 25,
+      "layers": {
+        "primary": "brown_limonite",
+        "secondary": "yellow_limonite",
+        "between": "brown_limonite",
+        "sporadic": "magnetite"
+      }
+    },
+    {
+      "name": "placers",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "loosesand",
+        "gravel"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 144,
+      "chance": 0.5,
+      "radiusBlocks": [
+        20,
+        48
+      ],
+      "thicknessBlocks": [
+        2,
+        4
+      ],
+      "nodeChance": 1.0,
+      "maxDepthBlocks": 200,
+      "layers": {
+        "primary": "gold_alluvium",
+        "secondary": "cassiterite_sand",
+        "between": "garnet_sand",
+        "sporadic": "platinum_placer"
+      }
+    },
+    {
+      "name": "mineral sands",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "sandstone",
+        "loosesand"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 144,
+      "chance": 0.45,
+      "radiusBlocks": [
+        32,
+        72
+      ],
+      "thicknessBlocks": [
+        2,
+        6
+      ],
+      "nodeChance": 0.6,
+      "layers": {
+        "primary": "basaltic_mineral_sand",
+        "secondary": "granitic_mineral_sand",
+        "between": "fullers_earth",
+        "sporadic": "ilmenite"
+      }
+    },
+    {
+      "name": "volcanic sulfur",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "basalt"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 128,
+      "chance": 0.5,
+      "radiusBlocks": [
+        16,
+        40
+      ],
+      "thicknessBlocks": [
+        3,
+        7
+      ],
+      "nodeChance": 1.0,
+      "maxDepthBlocks": 60,
+      "layers": {
+        "primary": "sulfur_rock",
+        "secondary": "sulfur_rock",
+        "between": "sulfur_rock",
+        "sporadic": "realgar"
+      }
+    },
+    {
+      "name": "native copper amygdales",
+      "type": "continental",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "basalt",
+        "dolerite"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 128,
+      "chance": 0.45,
+      "radiusBlocks": [
+        16,
+        40
+      ],
+      "thicknessBlocks": [
+        3,
+        6
+      ],
+      "nodeChance": 0.8,
+      "layers": {
+        "primary": "native_copper",
+        "secondary": "native_copper",
+        "between": "copper",
+        "sporadic": "chalcocite"
+      }
+    },
+    {
+      "name": "porphyry copper",
+      "type": "hydrothermal",
+      "source": "susy",
+      "origin": "contact",
+      "hosts": [
+        "gneiss",
+        "schist",
+        "shale",
+        "sandstone",
+        "limestone"
+      ],
+      "partners": [
+        "granite"
+      ],
+      "y": [
+        -420,
+        384
+      ],
+      "cellBlocks": 128,
+      "chance": 0.6,
+      "radiusBlocks": [
+        40,
+        90
+      ],
+      "bandBlocks": [
+        6,
+        14
+      ],
+      "aureoleBlocks": [
+        16,
+        32
+      ],
+      "nodeChance": 0.9,
+      "layers": {
+        "primary": "bornite",
+        "secondary": "chalcopyrite",
+        "between": "pyrite",
+        "sporadic": "gold"
+      }
+    },
+    {
+      "name": "garnet skarn",
+      "type": "hydrothermal",
+      "source": "gtceu",
+      "origin": "contact",
+      "hosts": [
+        "limestone",
+        "dolostone",
+        "schist"
+      ],
+      "partners": [
+        "granite",
+        "dolerite"
+      ],
+      "y": [
+        -400,
+        384
+      ],
+      "cellBlocks": 128,
+      "chance": 0.5,
+      "radiusBlocks": [
+        24,
+        64
+      ],
+      "bandBlocks": [
+        4.5,
+        9
+      ],
+      "aureoleBlocks": [
+        3,
+        8
+      ],
+      "nodeChance": 0.9,
+      "layers": {
+        "primary": "garnet_red",
+        "secondary": "garnet_yellow",
+        "between": "amethyst",
+        "sporadic": "opal"
+      }
+    },
+    {
+      "name": "lapis skarn",
+      "type": "hydrothermal",
+      "source": "susy",
+      "origin": "contact",
+      "hosts": [
+        "limestone",
+        "dolostone"
+      ],
+      "partners": [
+        "granite"
+      ],
+      "y": [
+        -400,
+        384
+      ],
+      "cellBlocks": 128,
+      "chance": 0.5,
+      "radiusBlocks": [
+        24,
+        64
+      ],
+      "bandBlocks": [
+        4.5,
+        9
+      ],
+      "aureoleBlocks": [
+        8,
+        16
+      ],
+      "nodeChance": 0.9,
+      "layers": {
+        "primary": "lapis",
+        "secondary": "lazurite",
+        "between": "calcite",
+        "sporadic": "sodalite"
+      }
+    },
+    {
+      "name": "magnetite skarn",
+      "type": "hydrothermal",
+      "source": "gtceu",
+      "origin": "contact",
+      "hosts": [
+        "limestone",
+        "dolostone"
+      ],
+      "partners": [
+        "granite"
+      ],
+      "y": [
+        -400,
+        384
+      ],
+      "cellBlocks": 128,
+      "chance": 0.75,
+      "radiusBlocks": [
+        40,
+        96
+      ],
+      "bandBlocks": [
+        6,
+        13.5
+      ],
+      "aureoleBlocks": [
+        14,
+        28
+      ],
+      "nodeChance": 0.9,
+      "layers": {
+        "primary": "magnetite",
+        "secondary": "magnetite",
+        "between": "vanadium_magnetite",
+        "sporadic": "gold"
+      }
+    },
+    {
+      "name": "copper veins",
+      "type": "hydrothermal",
+      "source": "gtceu",
+      "origin": "sheet",
+      "hosts": [
+        "granite",
+        "gneiss",
+        "schist",
+        "dolerite",
+        "basalt",
+        "gabbro",
+        "anorthosite"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 64,
+      "chance": 0.85,
+      "lengthBlocks": [
+        20,
+        52
+      ],
+      "heightBlocks": [
+        32,
+        80
+      ],
+      "thicknessBlocks": [
+        3,
+        7
+      ],
+      "dipDegrees": [
+        55,
+        90
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "chalcopyrite",
+        "secondary": "magnetite",
+        "between": "pyrite",
+        "sporadic": "copper"
+      }
+    },
+    {
+      "name": "cobalt veins",
+      "type": "hydrothermal",
+      "source": "susy",
+      "origin": "sheet",
+      "hosts": [
+        "schist",
+        "gneiss"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 112,
+      "chance": 0.5,
+      "lengthBlocks": [
+        20,
+        48
+      ],
+      "heightBlocks": [
+        24,
+        56
+      ],
+      "thicknessBlocks": [
+        2,
+        5
+      ],
+      "dipDegrees": [
+        55,
+        90
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "cobaltite",
+        "secondary": "chalcopyrite",
+        "between": "magnetite",
+        "sporadic": "sphalerite"
+      }
+    },
+    {
+      "name": "greisen tin",
+      "type": "hydrothermal",
+      "source": "susy",
+      "origin": "sheet",
+      "hosts": [
+        "granite"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 72,
+      "chance": 0.85,
+      "lengthBlocks": [
+        20,
+        56
+      ],
+      "heightBlocks": [
+        32,
+        80
+      ],
+      "thicknessBlocks": [
+        3,
+        7
+      ],
+      "dipDegrees": [
+        60,
+        90
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "cassiterite",
+        "secondary": "cassiterite",
+        "between": "cassiterite",
+        "sporadic": "tantalite"
+      }
+    },
+    {
+      "name": "epithermal redstone",
+      "type": "hydrothermal",
+      "source": "gtceu",
+      "origin": "sheet",
+      "hosts": [
+        "basalt",
+        "schist",
+        "gneiss",
+        "granite",
+        "dolerite",
+        "limestone",
+        "gabbro"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 64,
+      "chance": 0.75,
+      "lengthBlocks": [
+        20,
+        52
+      ],
+      "heightBlocks": [
+        32,
+        80
+      ],
+      "thicknessBlocks": [
+        3,
+        7
+      ],
+      "dipDegrees": [
+        50,
+        90
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "redstone",
+        "secondary": "redstone",
+        "between": "ruby",
+        "sporadic": "cinnabar"
+      }
+    },
+    {
+      "name": "epithermal silver",
+      "type": "hydrothermal",
+      "source": "susy",
+      "origin": "sheet",
+      "hosts": [
+        "basalt",
+        "dolerite",
+        "schist"
+      ],
+      "y": [
+        -200,
+        384
+      ],
+      "cellBlocks": 112,
+      "chance": 0.5,
+      "lengthBlocks": [
+        20,
+        48
+      ],
+      "heightBlocks": [
+        24,
+        56
+      ],
+      "thicknessBlocks": [
+        2,
+        5
+      ],
+      "dipDegrees": [
+        55,
+        90
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "acanthite",
+        "secondary": "proustite",
+        "between": "pyrargyrite",
+        "sporadic": "silver"
+      }
+    },
+    {
+      "name": "epithermal electrum",
+      "type": "hydrothermal",
+      "source": "susy",
+      "origin": "sheet",
+      "hosts": [
+        "basalt",
+        "dolerite"
+      ],
+      "y": [
+        -150,
+        384
+      ],
+      "cellBlocks": 144,
+      "chance": 0.4,
+      "lengthBlocks": [
+        16,
+        40
+      ],
+      "heightBlocks": [
+        16,
+        40
+      ],
+      "thicknessBlocks": [
+        2,
+        4
+      ],
+      "dipDegrees": [
+        55,
+        90
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "raw_electrum",
+        "secondary": "gold",
+        "between": "pyrite",
+        "sporadic": "realgar"
+      }
+    },
+    {
+      "name": "orogenic gold",
+      "type": "hydrothermal",
+      "source": "riven",
+      "origin": "sheet",
+      "hosts": [
+        "schist",
+        "gneiss",
+        "basalt",
+        "dolerite"
+      ],
+      "y": [
+        -450,
+        384
+      ],
+      "cellBlocks": 72,
+      "chance": 0.7,
+      "lengthBlocks": [
+        20,
+        52
+      ],
+      "heightBlocks": [
+        24,
+        64
+      ],
+      "thicknessBlocks": [
+        2,
+        4
+      ],
+      "dipDegrees": [
+        55,
+        90
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "gold",
+        "secondary": "arsenopyrite",
+        "between": "pyrite",
+        "sporadic": "stibnite"
+      }
+    },
+    {
+      "name": "mercury-antimony veins",
+      "type": "hydrothermal",
+      "source": "susy",
+      "origin": "sheet",
+      "hosts": [
+        "shale",
+        "limestone",
+        "schist",
+        "basalt"
+      ],
+      "y": [
+        -120,
+        384
+      ],
+      "cellBlocks": 128,
+      "chance": 0.45,
+      "lengthBlocks": [
+        16,
+        44
+      ],
+      "heightBlocks": [
+        16,
+        40
+      ],
+      "thicknessBlocks": [
+        2,
+        4
+      ],
+      "dipDegrees": [
+        50,
+        90
+      ],
+      "nodeChance": 1.0,
+      "maxDepthBlocks": 160,
+      "layers": {
+        "primary": "cinnabar",
+        "secondary": "stibnite",
+        "between": "realgar",
+        "sporadic": "pyrite"
+      }
+    },
+    {
+      "name": "fluorite veins",
+      "type": "hydrothermal",
+      "source": "susy",
+      "origin": "sheet",
+      "hosts": [
+        "limestone",
+        "granite",
+        "dolostone"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 128,
+      "chance": 0.45,
+      "lengthBlocks": [
+        16,
+        44
+      ],
+      "heightBlocks": [
+        16,
+        48
+      ],
+      "thicknessBlocks": [
+        2,
+        5
+      ],
+      "dipDegrees": [
+        55,
+        90
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "fluorite",
+        "secondary": "fluorite",
+        "between": "fluorite",
+        "sporadic": "sphalerite"
+      }
+    },
+    {
+      "name": "massive sulfide",
+      "type": "hydrothermal",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "basalt",
+        "dolerite"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 112,
+      "chance": 0.6,
+      "radiusBlocks": [
+        24,
+        64
+      ],
+      "thicknessBlocks": [
+        6,
+        15
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "pyrite",
+        "secondary": "sphalerite",
+        "between": "chalcopyrite",
+        "sporadic": "gold"
+      }
+    },
+    {
+      "name": "vanadium titanomagnetite layers",
+      "type": "magmatic",
+      "source": "riven",
+      "origin": "lens",
+      "hosts": [
+        "gabbro",
+        "anorthosite"
+      ],
+      "y": [
+        -512,
+        -200
+      ],
+      "cellBlocks": 128,
+      "chance": 0.9,
+      "radiusBlocks": [
+        48,
+        96
+      ],
+      "thicknessBlocks": [
+        4.5,
+        9
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "vanadium_magnetite",
+        "secondary": "magnetite",
+        "between": "ilmenite",
+        "sporadic": "gold"
+      }
+    },
+    {
+      "name": "magmatic copper-nickel",
+      "type": "magmatic",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "gabbro"
+      ],
+      "y": [
+        -512,
+        -250
+      ],
+      "cellBlocks": 128,
+      "chance": 0.75,
+      "radiusBlocks": [
+        32,
+        80
+      ],
+      "thicknessBlocks": [
+        6,
+        13.5
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "pentlandite",
+        "secondary": "chalcopyrite",
+        "between": "pyrite",
+        "sporadic": "cobaltite"
+      }
+    },
+    {
+      "name": "platinum reef",
+      "type": "magmatic",
+      "source": "susy",
+      "origin": "contact",
+      "hosts": [
+        "anorthosite",
+        "gabbro"
+      ],
+      "partners": [
+        "gabbro",
+        "anorthosite"
+      ],
+      "y": [
+        -512,
+        -200
+      ],
+      "cellBlocks": 192,
+      "chance": 0.3,
+      "radiusBlocks": [
+        40,
+        90
+      ],
+      "bandBlocks": [
+        2,
+        4
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "cooperite",
+        "secondary": "sperrylite",
+        "between": "braggite",
+        "sporadic": "pentlandite"
+      }
+    },
+    {
+      "name": "nickel sulfide base",
+      "type": "magmatic",
+      "source": "gtceu",
+      "origin": "contact",
+      "hosts": [
+        "gabbro"
+      ],
+      "partners": [
+        "gneiss",
+        "schist",
+        "granite",
+        "dolerite"
+      ],
+      "y": [
+        -512,
+        -150
+      ],
+      "cellBlocks": 144,
+      "chance": 0.55,
+      "radiusBlocks": [
+        48,
+        110
+      ],
+      "bandBlocks": [
+        4.5,
+        12
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "pentlandite",
+        "secondary": "nickel",
+        "between": "cobaltite",
+        "sporadic": "garnierite"
+      }
+    },
+    {
+      "name": "dunite lenses",
+      "type": "magmatic",
+      "source": "gtceu",
+      "origin": "lens",
+      "hosts": [
+        "gabbro",
+        "anorthosite"
+      ],
+      "y": [
+        -512,
+        -150
+      ],
+      "cellBlocks": 128,
+      "chance": 0.5,
+      "radiusBlocks": [
+        40,
+        96
+      ],
+      "thicknessBlocks": [
+        6,
+        15
+      ],
+      "nodeChance": 0.8,
+      "layers": {
+        "primary": "olivine",
+        "secondary": "olivine",
+        "between": "magnesite",
+        "sporadic": "garnierite"
+      }
+    },
+    {
+      "name": "eclogite pods",
+      "type": "magmatic",
+      "source": "riven",
+      "origin": "lens",
+      "hosts": [
+        "gabbro",
+        "gneiss"
+      ],
+      "y": [
+        -512,
+        -280
+      ],
+      "cellBlocks": 160,
+      "chance": 0.6,
+      "radiusBlocks": [
+        16,
+        40
+      ],
+      "thicknessBlocks": [
+        6,
+        15
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "pyrope",
+        "secondary": "almandine",
+        "between": "green_sapphire",
+        "sporadic": "diamond"
+      }
+    },
+    {
+      "name": "igneous apatite",
+      "type": "magmatic",
+      "source": "susy",
+      "origin": "sheet",
+      "hosts": [
+        "gabbro",
+        "anorthosite",
+        "granite"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 144,
+      "chance": 0.45,
+      "lengthBlocks": [
+        16,
+        44
+      ],
+      "heightBlocks": [
+        16,
+        48
+      ],
+      "thicknessBlocks": [
+        3,
+        6
+      ],
+      "dipDegrees": [
+        40,
+        90
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "chlorapatite",
+        "secondary": "fluorapatite",
+        "between": "hydroxyapatite",
+        "sporadic": "apatite"
+      }
+    },
+    {
+      "name": "mica pegmatite",
+      "type": "magmatic",
+      "source": "gtceu",
+      "origin": "sheet",
+      "hosts": [
+        "granite",
+        "gneiss"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 112,
+      "chance": 0.8,
+      "lengthBlocks": [
+        16,
+        40
+      ],
+      "heightBlocks": [
+        10,
+        28
+      ],
+      "thicknessBlocks": [
+        6,
+        12
+      ],
+      "dipDegrees": [
+        20,
+        70
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "kyanite",
+        "secondary": "mica",
+        "between": "mica",
+        "sporadic": "pollucite"
+      }
+    },
+    {
+      "name": "lithium pegmatite",
+      "type": "magmatic",
+      "source": "riven",
+      "origin": "sheet",
+      "hosts": [
+        "granite",
+        "gneiss"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 144,
+      "chance": 0.5,
+      "lengthBlocks": [
+        16,
+        40
+      ],
+      "heightBlocks": [
+        10,
+        28
+      ],
+      "thicknessBlocks": [
+        4,
+        9
+      ],
+      "dipDegrees": [
+        20,
+        70
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "spodumene",
+        "secondary": "lepidolite",
+        "between": "pollucite",
+        "sporadic": "tantalite"
+      }
+    },
+    {
+      "name": "garnet gem schist",
+      "type": "metamorphic",
+      "source": "gtceu",
+      "origin": "lens",
+      "hosts": [
+        "schist",
+        "gneiss"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 176,
+      "chance": 0.8,
+      "radiusBlocks": [
+        24,
+        56
+      ],
+      "thicknessBlocks": [
+        4.5,
+        10.5
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "almandine",
+        "secondary": "pyrope",
+        "between": "sapphire",
+        "sporadic": "green_sapphire"
+      }
+    },
+    {
+      "name": "soapstone bodies",
+      "type": "metamorphic",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "schist"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 176,
+      "chance": 0.5,
+      "radiusBlocks": [
+        24,
+        56
+      ],
+      "thicknessBlocks": [
+        4,
+        10
+      ],
+      "fill": "solid",
+      "layers": {
+        "primary": "soapstone_rock",
+        "secondary": "soapstone_rock",
+        "between": "soapstone_rock",
+        "sporadic": "talc"
+      }
+    },
+    {
+      "name": "talc-asbestos veins",
+      "type": "metamorphic",
+      "source": "susy",
+      "origin": "lens",
+      "hosts": [
+        "schist",
+        "basalt",
+        "gabbro"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 192,
+      "chance": 0.4,
+      "radiusBlocks": [
+        16,
+        40
+      ],
+      "thicknessBlocks": [
+        3,
+        6
+      ],
+      "nodeChance": 1.0,
+      "layers": {
+        "primary": "talc",
+        "secondary": "asbestos",
+        "between": "calcite",
+        "sporadic": "talc"
+      }
+    },
+    {
+      "name": "slate belts",
+      "type": "metamorphic",
+      "source": "riven",
+      "origin": "lens",
+      "hosts": [
+        "shale"
+      ],
+      "y": [
+        -512,
+        -60
+      ],
+      "cellBlocks": 192,
+      "chance": 0.55,
+      "radiusBlocks": [
+        48,
+        110
+      ],
+      "thicknessBlocks": [
+        8,
+        20
+      ],
+      "fill": "solid",
+      "layers": {
+        "primary": "slate_rock",
+        "secondary": "slate_rock",
+        "between": "slate_rock",
+        "sporadic": "pyrite"
+      }
+    },
+    {
+      "name": "phyllite belts",
+      "type": "metamorphic",
+      "source": "riven",
+      "origin": "lens",
+      "hosts": [
+        "schist"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "cellBlocks": 192,
+      "chance": 0.5,
+      "radiusBlocks": [
+        48,
+        110
+      ],
+      "thicknessBlocks": [
+        8,
+        20
+      ],
+      "fill": "solid",
+      "layers": {
+        "primary": "phyllite_rock",
+        "secondary": "phyllite_rock",
+        "between": "phyllite_rock",
+        "sporadic": "pyrite"
+      }
+    },
+    {
+      "name": "kimberlite diamonds",
+      "type": "magmatic",
+      "source": "gtceu",
+      "origin": "pipe",
+      "hosts": [
+        "kimberlite"
+      ],
+      "y": [
+        -512,
+        384
+      ],
+      "nodeChance": 0.6,
+      "layers": {
+        "primary": "graphite",
+        "secondary": "diamond",
+        "between": "graphite",
+        "sporadic": "coal"
+      }
+    }
+  ],
+  "contract": [
+    "Phase 2 of the subsurface design: ore bodies by deposit type (organic, marine, continental, hydrothermal, magmatic, metamorphic), each with its minerals from GregTech CE Unofficial 2.8.10-beta overworld materials, Supersymmetry's overworld minerals (Riven ore blocks; riven-content.json) and Riven's seam and rock blocks. source names where a deposit's mineral set comes from: susy (Supersymmetry's overworld veins and deposits), gtceu (GTCEu's overworld veins) or riven (composed by Riven). Every body is a pure function of seed, definitions and coordinates; GTCEu's world generator never runs.",
+    "Origins. lens: a stratiform sheet inside a host unit, one per cell (cellBlocks, chance), radiusBlocks wide and thicknessBlocks thick at its centre, tapering to its rim, at a fixed fraction of the host unit's whole thickness (the part eroded above the surface included) so it follows the bed through folds and faults and the land cuts it. sheet: a planar vein from a cell, lengthBlocks along strike and heightBlocks along dip (half extents, elliptical), thicknessBlocks thick, dipping dipDegrees, kept only inside host units. contact: a band bandBlocks thick on the host side wherever a host unit meets a partner unit above or below it, inside a cell's patch radiusBlocks wide; with aureoleBlocks, also every host block within that many blocks (wobbling along the wall) outside a pluton's wall and below its rim roof. pipe: every host block. Bodies apply only between y[0] and y[1] and, with maxDepthBlocks, no deeper than that below the surface; a column holds at most maximumBodies bodies, earlier deposits winning.",
+    "fill: solid bodies (seams and rock bodies) fill their whole interval: sporadicShare of blocks take the sporadic mineral, the rest take primary above primaryAbove of the body's height, secondary below secondaryBelow and between in the middle. Other bodies grow ore nodes: a jittered 3D grid of cells nodes.cellBlocks wide may hold one node each, a lumpy ellipsoid (axes varied by shapeVariation at constant volume) of orePerNode blocks, or megaOrePerNode at megaChance; a node forms in a body with the deposit's nodeChance times densityScale, times 1 + deepGain scaled from deepGainFromY (none) to deepGainToY (full), when its centre lies in the body padded by padBlocks above and below, and keeps its whole volume. Each node is one mineral, by its centre's height in the body, sporadicShare of nodes taking the sporadic mineral.",
+    "minerals: the vanilla ore each mineral becomes without GTCEu or Riven's ore blocks (NONE leaves the rock). blocks: minerals that are always a Riven block (seams, evaporites, placers, rock bodies) in any host. Otherwise, in Riven's host stones a mineral is its Riven ore block (riven-content.json ores); elsewhere its GTCEu ore in the host's stone type (stone for sandstone), or its vanilla fallback. Ores replace a bed's own rock only in native cubes, below the cover the surface rules lay (soil, sand, beach, bar and slope gravel, the sandstone under sand); caves, water, lava and the distant preview are unchanged."
+  ]
+}

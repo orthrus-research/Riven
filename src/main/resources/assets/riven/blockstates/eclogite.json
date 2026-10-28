@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:eclogite_0"
+      },
+      {
+        "model": "riven:eclogite_1"
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "runtimeVersion": "0.7.9-alpha",
+  "javaRuntime": {
+    "major": 26,
+    "version": "openjdk version \"26.0.2.1\""
+  },
+  "release": {
+    "tag_name": "0.7.9-alpha",
+    "published_at": "2026-10-18T10:30:06Z",
+    "html_url": "https://github.com/CleanroomMC/Cleanroom/releases/tag/0.7.9-alpha",
+    "assets": [
+      {
+        "name": "cleanroom-0.7.9-alpha-installer.jar",
+        "size": 15256950,
+        "digest": "sha256:83598a23c062c232018ed2b7166bec8f661d8ac118c940522169ebb45454e45a",
+        "browser_download_url": "https://github.com/CleanroomMC/Cleanroom/releases/download/0.7.9-alpha/cleanroom-0.7.9-alpha-installer.jar"
+      },
+      {
+        "name": "cleanroom-0.7.9-alpha-universal.jar",
+        "size": 12726879,
+        "digest": "sha256:079a7e64ee558926391587da0d04c8f77ad10a633440a5276342cc650708f085",
+        "browser_download_url": "https://github.com/CleanroomMC/Cleanroom/releases/download/0.7.9-alpha/cleanroom-0.7.9-alpha-universal.jar"
+      },
+      {
+        "name": "cleanroom-0.7.9-alpha.zip",
+        "size": 13761,
+        "digest": "sha256:99f132ae66af447ffc344f8d1925a5bc6d4c2bddbba7ddad2fc0c43be5dea4fd",
+        "browser_download_url": "https://github.com/CleanroomMC/Cleanroom/releases/download/0.7.9-alpha/cleanroom-0.7.9-alpha.zip"
+      }
+    ]
+  }
+}

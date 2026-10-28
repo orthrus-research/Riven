@@ -1,0 +1,8 @@
+[
+  {"label": "chasm-above", "x": 1024, "y": 175, "z": -1095, "yaw": 180, "pitch": 40},
+  {"label": "chasm-rim", "x": 1024, "y": 125, "z": -1140, "yaw": 180, "pitch": 75, "commands": ["effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "chasm-inside", "x": 1024, "y": 40, "z": -1156, "yaw": 90, "pitch": 10},
+  {"label": "chasm-deep", "x": 1024, "y": -60, "z": -1156, "yaw": 90, "pitch": 10},
+  {"label": "deep-cavern", "x": -1324, "y": -250, "z": -1644, "yaw": 0, "pitch": 0},
+  {"label": "upper-caves", "x": -1144, "y": 44, "z": -1064, "yaw": 0, "pitch": 0}
+]

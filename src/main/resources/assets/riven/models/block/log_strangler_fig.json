@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "side": "riven:blocks/wood/strangler_fig_bark",
+    "end": "riven:blocks/wood/strangler_fig_end"
+  }
+}

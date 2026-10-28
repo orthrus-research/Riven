@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "variationSeed": "0x4445434f52524931",
+  "maximumRuns": 64,
+  "patchWavelengthBlocks": 9,
+  "clusterWavelengthBlocks": 40,
+  "dripstone": {
+    "maskWavelengthBlocks": 120,
+    "maskThreshold": 0.15,
+    "minimumSolubility": 0.5,
+    "stalactiteChance": 0.12,
+    "stalagmiteChance": 0.07,
+    "maximumLength": 6,
+    "blockThreshold": 0.35,
+    "humidityReference": 0.5,
+    "humidityRange": [0.3, 2.0],
+    "faultReachBlocks": 16
+  },
+  "gravel": {
+    "floorPatchThreshold": 0.3,
+    "pocketTopY": -150,
+    "pocketCellBlocks": 18,
+    "pocketChance": 0.4,
+    "pocketRadiusBlocks": [1.8, 4.2]
+  },
+  "wet": {"bandBlocks": 14, "mudThreshold": 0.15, "algaeChance": 0.12},
+  "pools": {"cellBlocks": 48, "chance": 0.6, "attempts": 2, "radiusBlocks": [2, 4], "ringBlocks": 1.5, "maximumDepthBlocks": 2, "maximumRimBlocks": 2, "airAboveBlocks": 3, "minimumWaterColumns": 5, "minimumHumidity": 0.5, "maximumCelsius": 45},
+  "seeps": {"cellBlocks": 64, "chance": 0.7, "candidateSpacingBlocks": 8, "radiusBlocks": 6, "belowTableBlocks": 1, "aboveTableBlocks": 1, "minimumPermeability": 0.45, "minimumDepthBlocks": 12, "edgeChance": 0.55},
+  "organics": {
+    "litterThreshold": 0.45,
+    "mushroomOnLitterChance": 0.35,
+    "rootMatChance": 0.25,
+    "minersDelightChance": 0.02,
+    "mushroomChance": 0.012
+  },
+  "glow": {"minimumY": -213, "clusterThreshold": 0.4, "chance": 0.1},
+  "dry": {"cobwebChance": 0.012, "sandThreshold": 0.1},
+  "frost": {"packedIceThreshold": 0.0},
+  "root": {"ashThreshold": 0.25},
+  "unstable": {"maximumThickness": 2, "minimumDropBlocks": 4, "headroomBlocks": 2, "maskWavelengthBlocks": 64, "maskThreshold": 0.55, "lethalFallBlocks": 23, "severeFallBlocks": 64, "keepLethal": 0.55, "keepSevere": 0.4, "fallCellBlocks": 32},
+  "contract": [
+    "Cave decoration, placed in native chunk columns on each cave void's floor (the rock block under its lowest block and the blocks above it) and ceiling (the rock block over its highest block and the blocks below it). Every choice is a pure function of seed, definitions and the column; voids that touch a planned entrance stay bare so the distant preview still matches what the sky shows. A column holds at most maximumRuns decoration runs.",
+    "Patches come from a 2D noise of patchWavelengthBlocks and clusters from one of clusterWavelengthBlocks. What a floor or ceiling may hold follows the depth biome (riven-realms.json crust biomes) reported where the cave space it bounds lies (the 4-block cell row of the void's lowest or highest block); rock tests (solubility, evaporite) read the floor or ceiling rock itself, and nothing decorates lava.",
+    "dripstone: where the depth biome allows formations, a mask of maskWavelengthBlocks exceeds maskThreshold and the rock is at least minimumSolubility soluble, air ceilings carry stalactites (stalactiteChance per column) and air floors stalagmites (stalagmiteChance), each up to maximumLength long and never longer together than the void is tall (meeting ones merge into a column); where the mask also exceeds blockThreshold, the ceiling and floor rock become dripstone blocks. Formations by setting: calcite (pointed dripstone) as above, and in depth biomes that allow fault dripstone within faultReachBlocks of a fault, in any rock; a depth biome's own formation material grows without the mask: pointed ice, pointed salt (in evaporite) or pointed basalt; basalt roofs (lava tubes) grow pointed basalt in any depth biome. Stalactite and stalagmite chances scale with the subsurface humidity at the void: humidity over humidityReference, within humidityRange.",
+    "gravel: gravel-floored depth biomes turn air floors to gravel where the patch noise exceeds floorPatchThreshold. Below pocketTopY, gravel pockets fill rock: one per cell of pocketCellBlocks with pocketChance, a ball of pocketRadiusBlocks; they never replace a void, and fall when a cave opens beneath them.",
+    "wet: in depth biomes with mud, air floors within bandBlocks above the water table (or below it) become mud where the patch noise exceeds mudThreshold; flooded floors grow algae (algaeChance) where the depth biome holds life. Evaporite floors are white sand.", "pools (CavePools): at most one small still pool per cell of cellBlocks, at chance; the cell's centre column (in the middle 70% of the cell) offers its cave floors in an order of the cell's own and up to attempts of them are tried: the floor must be dry and lie where the subsurface climate is at least minimumHumidity humid and at most maximumCelsius, with more than airAboveBlocks of air over the level (the floor or one block above it). The pool takes a disc of radiusBlocks around the centre: inside, every cave block from its floor up to the level is water (ice in a frozen depth biome), at most maximumDepthBlocks above the floor; in a ring ringBlocks wide around the disc, the cave up to the level takes a rim at most maximumRimBlocks tall (dripstone block in soluble rock where the depth biome grows dripstone, the host rock elsewhere). A pool forms only if its whole patch holds it that way, at least minimumWaterColumns columns hold water, and no other cave, entrance, flood band, lake or lava lies near, so its water meets only rock, rim or its own surface.", "seeps (CaveSeeps): at most one seep per cell of cellBlocks, at chance, centred on the first of nine candidate columns (the cell's point, in the middle 70% of the cell, and the eight around it candidateSpacingBlocks apart) that passes. A candidate's band is belowTableBlocks plus aboveTableBlocks plus one blocks tall: in a flooded cell (riven-caves.json fill) it starts just above the waterline, where water wicks up the walls; in a dry column with no dam near it is centred on the column's water table where the formation there is at least minimumPermeability permeable. The band must lie at least minimumDepthBlocks below the ground and clear of lava, no entrance may open through the column, and a dry cave must cross the band's middle. Within radiusBlocks of the centre, every plain rock block of the band that faces cave air (read from the real voids of the patch) becomes a wet wall, fading out over the outer half of the radius and kept at edgeChance in the band's upper and lower rows, so the band has ragged edges: dripstone block (flowstone) in soluble rock where the depth biome grows dripstone, mud where the depth biome has mud, packed ice where its floors are ice (both read just above, as for a floor block); drier depth biomes keep their rock. Water, lakes and entrance columns are left as they are.",
+    "organics: litter-floored depth biomes lay litter patches (dirt where the cluster noise exceeds litterThreshold) carrying toadstools or portobellos (mushroomOnLitterChance); root-ceilinged ones carry root mats (a dirt ceiling block with a hanging root, rootMatChance). Where the depth biome holds life, bare stone floors carry Miner's Delight (minersDelightChance) and air floors a vanilla mushroom (mushroomChance).",
+    "glow: glowshrooms grow on air floors above minimumY (the world's lowest third stays dark but for lava) in depth biomes that hold life, in clusters where the cluster noise exceeds clusterThreshold (chance per column).",
+    "dry: cobweb-ceilinged depth biomes hang cobwebs from dry ceilings (cobwebChance); sand-floored ones lay sand, and salt-floored ones white sand, where the patch noise exceeds sandThreshold. frost: ice-floored ones lay packed ice where the patch noise exceeds packedIceThreshold. root: magma-floored depth biomes lay magma; ash-floored ones lay ash where the patch noise exceeds ashThreshold and gravel where it is below its negative.",
+    "unstable: unstable stone (riven-content.json unstable) takes the place of the host rock in a thin floor: rock at most maximumThickness thick between a void whose top holds minimumDropBlocks of open air and a void whose floor has headroomBlocks of open air, where a mask of maskWavelengthBlocks exceeds maskThreshold, away from entrances and never where the rock seals flood water. Falls (from the floor's top through the open air below it) under lethalFallBlocks, or into water, always stay; a lethal fall stays where a cell of fallCellBlocks (and an 8-block height band) draws under keepLethal, and a severe one (severeFallBlocks or more) under keepSevere, so a patch keeps or loses its floor together. Unstable floors and the ceilings under them carry no floor or ceiling blocks, so the cracked rock shows from above and its dust falls from below; ore wins over unstable stone, and other blocks stay.",
+    "Without Biomes O' Plenty, mud becomes clay, white sand sand, ash gravel, toadstools red and portobellos and glowshrooms brown mushrooms, algae water, and roots and Miner's Delight air."
+  ]
+}

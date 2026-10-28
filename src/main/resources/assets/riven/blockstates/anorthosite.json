@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:anorthosite_0"
+      },
+      {
+        "model": "riven:anorthosite_1"
+      }
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+[
+  {"label": "high-south", "x": 10.5, "y": 222.5, "z": -12, "yaw": 0, "pitch": 0, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000"]},
+  {"label": "high-east-down", "x": 40, "y": 232, "z": -3, "yaw": -90, "pitch": 30},
+  {"label": "high-west", "x": 40, "y": 222, "z": -20, "yaw": 90, "pitch": 5},
+  {"label": "low-coast", "x": -300, "y": 120, "z": -40, "yaw": 0, "pitch": 10}
+]

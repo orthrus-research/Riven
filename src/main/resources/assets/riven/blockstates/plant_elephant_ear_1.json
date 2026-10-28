@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_elephant_ear_1_0"
+      },
+      {
+        "model": "riven:plant_elephant_ear_1_1"
+      },
+      {
+        "model": "riven:plant_elephant_ear_1_2"
+      },
+      {
+        "model": "riven:plant_elephant_ear_1_3"
+      }
+    ]
+  }
+}

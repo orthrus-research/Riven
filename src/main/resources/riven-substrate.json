@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "sandPotential": 0.9,
+  "looseMaterialPotential": 0.9,
+  "windErodibility": 0.9,
+  "note": "Earlier authored material permissions, not geology, transported sediment or measured supply. Revision 1 preserves the three former dryland constants at every finite absolute coordinate. Regional variation requires a separately reviewed definition."
+}

@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "side": "riven:blocks/wood/umbrella_acacia_bark",
+    "end": "riven:blocks/wood/umbrella_acacia_end"
+  }
+}

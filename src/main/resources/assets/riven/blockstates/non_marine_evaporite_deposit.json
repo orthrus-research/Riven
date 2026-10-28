@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:non_marine_evaporite_deposit_0"
+      },
+      {
+        "model": "riven:non_marine_evaporite_deposit_1"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_sorrel_0"
+      },
+      {
+        "model": "riven:plant_sorrel_1"
+      },
+      {
+        "model": "riven:plant_sorrel_2"
+      },
+      {
+        "model": "riven:plant_sorrel_3"
+      }
+    ]
+  }
+}

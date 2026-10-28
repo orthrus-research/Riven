@@ -1,0 +1,226 @@
+{
+  "schema": 1,
+  "revision": 4,
+  "provider": "biomesoplenty",
+  "variationSeed": "0x424f505641524931",
+  "varietyCellBlocks": 1536,
+  "edgeBlocks": 96,
+  "borderWarpInCells": 0.18,
+  "climateGrid": {
+    "coldestCelsius": -10,
+    "celsiusPerStep": 5,
+    "wettestMoisture": 0.85,
+    "driestMoisture": 0.3
+  },
+  "biomes": {
+    "FROZEN_DRY/HIGH": [
+      "glacier"
+    ],
+    "FROZEN_DRY/HIGH/rugged": [
+      "alps"
+    ],
+    "FROZEN_MODERATE/HIGH": [
+      "alps_foothills"
+    ],
+    "FROZEN_MODERATE/HIGH/rugged": [
+      "alps"
+    ],
+    "FROZEN_WET/HIGH": [
+      "alps_foothills",
+      "snowy_coniferous_forest"
+    ],
+    "FROZEN_WET/HIGH/rugged": [
+      "alps"
+    ],
+    "COOL_DRY/HIGH": [
+      "highland"
+    ],
+    "COOL_DRY/HIGH/rugged": [
+      "crag"
+    ],
+    "COOL_MODERATE/HIGH": [
+      "mountain_foothills",
+      "coniferous_forest"
+    ],
+    "COOL_MODERATE/HIGH/rugged": [
+      "mountain"
+    ],
+    "COOL_WET/HIGH": [
+      "moor",
+      "highland"
+    ],
+    "COOL_WET/HIGH/rugged": [
+      "mountain"
+    ],
+    "MILD_DRY/HIGH": [
+      "highland"
+    ],
+    "MILD_DRY/HIGH/rugged": [
+      "crag"
+    ],
+    "MILD_MODERATE/HIGH": [
+      "mountain_foothills",
+      "woodland"
+    ],
+    "MILD_MODERATE/HIGH/rugged": [
+      "mountain"
+    ],
+    "MILD_WET/HIGH": [
+      "temperate_rainforest",
+      "highland"
+    ],
+    "MILD_WET/HIGH/rugged": [
+      "mountain"
+    ],
+    "WARM_DRY/HIGH": [
+      "chaparral"
+    ],
+    "WARM_MODERATE/HIGH": [
+      "woodland"
+    ],
+    "WARM_MODERATE/HIGH/rugged": [
+      "overgrown_cliffs"
+    ],
+    "WARM_WET/HIGH": [
+      "rainforest"
+    ],
+    "WARM_WET/HIGH/rugged": [
+      "overgrown_cliffs"
+    ],
+    "HOT_MODERATE/HIGH": [
+      "brushland"
+    ],
+    "HOT_WET/HIGH": [
+      "tropical_rainforest"
+    ],
+    "HOT_WET/HIGH/rugged": [
+      "overgrown_cliffs"
+    ],
+    "BEACH_COLD": [
+      "gravel_beach"
+    ],
+    "MARSH": [
+      "marsh"
+    ],
+    "WARM_SHALLOWS": [
+      "coral_reef"
+    ],
+    "WETLAND": [
+      "wetland"
+    ],
+    "OASIS": [
+      "oasis"
+    ],
+    "MOUTH/FJORD_MOUTH": [
+      "gravel_beach"
+    ],
+    "MOUTH/SALT_MARSH": [
+      "marsh"
+    ],
+    "MOUTH/DELTA_WETLAND": [
+      "wetland"
+    ],
+    "MOUTH/MANGROVE": [
+      "mangrove"
+    ],
+    "MOUTH/ESTUARY": [
+      "marsh"
+    ],
+    "BEACH#WARM": [
+      "white_beach"
+    ],
+    "BEACH#HOT": [
+      "white_beach"
+    ],
+    "MARSH#FROZEN": [
+      "bog"
+    ],
+    "MARSH#COOL": [
+      "bog",
+      "marsh"
+    ],
+    "MARSH#WARM": [
+      "lush_swamp",
+      "bayou"
+    ],
+    "MARSH#HOT": [
+      "lush_swamp",
+      "bayou"
+    ],
+    "OCEAN#COOL": [
+      "kelp_forest",
+      "minecraft:ocean"
+    ],
+    "OCEAN#MILD": [
+      "kelp_forest",
+      "minecraft:ocean"
+    ]
+  },
+  "edges": {
+    "alps": "alps_foothills",
+    "mountain": "mountain_foothills",
+    "redwood_forest": "redwood_forest_edge",
+    "minecraft:jungle": "minecraft:jungle_edge",
+    "minecraft:extreme_hills": "minecraft:extreme_hills_with_trees",
+    "minecraft:mesa_clear_rock": "minecraft:mesa"
+  },
+  "excludedFromClimates": [
+    "mystic_grove",
+    "ominous_woods",
+    "origin_island",
+    "origin_beach",
+    "sacred_springs",
+    "flower_island",
+    "tropical_island",
+    "volcanic_island",
+    "quagmire",
+    "land_of_lakes",
+    "lush_desert",
+    "wasteland",
+    "dead_swamp",
+    "corrupted_sands",
+    "fungi_forest",
+    "phantasmagoric_inferno",
+    "undergarden",
+    "visceral_heap"
+  ],
+  "allowedGenerators": [
+    "weighted",
+    "basic_tree",
+    "big_tree",
+    "bush",
+    "twiglet_tree",
+    "pine_tree",
+    "bulb_tree",
+    "mega_jungle_tree",
+    "bayou_tree",
+    "mangrove_tree",
+    "taiga_tree",
+    "profile_tree",
+    "redwood_tree",
+    "redwood_tree_thin",
+    "mahogany_tree",
+    "palm_tree",
+    "flora",
+    "double_flora",
+    "grass",
+    "logs",
+    "big_mushrooms",
+    "big_flowers",
+    "bramble",
+    "vines",
+    "mixed_lily",
+    "waterside",
+    "splatter",
+    "splotches"
+  ],
+  "contract": [
+    "Optional provider (user decision 2026-10-23): with Biomes O' Plenty loaded, a column's biome comes from an explicit entry in biomes for its habitat key (Habitats.key; REGION/HIGH with an optional /rugged override, the coastal and water keys, MOUTH/<name>), else, inland, from BoP's own climate table: the column's climate (Habitats.climate) maps onto BoP's 9 temperature x 12 rainfall grid (coldestCelsius in steps of celsiusPerStep; wettestMoisture to driestMoisture) and picks from that climate's land biomes by BoP's weights, minus excludedFromClimates. Without BoP, or where nothing is registered, the vanilla habitat stands.",
+    "Coastal and water keys carry their temperature core after '#' (BEACH#HOT, OCEAN#COOL); an entry for the plain key covers every temperature without its own.",
+    "Each pick is per variety cell: the nearest of jittered points every varietyCellBlocks, hashed with the world seed. Within edgeBlocks of a border with a cell that picked differently, a biome listed in edges gives way to its edge biome (foothills, forest edges), as BoP's own edge layers do.",
+    "The chosen biome is the chunk biome (colours, sky, weather, spawns). Riven still decides every block: soil it places as grass takes the biome's top block and soil below takes its filler, both only when the state is a full solid block. BoP's genTerrainBlocks never runs.",
+    "Decoration runs once per chunk column, in the cube holding the surface at the centre of its offset decoration area, with the biome's BoP generators in vanilla decoration order. Only allowedGenerators run (vegetation and surface patches that swap blocks without moving the surface); a weighted generator runs only if all of its children are allowed. Lakes, blobs, columns, spikes, crystals, hives and ores never run.",
+    "Lush desert is left out: its trees and grass splatter only grow at Y62-68, a window tuned for BoP terrain, so on Riven land it stayed bare clay.",
+    "Decoration is the recorded exception to order independence: placements that cross into neighbouring chunks depend on population order (docs/DECISIONS.md). Terrain, water and biome identity stay pure."
+  ]
+}

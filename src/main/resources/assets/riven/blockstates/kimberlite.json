@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:kimberlite_0"
+      },
+      {
+        "model": "riven:kimberlite_1"
+      }
+    ]
+  }
+}

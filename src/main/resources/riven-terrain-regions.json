@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "variationSeed": "524547494f4e3031",
+  "coarseInPlainWidths": 8.0,
+  "localInPlainWidths": 2.0,
+  "transitionFraction": 0.5,
+  "localMix": 0.2,
+  "profiles": {
+    "QUIET": {"frequencyWeight": 1.0, "amplitudeFraction": 0.25, "wideShare": 0.65, "fineShare": 0.05},
+    "DISSECTED": {"frequencyWeight": 1.0, "amplitudeFraction": 0.85, "wideShare": 0.05, "fineShare": 0.40},
+    "TABULAR": {"frequencyWeight": 1.0, "amplitudeFraction": 0.18, "wideShare": 0.80, "fineShare": 0.02},
+    "RUGGED": {"frequencyWeight": 1.0, "amplitudeFraction": 0.95, "wideShare": 0.15, "fineShare": 0.20}
+  },
+  "note": "Authored inland relief/spectral preferences, not certified formations, geology or supplied water. Two seed-owned, world-constant rotated lattices contribute four nodes each. Profile weights blend smoothly; the local component preserves coarse cores. Amplitude fractions consume the reference-derived signed envelope, never widen it. Climate, material permissions, feature ownership and dune wind remain separate."
+}

@@ -1,0 +1,49 @@
+# Local actions for Riven and Cubature. Run with: python tools/actions.py <workflow|job> ...
+# Placeholders: {python} the runner's interpreter, {quality_python}, {atlas_python},
+# {observability_python}, {run_id} the run's identifier, {frozen} .local/frozen/{run_id}.
+
+[interpreters]
+quality_python = ".local/quality-venv/Scripts/python.exe"
+atlas_python = ".local/atlas-venv/Scripts/python.exe"
+observability_python = ".local/observability-venv/Scripts/python.exe"
+
+[workflows]
+check = ["quality", "atlas-golden"]
+build = ["riven-build", "cubature-build"]
+ci = ["quality", "riven-build", "cubature-build", "atlas-golden"]
+full = ["quality", "riven-build", "cubature-build", "atlas-golden", "smoke"]
+
+[jobs.quality]
+description = "Formatting, lint, types and both-loader compile (tools/code_quality.py check)"
+steps = [
+  { name = "code quality", run = ["{quality_python}", "tools/code_quality.py", "check"] },
+  { name = "content assets", run = ["{quality_python}", "tools/content/build_content.py", "--check"] },
+]
+
+[jobs.riven-build]
+description = "Build Riven (Cleanroom and Forge) and freeze the artifacts for this run"
+steps = [
+  { name = "build riven", run = ["{python}", "tools/build_riven.py", "--loader", "both", "--diagnostics", "--no-daemon", "--freeze", "{run_id}"] },
+]
+
+[jobs.cubature-build]
+description = "Build Cubature and the lab observer with Java 26 tests and freeze them"
+steps = [
+  { name = "build cubature", run = ["{python}", "dev/CubicChunks/tools/build_cubature.py", "--no-daemon", "--freeze", "{run_id}"] },
+]
+
+[jobs.atlas-golden]
+description = "Generated terrain matches the golden atlas digests, with determinism verified"
+steps = [
+  { name = "golden digests", run = ["{atlas_python}", "tools/atlas_golden.py", "check", "--verify"] },
+]
+
+[jobs.smoke]
+description = "Native client/server timing capture of this run's frozen Riven and observer"
+needs = ["riven-build", "cubature-build"]
+native = true
+steps = [
+  { name = "doctor", run = ["{python}", "-B", "tools/riven_observe.py", "doctor", "--riven", "{frozen}/riven-cleanroom.jar", "--observer", "{frozen}/lab-cleanroom.jar"] },
+  { name = "timing capture", run = ["{python}", "-B", "tools/riven_observe.py", "capture", "--name", "smoke-{run_id}", "--riven", "{frozen}/riven-cleanroom.jar", "--observer", "{frozen}/lab-cleanroom.jar", "--mode", "timing"] },
+  { name = "inspect", run = ["{observability_python}", "-B", "tools/riven_observe.py", "inspect", ".local/cubic-standalone/smoke-{run_id}", "--output", ".local/actions/{run_id}/smoke-inspect"] },
+]

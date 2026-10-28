@@ -1,0 +1,62 @@
+{
+  "comment": "Golden terrain digests; update with tools/atlas_golden.py update in the commit that intentionally changes generated content.",
+  "windows": [
+    {
+      "name": "origin-8675309",
+      "seed": 8675309,
+      "center": [
+        0,
+        0
+      ],
+      "size": 4096,
+      "step": 32,
+      "digest": "b5ca5e4f511b804db08cb9da539b96cab3347d085512544e2c6f0cebde5771ea"
+    },
+    {
+      "name": "spawn-8675309",
+      "seed": 8675309,
+      "center": [
+        1472,
+        -1472
+      ],
+      "size": 1024,
+      "step": 8,
+      "footprint": 2,
+      "digest": "964202ef74c7589c024b4732b4bf3ad1a6e6439e5bee5d25f18bf7ffc70ee1bf"
+    },
+    {
+      "name": "origin-101",
+      "seed": 101,
+      "center": [
+        0,
+        0
+      ],
+      "size": 4096,
+      "step": 32,
+      "digest": "879572d0a8ac509fe7566ef12ac608754e4145b8fc51adf240c281e5a4daeff0"
+    },
+    {
+      "name": "origin-42",
+      "seed": 42,
+      "center": [
+        0,
+        0
+      ],
+      "size": 4096,
+      "step": 32,
+      "digest": "83799f1eff30cfb3997d079b99e509907c8dbf7c3a32145b4d08b2d215783689"
+    },
+    {
+      "name": "world32k-8675309",
+      "seed": 8675309,
+      "scale": 4,
+      "center": [
+        0,
+        0
+      ],
+      "size": 16384,
+      "step": 128,
+      "digest": "aa98883d05ea362a4fd96555df39753fb1f468f891f63cdc8c88eadbce072337"
+    }
+  ]
+}

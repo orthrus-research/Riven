@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "stage=0": {
+      "model": "riven:sapling_baobab"
+    },
+    "stage=1": {
+      "model": "riven:sapling_baobab"
+    }
+  }
+}

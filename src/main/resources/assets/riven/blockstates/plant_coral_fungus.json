@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_coral_fungus_0"
+      },
+      {
+        "model": "riven:plant_coral_fungus_1"
+      },
+      {
+        "model": "riven:plant_coral_fungus_2"
+      },
+      {
+        "model": "riven:plant_coral_fungus_3"
+      }
+    ]
+  }
+}

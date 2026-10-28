@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_blue_bunchgrass_0"
+      },
+      {
+        "model": "riven:plant_blue_bunchgrass_1"
+      },
+      {
+        "model": "riven:plant_blue_bunchgrass_2"
+      },
+      {
+        "model": "riven:plant_blue_bunchgrass_3"
+      }
+    ]
+  }
+}

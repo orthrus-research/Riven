@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "javaMajor": 26,
+  "methodThreshold": "1 ms",
+  "recordingMaxSizeMiB": 256,
+  "scope": "Version-specific optional JFR method targets. Names identify interfaces and observation points; no upstream implementation is bundled. Sub-threshold calls are not recorded.",
+  "targets": [
+    {"owner": "runtime", "class": "net.minecraft.server.MinecraftServer", "method": "func_71217_p", "stage": "server.tick"},
+    {"owner": "riven", "class": "cc.orthrus.riven.RivenWorldType$Generator", "method": "generateCube", "stage": "riven.cube"},
+    {"owner": "riven", "class": "cc.orthrus.riven.RivenWorldType$Generator", "method": "generateColumn", "stage": "riven.biomes"},
+    {"owner": "cubature", "class": "io.github.opencubicchunks.cubicchunks.core.server.CubeProviderServer", "method": "generateCube", "stage": "cubature.generation"},
+    {"owner": "cubature", "class": "io.github.opencubicchunks.cubicchunks.core.server.CubeProviderServer", "method": "calculateDiffuseSkylight", "stage": "cubature.lighting"},
+    {"owner": "cubature", "class": "io.github.opencubicchunks.cubicchunks.core.server.PlayerCubeMap", "method": "func_72693_b", "stage": "cubature.delivery"},
+    {"owner": "cubature", "class": "io.github.opencubicchunks.cubicchunks.core.network.PacketCubes", "method": "toBytes", "stage": "cubature.encode"},
+    {"owner": "cubature", "class": "io.github.opencubicchunks.cubicchunks.core.network.PacketCubes", "method": "fromBytes", "stage": "cubature.decode"},
+    {"owner": "cubature", "class": "io.github.opencubicchunks.cubicchunks.core.compat.distanthorizons.CubicTerrainPreviewGenerator", "method": "lambda$generateLod$0", "stage": "riven.distantPreview"},
+    {"owner": "dh", "class": "com.seibel.distanthorizons.core.api.internal.chunkUpdating.ChunkUpdateQueueManager", "method": "processChunkUpdate", "stage": "dh.chunkUpdate"},
+    {"owner": "dh", "class": "com.seibel.distanthorizons.core.file.fullDatafile.V2.FullDataSourceProviderV2", "method": "updateDataSourceAsync", "stage": "dh.dataSubmission"},
+    {"owner": "dh", "class": "com.seibel.distanthorizons.core.dataObjects.transformers.FullDataToRenderDataTransformer", "method": "transformFullDataToRenderSource", "stage": "dh.renderData"},
+    {"owner": "dh", "class": "com.seibel.distanthorizons.core.dataObjects.render.bufferBuilding.ColumnRenderBufferBuilder", "method": "makeLodRenderData", "stage": "dh.mesh"},
+    {"owner": "dh", "class": "com.seibel.distanthorizons.core.render.RenderBufferHandler", "method": "buildRenderList", "stage": "dh.renderList"},
+    {"owner": "dh", "class": "com.seibel.distanthorizons.core.render.renderer.LodRenderer", "method": "render", "stage": "dh.render"},
+    {"owner": "dh", "class": "com.seibel.distanthorizons.core.render.renderer.LodRenderer", "method": "renderDeferred", "stage": "dh.renderDeferred"}
+  ]
+}

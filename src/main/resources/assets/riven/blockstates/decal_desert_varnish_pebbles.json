@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:decal_desert_varnish_pebbles_0"
+      },
+      {
+        "model": "riven:decal_desert_varnish_pebbles_1"
+      },
+      {
+        "model": "riven:decal_desert_varnish_pebbles_2"
+      },
+      {
+        "model": "riven:decal_desert_varnish_pebbles_3"
+      }
+    ]
+  }
+}

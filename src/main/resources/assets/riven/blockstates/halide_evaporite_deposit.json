@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:halide_evaporite_deposit_0"
+      },
+      {
+        "model": "riven:halide_evaporite_deposit_1"
+      }
+    ]
+  }
+}

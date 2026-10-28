@@ -1,0 +1,9 @@
+{
+  "parent": "riven:block/unstable",
+  "textures": {
+    "side": "riven:blocks/stone/kimberlite_1",
+    "top": "riven:blocks/stone/kimberlite_1",
+    "bottom": "riven:blocks/stone/kimberlite_1",
+    "overlay": "riven:blocks/unstable_overlay"
+  }
+}

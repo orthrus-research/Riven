@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_wormwood_0"
+      },
+      {
+        "model": "riven:plant_wormwood_1"
+      },
+      {
+        "model": "riven:plant_wormwood_2"
+      },
+      {
+        "model": "riven:plant_wormwood_3"
+      }
+    ]
+  }
+}

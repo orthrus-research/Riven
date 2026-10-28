@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:graphite_0"
+      },
+      {
+        "model": "riven:graphite_1"
+      }
+    ]
+  }
+}

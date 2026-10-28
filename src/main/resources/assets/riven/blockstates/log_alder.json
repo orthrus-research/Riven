@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "riven:log_alder"
+    },
+    "axis=z": {
+      "model": "riven:log_alder",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "riven:log_alder",
+      "x": 90,
+      "y": 90
+    },
+    "axis=none": {
+      "model": "riven:log_alder_bark"
+    }
+  }
+}

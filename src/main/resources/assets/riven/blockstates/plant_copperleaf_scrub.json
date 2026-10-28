@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_copperleaf_scrub_0"
+      },
+      {
+        "model": "riven:plant_copperleaf_scrub_1"
+      },
+      {
+        "model": "riven:plant_copperleaf_scrub_2"
+      },
+      {
+        "model": "riven:plant_copperleaf_scrub_3"
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+[
+  {"label": "surface", "x": 0, "y": 157, "z": 70, "yaw": 180, "pitch": 30, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000", "effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "crust-arrive", "x": 0, "y": -532, "z": 100, "yaw": 180, "pitch": 0},
+  {"label": "crust-shaft", "x": 0, "y": -532, "z": 88, "yaw": 180, "pitch": 0, "commands": ["fill -3 -575 40 3 -490 90 minecraft:air", "execute {player} ~ ~ ~ riven"]},
+  {"label": "beneath-arrive", "x": 0, "y": -800, "z": 70, "yaw": 180, "pitch": 0},
+  {"label": "beneath-check", "x": 12, "y": -800, "z": 70, "yaw": 180, "pitch": 0, "commands": ["execute {player} ~ ~ ~ riven"]},
+  {"label": "boundary-arrive", "x": 0, "y": -1110, "z": 100, "yaw": 180, "pitch": 0},
+  {"label": "boundary-shaft", "x": 0, "y": -1110, "z": 88, "yaw": 180, "pitch": 0, "commands": ["fill -3 -1150 40 3 -1065 90 minecraft:air"]},
+  {"label": "nether-arrive", "x": 0, "y": -1400, "z": 70, "yaw": 180, "pitch": 0},
+  {"label": "nether-check", "x": 12, "y": -1400, "z": 70, "yaw": 180, "pitch": 0, "commands": ["execute {player} ~ ~ ~ riven", "riven shaderprops {player}"]}
+]

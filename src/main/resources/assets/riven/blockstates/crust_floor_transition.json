@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:crust_floor_transition_0"
+      },
+      {
+        "model": "riven:crust_floor_transition_1"
+      }
+    ]
+  }
+}

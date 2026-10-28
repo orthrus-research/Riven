@@ -1,0 +1,114 @@
+plugins {
+    id 'java'
+    id 'xyz.wagyourtail.unimined' version '1.4.43-kappa'
+}
+group = 'cc.orthrus.riven'
+version = mod_version
+def targetLoader = providers.gradleProperty('rivenLoader').getOrElse('cleanroom')
+def compilerJavaVersion = providers.gradleProperty('rivenJavaVersion').getOrElse('25').toInteger()
+if (!(targetLoader in ['cleanroom', 'forge'])) {
+    throw new GradleException('rivenLoader must be cleanroom or forge')
+}
+if (targetLoader == 'forge') {
+    layout.buildDirectory = layout.projectDirectory.dir('build/forge')
+}
+base {
+    archivesName = 'riven'
+}
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(compilerJavaVersion)
+    }
+    // A qualification compiler must not silently change the development bytecode pin.
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+    withSourcesJar()
+}
+configurations {
+    modCompileOnly
+    compileOnly.extendsFrom(modCompileOnly)
+}
+dependencies {
+    // Compile-time metadata for Gson; no additional runtime mod or bundled dependency.
+    compileOnly 'com.google.errorprone:error_prone_annotations:2.41.0'
+    modCompileOnly files(providers.gradleProperty('rivenCubicArtifact')
+        .getOrElse("dev/pins/Cubature-${targetLoader}.jar"))
+    // Optional decoration provider; compiled against, never bundled (runtime.lock.json pins it).
+    modCompileOnly files('dev/pins/BiomesOPlenty-1.12.2-7.0.1.2445-universal.jar')
+    // Optional ore catalogue provider; compiled against, never bundled (runtime.lock.json pins it).
+    modCompileOnly files('dev/pins/gregtech-1.12.2-2.8.10-beta.jar')
+}
+unimined.minecraft {
+    version '1.12.2'
+    mappings {
+        mcp('stable', '39-1.12')
+    }
+    if (targetLoader == 'cleanroom') {
+        cleanroom {
+            loader cleanroom_api
+        }
+    } else {
+        minecraftForge {
+            loader '14.23.5.2860'
+        }
+    }
+    defaultRemapJar = false
+    remap(tasks.named('jar').get())
+    mods {
+        remap(configurations.modCompileOnly)
+    }
+}
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs.addAll(['-Xlint:all,-options', '-Werror'])
+    if (targetLoader == 'forge') {
+        options.release = 8
+    }
+}
+
+// Compile the retained diagnostic entry points without executing their workloads.
+tasks.register('compileDiagnosticsJava', JavaCompile) {
+    group = 'verification'
+    description = 'Lint and type-check diagnostic helpers without running them.'
+    source = fileTree('tools/checks') { include '**/*.java' }
+    classpath = sourceSets.main.output + sourceSets.main.compileClasspath
+    destinationDirectory = layout.buildDirectory.dir('classes/java/diagnostics')
+    javaCompiler = javaToolchains.compilerFor {
+        languageVersion = JavaLanguageVersion.of(compilerJavaVersion)
+    }
+    sourceCompatibility = JavaVersion.VERSION_25.toString()
+    targetCompatibility = JavaVersion.VERSION_25.toString()
+}
+processResources {
+    inputs.property('version', project.version)
+    filesMatching('mcmod.info') {
+        expand(version: project.version)
+    }
+}
+jar {
+    archiveClassifier = 'dev'
+    manifest {
+        attributes('Implementation-Title': 'Riven', 'Implementation-Version': project.version)
+        if (targetLoader == 'cleanroom') {
+            attributes('ModType': 'CRL')
+        }
+    }
+    finalizedBy tasks.named('remapJar')
+}
+tasks.named('remapJar') {
+    archiveClassifier = targetLoader
+}
+
+// Keep the same license scope visible in binary and matching source distributions.
+['jar', 'sourcesJar'].each { taskName ->
+    tasks.named(taskName, Jar) {
+        from('LICENSE') {
+            into 'META-INF/licenses/riven'
+            rename { 'NRR-1.0.txt' }
+        }
+        from('NOTICE.md') {
+            into 'META-INF'
+            rename { 'NOTICE-RIVEN.md' }
+        }
+    }
+}

@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:decal_rotting_branch_0"
+      },
+      {
+        "model": "riven:decal_rotting_branch_1"
+      },
+      {
+        "model": "riven:decal_rotting_branch_2"
+      },
+      {
+        "model": "riven:decal_rotting_branch_3"
+      }
+    ]
+  }
+}

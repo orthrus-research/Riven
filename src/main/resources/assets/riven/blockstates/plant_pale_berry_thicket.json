@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_pale_berry_thicket_0"
+      },
+      {
+        "model": "riven:plant_pale_berry_thicket_1"
+      },
+      {
+        "model": "riven:plant_pale_berry_thicket_2"
+      },
+      {
+        "model": "riven:plant_pale_berry_thicket_3"
+      }
+    ]
+  }
+}

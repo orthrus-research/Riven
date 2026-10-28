@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "riven:blocks/wood/strangler_fig_leaves_1"
+  }
+}

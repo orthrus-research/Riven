@@ -1,0 +1,9 @@
+{
+  "parent": "riven:block/unstable",
+  "textures": {
+    "top": "minecraft:blocks/stone_andesite",
+    "bottom": "minecraft:blocks/stone_andesite",
+    "side": "minecraft:blocks/stone_andesite",
+    "overlay": "riven:blocks/unstable_overlay"
+  }
+}

@@ -1,0 +1,9 @@
+[
+  {"label": "dripstone-cave", "x": -1184, "y": 137, "z": -2016, "yaw": 0, "pitch": -15, "commands": ["effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "dripstone-mud-hall", "x": -1248, "y": 52, "z": -2048, "yaw": 90, "pitch": -10},
+  {"label": "glowshroom", "x": -2014, "y": 47, "z": -2048, "yaw": 90, "pitch": 55},
+  {"label": "toadstools", "x": -1694, "y": -52, "z": -2048, "yaw": 90, "pitch": 50},
+  {"label": "root-mat", "x": -1758, "y": 119, "z": -2048, "yaw": 90, "pitch": -35},
+  {"label": "basement-gravel", "x": 224, "y": -275, "z": -1024, "yaw": 0, "pitch": 25},
+  {"label": "root-magma-ash", "x": -1280, "y": -460, "z": -2048, "yaw": 0, "pitch": 30}
+]

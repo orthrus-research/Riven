@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "revision": 2,
+  "policy": "DERIVED",
+  "transportX": 0.8,
+  "transportZ": 0.6,
+  "upwindSamples": 8,
+  "stepInMountainWidths": 1.5,
+  "responseInMountainRelief": 1.0,
+  "maximumWindwardFactor": 0.20,
+  "maximumLeeFactor": 0.25,
+  "upwindLatticeBlocks": 32,
+  "contract": "Authored relative moisture potential, not rainfall, recharge, ocean fetch or permission to place water. Fixed transport is independent of Dryland shape coordinates. LEGACY skips structure and retains the exact background climate. Since revision 2 the column's own structure read is exact and the eight upwind obstructions interpolate bilinearly from a lattice every upwindLatticeBlocks (0 reads them exactly); lattice nodes are pure, in a bounded memo."
+}

@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:anthracite_deposit_0"
+      },
+      {
+        "model": "riven:anthracite_deposit_1"
+      }
+    ]
+  }
+}

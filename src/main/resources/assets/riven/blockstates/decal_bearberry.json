@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:decal_bearberry_0"
+      },
+      {
+        "model": "riven:decal_bearberry_1"
+      },
+      {
+        "model": "riven:decal_bearberry_2"
+      },
+      {
+        "model": "riven:decal_bearberry_3"
+      }
+    ]
+  }
+}

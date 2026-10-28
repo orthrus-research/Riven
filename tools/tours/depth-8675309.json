@@ -1,0 +1,5 @@
+[
+  {"label": "surface", "x": 0, "y": 157, "z": 70, "yaw": 180, "pitch": 30},
+  {"label": "middle", "x": 0, "y": -200, "z": 70, "yaw": 180, "pitch": 0},
+  {"label": "floor", "x": 0, "y": -500, "z": 70, "yaw": 180, "pitch": 60}
+]

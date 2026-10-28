@@ -1,0 +1,46 @@
+{
+  "schema": 2,
+  "name": "Cubature",
+  "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
+  "repository": "https://github.com/orthrus-research/Cubature.git",
+  "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
+  "commit": "a9134e7ae801049587f7e46c2a81855b45a80dc0",
+  "checkout": "dev/CubicChunks",
+  "workingBranch": "main",
+  "artifact": "dev/pins/Cubature-cleanroom.jar",
+  "sha256": "55ef2208109f31dbd171bf677cdb027de8bb7cf4b5a39a3f4d71d591ac1e30cf",
+  "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
+  "sourcesSha256": "52ee6ae410a353ffae4e3941ab394e44c840dd53436307572f87bc953cd84f69",
+  "javaSourceFilesMatchedToArtifactSources": 400,
+  "forgeArtifact": {
+    "file": "dev/pins/Cubature-forge.jar",
+    "sha256": "32c5b0368de118aa6f90f5457715a8e294947d290eb1a303a8d97fbfc1d3ea52",
+    "scope": "Shared-source build and JAR verification; Forge native runtime unqualified",
+    "sourcesFile": "dev/pins/Cubature-forge-sources.jar",
+    "sourcesSha256": "52ee6ae410a353ffae4e3941ab394e44c840dd53436307572f87bc953cd84f69"
+  },
+  "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
+  "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
+  "compatibility": {
+    "modId": "cubicchunks",
+    "coreModId": "cubicchunkscore",
+    "javaPackages": "io.github.opencubicchunks",
+    "upstreamLogoUsed": false
+  },
+  "qualification": {
+    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of the initial commit; 256 Cubature tests per loader, 76 Cleanroom and 74 Forge lab tests, 0 failures. Riven's full check, including a native client and server smoke capture of a fresh world, passed with this build.",
+    "contents": "Initial public commit, version 0.1.4.0, with Orthrus Research as copyright holder and vendor and compile-only build inputs that a standalone clone fetches.",
+    "limits": [
+      "Respawn, portal and join arrivals still load their column synchronously",
+      "Client rendering and Forge native runtime remain unqualified"
+    ],
+    "knownExistingWarning": "Missing MixinItemMap remains; held-map behavior unqualified"
+  },
+  "licensing": {
+    "default": "MIT with separately licensed components",
+    "forgeAsync": "LGPL-2.1; see retained package and modification notices",
+    "notice": "dev/CubicChunks/NOTICE.md",
+    "modifications": "dev/CubicChunks/MODIFICATIONS.md",
+    "rivenNrrDoesNotRelicenseThisFork": true
+  }
+}

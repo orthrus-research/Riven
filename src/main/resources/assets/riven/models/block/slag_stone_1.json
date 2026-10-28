@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "riven:blocks/rock/slag_stone_1"
+  }
+}

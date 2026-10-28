@@ -1,0 +1,7 @@
+{
+  "parent": "block/cube_column",
+  "textures": {
+    "end": "riven:blocks/stone/phyllite_1_top",
+    "side": "riven:blocks/stone/phyllite_1_side"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "riven:blocks/rock/beneath_infernal_transition_1"
+  }
+}

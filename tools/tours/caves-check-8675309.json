@@ -1,0 +1,4 @@
+[
+  {"label": "chasm-rim", "x": 1024, "y": 125, "z": -1140, "yaw": 180, "pitch": 75, "commands": ["effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "deep-cavern", "x": -1324, "y": -250, "z": -1644, "yaw": 90, "pitch": 5}
+]

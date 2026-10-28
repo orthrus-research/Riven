@@ -1,0 +1,192 @@
+{
+  "schema": 1,
+  "revision": 9,
+  "note": "Vanilla palettes per climate region and elevation level for the inland logical biomes in riven-biomes.json: each inland cell uses its core region (the value's side of each transition) and its elevation core (LOW, MID, HIGH), with the second entry for rugged columns. Coastal and water biomes use the vanilla table in riven-biomes.json.",
+  "palettes": {
+    "FROZEN_DRY": [
+      [
+        "ice_flats"
+      ],
+      [
+        "ice_flats",
+        "ice_mountains"
+      ],
+      [
+        "ice_mountains"
+      ]
+    ],
+    "FROZEN_MODERATE": [
+      [
+        "ice_flats"
+      ],
+      [
+        "taiga_cold",
+        "taiga_cold_hills"
+      ],
+      [
+        "taiga_cold_hills",
+        "ice_mountains"
+      ]
+    ],
+    "FROZEN_WET": [
+      [
+        "taiga_cold"
+      ],
+      [
+        "taiga_cold",
+        "taiga_cold_hills"
+      ],
+      [
+        "taiga_cold_hills",
+        "ice_mountains"
+      ]
+    ],
+    "COOL_DRY": [
+      [
+        "plains"
+      ],
+      [
+        "plains",
+        "extreme_hills"
+      ],
+      [
+        "extreme_hills"
+      ]
+    ],
+    "COOL_MODERATE": [
+      [
+        "taiga"
+      ],
+      [
+        "taiga",
+        "taiga_hills"
+      ],
+      [
+        "taiga_hills",
+        "extreme_hills_with_trees"
+      ]
+    ],
+    "COOL_WET": [
+      [
+        "redwood_taiga"
+      ],
+      [
+        "redwood_taiga",
+        "redwood_taiga_hills"
+      ],
+      [
+        "redwood_taiga_hills"
+      ]
+    ],
+    "MILD_DRY": [
+      [
+        "plains"
+      ],
+      [
+        "plains",
+        "extreme_hills"
+      ],
+      [
+        "extreme_hills"
+      ]
+    ],
+    "MILD_MODERATE": [
+      [
+        "forest"
+      ],
+      [
+        "forest",
+        "forest_hills"
+      ],
+      [
+        "birch_forest_hills",
+        "extreme_hills_with_trees"
+      ]
+    ],
+    "MILD_WET": [
+      [
+        "roofed_forest"
+      ],
+      [
+        "forest",
+        "forest_hills"
+      ],
+      [
+        "forest_hills",
+        "extreme_hills_with_trees"
+      ]
+    ],
+    "WARM_DRY": [
+      [
+        "savanna"
+      ],
+      [
+        "savanna",
+        "savanna_rock"
+      ],
+      [
+        "savanna_rock"
+      ]
+    ],
+    "WARM_MODERATE": [
+      [
+        "forest"
+      ],
+      [
+        "forest",
+        "forest_hills"
+      ],
+      [
+        "forest_hills"
+      ]
+    ],
+    "WARM_WET": [
+      [
+        "jungle_edge"
+      ],
+      [
+        "jungle",
+        "jungle_hills"
+      ],
+      [
+        "jungle_hills"
+      ]
+    ],
+    "HOT_DRY": [
+      [
+        "desert"
+      ],
+      [
+        "desert",
+        "desert_hills"
+      ],
+      [
+        "mesa_rock"
+      ]
+    ],
+    "HOT_MODERATE": [
+      [
+        "savanna"
+      ],
+      [
+        "savanna",
+        "savanna_rock"
+      ],
+      [
+        "savanna_rock"
+      ]
+    ],
+    "HOT_WET": [
+      [
+        "jungle"
+      ],
+      [
+        "jungle",
+        "jungle_hills"
+      ],
+      [
+        "jungle_hills"
+      ]
+    ]
+  }
+}

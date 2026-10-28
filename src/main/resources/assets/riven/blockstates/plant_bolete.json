@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_bolete_0"
+      },
+      {
+        "model": "riven:plant_bolete_1"
+      },
+      {
+        "model": "riven:plant_bolete_2"
+      },
+      {
+        "model": "riven:plant_bolete_3"
+      }
+    ]
+  }
+}

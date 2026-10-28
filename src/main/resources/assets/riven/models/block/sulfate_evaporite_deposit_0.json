@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "riven:blocks/stone/sulfate_evaporite_deposit_0"
+  }
+}

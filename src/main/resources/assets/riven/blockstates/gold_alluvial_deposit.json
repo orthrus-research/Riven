@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:gold_alluvial_deposit_0"
+      },
+      {
+        "model": "riven:gold_alluvial_deposit_1"
+      }
+    ]
+  }
+}
