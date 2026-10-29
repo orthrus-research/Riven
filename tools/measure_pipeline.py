@@ -10,6 +10,7 @@ import runtime
 
 ROOT = runtime.ROOT
 lab = runtime.lab
+import lab_profiles
 import lab_workload
 
 
@@ -213,7 +214,7 @@ def main(argv=None):
             cube_packet_cubes=args.cube_packet_cubes,
         )
         for side in ["server", "client"]:
-            configured = lab.configure_cube_experiments(Path(manifest[side]), policy)
+            configured = lab_profiles.configure_cube_experiments(Path(manifest[side]), policy)
         manifest["cubeExperiments"] = configured
         manifest["packetPolicyCapabilities"] = packet_capabilities
         for side in ["server", "client"]:
@@ -283,7 +284,7 @@ def main(argv=None):
 
         def frozen_inputs(value):
             runtime.load(args.name)
-            lab.validate_cube_experiments(value)
+            lab_profiles.validate_cube_experiments(value)
             return {
                 "mods": value["modHashes"],
                 "files": {key: lab.sha(path) for key, path in input_files(value).items()},
