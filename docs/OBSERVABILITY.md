@@ -134,7 +134,9 @@ records the effective server packet policy. Use the rebuilt observer with that
 record. `compare --treatment packet-cubes` permits only the single verified
 `maxCubePacketCubes` value to differ. Exact snapshot hashes are checked before
 canonicalizing that field; byte caps, artifacts, controller sources and all
-other input bytes remain controls. The 1024-cube default is unchanged. Short
+other input bytes remain controls. `tools/cube_batch_experiment.py --plan <plan.json>` runs a
+sealed plan's cases through `capture` serially, checking its input hashes before each case and
+journaling every start and finish beside the plan. The 1024-cube default is unchanged. Short
 screening runs remain exploratory and do not promote runtime pins.
 
 `capture --mode lifecycle` uses the spectator lifecycle workload to measure

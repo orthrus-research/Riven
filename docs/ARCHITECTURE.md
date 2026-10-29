@@ -1,6 +1,6 @@
 # Architecture
 
-How Riven generates terrain at terrain-v56. Feature details are in [FEATURES.md](FEATURES.md);
+How Riven generates terrain (`TerrainMap.VERSION`, logged at startup). Feature details are in [FEATURES.md](FEATURES.md);
 the runtime stack is in [RUNTIME.md](RUNTIME.md); version history is in
 [CHANGELOG.md](../CHANGELOG.md).
 

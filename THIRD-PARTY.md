@@ -13,7 +13,7 @@ the original delivery.
 
 | Kernel | Production source | Riven adapter (NRR) | Packaged license | Archived delivery | Copy |
 | --- | --- | --- | --- | --- | --- |
-| Continental outlines | `cc/orthrus/riven/contrib/continents/ContinentalKernels.java` | `ContinentalOutlineMap`, `ContinentalMap`, `MarineSupply` | `continents/MIT.txt`, `SOURCES.md` | `continental-outlines-20261019` (rev. 2) | Adapted |
+| Continental outlines | `cc/orthrus/riven/contrib/continents/ContinentalKernels.java` | `ContinentalOutlineMap`, `ContinentalMap` | `continents/MIT.txt`, `SOURCES.md` | `continental-outlines-20261019` (rev. 2) | Adapted |
 | Ocean floors | `cc/orthrus/riven/contrib/ocean/OceanFloors.java` | `OceanBed` | `ocean-floors/MIT.txt` | `ocean-floors-20261019` | Unchanged except package |
 | Lowlands | `cc/orthrus/riven/contrib/lowland/Lowlands.java` | `LowlandTerrain` | `lowland/MIT.txt` | `lowland-terrain-20261019` | Unchanged except package |
 | Hills and uplands | `cc/orthrus/riven/contrib/hills/Hills.java` | `HillTerrain` | `hills/MIT.txt` | `hills-uplands-20261019` | Adapted |

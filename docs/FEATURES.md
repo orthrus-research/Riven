@@ -404,7 +404,7 @@ Native chunk biomes, biome queries and the DH preview all resolve through
 `Habitats.at(TerrainMap.Sample)` via `NativeColumns`. The crust floor is at Y -512 (since terrain-v72, 400 blocks under the lowest surface for geology, ore and caves); sea level is Y63 with still water through Y62.
 
 **Decoration provider** (prototype; `riven-bop.json`,
-`BiomeProvision`, `BopClimates`, `BopDecoration`, `DecorationFilter`, `SurfaceTranscription`):
+`BiomeProvision`, `BopLooks`, `BopDecoration`, `DecorationFilter`, `SurfaceTranscription`):
 with Biomes O' Plenty loaded, a column's biome comes from an explicit override for its habitat key
 (highlands; coasts and water by temperature core after `#`; river mouths), else inland from BoP's
 own climate table: Riven's temperature and moisture map onto BoP's 9 x 12 grid and pick by BoP's

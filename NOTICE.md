@@ -56,7 +56,7 @@ metadata. These extensions remain MIT. Copyright (c) 2026 Riven contributors.
 Binary and source artifacts include the complete grant and research notices
 at `META-INF/licenses/continents/{MIT.txt,SOURCES.md}`. References in those
 notes are conceptual sources; their text, figures and implementations are
-not bundled. `ContinentalMap`, `MarineSupply`, the earlier geographic prior
+not bundled. `ContinentalMap`, the earlier geographic prior
 and the native water/reservation adapters remain original NRR material.
 
 `src/main/java/cc/orthrus/riven/contrib/rocky/RockyCoasts.java` adapts the MIT package
