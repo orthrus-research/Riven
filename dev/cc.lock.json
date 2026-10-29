@@ -4,20 +4,20 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "0bbd6716a94f5234cabb401a893d3b0e9f4e76b2",
+  "commit": "e97f6a74d6efdde02da34e4726e756697afa0645",
   "checkout": "dev/CubicChunks",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
-  "sha256": "55ef2208109f31dbd171bf677cdb027de8bb7cf4b5a39a3f4d71d591ac1e30cf",
+  "sha256": "7311f954d1257a541a06c58e738e28afa9f5f0601e4ef675573660577aa43e4f",
   "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
-  "sourcesSha256": "52ee6ae410a353ffae4e3941ab394e44c840dd53436307572f87bc953cd84f69",
-  "javaSourceFilesMatchedToArtifactSources": 400,
+  "sourcesSha256": "3752e78a7dbaa6864a949b2cd5bc4154c7433b78a2f4b806c64d1ac4e74c51f3",
+  "javaSourceFilesMatchedToArtifactSources": 401,
   "forgeArtifact": {
     "file": "dev/pins/Cubature-forge.jar",
-    "sha256": "32c5b0368de118aa6f90f5457715a8e294947d290eb1a303a8d97fbfc1d3ea52",
+    "sha256": "de2aff501b8ebe214077744e302acff95f980e54dd5850249aade96bfe413423",
     "scope": "Shared-source build and JAR verification; Forge native runtime unqualified",
     "sourcesFile": "dev/pins/Cubature-forge-sources.jar",
-    "sourcesSha256": "52ee6ae410a353ffae4e3941ab394e44c840dd53436307572f87bc953cd84f69"
+    "sourcesSha256": "3752e78a7dbaa6864a949b2cd5bc4154c7433b78a2f4b806c64d1ac4e74c51f3"
   },
   "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
   "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
@@ -28,8 +28,8 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of this commit (the initial commit plus the manual CI workflow's build-input step, which changes no artifact byte); 256 Cubature tests per loader, 76 Cleanroom and 74 Forge lab tests, 0 failures. Riven's full check, including a native client and server smoke capture of a fresh world, passed with this build.",
-    "contents": "Initial public commit, version 0.1.4.0, with Orthrus Research as copyright holder and vendor and compile-only build inputs that a standalone clone fetches.",
+    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of this commit, which makes deliveryMode the only delivery input; 259 Cubature tests per loader, 76 Cleanroom and 74 Forge lab tests, 0 failures. riven.ps1 ci passed with this pin. A native cube-flight-lifecycle capture of a fresh world at PREFETCH (60 s spectator flight, then 20 s standing still) unloaded 11,616 cubes while the player stood still, at most 62 per tick against the limit of 64, and reached the same 20,538-cube floor as 0bbd6716 under the same workload, so the explicit purge freed nothing with either build.",
+    "contents": "Version 0.1.4.0 with Orthrus Research as copyright holder and vendor and compile-only build inputs that a standalone clone fetches; since the initial commit, the manual CI workflow's build-input step and deliveryMode as the only delivery input.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
       "Client rendering and Forge native runtime remain unqualified"

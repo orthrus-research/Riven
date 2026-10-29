@@ -200,13 +200,13 @@ def main(argv=None):
             dh_workers=args.dh_workers,
             dh_ignore_server_health=args.dh_ignore_server_health,
             dh_native_feed=args.dh_native_feed,
-            # The capture selects its delivery variant by JVM property; record the same mode.
+            # The config file selects the delivery mode; Cubature reads it as the server starts.
             cubature_delivery=args.delivery_experiment,
         )
         directory = runtime.target(args.name)
         manifest = runtime.load_json(directory / "standalone.json")
         policy = SimpleNamespace(
-            incremental_maintenance=False,
+            delivery_mode=args.delivery_experiment.upper(),
             cube_send_ms=0,
             cube_send_bytes=0,
             cube_packet_bytes=args.cube_packet_bytes,
@@ -232,7 +232,6 @@ def main(argv=None):
             "cubiclab.tickTimer": "complete-v1",
             "cubiclab.diagnostics": str(args.diagnostic or args.delivery_trace).lower(),
             "cubiclab.deliveryTrace": str(args.delivery_trace).lower(),
-            "cubature.deliveryExperiment": args.delivery_experiment,
             "cubiclab.storageDiagnostics": str(args.storage_diagnostics).lower(),
             "cubiclab.storageQueueAccounting": str(not args.lifecycle_diagnostics).lower(),
             "cubiclab.storageTraceCapacity": "500000" if args.lifecycle_diagnostics else "120000",
@@ -310,7 +309,7 @@ def main(argv=None):
             expected: dict[str, int] = {
                 key: int(val)
                 for key, val in value["cubeExperiments"].items()
-                if key != "incrementalMaintenance"
+                if key != "deliveryMode"
             }
             if not packet_capabilities["configurableCubeCount"]:
                 # Gson omits the observer's unavailable, null-valued entry.

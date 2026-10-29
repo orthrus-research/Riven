@@ -151,8 +151,9 @@ at 5 Hz, DH section-selection transitions, and screenshots every five seconds
 during movement. JSON records carry operation dictionaries, clock origins and
 dropped counts. Packet fingerprints and process-local mesh identities are not
 revision IDs or cross-JVM latency measurements. Timing includes this overhead.
-`--delivery-experiment baseline|maintenance|save|prefetch` records the explicit
-candidate stage; these are cumulative, opt-in experiments, not accepted defaults.
+`--delivery-experiment baseline|maintenance|save|prefetch` sets Cubature's
+`deliveryMode` and records that candidate stage in `cubeExperiments`; these are
+cumulative, opt-in experiments, not accepted defaults.
 Different stages are intentional treatment changes and do not pass the existing
 single-artifact strict comparator automatically.
 

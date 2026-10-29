@@ -234,7 +234,7 @@ class ComparisonTests(unittest.TestCase):
                 report["manifest"]["cubeExperiments"] = {
                     key: str(val) for key, val in policy.items()
                 }
-                report["manifest"]["cubeExperiments"]["incrementalMaintenance"] = "false"
+                report["manifest"]["cubeExperiments"]["deliveryMode"] = "BASELINE"
                 report["result"]["scenarios"][0]["server"] = {"packetPolicy": policy}
                 for side in ["server", "client"]:
                     key = side + "/config/cubicchunks.cfg"

@@ -379,8 +379,11 @@ def controls(report, treatment, diagnostic_screen=False):
         selected = int(declarations.get("maxCubePacketCubes", 0))
         if not 1 <= selected <= 1024:
             raise ValueError("Missing or invalid packet cube-count declaration")
+        # Delivery mode is not a packet setting; reports before it existed declare the legacy flag.
         expected = {
-            key: int(val) for key, val in declarations.items() if key != "incrementalMaintenance"
+            key: int(val)
+            for key, val in declarations.items()
+            if key not in ("deliveryMode", "incrementalMaintenance")
         }
         for row in result["scenarios"]:
             if row["server"].get("packetPolicy") != expected:

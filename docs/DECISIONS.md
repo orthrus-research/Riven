@@ -39,6 +39,17 @@ superseded instead of deleting it.
   anchor, and the cone fades toward cooler columns like cold forms do (terrain-v55), replacing the
   terrain-v37 rule that every support column be HOT.
 
+## Adopted 2026-10-29
+
+- **Cubature delivery mode.** `deliveryMode` is Cubature's only delivery input. The
+  `incrementalMaintenance` option and the `cubature.deliveryExperiment` JVM property are removed:
+  the option with BASELINE gave an unnamed mode (incremental GC driven by player movement, 8 unloads
+  per tick, no pre-unload check) that no test covered, while Riven ships PREFETCH. The stage is
+  read when the server starts and shared by every dimension (`RequiresWorldRestart`).
+  `maintenanceUnloadsPerTick`, now 64 by default (the value staged modes had hard-coded), applies
+  wherever incremental maintenance runs. Lab and measurement tools record `deliveryMode` in
+  `cubeExperiments`; a legacy `incrementalMaintenance=false` in an older config reads as BASELINE.
+
 ## Adopted 2026-10-28
 
 - **Shader packs.** Riven targets three packs under Demonica, each pinned by hash in
