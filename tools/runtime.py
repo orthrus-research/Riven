@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "dev/CubicChunks/tools"))
 import cubic_lab as lab
 import cubic_standalone as standalone
+import lab_instance
+import lab_profiles
 
 
 def load_json(path):
@@ -45,7 +47,7 @@ def native_runtime():
     plus the Java 26 named in .local/settings.json, with the hashes of its critical files."""
     template = load_json(ROOT / "dev/native-runtime.json")
     java = Path(load_json(ROOT / ".local/settings.json")["java26"]).resolve()
-    identity = lab.inspect_java26(java)
+    identity = lab_instance.inspect_java26(java)
     reviewed = template["javaRuntime"]["version"]
     if identity["version"] != reviewed:
         print(f"Note: {identity['version']} differs from the reviewed {reviewed}", flush=True)
@@ -962,9 +964,9 @@ def load(name):
         raise RuntimeError(
             "This instance predates the current runtime profile; prepare a fresh instance"
         )
-    lab.validate_java26_inputs(m)
-    lab.validate_jvm_inputs(m)
-    lab.validate_view_distance_inputs(m)
+    lab_instance.validate_java26_inputs(m)
+    lab_profiles.validate_jvm_inputs(m)
+    lab_profiles.validate_view_distance_inputs(m)
     for side in ["server", "client"]:
         actual = {p.name: lab.sha(p) for p in (Path(m[side]) / "mods").glob("*.jar")}
         if actual != m["modHashes"][side]:
