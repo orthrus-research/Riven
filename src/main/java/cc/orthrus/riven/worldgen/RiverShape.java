@@ -194,6 +194,19 @@ public final class RiverShape {
         return new RiverShape(decisions, accepted, columns);
     }
 
+    /** The river kernel's view of the height contract: its bed bands and surface bounds. */
+    private static Rivers.Reference kernelReference(TerrainHeightReference heights) {
+        return new Rivers.Reference(
+                band(heights.feature("stream_bed")),
+                band(heights.feature("river_bed")),
+                heights.lowestSurface,
+                heights.highestSurface);
+    }
+
+    private static Rivers.Band band(TerrainHeightReference.Feature bed) {
+        return new Rivers.Band(bed.width.min, bed.width.max, bed.magnitude.min, bed.magnitude.max);
+    }
+
     private static Decision prepareReach(
             long seed,
             long key,
@@ -411,7 +424,7 @@ public final class RiverShape {
                         branch,
                         facts,
                         TUNING,
-                        heights,
+                        kernelReference(heights),
                         TerrainScale.HORIZONTAL);
         if (result.plan == null) return reject(edge, family, "KERNEL_" + result.reason, probes);
         Reach shape =

@@ -7,8 +7,6 @@
  */
 package cc.orthrus.riven.contrib.river;
 
-import cc.orthrus.riven.worldgen.TerrainHeightReference;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -504,6 +502,40 @@ public final class Rivers {
         }
     }
 
+    /** One bed's width and depth band from the adopted height contract. */
+    public static final class Band {
+        final double minWidth, maxWidth, minDepth, maxDepth;
+
+        public Band(double minWidth, double maxWidth, double minDepth, double maxDepth) {
+            require(
+                    Double.isFinite(minWidth)
+                            && Double.isFinite(maxWidth)
+                            && Double.isFinite(minDepth)
+                            && Double.isFinite(maxDepth));
+            this.minWidth = minWidth;
+            this.maxWidth = maxWidth;
+            this.minDepth = minDepth;
+            this.maxDepth = maxDepth;
+        }
+    }
+
+    /**
+     * The height facts a river kernel reads, supplied by its adapter from the adopted height
+     * contract: the stream and river bed bands and the reference surface bounds.
+     */
+    public static final class Reference {
+        final Band stream, river;
+        final int lowestSurface, highestSurface;
+
+        public Reference(Band stream, Band river, int lowestSurface, int highestSurface) {
+            require(stream != null && river != null && lowestSurface <= highestSurface);
+            this.stream = stream;
+            this.river = river;
+            this.lowestSurface = lowestSurface;
+            this.highestSurface = highestSurface;
+        }
+    }
+
     public static Result prepare(
             Family f,
             long seed,
@@ -511,7 +543,7 @@ public final class Rivers {
             Route tributary,
             Admission a,
             Tuning tune,
-            TerrainHeightReference heights) {
+            Reference heights) {
         return prepareGeometry(f, seed, main, tributary, a, tune, heights, 1);
     }
 
@@ -522,7 +554,7 @@ public final class Rivers {
             Route tributary,
             ColumnAdmission a,
             Tuning tune,
-            TerrainHeightReference heights,
+            Reference heights,
             double horizontalScale) {
         require(
                 a.family == f
@@ -549,7 +581,7 @@ public final class Rivers {
             Route tributary,
             Admission a,
             Tuning tune,
-            TerrainHeightReference heights,
+            Reference heights,
             double horizontalScale) {
         if (!a.supplied) return reject(Rejection.NO_SUPPLY);
         if (!a.receiver) return reject(Rejection.NO_RECEIVER);
@@ -557,10 +589,9 @@ public final class Rivers {
         if (a.protectedShore) return reject(Rejection.PROTECTED);
         if (!a.supported) return reject(Rejection.UNSUPPORTED);
         if (f == Family.JUNCTION && tributary == null) return reject(Rejection.JUNCTION_REQUIRED);
-        TerrainHeightReference.Feature ref =
-                heights.feature(f == Family.POCKET ? "stream_bed" : "river_bed");
-        double minimumWidth = ref.width.min * horizontalScale,
-                maximumWidth = ref.width.max * horizontalScale;
+        Band ref = f == Family.POCKET ? heights.stream : heights.river;
+        double minimumWidth = ref.minWidth * horizontalScale,
+                maximumWidth = ref.maxWidth * horizontalScale;
         Route[] routes = f == Family.JUNCTION ? new Route[] {main, tributary} : new Route[] {main};
         double maxMove =
                 (f == Family.BEND
@@ -569,14 +600,14 @@ public final class Rivers {
                                         ? tune.splitWidths
                                         : f == Family.POCKET ? .25 : .35)
                         * main.width;
-        double maxWidth = main.width * (1 + tune.widthVariation), maxDepth = ref.magnitude.max;
+        double maxWidth = main.width * (1 + tune.widthVariation), maxDepth = ref.maxDepth;
         for (Route route : routes) {
             if (f == Family.JUNCTION) maxMove = Math.max(maxMove, .35 * route.width);
             if (route.grade > f.maxGrade) return reject(Rejection.GRADE);
             if (route.width * (1 - tune.widthVariation) < minimumWidth
                     || route.width * (1 + tune.widthVariation) > maximumWidth
-                    || route.depth * (1 - tune.poolFraction) < ref.magnitude.min
-                    || route.depth * (1 + tune.poolFraction) > ref.magnitude.max)
+                    || route.depth * (1 - tune.poolFraction) < ref.minDepth
+                    || route.depth * (1 + tune.poolFraction) > ref.maxDepth)
                 return reject(Rejection.SCALE);
             // A Euclidean tube thinner than a grid-cell diagonal can leave only diagonal
             // water columns. Reserve a positive rounding margin at world-sized coordinates.
@@ -625,7 +656,7 @@ public final class Rivers {
                             StrictMath.hypot(l.x[i] - branch.x[last], l.z[i] - branch.z[last])
                                     / (main.width * 1.5);
                     double scour = 1 - smooth(q);
-                    l.d[i] = Math.min(ref.magnitude.max, l.d[i] * (1 + tune.poolFraction * scour));
+                    l.d[i] = Math.min(ref.maxDepth, l.d[i] * (1 + tune.poolFraction * scour));
                 }
             for (int i = 0; i < trunk.n - 1; i++)
                 for (int j = 0; j < branch.n - 1; j++) {
@@ -657,7 +688,7 @@ public final class Rivers {
                         main.id,
                         lines.toArray(new Line[lines.size()]),
                         tune.bankSkirt,
-                        ref.magnitude.max));
+                        ref.maxDepth));
     }
 
     private static Line build(
