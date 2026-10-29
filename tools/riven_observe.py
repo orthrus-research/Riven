@@ -25,6 +25,8 @@ def artifact_args(parser):
 
 
 def main(argv=None):
+    from runtime import DELIVERY_MODES
+
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("doctor", help="Read-only input and instrumentation preflight")
@@ -51,7 +53,7 @@ def main(argv=None):
     )
     capture.add_argument(
         "--delivery-experiment",
-        choices=["baseline", "maintenance", "save", "prefetch"],
+        choices=DELIVERY_MODES,
         default="baseline",
     )
     capture.add_argument(

@@ -22,6 +22,9 @@ import cubic_standalone as standalone
 import lab_instance
 import lab_profiles
 
+# Cubature's delivery modes in stage order, as command lines spell them.
+DELIVERY_MODES = tuple(mode.lower() for mode in lab_profiles.DELIVERY_MODES)
+
 
 def load_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
@@ -135,8 +138,8 @@ def prepare(
         raise ValueError("DH bandwidth must be 1..1000000 KB/s and request limit 1..100")
     if not 1 <= dh_workers <= 16:
         raise ValueError("DH workers must be 1..16 per JVM")
-    if cubature_delivery not in ("baseline", "maintenance", "save", "prefetch"):
-        raise ValueError("Cubature delivery must be baseline, maintenance, save or prefetch")
+    if cubature_delivery not in DELIVERY_MODES:
+        raise ValueError("Cubature delivery must be one of " + ", ".join(DELIVERY_MODES))
     if dh_native_feed not in ("all", "edits"):
         raise ValueError("DH native feed must be all or edits")
     if not 0.5 <= layout_scale <= 8:
@@ -1307,7 +1310,7 @@ def main():
     )
     p.add_argument(
         "--cubature-delivery",
-        choices=["baseline", "maintenance", "save", "prefetch"],
+        choices=DELIVERY_MODES,
         default="prefetch",
         help="Cubature delivery mode (deliveryMode); prefetch adds continuous saving and ahead preparation",
     )

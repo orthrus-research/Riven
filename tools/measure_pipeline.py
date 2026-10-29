@@ -150,7 +150,7 @@ def main(argv=None):
     )
     parser.add_argument(
         "--delivery-experiment",
-        choices=["baseline", "maintenance", "save", "prefetch"],
+        choices=runtime.DELIVERY_MODES,
         default="baseline",
     )
     parser.add_argument(
