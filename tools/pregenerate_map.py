@@ -163,10 +163,6 @@ def run(args):
 
         # Keep native launch, bounded progress waits and orderly save/stop in the
         # maintained lab runner. Only its manifest/preparation boundary is adapted.
-        lab.load_lab = lambda unused: (directory, manifest)
-        lab.prime = lambda unused: None
-        lab.record_inputs = frozen_inputs
-        lab.retain_prelaunch_inputs = retain_inputs
         return lab.survey(
             SimpleNamespace(
                 native_operation="pregenerate",
@@ -177,7 +173,11 @@ def run(args):
                 survey_height=plan["heightColumns"],
                 survey_max_columns=args.max_columns,
                 jfr=args.jfr,
-            )
+            ),
+            load=lambda unused: (directory, manifest),
+            prime_lab=lambda unused: None,
+            record=frozen_inputs,
+            retain=retain_inputs,
         )
 
 

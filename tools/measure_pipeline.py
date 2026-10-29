@@ -293,19 +293,8 @@ def main(argv=None):
                 "workloadSha256": value["benchmarkWorkload"]["sha256"],
             }
 
-        # Adapt only the minimal manifest/preparation boundary. The reviewed runner
-        # retains native lifecycle, real-client, GUI, JVM and workload validation.
-        lab.load_lab = lambda unused: (directory, manifest)
-        lab.prime = lambda unused: None
-        lab.selected_scenarios = lambda unused, value: value["benchmarkWorkload"]["value"][
-            "scenarios"
-        ]["write"]
-        lab.record_inputs = frozen_inputs
-        lab.retain_prelaunch_inputs = retain_inputs
-        validate_capture = lab_workload.validate_capture
-
         def validate_pose(value, server, client):
-            validate_capture(value, server, client)
+            lab_workload.validate_capture(value, server, client)
             expected: dict[str, int] = {
                 key: int(val)
                 for key, val in value["cubeExperiments"].items()
@@ -334,7 +323,6 @@ def main(argv=None):
                         "Observed full-view camera differs from the declared workload"
                     )
 
-        lab_workload.validate_capture = validate_pose
         run_args = SimpleNamespace(
             phase="write",
             jfr=args.jfr,
@@ -345,7 +333,17 @@ def main(argv=None):
             scenario_start_timeout=120,
             client_report_timeout=60,
         )
-        return lab.run(run_args)
+        # Adapt only the minimal manifest/preparation boundary. The reviewed runner
+        # retains native lifecycle, real-client, GUI, JVM and workload validation.
+        return lab.run(
+            run_args,
+            load=lambda unused: (directory, manifest),
+            prime_lab=lambda unused: None,
+            select=lambda unused, value: value["benchmarkWorkload"]["value"]["scenarios"]["write"],
+            record=frozen_inputs,
+            retain=retain_inputs,
+            validate=validate_pose,
+        )
 
 
 if __name__ == "__main__":
