@@ -4,20 +4,20 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "e97f6a74d6efdde02da34e4726e756697afa0645",
+  "commit": "ab48bdf62fcf07b1ae80db26772375bf5bb63922",
   "checkout": "dev/CubicChunks",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
-  "sha256": "7311f954d1257a541a06c58e738e28afa9f5f0601e4ef675573660577aa43e4f",
+  "sha256": "d586826f4eb9d2812df87a7713d326e6c2e1db5855d307fd8af2b5c490ae7dac",
   "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
-  "sourcesSha256": "3752e78a7dbaa6864a949b2cd5bc4154c7433b78a2f4b806c64d1ac4e74c51f3",
-  "javaSourceFilesMatchedToArtifactSources": 401,
+  "sourcesSha256": "0268f59a88f506384ee4b4d85cb24774de5ba1aa0e30246d73da010f4d3340c1",
+  "javaSourceFilesMatchedToArtifactSources": 402,
   "forgeArtifact": {
     "file": "dev/pins/Cubature-forge.jar",
-    "sha256": "de2aff501b8ebe214077744e302acff95f980e54dd5850249aade96bfe413423",
+    "sha256": "7c9510824b31d63dd2e6b42a64bed4893e2600ee5815b99321f4bf6eb508fb41",
     "scope": "Shared-source build and JAR verification; Forge native runtime unqualified",
     "sourcesFile": "dev/pins/Cubature-forge-sources.jar",
-    "sourcesSha256": "3752e78a7dbaa6864a949b2cd5bc4154c7433b78a2f4b806c64d1ac4e74c51f3"
+    "sourcesSha256": "0268f59a88f506384ee4b4d85cb24774de5ba1aa0e30246d73da010f4d3340c1"
   },
   "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
   "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
@@ -28,8 +28,8 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of this commit, which makes deliveryMode the only delivery input; 259 Cubature tests per loader, 76 Cleanroom and 74 Forge lab tests, 0 failures. riven.ps1 ci passed with this pin. A native cube-flight-lifecycle capture of a fresh world at PREFETCH (60 s spectator flight, then 20 s standing still) unloaded 11,616 cubes while the player stood still, at most 62 per tick against the limit of 64, and reached the same 20,538-cube floor as 0bbd6716 under the same workload, so the explicit purge freed nothing with either build.",
-    "contents": "Version 0.1.4.0 with Orthrus Research as copyright holder and vendor and compile-only build inputs that a standalone clone fetches; since the initial commit, the manual CI workflow's build-input step and deliveryMode as the only delivery input.",
+    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of this commit; 262 Cubature tests per loader, 76 Cleanroom and 74 Forge lab tests, 0 failures. riven.ps1 ci passed with this pin. Native runs of fresh Riven worlds with classes identical to this build: the storage save scenarios (save-all flush with WorldEvent.Save, clean flushes, the real 900-tick periodic save) passed; a BASELINE flight showed each periodic save queueing paced snapshots; PREFETCH flight-and-settle runs passed with flight tick p95 36 to 39 ms and the same 20,538-cube settle floor as earlier builds, and saved blocks of 82,215 cubes away from spawn matched across runs and against e97f6a74 and 0bbd6716; the lab generation and maintenance contracts passed; signs filled into watched cubes reached the client through whole-cube packets with exact sizing off and on.",
+    "contents": "Version 0.1.4.0 with Orthrus Research as copyright holder and vendor and compile-only build inputs that a standalone clone fetches; since the initial commit, the manual CI workflow's build-input step, deliveryMode as the only delivery input, the periodic autosave as a named provider call, explicit delivery generation timing with run-or-await for work in flight, and sender-chosen PacketCubes sizing.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
       "Client rendering and Forge native runtime remain unqualified"

@@ -49,6 +49,15 @@ superseded instead of deleting it.
   `maintenanceUnloadsPerTick`, now 64 by default (the value staged modes had hard-coded), applies
   wherever incremental maintenance runs. Lab and measurement tools record `deliveryMode` in
   `cubeExperiments`; a legacy `incrementalMaintenance=false` in an older config reads as BASELINE.
+- **Explicit generation timing in Cubature.** Only delivery requests (cube and column watchers and
+  ahead preparation) hand generation to the workers; every other request, including reads that
+  Riven's population makes outside its prepared box, gets real terrain on the server thread. A
+  request that does not schedule never treats work in flight as absent: it runs the job if no
+  worker has started it, or waits for the worker. This replaces a scope flag under which any read
+  during the delivery pass returned air, which made decoration depend on worker timing in
+  principle; saved blocks of 82,215 cubes matched across builds, so no observed world changed.
+  Riven's population reads outside its box cost about 2,000 synchronous cubes per minute of PREFETCH
+  flight; widening its pregeneration requirements would move them to the workers.
 
 ## Adopted 2026-10-28
 
