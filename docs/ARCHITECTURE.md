@@ -34,7 +34,7 @@ instance.
 | `createTerrainPreviewSampler` | Cubature DH provider | `TerrainMap.sample` per preview column, emitted as `ColumnBlocks.runs` |
 | `ClimateBiomeProvider` | Minecraft biome queries | `surfaceHabitat`; spawn biomes exclude ocean, deep ocean, river, swamp and all three beach biomes |
 | `RivenSpawn` | Forge `CreateSpawnPosition` | First dry land column, in 64-block rings out to 16,384 blocks, with a 16-block dry margin |
-| `/riven` (`RivenCommand`) | Player | All observations at the player's column |
+| `/riven` (`RivenCommand`, report in `ColumnReport`) | Player | All observations at the player's column |
 
 Cubes entirely below the lowest possible soil are filled with stone directly unless an aquifer
 intersects them; cubes above the highest possible surface are air. `NativeColumns` holds
