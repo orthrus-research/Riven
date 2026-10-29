@@ -15,10 +15,13 @@ import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 
+from observability.profiles import sha
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "dev/CubicChunks/tools"))
 import cubic_lab as lab
 import cubic_standalone as standalone
+import lab_files
 import lab_instance
 import lab_profiles
 
@@ -55,7 +58,7 @@ def native_runtime():
     if identity["version"] != reviewed:
         print(f"Note: {identity['version']} differs from the reviewed {reviewed}", flush=True)
     path = ROOT / ".local/native-runtime.json"
-    lab.write_json(path, {**template, "javaRuntime": identity, "java": str(java)})
+    lab_files.write_json(path, {**template, "javaRuntime": identity, "java": str(java)})
     return path
 
 
@@ -87,14 +90,14 @@ def shader_packs(pins, entries):
             path = ROOT / pack["file"]
             if not path.is_file():
                 raise RuntimeError(f"Pinned shader pack missing: {pack['file']} ({pack['source']})")
-            if lab.sha(path) != pack["sha256"]:
+            if sha(path) != pack["sha256"]:
                 raise RuntimeError("Pinned shader pack changed: " + pack["file"])
             record = {"name": entry, "version": pack["version"], "sha256": pack["sha256"]}
         else:
             path = Path(entry).resolve()
             if not path.exists():
                 raise RuntimeError(f"Not a pinned pack ({', '.join(pinned)}) or a path: {entry}")
-            record = {"path": str(path), "sha256": lab.sha(path) if path.is_file() else None}
+            record = {"path": str(path), "sha256": sha(path) if path.is_file() else None}
         packs.append((path, {**record, "installedAs": path.name}))
     return packs
 
@@ -148,7 +151,7 @@ def prepare(
     if pins["profile"] != "cleanroom":
         raise RuntimeError("Expected the Cleanroom runtime profile")
     for mod in pins["mods"]:
-        if lab.sha(ROOT / mod["file"]) != mod["sha256"]:
+        if sha(ROOT / mod["file"]) != mod["sha256"]:
             raise RuntimeError("Pinned mod changed: " + mod["file"])
     packs = shader_packs(pins, shader_pack)
     if packs and not shaders:
@@ -240,7 +243,7 @@ def prepare(
                 1,
             )
         )
-        mods[side] = {p.name: lab.sha(p) for p in (home / "mods").glob("*.jar")}
+        mods[side] = {p.name: sha(p) for p in (home / "mods").glob("*.jar")}
         # Both recommended compatibility mods are present; retain the normal loader check.
         (home / "config/forge_early.cfg").write_text(
             "general {\n    B:DISABLE_PATCH_MOD_CHECK=false\n}\n"
@@ -597,10 +600,10 @@ def prepare(
             if cubic_artifact
             else "Pinned unmodified upstream DH; see dev/dh.lock.json and the instance native receipt",
         },
-        sourceArtifact={"path": str(artifact), "sha256": lab.sha(artifact)},
+        sourceArtifact={"path": str(artifact), "sha256": sha(artifact)},
         sourceCubicArtifact={
             "path": str(cubic),
-            "sha256": lab.sha(cubic),
+            "sha256": sha(cubic),
             "candidate": cubic_artifact is not None,
         },
         sourceDhArtifact={
@@ -956,7 +959,7 @@ def prepare(
             else item
             for item in manifest["generator"]["maps"]
         ]
-    lab.write_json(directory / "standalone.json", manifest)
+    lab_files.write_json(directory / "standalone.json", manifest)
     print("Prepared Riven terrain world:", directory, flush=True)
 
 
@@ -971,7 +974,7 @@ def load(name):
     lab_profiles.validate_jvm_inputs(m)
     lab_profiles.validate_view_distance_inputs(m)
     for side in ["server", "client"]:
-        actual = {p.name: lab.sha(p) for p in (Path(m[side]) / "mods").glob("*.jar")}
+        actual = {p.name: sha(p) for p in (Path(m[side]) / "mods").glob("*.jar")}
         if actual != m["modHashes"][side]:
             raise RuntimeError("Prepared mod set changed: " + side)
         feed = m.get("distantHorizons", {}).get("cubatureNativeFeed")
@@ -1039,13 +1042,13 @@ def load(name):
                 ):
                     raise RuntimeError("Prepared DH delivery settings changed: " + side)
     for relative, digest in m["serverRuntimeHashes"].items():
-        if lab.sha(Path(m["server"]) / relative) != digest:
+        if sha(Path(m["server"]) / relative) != digest:
             raise RuntimeError("Server runtime changed: " + relative)
     runtime = m["clientRuntime"]
     for artifact in runtime["libraries"] + [
         {"path": runtime["minecraft"], "sha1": runtime["minecraft_sha1"]}
     ]:
-        if lab.sha(Path(artifact["path"]), "sha1") != artifact["sha1"]:
+        if sha(Path(artifact["path"]), "sha1") != artifact["sha1"]:
             raise RuntimeError("Client library changed")
     return directory, m
 
@@ -1100,7 +1103,7 @@ def play(name, tour=None, window=None, shader_pack=None):
         client = None
         receipt = {"controller": os.getpid(), "server": server.pid, "serverCommand": server_args}
         try:
-            lab.write_json(directory / "processes.json", receipt)
+            lab_files.write_json(directory / "processes.json", receipt)
             lab.await_line(messages, "Done (", [server], 600)
             initial = (
                 [views[0][k] for k in ["x", "y", "z", "yaw", "pitch"]]
@@ -1122,14 +1125,14 @@ def play(name, tour=None, window=None, shader_pack=None):
                 client_args, Path(m["client"]), directory / "client-console.log", client_messages
             )
             receipt.update(client=client.pid, clientCommand=client_args)
-            lab.write_json(directory / "processes.json", receipt)
+            lab_files.write_json(directory / "processes.json", receipt)
             if initial:
                 lab.await_line(messages, "joined the game", [server, client], 120)
                 username = client_args[client_args.index("--username") + 1]
                 if m.get("inspectionSpectator") or views:
                     lab.send(server, "gamemode spectator " + username)
                 lab.send(server, "tp " + username + " " + " ".join(str(v) for v in initial))
-                lab.write_json(
+                lab_files.write_json(
                     directory / "inspection-started.json",
                     {"positionAndView": initial, "player": username},
                 )
@@ -1164,7 +1167,7 @@ def play(name, tour=None, window=None, shader_pack=None):
                 except subprocess.TimeoutExpired:
                     client.kill()
             receipt.update(serverExit=server.poll(), clientExit=client.poll() if client else None)
-            lab.write_json(directory / "processes.json", receipt)
+            lab_files.write_json(directory / "processes.json", receipt)
 
 
 def descend(server, username, previous, view, step=32, pause=5.0):
@@ -1203,7 +1206,7 @@ def tour_views(directory, m, views, server, client, client_messages, username):
     out.mkdir(parents=True)
     for i, (view, shot) in enumerate(zip(views, taken)):
         shutil.move(str(shot), str(out / f"{i + 1:02d}-{view['label']}.png"))
-    lab.write_json(out / "views.json", views)
+    lab_files.write_json(out / "views.json", views)
     print("Tour captures: " + str(out), flush=True)
 
 

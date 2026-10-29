@@ -7,9 +7,11 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import runtime
+from observability.profiles import sha
 
 ROOT = runtime.ROOT
 lab = runtime.lab
+import lab_files
 import lab_profiles
 import lab_workload
 
@@ -52,7 +54,7 @@ def controller_sources():
 def retain_inputs(manifest, hashes, evidence):
     """Keep exact prepared bytes; hashes alone cannot recover rewritten configs."""
     files = input_files(manifest)
-    if {key: lab.sha(path) for key, path in files.items()} != hashes["files"]:
+    if {key: sha(path) for key, path in files.items()} != hashes["files"]:
         raise RuntimeError("Prepared inputs changed before the snapshot")
     records = []
     for key, original in files.items():
@@ -61,7 +63,7 @@ def retain_inputs(manifest, hashes, evidence):
         if retained.exists():
             raise RuntimeError("Refusing to replace a retained input: " + str(retained))
         shutil.copy2(original, retained)
-        if lab.sha(retained) != hashes["files"][key]:
+        if sha(retained) != hashes["files"][key]:
             raise RuntimeError("Input snapshot hash mismatch: " + key)
         records.append(
             {
@@ -74,13 +76,13 @@ def retain_inputs(manifest, hashes, evidence):
     controllers = []
     for key, digest in hashes.get("controllerSources", {}).items():
         original, retained = ROOT / key, evidence / "controller-sources" / key
-        if lab.sha(original) != digest:
+        if sha(original) != digest:
             raise RuntimeError("Capture controller changed before launch: " + key)
         retained.parent.mkdir(parents=True, exist_ok=True)
         if retained.exists():
             raise RuntimeError("Refusing to replace retained controller: " + key)
         shutil.copy2(original, retained)
-        if lab.sha(retained) != digest:
+        if sha(retained) != digest:
             raise RuntimeError("Controller snapshot mismatch: " + key)
         controllers.append(
             {
@@ -89,11 +91,11 @@ def retain_inputs(manifest, hashes, evidence):
                 "bytes": retained.stat().st_size,
             }
         )
-    lab.write_json(evidence / "prepared-inputs.json", manifest)
+    lab_files.write_json(evidence / "prepared-inputs.json", manifest)
     return {
         "schema": 2,
         "manifest": "prepared-inputs.json",
-        "sha256": lab.sha(evidence / "prepared-inputs.json"),
+        "sha256": sha(evidence / "prepared-inputs.json"),
         "files": records,
         "controllerSources": controllers,
     }
@@ -220,12 +222,12 @@ def main(argv=None):
         for side in ["server", "client"]:
             home = Path(manifest[side])
             shutil.copy2(args.lab_artifact, home / "mods/cubicchunks-lab.jar")
-            manifest["modHashes"][side]["cubicchunks-lab.jar"] = lab.sha(args.lab_artifact)
+            manifest["modHashes"][side]["cubicchunks-lab.jar"] = sha(args.lab_artifact)
             identity = lab_workload.install(workload, home)
         manifest["benchmarkWorkload"] = identity
         manifest["labJar"] = {
             "source": str(args.lab_artifact.resolve()),
-            "sha256": lab.sha(args.lab_artifact),
+            "sha256": sha(args.lab_artifact),
             "reason": "Optional measurement observer only; identical binary on both variants",
         }
         manifest["labProperties"] = {
@@ -272,11 +274,11 @@ def main(argv=None):
             manifest["jfrMaxSizeMiB"] = configuration()["recordingMaxSizeMiB"]
             manifest["observability"] = {
                 "configuration": configuration(),
-                "jfrSettingsSha256": lab.sha(trace_settings),
+                "jfrSettingsSha256": sha(trace_settings),
                 "mode": "diagnostic",
                 "scope": "Instrumentation changes costs; no optimization acceptance.",
             }
-        lab.write_json(directory / "standalone.json", manifest)
+        lab_files.write_json(directory / "standalone.json", manifest)
         runtime.load(args.name)
         lab_workload.verify(manifest)
         if (Path(manifest["server"]) / "world/level.dat").exists():
@@ -287,10 +289,8 @@ def main(argv=None):
             lab_profiles.validate_cube_experiments(value)
             return {
                 "mods": value["modHashes"],
-                "files": {key: lab.sha(path) for key, path in input_files(value).items()},
-                "controllerSources": {
-                    key: lab.sha(path) for key, path in controller_sources().items()
-                },
+                "files": {key: sha(path) for key, path in input_files(value).items()},
+                "controllerSources": {key: sha(path) for key, path in controller_sources().items()},
                 "workloadSha256": value["benchmarkWorkload"]["sha256"],
             }
 

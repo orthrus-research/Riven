@@ -14,8 +14,10 @@ from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
 
+import lab_files
 import runtime
 from measure_pipeline import controller_sources, input_files, retain_inputs
+from observability.profiles import sha
 
 ROOT, lab = runtime.ROOT, runtime.lab
 
@@ -37,7 +39,7 @@ def allocated_height():
 def generation_inputs(manifest):
     return {
         "mods": manifest["modHashes"],
-        "java": {"sha256": lab.sha(Path(manifest["java"])), "jvm": manifest["jvmProfile"]},
+        "java": {"sha256": sha(Path(manifest["java"])), "jvm": manifest["jvmProfile"]},
         "seed": 8675309,
         "worldType": "riven",
         "generatorOptions": "",
@@ -67,7 +69,7 @@ def prepare(args):
     manifest = runtime.load_json(directory / "standalone.json")
     for side in ["server", "client"]:
         shutil.copy2(args.lab_artifact, Path(manifest[side]) / "mods/cubicchunks-lab.jar")
-        manifest["modHashes"][side]["cubicchunks-lab.jar"] = lab.sha(args.lab_artifact)
+        manifest["modHashes"][side]["cubicchunks-lab.jar"] = sha(args.lab_artifact)
     inputs = generation_inputs(manifest)
     manifest["pregeneration"] = {
         "schema": 1,
@@ -91,11 +93,11 @@ def prepare(args):
     }
     manifest["labJar"] = {
         "source": str(args.lab_artifact.resolve()),
-        "sha256": lab.sha(args.lab_artifact),
+        "sha256": sha(args.lab_artifact),
         "reason": "Optional native terrain pregeneration command; production runtime pins remain unchanged",
     }
     manifest["purpose"] = "Owned 20000 by 20000 block Riven inspection map"
-    lab.write_json(directory / "standalone.json", manifest)
+    lab_files.write_json(directory / "standalone.json", manifest)
     load(args.name)
     print(directory, flush=True)
 
@@ -154,10 +156,8 @@ def run(args):
             load(args.name)
             return {
                 "mods": value["modHashes"],
-                "files": {key: lab.sha(path) for key, path in input_files(value).items()},
-                "controllerSources": {
-                    key: lab.sha(path) for key, path in controller_sources().items()
-                },
+                "files": {key: sha(path) for key, path in input_files(value).items()},
+                "controllerSources": {key: sha(path) for key, path in controller_sources().items()},
                 "generationInputsSha256": plan["inputsSha256"],
             }
 
@@ -323,7 +323,7 @@ def verify(args):
             "witnesses": witnesses,
         }
         output = directory / ("saved-coverage-" + uuid.uuid4().hex[:8] + ".json")
-        lab.write_json(output, result)
+        lab_files.write_json(output, result)
         print(
             json.dumps(
                 {

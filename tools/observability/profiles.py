@@ -10,9 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def sha(path):
+def sha(path, algorithm="sha256"):
     with Path(path).open("rb") as stream:
-        return hashlib.file_digest(stream, "sha256").hexdigest()
+        return hashlib.file_digest(stream, algorithm).hexdigest()
 
 
 def read_json(path):

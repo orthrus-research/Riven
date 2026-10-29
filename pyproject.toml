@@ -33,7 +33,7 @@ show_error_codes = true
 # type-checking boundary. Missing imports in Riven's own modules remain errors.
 [[tool.mypy.overrides]]
 module = [
-    "cubic_lab", "cubic_standalone", "lab_instance", "lab_profiles", "lab_workload", "analyze_cubic_profile",
+    "cubic_lab", "cubic_standalone", "lab_files", "lab_instance", "lab_profiles", "lab_workload", "analyze_cubic_profile",
     "lab_repeated_statistics",
     "matplotlib", "matplotlib.*", "numpy", "PIL",
 ]
