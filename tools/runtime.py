@@ -1058,7 +1058,7 @@ def load_tour(path):
     return views
 
 
-def play(name, tour=None, shader_pack=None):
+def play(name, tour=None, window=None, shader_pack=None):
     directory, m = load(name)
     views = load_tour(tour) if tour else None
     if shader_pack:
@@ -1075,6 +1075,11 @@ def play(name, tour=None, shader_pack=None):
         commands.write_text("")
         server_args = [a for a in lab.argv(m, False) if not a.startswith("-Dcubiclab.")]
         client_args = [a for a in lab.argv(m, True) if not a.startswith("-Dcubiclab.")]
+        if window:
+            # The lab launcher fixes 1280x720; a tour may want larger captures.
+            width, height = window.lower().split("x")
+            client_args[client_args.index("--width") + 1] = str(int(width))
+            client_args[client_args.index("--height") + 1] = str(int(height))
         if m.get("captureInitialView") or views:
             client_args[1:1] = [
                 "-Driven.capture=true",
@@ -1335,6 +1340,7 @@ def main():
         "--tour",
         help="play: JSON list of {label, x, y, z, yaw, pitch}; capture each, then stop and close",
     )
+    p.add_argument("--window", help="play: client window WIDTHxHEIGHT (default 1280x720)")
     a = p.parse_args()
     if a.command == "build":
         build()
@@ -1369,7 +1375,7 @@ def main():
     elif a.command == "play":
         if a.shader_pack and len(a.shader_pack) != 1:
             raise ValueError("play takes one --shader-pack")
-        play(a.name, a.tour, a.shader_pack[0] if a.shader_pack else None)
+        play(a.name, a.tour, a.window, a.shader_pack[0] if a.shader_pack else None)
     else:
         if not a.text or "\n" in a.text or "\r" in a.text:
             raise ValueError("One console command required")
