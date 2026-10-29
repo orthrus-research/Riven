@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -76,7 +75,7 @@ final class Mappings {
             }
             roles = Collections.unmodifiableMap(resolved);
             fallbacks = Collections.unmodifiableMap(fell);
-            fingerprint = sha256(GSON.toJson(canonical()));
+            fingerprint = Rules.sha256(GSON.toJson(canonical()).getBytes(StandardCharsets.UTF_8));
         }
 
         /** The block a role resolves to. */
@@ -305,18 +304,5 @@ final class Mappings {
             IBlockState state, IProperty<T> property, String value) {
         com.google.common.base.Optional<T> parsed = property.parseValue(value);
         return parsed.isPresent() ? state.withProperty(property, parsed.get()) : null;
-    }
-
-    private static String sha256(String text) {
-        try {
-            StringBuilder hash = new StringBuilder();
-            for (byte b :
-                    MessageDigest.getInstance("SHA-256")
-                            .digest(text.getBytes(StandardCharsets.UTF_8)))
-                hash.append(String.format("%02x", b & 255));
-            return hash.toString();
-        } catch (java.security.NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

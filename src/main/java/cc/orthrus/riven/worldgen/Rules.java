@@ -40,18 +40,27 @@ public final class Rules {
             int n;
             while ((n = stream.read(buffer)) != -1) bytes.write(buffer, 0, n);
             byte[] data = bytes.toByteArray();
-            StringBuilder hash = new StringBuilder();
-            for (byte b : MessageDigest.getInstance("SHA-256").digest(data))
-                hash.append(String.format("%02x", b & 255));
             JsonObject json =
                     new JsonParser()
                             .parse(new String(data, StandardCharsets.UTF_8))
                             .getAsJsonObject();
             if (json.get("schema").getAsInt() != schema)
                 throw new IllegalStateException("Schema: " + resource);
-            return new Rules(resource, json, hash.toString());
+            return new Rules(resource, json, sha256(data));
         } catch (Exception error) {
             throw new IllegalStateException("Cannot load " + resource, error);
+        }
+    }
+
+    /** Lowercase hex SHA-256 of these bytes: every definition and snapshot fingerprint. */
+    public static String sha256(byte[] data) {
+        try {
+            StringBuilder hash = new StringBuilder();
+            for (byte b : MessageDigest.getInstance("SHA-256").digest(data))
+                hash.append(String.format("%02x", b & 255));
+            return hash.toString();
+        } catch (java.security.NoSuchAlgorithmException missing) {
+            throw new IllegalStateException(missing);
         }
     }
 
