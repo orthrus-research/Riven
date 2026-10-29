@@ -784,7 +784,7 @@ public final class SedimentTerrain {
         return false;
     }
 
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height, parentHeight, weight;
         public boolean emergentSediment;
         public long id;

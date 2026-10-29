@@ -78,15 +78,15 @@ def package_of(source_dir):
     return PACKAGE if (source_dir / "java/cc/orthrus/riven").is_dir() else "supersymmetry.riven"
 
 
-def sampler_for(package):
+def sampler_for(package, sampler=SAMPLER):
     """The sampler source in the tree's package; older trees get a renamed copy."""
     if package == PACKAGE:
-        return SAMPLER
-    text = SAMPLER.read_text(encoding="utf-8")
+        return sampler
+    text = sampler.read_text(encoding="utf-8")
     for new, old in LEGACY_PACKAGES:
         text = text.replace(new, old)
     target = (
-        CACHE / "legacy-sampler" / hashlib.sha256(text.encode()).hexdigest()[:16] / SAMPLER.name
+        CACHE / "legacy-sampler" / hashlib.sha256(text.encode()).hexdigest()[:16] / sampler.name
     )
     if not target.exists():
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -94,15 +94,16 @@ def sampler_for(package):
     return target
 
 
-def compile_sampler(source_dir):
-    """Classes for these sources plus the sampler, cached by content hash."""
+def compile_sampler(source_dir, check=SAMPLER):
+    """Classes for these sources plus one tools/checks entry point (the sampler by default),
+    cached by content hash."""
     package = package_of(source_dir)
     base = source_dir / "java" / package.replace(".", "/")
     kernels = base if package == PACKAGE else source_dir / "java/riven"
     java_files = sorted((base / "worldgen").glob("*.java"))
     for name in ("contrib", "contribution"):
         java_files += sorted((kernels / name).rglob("*.java"))
-    sampler = sampler_for(package)
+    sampler = sampler_for(package, check)
     resources = sorted((source_dir / "resources").glob("*.json"))
     digest = hashlib.sha256()
     for path in [*java_files, *resources, sampler]:

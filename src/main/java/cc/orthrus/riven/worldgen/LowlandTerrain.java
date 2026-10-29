@@ -52,7 +52,7 @@ public final class LowlandTerrain {
     }
 
     /** Caller-owned scratch; each family sees exactly the same unchanged earlier parent. */
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height, delta, weight, shoreClearance, waterClearance;
         public int candidateVisits;
         public Lowlands.Reason reason;

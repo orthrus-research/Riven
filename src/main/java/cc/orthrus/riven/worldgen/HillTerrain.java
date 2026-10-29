@@ -352,7 +352,7 @@ public final class HillTerrain {
         }
     }
 
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height, delta, weight, anchorX, anchorZ;
         public int candidates, contributors, certificateColumns;
         public Hills.Family dominant;

@@ -253,8 +253,8 @@ under `.local/actions/<run-id>/` and a `summary.json`. A failed job stops the ru
 | Command | Runs |
 | --- | --- |
 | `python tools/setup.py` (`riven.ps1 setup`) | One-time preparation of a clone: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports |
-| `riven.ps1 check` | `quality` and `atlas-golden` |
-| `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `atlas-golden` |
+| `riven.ps1 check` | `quality`, `atlas-golden` and `sample-history` |
+| `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `atlas-golden`, `sample-history` |
 | `riven.ps1 full` | `ci` plus `smoke`, a native timing capture of the run's frozen artifacts |
 | `python tools/actions.py --list` / `<job> ...` / `--dry-run` | Inspect or run individual jobs |
 
@@ -268,6 +268,11 @@ under `.local/actions/<run-id>/` and a `summary.json`. A failed job stops the ru
 - `tools/atlas_golden.py check|update [--verify]` compares four fixed atlas windows
   (`tools/atlas-golden.json`) with their stored digests. A content-changing commit updates the
   goldens in the same commit, after reviewing `terrain_atlas.py compare`.
+- `tools/run_check.py <Check> [argument ...]` compiles the working tree's worldgen with one
+  `tools/checks` entry point, as the atlas compiles its sampler, and runs it. The `sample-history`
+  job runs `SampleHistoryCheck` on six seeds: every stage result in `TerrainMap.Sample` is
+  registered with one phase, and a sample reused across 640 shuffled land and sea visits equals a
+  fresh one in every field except the scratch and count-bounded arrays the check names.
 
 The default build targets Cleanroom (Java 25 bytecode). `gradlew.bat -PrivenLoader=forge
 assemble` builds the Java 8 / Forge 14.23.5.2860 fallback; its native runtime is unqualified.

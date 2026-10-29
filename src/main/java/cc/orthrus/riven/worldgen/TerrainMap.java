@@ -1,5 +1,8 @@
 package cc.orthrus.riven.worldgen;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
     public static final int VERSION = 85;
@@ -176,9 +179,26 @@ public final class TerrainMap {
     }
 
     public static final class Sample extends BaseSample {
-        public final ErosionFilter.Result erosion = new ErosionFilter.Result();
-        public final RegionalTerrainPasses.Result passes = new RegionalTerrainPasses.Result();
-        public final RegionalLandmarks.Result landmarks = new RegionalLandmarks.Result();
+        /** Where a stage runs relative to {@link TerrainMap#sampleBeforeMajorFeatures}. */
+        private enum Phase {
+            /** Before the boundary, land columns only. */
+            LAND,
+            /** Before the boundary, marine columns only. */
+            MARINE,
+            /** After the boundary, for every column. */
+            LATER
+        }
+
+        // Declared before the results that register into them.
+        private final List<StageResult> landStages = new ArrayList<>(),
+                marineStages = new ArrayList<>(),
+                laterStages = new ArrayList<>();
+
+        public final ErosionFilter.Result erosion = stage(Phase.LAND, new ErosionFilter.Result());
+        public final RegionalTerrainPasses.Result passes =
+                stage(Phase.LAND, new RegionalTerrainPasses.Result());
+        public final RegionalLandmarks.Result landmarks =
+                stage(Phase.LATER, new RegionalLandmarks.Result());
         public double height, originalHeight, groundwaterHead, rockyParentHeight;
 
         public int blockY() {
@@ -189,19 +209,26 @@ public final class TerrainMap {
             return water.waterY;
         }
 
-        public final SurfaceCarvers.Result carvers = new SurfaceCarvers.Result();
-        public final OceanBed.Result oceanFloor = new OceanBed.Result();
-        public final LowlandTerrain.Result lowland = new LowlandTerrain.Result();
-        public final HillTerrain.Result hills = new HillTerrain.Result();
-        public final MountainTerrain.Result mountains = new MountainTerrain.Result();
-        public final PlateauTerrain.Result plateaus = new PlateauTerrain.Result();
-        public final DrylandTerrain.Result drylands = new DrylandTerrain.Result();
-        public final ColdTerrain.Result cold = new ColdTerrain.Result();
-        public final VolcanicTerrain.Result volcanic = new VolcanicTerrain.Result();
-        public final GeneralSurfaceCuts.Result cuts = new GeneralSurfaceCuts.Result();
-        public final SedimentTerrain.Result sediment = new SedimentTerrain.Result();
-        public final RockyTerrain.Result rocky = new RockyTerrain.Result();
-        public final WonderTerrain.Result wonders = new WonderTerrain.Result();
+        public final SurfaceCarvers.Result carvers =
+                stage(Phase.LATER, new SurfaceCarvers.Result());
+        public final OceanBed.Result oceanFloor = stage(Phase.MARINE, new OceanBed.Result());
+        public final LowlandTerrain.Result lowland = stage(Phase.LAND, new LowlandTerrain.Result());
+        public final HillTerrain.Result hills = stage(Phase.LATER, new HillTerrain.Result());
+        public final MountainTerrain.Result mountains =
+                stage(Phase.LATER, new MountainTerrain.Result());
+        public final PlateauTerrain.Result plateaus =
+                stage(Phase.LATER, new PlateauTerrain.Result());
+        public final DrylandTerrain.Result drylands =
+                stage(Phase.LATER, new DrylandTerrain.Result());
+        public final ColdTerrain.Result cold = stage(Phase.LATER, new ColdTerrain.Result());
+        public final VolcanicTerrain.Result volcanic =
+                stage(Phase.LATER, new VolcanicTerrain.Result());
+        public final GeneralSurfaceCuts.Result cuts =
+                stage(Phase.LATER, new GeneralSurfaceCuts.Result());
+        public final SedimentTerrain.Result sediment =
+                stage(Phase.LATER, new SedimentTerrain.Result());
+        public final RockyTerrain.Result rocky = stage(Phase.LATER, new RockyTerrain.Result());
+        public final WonderTerrain.Result wonders = stage(Phase.LATER, new WonderTerrain.Result());
         public final GeologyMap.Column geology = new GeologyMap.Column();
 
         /** The column's flood cell: its water level, band floor and the seals holding it. */
@@ -209,6 +236,39 @@ public final class TerrainMap {
 
         /** Entrances from every sample; native chunk columns add the 3D caves. */
         public final CaveMap.Voids caves = new CaveMap.Voids();
+
+        private <T extends StageResult> T stage(Phase phase, T result) {
+            (phase == Phase.LAND ? landStages : phase == Phase.MARINE ? marineStages : laterStages)
+                    .add(result);
+            return result;
+        }
+
+        /**
+         * Clears every result this column's prefix did not compute: the later stages, and the
+         * other kind of column's own prefix stages. A reused sample then exposes nothing from an
+         * earlier coordinate.
+         */
+        void clearSkippedStages(double surface) {
+            clear(ocean.marine ? landStages : marineStages, surface);
+            clear(laterStages, surface);
+        }
+
+        private static void clear(List<StageResult> stages, double surface) {
+            for (int i = 0; i < stages.size(); i++) stages.get(i).clear(surface);
+        }
+
+        /** How many phases list this result; SampleHistoryCheck requires exactly one. */
+        int registrations(StageResult result) {
+            return count(landStages, result)
+                    + count(marineStages, result)
+                    + count(laterStages, result);
+        }
+
+        private static int count(List<StageResult> stages, StageResult result) {
+            int count = 0;
+            for (StageResult registered : stages) if (registered == result) count++;
+            return count;
+        }
     }
 
     public void sample(double x, double z, Sample out) {
@@ -343,23 +403,7 @@ public final class TerrainMap {
                             ? hydro.constrain(out.originalHeight, out.water)
                             : out.originalHeight;
             out.rockyParentHeight = out.height;
-            out.sediment.clear(out.height);
-            out.rocky.clear(out.height);
-            out.carvers.clear(out.height);
-            out.landmarks.clear(out.height);
-            out.passes.clear(out.height);
-            out.lowland.clear(out.height);
-            out.hills.clear(out.height);
-            out.mountains.clear(out.height);
-            out.plateaus.clear(out.height);
-            out.drylands.clear(out.height);
-            out.cold.clear(out.height);
-            out.volcanic.clear(out.height);
-            out.cuts.clear(out.height);
-            out.wonders.clear(out.height);
-            out.erosion.displacement =
-                    out.erosion.coarseDisplacement = out.erosion.ridgeTendency = 0;
-            out.erosion.octavesEvaluated = out.erosion.kernelVisits = 0;
+            out.clearSkippedStages(out.height);
             seal(out);
             return;
         }
@@ -391,21 +435,8 @@ public final class TerrainMap {
                 out.maximumY,
                 out.passes);
         out.height = out.passes.height;
-        // A reused prefix sample must not expose observations from a prior coordinate or stage.
-        out.oceanFloor.clear(out.height);
         out.rockyParentHeight = out.height;
-        out.sediment.clear(out.height);
-        out.rocky.clear(out.height);
-        out.plateaus.clear(out.height);
-        out.mountains.clear(out.height);
-        out.hills.clear(out.height);
-        out.landmarks.clear(out.height);
-        out.carvers.clear(out.height);
-        out.drylands.clear(out.height);
-        out.cold.clear(out.height);
-        out.volcanic.clear(out.height);
-        out.cuts.clear(out.height);
-        out.wonders.clear(out.height);
+        out.clearSkippedStages(out.height);
     }
 
     private void seal(Sample out) {

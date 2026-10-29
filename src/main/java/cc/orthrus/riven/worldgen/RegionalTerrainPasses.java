@@ -61,7 +61,7 @@ public final class RegionalTerrainPasses {
     }
 
     /** Caller-owned scratch and exposed stage observations; weights describe blended profiles. */
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double formation,
                 formationFine,
                 roughening,

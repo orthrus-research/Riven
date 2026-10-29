@@ -88,14 +88,14 @@ public final class OceanBed {
     }
 
     /** Caller-owned outputs; immutable kernel inputs are short-lived per marine query. */
-    public static final class Result {
+    public static final class Result implements StageResult {
         public final OceanFloors.Output shelf = new OceanFloors.Output(),
                 ridge = new OceanFloors.Output(),
                 trench = new OceanFloors.Output(),
                 bank = new OceanFloors.Output();
         public double height, distance;
 
-        void clear(double parent) {
+        public void clear(double parent) {
             height = parent;
             distance = 0;
             clear(shelf, parent);

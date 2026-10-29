@@ -42,7 +42,7 @@ public final class RegionalLandmarks {
     }
 
     /** Caller-owned diagnostics and anchor scratch; dominant is null where no landmark contributes. */
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height,
                 rawDisplacement,
                 appliedDisplacement,

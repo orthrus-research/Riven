@@ -26,10 +26,17 @@ public final class ErosionFilter {
         rounding = heights.feature("terrace").magnitude.min / 2;
     }
 
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double displacement, coarseDisplacement, ridgeTendency;
         public int octavesEvaluated, kernelVisits;
         private double cosine, sine;
+
+        /** Erosion displaces its surface rather than replacing it: no displacement, no work. */
+        @Override
+        public void clear(double surface) {
+            displacement = coarseDisplacement = ridgeTendency = 0;
+            octavesEvaluated = kernelVisits = 0;
+        }
     }
 
     public void apply(

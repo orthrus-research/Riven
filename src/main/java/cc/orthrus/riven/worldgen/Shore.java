@@ -158,6 +158,10 @@ public final class Shore {
         out.shelter = ocean.shelter;
         out.beach = out.plain = out.cliff = out.rock = out.marsh = out.grade = out.proximity = 0;
         out.waterDatum = water;
+        // Set before the marine return, where zero plain and beach weights leave them unused, so a
+        // reused sample keeps nothing from an earlier column.
+        out.plainTarget = plainY;
+        out.beachTarget = beachY;
         out.sandy = false;
         out.littoral = !ocean.marine && ocean.distance <= littoralWidth;
         if (ocean.marine) {
@@ -168,8 +172,6 @@ public final class Shore {
         }
         out.kind = Kind.INLAND;
         out.landWeight = ocean.landWeight;
-        out.plainTarget = plainY;
-        out.beachTarget = beachY;
         double distance = Math.max(0, ocean.distance);
         if (distance >= plainWidth * 1.5) {
             out.height = out.shape(base.baseHeight);

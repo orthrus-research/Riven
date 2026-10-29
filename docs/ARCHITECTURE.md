@@ -16,7 +16,10 @@ two cells sharing a slot do not rebuild each other on every read (with a fixed v
 continents' drainage networks did, and a 16 km check on seed 5 ran for hours). The terrain
 atlas proves this per render: `tools/terrain_atlas.py render --verify` re-samples in reverse
 order on a different thread count and requires an identical SHA-256 digest of every layer and
-site decision.
+site decision. Samples are reused per thread, so each stage result registers with
+`TerrainMap.Sample` where it is declared, by the phase that runs it, and every column clears the
+stages it skips in one call; `tools/checks/SampleHistoryCheck` proves a reused sample equals a
+fresh one.
 
 Each definition carries a fingerprint that fresh instances record. Changing a definition, a
 composition order, a tie-break or a loop order at a budget limit changes worlds and needs a fresh

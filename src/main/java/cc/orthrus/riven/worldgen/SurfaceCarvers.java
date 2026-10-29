@@ -74,7 +74,7 @@ public final class SurfaceCarvers {
         for (Profile p : profiles) if (p == null) throw new IllegalStateException("Missing carver");
     }
 
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height, rawCut, appliedCut, dominantCut, anchorX, anchorZ;
         public Kind dominant;
         public ClimateRegion anchorRegion;

@@ -193,7 +193,7 @@ public final class MountainTerrain {
                 direction);
     }
 
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height, delta, weight, shape, ridge, pass, anchorX, anchorZ, massif;
         public int candidates, contributors;
         public MountainKernels.Family dominant;

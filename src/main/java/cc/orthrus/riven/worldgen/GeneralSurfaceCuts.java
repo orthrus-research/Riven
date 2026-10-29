@@ -421,7 +421,7 @@ public final class GeneralSurfaceCuts {
         return new Decision(null, reason, e);
     }
 
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height, cut, weight, anchorX, anchorZ, relief, saddleFit;
         public int candidates,
                 contributors,

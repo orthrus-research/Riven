@@ -112,7 +112,7 @@ public final class DrylandTerrain {
     }
 
     /** Scratch and material intents belong to the caller, never to a terrain or kernel cache. */
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height,
                 delta,
                 weight,

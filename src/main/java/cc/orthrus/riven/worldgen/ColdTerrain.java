@@ -333,7 +333,7 @@ public final class ColdTerrain {
         return Rules.smooth((coldZero - base.climate.celsius) / (coldZero - coldFull));
     }
 
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height, delta, weight, anchorX, anchorZ, cold, relief, slope;
         public int candidates, contributors, certificateColumns, diagnosticColumns, rejectionBits;
         public long id;

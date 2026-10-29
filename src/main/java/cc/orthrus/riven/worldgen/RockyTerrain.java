@@ -643,7 +643,7 @@ public final class RockyTerrain {
     /** Volume transition boundaries one column can carry (see RockyCoasts.columnCuts). */
     public static final int MAXIMUM_CUTS = 4;
 
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height, parentHeight, weight;
         public long id;
         public Family family;

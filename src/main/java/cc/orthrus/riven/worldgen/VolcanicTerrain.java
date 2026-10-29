@@ -333,7 +333,7 @@ public final class VolcanicTerrain {
                 Math.min(1, regional * (1 - compressionWeight) + base.uplift * compressionWeight));
     }
 
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height, delta, weight, anchorX, anchorZ, minPotential, maxColumnSlope;
         public int candidates, contributors, certificateColumns, stencilColumns;
         public long id;

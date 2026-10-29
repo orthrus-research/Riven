@@ -243,7 +243,7 @@ public final class WonderTerrain {
                 });
     }
 
-    public static final class Result {
+    public static final class Result implements StageResult {
         public double height, delta, base;
         public int voidBottom, voidTop;
         public Family family;
