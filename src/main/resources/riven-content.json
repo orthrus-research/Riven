@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 2,
+  "revision": 3,
   "lang": {
     "generator.riven": "Riven"
   },
@@ -1697,7 +1697,7 @@
     }
   },
   "decorations": {
-    "about": "Ground decorations from Riven Resources (Decoration Library 01, Art Requisitions 02 and 03; see each folder's PROVENANCE.md), textures unchanged. Each subject registers one block: plant_<id> (crossed planes, offset within its block like vanilla flowers), decal_<id> (a thin plane on the ground like leaf litter) or tall_<id> (a two-block plant whose bottom and top pieces join, its form chosen where it grows). A plant or decal shows one of its four forms by position. ground names what it stands on (grass, dirt including mud, sand, gravel, snow, stone); without that ground it drops. replaceable ones give way to placed blocks, like tall grass. None has collision; all burn like vanilla plants but those marked flammable false. riven-ground-cover.json places them.",
+    "about": "Ground decorations from Riven Resources (Decoration Library 01, Art Requisitions 02 and 03; see each folder's PROVENANCE.md), textures unchanged. Each subject registers one block: plant_<id> (crossed planes, offset within its block like vanilla flowers), decal_<id> (a thin plane on the ground like leaf litter), tall_<id> (a two-block plant whose bottom and top pieces join, its form chosen where it grows) or cane_<id> (stem pieces stacked under a top piece like sugar cane, standing only where water lies beside its ground; each piece drops a sugar cane). A plant or decal shows one of its four forms by position. ground names what it stands on (grass, dirt including mud, sand, gravel, snow, stone, sandstone of either colour); without that ground it drops. replaceable ones give way to placed blocks, like tall grass. None has collision; all burn like vanilla plants but those marked flammable false. riven-ground-cover.json places them.",
     "subjects": {
       "pebbles": {
         "name": "Pebbles",
@@ -4209,6 +4209,37 @@
           "grass",
           "dirt",
           "sand"
+        ],
+        "replaceable": false
+      },
+      "common_reed": {
+        "name": "Common Reed",
+        "kind": "cane",
+        "source": "riven-resources/requisition-03",
+        "textures": [
+          [
+            "req03-tall-reed-v01-bottom",
+            "req03-tall-reed-v01-top"
+          ],
+          [
+            "req03-tall-reed-v02-bottom",
+            "req03-tall-reed-v02-top"
+          ],
+          [
+            "req03-tall-reed-v03-bottom",
+            "req03-tall-reed-v03-top"
+          ],
+          [
+            "req03-tall-reed-v04-bottom",
+            "req03-tall-reed-v04-top"
+          ]
+        ],
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "sandstone"
         ],
         "replaceable": false
       },

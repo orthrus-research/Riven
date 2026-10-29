@@ -12,4 +12,14 @@ public interface GroundPlant {
 
         IBlockState part(boolean upper, int form);
     }
+
+    /**
+     * A plant of stacked pieces that stands only where water lies beside its ground, like sugar
+     * cane: its forms, and a piece of a form (the top piece ends the stack).
+     */
+    interface Cane extends GroundPlant {
+        int forms();
+
+        IBlockState piece(boolean top, int form);
+    }
 }

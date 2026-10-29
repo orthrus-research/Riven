@@ -58,6 +58,13 @@ superseded instead of deleting it.
   principle; saved blocks of 82,215 cubes matched across builds, so no observed world changed.
   Riven's population reads outside its box cost about 2,000 synchronous cubes per minute of PREFETCH
   flight; widening its pregeneration requirements would move them to the workers.
+- **Riven owns reeds.** The vanilla decorator's reed stage, which placed no reed on Riven ground
+  where measured but made 61% of population's reads outside its box, no longer runs in Riven worlds,
+  and the provider's stands aside with the stages Riven owns. Ground cover places Riven's own Common
+  Reed, a cane block, at water margins in warm and temperate biomes. It grows on gravel and sandstone
+  as well as grass, dirt and sand, where vanilla sugar cane would have fit about 40% of the margins.
+  Each piece drops a sugar cane, so the item stays obtainable; planted, it grows vanilla sugar cane
+  under vanilla's rules.
 
 ## Adopted 2026-10-28
 

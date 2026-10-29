@@ -4,17 +4,21 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockDirt;
 import net.minecraft.block.BlockGrass;
 import net.minecraft.block.BlockGravel;
+import net.minecraft.block.BlockRedSandstone;
 import net.minecraft.block.BlockSand;
+import net.minecraft.block.BlockSandStone;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 
 /**
  * The grounds a decoration stands on, as a bit mask over named kinds: grass, dirt (any ground
- * material, so mud and the provider's dirts), sand, gravel, snow (a snow block) and stone (any rock
- * material).
+ * material, so mud and the provider's dirts), sand, gravel, snow (a snow block), stone (any rock
+ * material) and sandstone (either colour).
  */
 public final class Grounds {
-    private static final String[] KINDS = {"grass", "dirt", "sand", "gravel", "snow", "stone"};
+    private static final String[] KINDS = {
+        "grass", "dirt", "sand", "gravel", "snow", "stone", "sandstone"
+    };
 
     private Grounds() {}
 
@@ -38,6 +42,8 @@ public final class Grounds {
                 || ((mask & 4) != 0 && block instanceof BlockSand)
                 || ((mask & 8) != 0 && block instanceof BlockGravel)
                 || ((mask & 16) != 0 && m == Material.CRAFTED_SNOW)
-                || ((mask & 32) != 0 && m == Material.ROCK);
+                || ((mask & 32) != 0 && m == Material.ROCK)
+                || ((mask & 64) != 0
+                        && (block instanceof BlockSandStone || block instanceof BlockRedSandstone));
     }
 }

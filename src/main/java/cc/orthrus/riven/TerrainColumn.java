@@ -357,14 +357,7 @@ final class TerrainColumn {
         if (cover != null && top >= 0 && ground != null)
             plants =
                     cover.preview(
-                            reported,
-                            ground,
-                            x,
-                            surfaceY,
-                            z,
-                            new boolean[] {
-                                taken(r, canopy, surfaceY), taken(r, canopy, surfaceY + 1)
-                            });
+                            reported, ground, x, surfaceY, z, footprint, y -> taken(r, canopy, y));
         if (canopy.count == 0 && plants == null) {
             for (int i = 0; i < r.count; i++) target.addRun(r.bottoms[i], r.tops[i], r.states[i]);
             return;

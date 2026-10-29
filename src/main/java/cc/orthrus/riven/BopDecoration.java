@@ -77,7 +77,9 @@ final class BopDecoration {
     private static java.util.EnumSet<GeneratorStage> owned() {
         java.util.EnumSet<GeneratorStage> owned = java.util.EnumSet.noneOf(GeneratorStage.class);
         for (String name :
-                new String[] {"TREE", "BIG_SHROOM", "GRASS", "FLOWERS", "DEAD_BUSH", "SHROOM"})
+                new String[] {
+                    "TREE", "BIG_SHROOM", "GRASS", "FLOWERS", "DEAD_BUSH", "SHROOM", "REED"
+                })
             for (GeneratorStage stage : GeneratorStage.values())
                 if (stage.name().equals(name)) owned.add(stage);
         return owned;

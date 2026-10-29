@@ -484,28 +484,38 @@ biomes grow trees; peaks, deserts, polar ground, salt flats, rocky shores and op
 `/riven trees [radius]` compares preview and world block by block and counts sites whose every log
 stands; `/riven find <biome>` names the nearest column of a riven: biome or a look.
 
-**Ground cover** (prototype, ground-cover-v1, terrain-v94, `riven-ground-cover.json`, `GroundCover`):
-Riven places the plants and decals on the ground itself; neither the provider's nor the vanilla
-decorator's grass, flower, dead bush or small mushroom stage runs (reeds, cactus, pumpkins and lily
-pads still come from the looks until desert and water work replaces them). A column's cover is a
-pure function of seed, its riven: biome and the block it stands on: the biome lists palettes
-(temperate meadow, woodland, conifer, temperate and cold rainforest, tropical and cloud forest
-floors, tundra, polar, alpine rock, heath, steppe, grassland, wetland, scrub, Mediterranean,
-savanna, desert, badlands and four shores) and entries in order, and the first entry whose ground
-fits and whose draw falls under its density decides. Patch noise gathers an entry into drifts over a
-share of the land at the same mean density, so flowers come in sweeps and litter under its trees'
-crowns of color. Cover stands on the column's surface (the top of its highest non-air run) where
-terrain, boulders and trees leave air, never on a boulder; a two-block plant needs both blocks free
-of terrain and trees (the tree sites answer which blocks they hold). Each cube writes the cover
-inside itself after its trees, reading the ground block below as native generation writes it even in
-the cube under it; the preview draws the same blocks over every cell, which Distant Horizons skips as
-non-colliding while tinting the ground under them, as it does with world data. Palettes cover a
-quarter to two fifths of fitting ground in meadows, forests and wetlands, a tenth on rock and shores
-and a twentieth in deserts. `/riven cover [radius]` compares preview and world block by block and
-names what each path decided from where they differ, and counts columns whose ground block itself
-differs; `/riven column x z` prints one column through both paths. The provider's surface patches
-(splatter, splotches) still rework some ground during population, after cover and preview decide
-(25 of 4,225 columns near seed 8675309's 0 -2880), until Riven owns those surfaces.
+**Ground cover** (prototype, ground-cover-v2, terrain-v99, `riven-ground-cover.json`,
+`GroundCover`): Riven places the plants and decals on the ground itself; neither the provider's nor
+the vanilla decorator's grass, flower, dead bush, small mushroom or reed stage runs (cactus,
+pumpkins, lily pads and the provider's in-water reeds still come from the looks until desert and
+water work replaces them). A column's cover is a pure function of seed, its riven: biome and the
+block it stands on: the biome lists palettes (temperate meadow, woodland, conifer, temperate and
+cold rainforest, tropical and cloud forest floors, tundra, polar, alpine rock, heath, steppe,
+grassland, wetland, scrub, Mediterranean, savanna, desert, badlands, four shores and reed margins)
+and entries in order, and the first entry whose ground fits and whose draw falls under its density
+decides. Patch noise gathers an entry into drifts over a share of the land at the same mean density,
+so flowers come in sweeps and litter under its trees' crowns of color. Cover stands on the column's
+surface (the top of its highest non-air run) where terrain, boulders and trees leave air, never on a
+boulder; a two-block plant or a cane needs all its blocks free of terrain and trees (the tree sites
+answer which blocks they hold). Reeds are Riven's: the Common Reed (`riven:cane_common_reed`,
+Requisition 03's reed art as stem and top pieces) is a cane of 2 to 4 blocks on grass, dirt, mud,
+sand, gravel or sandstone that stands only where a neighbouring column's native blocks hold water
+beside its ground, as it needs to stay. Its palette leads the lists of 26 warm and temperate biomes
+(1.6 times as dense in wetlands, half on open shores), so it takes a margin before other cover, and
+each piece drops a sugar cane, which keeps that source in Riven worlds. Around seed 8675309's spawn,
+374 stacks stood 2 to 4 high on grass, sand, gravel and dirt, each with water beside its ground, and
+`/riven cover` matched preview and world at seven margins. Each cube writes the cover inside itself
+after its trees, reading the ground block below as native generation writes it even in the cube
+under it; the preview draws the same blocks over every cell (a cell over two blocks wide draws no
+reed: checking a margin reads a native chunk column, and such a cell's column is rarely one), which
+Distant Horizons skips as non-colliding while tinting the ground under them, as it does with world
+data. Palettes cover a quarter to two fifths of fitting ground in meadows, forests and wetlands, a
+tenth on rock and shores and a twentieth in deserts. `/riven cover [radius]` compares preview and
+world block by block and names what each path decided from where they differ, and counts columns
+whose ground block itself differs; `/riven column x z` prints one column through both paths. The
+provider's surface patches (splatter, splotches) still rework some ground during population, after
+cover and preview decide (25 of 4,225 columns near seed 8675309's 0 -2880), until Riven owns those
+surfaces.
 
 **Wonders** (prototype, `riven-wonders.json`, `WonderTerrain`): rare exaggerated landforms, the
 last land stage before the shore, on their own WONDER lane (density 0.1, radius 1.5 site cells,

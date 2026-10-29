@@ -170,6 +170,7 @@ public final class RivenContent {
             Block block;
             if (kind.equals("plant")) block = new BlockRivenPlant(ground, replaceable);
             else if (kind.equals("tall")) block = new BlockRivenTallPlant(ground, replaceable);
+            else if (kind.equals("cane")) block = new BlockRivenCane(ground, replaceable);
             else if (kind.equals("decal"))
                 block =
                         new BlockRivenDecal(
@@ -229,7 +230,9 @@ public final class RivenContent {
                 OreDictionary.registerOre("treeSapling", block);
             } else if (block instanceof BlockRivenDecal) {
                 if (((BlockRivenDecal) block).flammable) Blocks.FIRE.setFireInfo(block, 60, 100);
-            } else if (block instanceof BlockRivenPlant || block instanceof BlockRivenTallPlant) {
+            } else if (block instanceof BlockRivenPlant
+                    || block instanceof BlockRivenTallPlant
+                    || block instanceof BlockRivenCane) {
                 Blocks.FIRE.setFireInfo(block, 60, 100);
             }
         }

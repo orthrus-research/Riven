@@ -125,6 +125,15 @@ public final class NativeColumns {
             }
         }
 
+        /** The block at Y of one column. */
+        public TerrainBlock block(int index, int y) {
+            int first = offsets[index], sentinel = offsets[index + 1] - 1;
+            if (y < bottoms[first] || y >= bottoms[sentinel]) return TerrainBlock.AIR;
+            int run = first;
+            while (y >= bottoms[run + 1]) run++;
+            return blocks[run];
+        }
+
         public String habitat(int index) {
             return habitats[index];
         }

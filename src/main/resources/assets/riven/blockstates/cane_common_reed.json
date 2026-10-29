@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "form=0,top=false": {
+      "model": "riven:cane_common_reed_0_stem"
+    },
+    "form=0,top=true": {
+      "model": "riven:cane_common_reed_0_top"
+    },
+    "form=1,top=false": {
+      "model": "riven:cane_common_reed_1_stem"
+    },
+    "form=1,top=true": {
+      "model": "riven:cane_common_reed_1_top"
+    },
+    "form=2,top=false": {
+      "model": "riven:cane_common_reed_2_stem"
+    },
+    "form=2,top=true": {
+      "model": "riven:cane_common_reed_2_top"
+    },
+    "form=3,top=false": {
+      "model": "riven:cane_common_reed_3_stem"
+    },
+    "form=3,top=true": {
+      "model": "riven:cane_common_reed_3_top"
+    }
+  }
+}

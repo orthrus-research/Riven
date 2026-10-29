@@ -352,6 +352,13 @@ def wood_assets(woods: dict[str, Any]) -> tuple[dict[str, bytes], dict[str, str]
     return out, lang
 
 
+# Kinds built from pieces: the block state property naming a piece, its values and their pieces.
+PIECES = {
+    "tall": ("half", {"lower": "bottom", "upper": "top"}),
+    "cane": ("top", {"false": "stem", "true": "top"}),
+}
+
+
 def decoration_assets(decorations: dict[str, Any]) -> tuple[dict[str, bytes], dict[str, str]]:
     """Each ground decoration's block: textures copied unchanged, four forms by position."""
     out: dict[str, bytes] = {}
@@ -362,9 +369,11 @@ def decoration_assets(decorations: dict[str, Any]) -> tuple[dict[str, bytes], di
         kind = subject["kind"]
         block = f"{kind}_{id_}"
         tex = f"riven:blocks/decor/{id_}"
-        if kind == "tall":
-            for n, (bottom, top) in enumerate(subject["textures"]):
-                for part, stem in (("bottom", bottom), ("top", top)):
+        if kind in PIECES:
+            # A two-block plant's bottom and top, or a cane's stem and top, in each form.
+            prop, pieces = PIECES[kind]
+            for n, files in enumerate(subject["textures"]):
+                for part, stem in zip(pieces.values(), files, strict=True):
                     out[f"textures/blocks/decor/{id_}_{n}_{part}.png"] = (
                         source / f"{stem}.png"
                     ).read_bytes()
@@ -374,11 +383,9 @@ def decoration_assets(decorations: dict[str, Any]) -> tuple[dict[str, bytes], di
             out[f"blockstates/{block}.json"] = text(
                 {
                     "variants": {
-                        f"form={n},half={half}": {
-                            "model": f"riven:{block}_{n}_{'bottom' if half == 'lower' else 'top'}"
-                        }
+                        f"form={n},{prop}={value}": {"model": f"riven:{block}_{n}_{part}"}
                         for n in range(len(subject["textures"]))
-                        for half in ("lower", "upper")
+                        for value, part in pieces.items()
                     }
                 }
             )
