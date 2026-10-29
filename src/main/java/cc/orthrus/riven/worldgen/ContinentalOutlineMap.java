@@ -1,7 +1,7 @@
 package cc.orthrus.riven.worldgen;
 
-import cc.orthrus.riven.contribution.continents.ContinentalKernels;
-import cc.orthrus.riven.contribution.continents.ContinentalKernels.Family;
+import cc.orthrus.riven.contrib.continents.ContinentalKernels;
+import cc.orthrus.riven.contrib.continents.ContinentalKernels.Family;
 
 import com.google.gson.JsonObject;
 

@@ -7,7 +7,7 @@
  * Geometry, salts and original point ownership remain. Extensions remain MIT.
  * Packaged grant/notices: META-INF/licenses/continents/{MIT.txt,SOURCES.md}.
  */
-package cc.orthrus.riven.contribution.continents;
+package cc.orthrus.riven.contrib.continents;
 
 import static java.lang.StrictMath.*;
 

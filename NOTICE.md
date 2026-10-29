@@ -46,7 +46,7 @@ material; that does not relicense the imported kernels.
 The `contributions/` packages named in this notice are the original deliveries of this material;
 [THIRD-PARTY.md](THIRD-PARTY.md) maps each production file to its package and packaged license.
 
-`src/main/java/cc/orthrus/riven/contribution/continents/ContinentalKernels.java` adapts
+`src/main/java/cc/orthrus/riven/contrib/continents/ContinentalKernels.java` adapts
 the MIT package `contributions/continental-outlines-20261019` revision 2.
 It preserves all four outline constructions, stable family salts, original
 point geometry, admission and reservation precedence. Adaptations replace
