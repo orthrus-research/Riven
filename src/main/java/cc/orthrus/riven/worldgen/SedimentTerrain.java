@@ -556,8 +556,7 @@ public final class SedimentTerrain {
             boolean land = dry(scratch.height, scratch.waterY());
             if (!land) {
                 if (foundDry) return null;
-                if (scratch.ocean.marine && scratch.waterY() > scratch.blockY())
-                    crossedWater = true;
+                if (scratch.ocean.marine && scratch.waterOverSurface()) crossedWater = true;
                 continue;
             }
             if (!crossedWater) continue;

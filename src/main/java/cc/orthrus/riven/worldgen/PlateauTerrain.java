@@ -263,7 +263,7 @@ public final class PlateauTerrain {
 
     /** Distance to protected water; the major envelope (TerrainMap) keeps the coast. */
     private double protectedDistance(double x, double z, TerrainMap.BaseSample base) {
-        if (base.ocean.marine || base.water.wet || base.water.weight > 0) return 0;
+        if (base.waterReserved()) return 0;
         return Math.max(0, waterClearance.surfaceClearance(x, z, protectionBlend));
     }
 

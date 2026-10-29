@@ -458,7 +458,7 @@ public final class GeneralSurfaceCuts {
             out.reason = "COLUMN_DOMAIN";
             return;
         }
-        if (base.ocean.marine || protectedShore(base) || base.water.wet || base.water.weight > 0) {
+        if (base.waterReserved() || protectedShore(base)) {
             out.reason = "COLUMN_PROTECTED";
             return;
         }

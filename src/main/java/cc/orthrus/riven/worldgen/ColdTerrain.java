@@ -364,7 +364,7 @@ public final class ColdTerrain {
             out.reason = "COLUMN_DOMAIN";
             return;
         }
-        if (base.ocean.marine || base.water.wet || base.water.weight > 0) {
+        if (base.waterReserved()) {
             out.reason = "COLUMN_PROTECTED";
             return;
         }

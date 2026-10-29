@@ -176,6 +176,14 @@ public final class TerrainMap {
         public boolean emergentSediment;
 
         public boolean emergentRock;
+
+        /**
+         * Marine, wet, or inside a water body's bank weight: raising and cutting forms keep off
+         * the column, and no cave entrance opens in it.
+         */
+        public boolean waterReserved() {
+            return ocean.marine || water.wet || water.weight > 0;
+        }
     }
 
     public static final class Sample extends BaseSample {
@@ -207,6 +215,11 @@ public final class TerrainMap {
 
         public int waterY() {
             return water.waterY;
+        }
+
+        /** Whether water stands above the column's surface block. */
+        public boolean waterOverSurface() {
+            return waterY() > blockY();
         }
 
         public final SurfaceCarvers.Result carvers =

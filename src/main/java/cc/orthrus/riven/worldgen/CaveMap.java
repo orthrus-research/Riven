@@ -771,7 +771,7 @@ public final class CaveMap {
     public void entrances(double x, double z, TerrainMap.Sample s) {
         Voids out = s.caves;
         out.clear();
-        if (s.ocean.marine || s.water.wet || s.water.weight > 0 || s.waterY() > s.blockY()) return;
+        if (s.waterReserved() || s.waterOverSurface()) return;
         int surface = s.blockY();
         GeologyMap.Column g = s.geology;
         if (Math.abs(g.faultThrow) >= CHASM_THROW
@@ -960,7 +960,7 @@ public final class CaveMap {
 
     /** Whether a column lies under the sea or surface water (its caves keep a thicker roof). */
     static boolean wet(TerrainMap.Sample s) {
-        return s.ocean.marine || s.water.wet || s.waterY() > s.blockY();
+        return s.ocean.marine || s.water.wet || s.waterOverSurface();
     }
 
     private Plan plan(int x, int z, TerrainMap.Sample s, GeologyMap.Column g, Lattice l) {

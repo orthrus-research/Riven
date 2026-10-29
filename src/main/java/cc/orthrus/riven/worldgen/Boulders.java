@@ -332,7 +332,7 @@ public final class Boulders {
 
     /** A dry land column's first air Y above its ground, or MIN_VALUE under water or sea. */
     private static int dry(TerrainMap.Sample s) {
-        if (s.ocean.marine || (s.water.wet && s.waterY() > s.blockY())) return Integer.MIN_VALUE;
+        if (s.ocean.marine || (s.water.wet && s.waterOverSurface())) return Integer.MIN_VALUE;
         return s.blockY() + 1;
     }
 
