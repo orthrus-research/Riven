@@ -3,7 +3,6 @@ package cc.orthrus.riven.worldgen;
 /** Background climate plus bounded earlier structural forcing, classified once after composition.
  * Relative moisture does not reconstruct weather, drainage or supplied water. */
 public final class ClimateMap {
-    public static final int VERSION = 3;
     private static final com.google.gson.JsonObject MOISTURE =
             Rules.load("riven-climate.json", 1).json.getAsJsonObject("moisture");
     private static final double BROAD_BLOCKS = Rules.number(MOISTURE, "broadBlocks", 256, 262144),

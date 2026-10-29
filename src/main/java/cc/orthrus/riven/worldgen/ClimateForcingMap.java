@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 
 /** Bounded authored moisture potential from earlier structure; never a supplied-water observation. */
 public final class ClimateForcingMap {
-    public static final int VERSION = 1;
     public static final int MAX_UPWIND_SAMPLES = 8;
     private static final Rules RULES = Rules.load("riven-climate-forcing.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;

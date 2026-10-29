@@ -47,102 +47,24 @@ public final class Riven {
         MinecraftForge.ORE_GEN_BUS.register(DecorationFilter.class);
         // Cleanroom posts terrain-generation events on the main bus; Forge on its own buses.
         MinecraftForge.EVENT_BUS.register(DecorationFilter.class);
-        event.getModLog()
-                .info(
-                        "Riven terrain-v"
-                                + cc.orthrus.riven.worldgen.TerrainMap.VERSION
-                                + " / climate-forcing-v2 / climate-structure-v1 / continental-outline-v1 / regional-fabric-v1 / base-elevation-v1 / base-terrain-v2 / terrain-regions-v1"
-                                + " / continents-v10 / rocky-coasts-v1 / sedimentary-coasts-v1 / estuaries-v1 / rivers-v1 / general-surface-cuts-v1 / volcanic-v4 / cold-regions-v2 / drylands-v2 / substrate-v1 / plateaus-v1 / surface-rules-v8 / mountains-v3 / hills-v3 / lowlands-v1 / lakes-v2 / ocean-floors-v3 / hydro-v6 / shores-v4 / terrain-types-v3 / habitats-v9 / biomes-v4 / erosion-v1 / climate-v3 / temperature-v3: horizontal scale=0.5; seaLevel="
-                                + cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT.seaLevel
-                                + "; highestOceanWater="
-                                + cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT.waterTopY
-                                + "; continents="
-                                + cc.orthrus.riven.worldgen.ContinentalMap.FINGERPRINT
-                                + "; reference="
-                                + cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT
-                                        .fingerprint
-                                + "; terrain="
-                                + cc.orthrus.riven.worldgen.Terrain.FINGERPRINT
-                                + "; shores="
-                                + cc.orthrus.riven.worldgen.Shore.FINGERPRINT
-                                + "; habitats="
-                                + cc.orthrus.riven.worldgen.Habitats.FINGERPRINT
-                                + "; decorationProvider="
-                                + BiomeProvision.PROVIDER
-                                + (BiomeProvision.active() ? " (loaded) " : " (absent) ")
-                                + BiomeProvision.FINGERPRINT
-                                + "; hydro="
-                                + cc.orthrus.riven.worldgen.Hydro.FINGERPRINT
-                                + "; oceanFloors="
-                                + cc.orthrus.riven.worldgen.OceanBed.FINGERPRINT
-                                + "; lakes="
-                                + cc.orthrus.riven.worldgen.LakeShape.FINGERPRINT
-                                + "; rivers="
-                                + cc.orthrus.riven.worldgen.RiverShape.FINGERPRINT
-                                + "; estuaries="
-                                + cc.orthrus.riven.worldgen.CoastShape.FINGERPRINT
-                                + "; sedimentaryCoasts="
-                                + cc.orthrus.riven.worldgen.SedimentTerrain.FINGERPRINT
-                                + "; rockyCoasts="
-                                + cc.orthrus.riven.worldgen.RockyTerrain.FINGERPRINT
-                                + "; lowlands="
-                                + cc.orthrus.riven.worldgen.LowlandTerrain.FINGERPRINT
-                                + "; hills="
-                                + cc.orthrus.riven.worldgen.HillTerrain.FINGERPRINT
-                                + "; skewHillHeadingPolicy="
-                                + cc.orthrus.riven.worldgen.HillTerrain.configuredHeadingPolicy()
-                                + "; regionalFabric="
-                                + cc.orthrus.riven.worldgen.RegionalFabricMap.FINGERPRINT
-                                + "; mountains="
-                                + cc.orthrus.riven.worldgen.MountainTerrain.FINGERPRINT
-                                + "; plateaus="
-                                + cc.orthrus.riven.worldgen.PlateauTerrain.FINGERPRINT
-                                + "; drylands="
-                                + cc.orthrus.riven.worldgen.DrylandTerrain.FINGERPRINT
-                                + "; substrate="
-                                + cc.orthrus.riven.worldgen.SubstrateMap.FINGERPRINT
-                                + "; baseTerrain="
-                                + cc.orthrus.riven.worldgen.BaseTerrainMap.FINGERPRINT
-                                + "; baseElevation="
-                                + cc.orthrus.riven.worldgen.BaseElevationMap.FINGERPRINT
-                                + "; climateForcing="
-                                + cc.orthrus.riven.worldgen.ClimateForcingMap.FINGERPRINT
-                                + "; baseTerrainPolicy="
-                                + cc.orthrus.riven.worldgen.BaseTerrainMap.configuredPolicy()
-                                + "; terrainRegions="
-                                + cc.orthrus.riven.worldgen.RegionalProfileMap.FINGERPRINT
-                                + "; coldRegions="
-                                + cc.orthrus.riven.worldgen.ColdTerrain.FINGERPRINT
-                                + "; volcanic="
-                                + cc.orthrus.riven.worldgen.VolcanicTerrain.FINGERPRINT
-                                + "; generalSurfaceCuts="
-                                + cc.orthrus.riven.worldgen.GeneralSurfaceCuts.FINGERPRINT
-                                + "; wonders="
-                                + cc.orthrus.riven.worldgen.WonderTerrain.FINGERPRINT
-                                + "; geology="
-                                + cc.orthrus.riven.worldgen.GeologyMap.FINGERPRINT
-                                + "; caves="
-                                + cc.orthrus.riven.worldgen.CaveMap.FINGERPRINT
-                                + "; ores="
-                                + cc.orthrus.riven.worldgen.OreMap.FINGERPRINT
-                                + "; caveDecor="
-                                + cc.orthrus.riven.worldgen.CaveMap.DECOR_FINGERPRINT
-                                + "; boulders="
-                                + cc.orthrus.riven.worldgen.Boulders.FINGERPRINT
-                                + "; trees="
-                                + TreeSites.FINGERPRINT
-                                + "; groundCover="
-                                + GroundCover.FINGERPRINT
-                                + "; biomeRegistry="
-                                + cc.orthrus.riven.worldgen.RivenBiomeTable.FINGERPRINT
-                                + "; mappings="
-                                + Mappings.FINGERPRINT
-                                + "; content="
-                                + cc.orthrus.riven.content.RivenContent.FINGERPRINT
-                                + "; surfaceRules="
-                                + cc.orthrus.riven.worldgen.SurfaceRules.FINGERPRINT
-                                + "; passes="
-                                + cc.orthrus.riven.worldgen.RegionalTerrainPasses.FINGERPRINT);
+        // Every packaged definition loads here, so a malformed one fails at startup; the log names
+        // each with its revision and fingerprint (Definitions).
+        org.apache.logging.log4j.Logger log = event.getModLog();
+        log.info(
+                "Riven terrain-v{}: horizontal scale={}; seaLevel={}; highestOceanWater={};"
+                        + " baseTerrainPolicy={}",
+                cc.orthrus.riven.worldgen.TerrainMap.VERSION,
+                cc.orthrus.riven.worldgen.TerrainScale.HORIZONTAL,
+                cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT.seaLevel,
+                cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT.waterTopY,
+                cc.orthrus.riven.worldgen.BaseTerrainMap.configuredPolicy());
+        for (cc.orthrus.riven.worldgen.Rules definition :
+                cc.orthrus.riven.worldgen.Definitions.loadAll())
+            log.info(
+                    "Riven definition {} revision {} sha256 {}",
+                    definition.resource,
+                    definition.revision() == null ? "-" : definition.revision(),
+                    definition.fingerprint);
     }
 
     @Mod.EventHandler

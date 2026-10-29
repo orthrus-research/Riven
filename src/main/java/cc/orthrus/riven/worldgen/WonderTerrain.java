@@ -12,7 +12,6 @@ import com.google.gson.JsonObject;
  * undercut); trigonometry is StrictMath, so every thread and preview agrees to the bit.
  */
 public final class WonderTerrain {
-    public static final int VERSION = 1;
     private static final Rules RULES = Rules.load("riven-wonders.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;
 

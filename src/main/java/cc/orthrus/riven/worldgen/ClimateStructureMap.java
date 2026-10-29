@@ -2,8 +2,6 @@ package cc.orthrus.riven.worldgen;
 
 /** Earlier land obstruction for climate. Neither a reconstructed surface nor a water observation. */
 public final class ClimateStructureMap {
-    public static final int VERSION = 1;
-
     public enum Status {
         UNSAMPLED,
         LAND,

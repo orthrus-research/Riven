@@ -21,7 +21,6 @@ import java.util.Set;
  * a lattice cached per chunk. Every void is a pure function of seed, definitions and coordinates.
  */
 public final class CaveMap {
-    public static final int VERSION = 3;
     static final Rules RULES = Rules.load("riven-caves.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;
     public static final String DECOR_FINGERPRINT = CaveDecor.FINGERPRINT;

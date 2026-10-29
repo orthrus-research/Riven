@@ -7,8 +7,6 @@ import java.util.Arrays;
 /** Independently authored regional shape, roughening and spectral smoothing passes.
  * Four seeded profiles blend in absolute coordinates. No neighbor terrain or world access. */
 public final class RegionalTerrainPasses {
-    public static final int VERSION = 1;
-
     public enum Formation {
         HUMMOCKS,
         KNOLLS,

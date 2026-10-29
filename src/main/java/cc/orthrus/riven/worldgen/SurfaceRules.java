@@ -9,7 +9,6 @@ import com.google.gson.JsonObject;
  * a treeline set by the column's temperature.
  */
 public final class SurfaceRules {
-    public static final int VERSION = 9;
     private static final Definition DEFINITION = Definition.load();
     public static final String FINGERPRINT = DEFINITION.fingerprint;
 

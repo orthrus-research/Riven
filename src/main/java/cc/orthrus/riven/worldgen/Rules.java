@@ -8,18 +8,30 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
-/** Factory for packaged, fingerprinted generation definitions. No runtime file access. */
+/**
+ * Factory for packaged, fingerprinted generation definitions, listed in {@link Definitions}. No
+ * runtime file access.
+ */
 public final class Rules {
+    public final String resource;
     public final JsonObject json;
     public final String fingerprint;
 
-    private Rules(JsonObject json, String fingerprint) {
+    private Rules(String resource, JsonObject json, String fingerprint) {
+        this.resource = resource;
         this.json = json;
         this.fingerprint = fingerprint;
     }
 
+    /** The definition's revision field, or null where it has none. */
+    public String revision() {
+        return json.has("revision") ? json.get("revision").getAsString() : null;
+    }
+
     @SuppressWarnings("deprecation") // Keep the Gson API shared with the Forge fallback.
     public static Rules load(String resource, int schema) {
+        if (!Definitions.contains(resource))
+            throw new IllegalStateException("Not a packaged definition (Definitions): " + resource);
         try (InputStream stream = Rules.class.getResourceAsStream("/" + resource)) {
             if (stream == null) throw new IllegalStateException("Missing " + resource);
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -36,7 +48,7 @@ public final class Rules {
                             .getAsJsonObject();
             if (json.get("schema").getAsInt() != schema)
                 throw new IllegalStateException("Schema: " + resource);
-            return new Rules(json, hash.toString());
+            return new Rules(resource, json, hash.toString());
         } catch (Exception error) {
             throw new IllegalStateException("Cannot load " + resource, error);
         }

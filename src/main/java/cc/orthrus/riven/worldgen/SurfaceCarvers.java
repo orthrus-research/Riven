@@ -7,8 +7,6 @@ import java.util.Arrays;
 
 /** Finite surface cuts, evaluated independently of chunk loading and preview resolution. */
 public final class SurfaceCarvers {
-    public static final int VERSION = 2;
-
     public enum Kind {
         V_RAVINE(1),
         U_TROUGH(2),

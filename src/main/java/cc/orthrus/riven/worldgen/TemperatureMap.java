@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 
 /** Surface climate only: no altitude, plates, water or biome feedback in this first pass. */
 public final class TemperatureMap {
-    public static final int VERSION = 2;
     private static final Rules RULES = Rules.load("riven-climate.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;
     private final SeededNoise broad, detail, warpX, warpZ;

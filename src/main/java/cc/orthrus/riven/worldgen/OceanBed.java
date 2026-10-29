@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 
 /** Adapts the isolated MIT geometry kernels to earlier Riven marine intent. */
 public final class OceanBed {
-    public static final int VERSION = 4;
     private static final Rules RULES = Rules.load("riven-ocean-floors.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;
     private final OceanFloors.ShelfSlope shelf;

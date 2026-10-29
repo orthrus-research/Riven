@@ -7,7 +7,6 @@ import com.google.gson.JsonObject;
 
 /** Earlier geographic ownership and coastal blend. No water admission or surface reconstruction. */
 public final class ContinentalOutlineMap {
-    public static final int VERSION = 1;
     static final Rules RULES = Rules.load("riven-continents.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;
 

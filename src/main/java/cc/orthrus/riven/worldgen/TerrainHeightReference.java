@@ -2,12 +2,7 @@ package cc.orthrus.riven.worldgen;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -102,27 +97,8 @@ public final class TerrainHeightReference {
         return result;
     }
 
-    @SuppressWarnings("deprecation") // Keep the Gson API shared with the Forge fallback.
     private static TerrainHeightReference load() {
-        try (InputStream stream =
-                TerrainHeightReference.class.getResourceAsStream(
-                        "/riven-terrain-height-reference.json")) {
-            if (stream == null) throw new IllegalStateException("Missing terrain height reference");
-            ByteArrayOutputStream data = new ByteArrayOutputStream();
-            byte[] buffer = new byte[4096];
-            int count;
-            while ((count = stream.read(buffer)) != -1) data.write(buffer, 0, count);
-            byte[] bytes = data.toByteArray();
-            StringBuilder hex = new StringBuilder();
-            for (byte b : MessageDigest.getInstance("SHA-256").digest(bytes))
-                hex.append(String.format("%02x", b & 255));
-            return new TerrainHeightReference(
-                    new JsonParser()
-                            .parse(new String(bytes, StandardCharsets.UTF_8))
-                            .getAsJsonObject(),
-                    hex.toString());
-        } catch (Exception error) {
-            throw new IllegalStateException("Cannot load terrain reference", error);
-        }
+        Rules rules = Rules.load("riven-terrain-height-reference.json", 1);
+        return new TerrainHeightReference(rules.json, rules.fingerprint);
     }
 }

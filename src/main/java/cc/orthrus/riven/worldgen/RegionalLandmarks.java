@@ -7,8 +7,6 @@ import java.util.Arrays;
 
 /** Finite seeded landforms. No chunk reads, caches, workers or mutable map-owned scratch. */
 public final class RegionalLandmarks {
-    public static final int VERSION = 2;
-
     public enum Family {
         CAPPED_HILL(0x4341505045443031L),
         CURVED_RIDGE(0x4355525645443031L),

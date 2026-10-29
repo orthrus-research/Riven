@@ -2,7 +2,6 @@ package cc.orthrus.riven.worldgen;
 
 /** Seeded present-day plate domains and motion; no historical simulation or terrain work. */
 public final class PlateMap {
-    public static final int VERSION = 2;
     public static final double CELL_BLOCKS = 6144 * TerrainScale.HORIZONTAL;
     private final long seed;
 

@@ -10,7 +10,6 @@ import com.google.gson.JsonObject;
  * marine areas enclosed by land are inland seas at that datum, never dry basins.
  */
 public final class ContinentalMap {
-    public static final int VERSION = 8;
     public static final String FINGERPRINT = ContinentalOutlineMap.FINGERPRINT;
 
     public enum Form {

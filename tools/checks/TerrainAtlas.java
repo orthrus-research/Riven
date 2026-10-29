@@ -613,9 +613,32 @@ public final class TerrainAtlas {
         System.out.printf("section %d columns every %d blocks%n", count, spacing);
     }
 
-    /** Fingerprints of every packaged definition this source tree has, read reflectively. */
+    /**
+     * Fingerprints of every packaged definition this source tree has: its Definitions catalogue,
+     * read reflectively, or the owners' FINGERPRINT fields in trees from before it.
+     */
     private static JsonObject fingerprints() {
         JsonObject f = new JsonObject();
+        String pkg = TerrainAtlas.class.getPackage().getName();
+        Class<?> catalogue = null;
+        try {
+            catalogue = Class.forName(pkg + ".Definitions");
+        } catch (ClassNotFoundException older) {
+            // Older source trees predate the catalogue.
+        }
+        if (catalogue != null) {
+            try {
+                for (Object rules : (List<?>) catalogue.getMethod("loadAll").invoke(null)) {
+                    Class<?> type = rules.getClass();
+                    f.addProperty(
+                            String.valueOf(type.getField("resource").get(rules)),
+                            String.valueOf(type.getField("fingerprint").get(rules)));
+                }
+            } catch (ReflectiveOperationException error) {
+                throw new IllegalStateException("Definitions catalogue unreadable", error);
+            }
+            return f;
+        }
         f.addProperty("reference", TerrainHeightReference.DEFAULT.fingerprint);
         String[] owners = {
             "ContinentalMap",
@@ -650,7 +673,7 @@ public final class TerrainAtlas {
         };
         for (String owner : owners) {
             try {
-                Class<?> c = Class.forName(TerrainAtlas.class.getPackage().getName() + "." + owner);
+                Class<?> c = Class.forName(pkg + "." + owner);
                 f.addProperty(owner, String.valueOf(c.getField("FINGERPRINT").get(null)));
             } catch (ReflectiveOperationException absent) {
                 // Older source trees predate some definitions.

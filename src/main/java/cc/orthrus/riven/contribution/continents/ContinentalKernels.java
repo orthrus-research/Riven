@@ -15,7 +15,6 @@ import static java.lang.StrictMath.*;
 public final class ContinentalKernels {
     private ContinentalKernels() {}
 
-    public static final int VERSION = 4;
     private static final double TAU = 2 * PI;
 
     public enum Family {

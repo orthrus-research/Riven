@@ -21,7 +21,6 @@ import java.util.Set;
  * pure function of seed, definitions and coordinates.
  */
 public final class OreMap {
-    public static final int VERSION = 3;
     private static final Rules RULES = Rules.load("riven-ores.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;
 

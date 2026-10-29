@@ -8,10 +8,10 @@ atlas_python = ".local/atlas-venv/Scripts/python.exe"
 observability_python = ".local/observability-venv/Scripts/python.exe"
 
 [workflows]
-check = ["quality", "atlas-golden", "sample-history"]
+check = ["quality", "atlas-golden", "definitions", "sample-history"]
 build = ["riven-build", "cubature-build"]
-ci = ["quality", "riven-build", "cubature-build", "atlas-golden", "sample-history"]
-full = ["quality", "riven-build", "cubature-build", "atlas-golden", "sample-history", "smoke"]
+ci = ["quality", "riven-build", "cubature-build", "atlas-golden", "definitions", "sample-history"]
+full = ["quality", "riven-build", "cubature-build", "atlas-golden", "definitions", "sample-history", "smoke"]
 
 [jobs.quality]
 description = "Formatting, lint, types and both-loader compile (tools/code_quality.py check)"
@@ -36,6 +36,12 @@ steps = [
 description = "Generated terrain matches the golden atlas digests, with determinism verified"
 steps = [
   { name = "golden digests", run = ["{atlas_python}", "tools/atlas_golden.py", "check", "--verify"] },
+]
+
+[jobs.definitions]
+description = "Definitions catalogues exactly the packaged riven-*.json files, and each loads"
+steps = [
+  { name = "definitions", run = ["{atlas_python}", "tools/run_check.py", "DefinitionsCheck", "src/main/resources"] },
 ]
 
 [jobs.sample-history]
