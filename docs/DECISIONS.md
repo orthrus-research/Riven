@@ -65,6 +65,12 @@ superseded instead of deleting it.
   as well as grass, dirt and sand, where vanilla sugar cane would have fit about 40% of the margins.
   Each piece drops a sugar cane, so the item stays obtainable; planted, it grows vanilla sugar cane
   under vanilla's rules.
+- **Cubature's layer boundary.** The cube provider and lighting sit below cube delivery and never
+  name `PlayerCubeMap`: they reach the world's player map through `CubeDemand` and
+  `SurfaceHeightListener`, which the map implements, and Cubature's `TestLayerBoundary` holds the
+  rule. Garbage collection stays with the map, where upstream put it, because it must run right
+  after the map reconciles player positions. The lab's probes in Cubature's own packages are
+  same-package tests; the members they use stay package-private.
 
 ## Adopted 2026-10-28
 
