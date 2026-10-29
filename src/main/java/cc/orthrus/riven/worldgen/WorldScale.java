@@ -38,7 +38,13 @@ public final class WorldScale {
             String key = split < 0 ? item : item.substring(0, split).trim();
             if (split < 0 || !key.equals("scale"))
                 throw new IllegalArgumentException(
-                        "Riven generator options: expected scale=<1-8>, got '" + item + "'");
+                        "Riven generator options: expected scale=<"
+                                + MINIMUM
+                                + "-"
+                                + MAXIMUM
+                                + ">, got '"
+                                + item
+                                + "'");
             try {
                 layout = Double.parseDouble(item.substring(split + 1).trim());
             } catch (NumberFormatException error) {

@@ -1,5 +1,6 @@
 package cc.orthrus.riven.worldgen;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -55,14 +56,23 @@ public final class Rules {
     }
 
     public static double number(JsonObject json, String key, double min, double max) {
-        double value = json.get(key).getAsDouble();
+        double value = required(json, key).getAsDouble();
         if (!Double.isFinite(value) || value < min || value > max)
-            throw new IllegalStateException("Range: " + key);
+            throw new IllegalStateException(
+                    "Range: " + key + " = " + value + " outside " + min + ".." + max);
         return value;
     }
 
     public static long seed(JsonObject json, String key) {
-        return Long.parseUnsignedLong(json.get(key).getAsString().replace("0x", ""), 16);
+        return Long.parseUnsignedLong(required(json, key).getAsString().replace("0x", ""), 16);
+    }
+
+    /** The value at key; a missing or null key names itself instead of failing as a null. */
+    private static JsonElement required(JsonObject json, String key) {
+        JsonElement value = json.get(key);
+        if (value == null || value.isJsonNull())
+            throw new IllegalStateException("Missing definition value: " + key);
+        return value;
     }
 
     public static double smooth(double value) {
