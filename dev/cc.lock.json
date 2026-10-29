@@ -4,20 +4,20 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "35c96746b3569d388153656877485f4680e9576b",
+  "commit": "1dc3aaede7fbeb16422de9eda5b3db076345fa2e",
   "checkout": "dev/CubicChunks",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
-  "sha256": "e97784735f2fee827aaba114d3bcd214217178edd9a6e4c6f2553aa32514ef2f",
+  "sha256": "0b5b9998796f28e6cfb4e68bb76a337dfa61942892d50f3fb6c393de7b9aea86",
   "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
-  "sourcesSha256": "5f2aed3b054d92c722cd7508cdadf5ca5566043dfd20319dac0c50d93a54692d",
+  "sourcesSha256": "6c0691b3fbfa6a4a72c1eab3a04234aef20526801e63dfcba2c1273eed1565db",
   "javaSourceFilesMatchedToArtifactSources": 407,
   "forgeArtifact": {
     "file": "dev/pins/Cubature-forge.jar",
-    "sha256": "da60b3c28a0693f8e6381467fee55a86d775ee82228986b9e7cb3de59aeb6310",
+    "sha256": "6432ab4e7087d098ac664b5523c3cb51d0cdf0fb536c14433cb4df1bb96a8872",
     "scope": "Shared-source build and JAR verification; Forge native runtime unqualified",
     "sourcesFile": "dev/pins/Cubature-forge-sources.jar",
-    "sourcesSha256": "5f2aed3b054d92c722cd7508cdadf5ca5566043dfd20319dac0c50d93a54692d"
+    "sourcesSha256": "6c0691b3fbfa6a4a72c1eab3a04234aef20526801e63dfcba2c1273eed1565db"
   },
   "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
   "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
@@ -28,8 +28,8 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of this commit; 266 Cubature tests per loader, 76 Cleanroom and 74 Forge lab tests, 0 failures (the lab's Cleanroom tests reported up to date). The four JARs are byte-identical to the 88baddb0 build, which on fresh Riven worlds passed a PREFETCH flight-and-settle (13,921 unloads and no loads while standing, the 20,538-cube floor), saved blocks of 82,215 cubes away from spawn matching a 9e45a6fa world, the lab generation and maintenance contracts, and a BASELINE route whose GC sweep ran at the 201st call; commits after 88baddb0 change only the lab's Python tools. riven.ps1 ci was not run with this pin.",
-    "contents": "Version 0.1.4.0 with Orthrus Research as copyright holder and vendor and compile-only build inputs that a standalone clone fetches; since the initial commit, the manual CI workflow's build-input step, deliveryMode as the only delivery input, the periodic autosave as a named provider call, explicit delivery generation timing with run-or-await for work in flight, sender-chosen PacketCubes sizing, a provider and lighting that reach the player cube map only through CubeDemand and SurfaceHeightListener, held teleports kept when a teleport leaves the player in place, and PlayerCubeMap, CubeProviderServer and the lab's Python tools split into focused parts (DeferredArrivals, CubeSender, PeriodicAutosave, ChunkGc's incremental GC; lab_profiles, lab_files, lab_process and lab_instance).",
+    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of this commit; 272 Cubature tests per loader, 76 Cleanroom and 74 Forge lab tests, 0 failures. riven.ps1 ci passed with this pin. Native runs of fresh Riven worlds with this build: a PREFETCH flight-and-settle (14,251 unloads and no loads while standing, the 20,538-cube floor), saved blocks of 82,215 cubes away from spawn matching a 9e45a6fa world, the lab generation, maintenance and save contracts under PREFETCH and BASELINE, a BASELINE route whose GC sweep ran at the 201st call, and a step-route full view.",
+    "contents": "Version 0.1.4.0 with Orthrus Research as copyright holder and vendor and compile-only build inputs that a standalone clone fetches; since the initial commit, the manual CI workflow's build-input step, deliveryMode as the only delivery input, the periodic autosave as a named provider call, explicit delivery generation timing with run-or-await for work in flight, sender-chosen PacketCubes sizing, a provider and lighting that reach the player cube map only through CubeDemand and SurfaceHeightListener, held teleports kept when a teleport leaves the player in place, PlayerCubeMap, CubeProviderServer and the lab's Python tools split into focused parts, the delivery system in its own core.server.delivery package behind a boundary test, every numeric setting ranged and checked on sync and by the set command, and every test source run on both loaders.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
       "Client rendering and Forge native runtime remain unqualified"
