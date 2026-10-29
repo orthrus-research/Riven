@@ -39,9 +39,9 @@ steps = [
 ]
 
 [jobs.definitions]
-description = "Definitions catalogues exactly the packaged riven-*.json files, and each loads"
+description = "Definitions catalogues exactly the packaged riven-*.json files, each loads, and the terrain version agrees"
 steps = [
-  { name = "definitions", run = ["{atlas_python}", "tools/run_check.py", "DefinitionsCheck", "src/main/resources"] },
+  { name = "definitions", run = ["{atlas_python}", "tools/run_check.py", "DefinitionsCheck", "src/main/resources", "."] },
 ]
 
 [jobs.sample-history]

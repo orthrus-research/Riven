@@ -270,7 +270,8 @@ under `.local/actions/<run-id>/` and a `summary.json`. A failed job stops the ru
   goldens in the same commit, after reviewing `terrain_atlas.py compare`.
 - `tools/run_check.py <Check> [argument ...]` compiles the working tree's worldgen with one
   `tools/checks` entry point, as the atlas compiles its sampler, and runs it. The `definitions` job
-  runs `DefinitionsCheck`: `worldgen/Definitions` lists exactly the packaged `riven-*.json` files.
+  runs `DefinitionsCheck`: `worldgen/Definitions` lists exactly the packaged `riven-*.json` files,
+  and `TerrainMap.VERSION` equals the newest CHANGELOG terrain row and the version README names.
   The `sample-history`
   job runs `SampleHistoryCheck` on six seeds: every stage result in `TerrainMap.Sample` is
   registered with one phase, and a sample reused across 640 shuffled land and sea visits equals a

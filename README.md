@@ -18,7 +18,7 @@ CubicChunks.
 
 Research preview: public for study and testing. Every terrain version changes generated content
 and needs a fresh world; no version yet promises compatibility with existing worlds. The current
-version is terrain-v98 ([CHANGELOG.md](CHANGELOG.md)). There are no releases yet; they will be
+version is terrain-v99 ([CHANGELOG.md](CHANGELOG.md)). There are no releases yet; they will be
 published on GitHub Releases. Known structural limits are listed in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#measured-structural-limits).
 
