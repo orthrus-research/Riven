@@ -4,7 +4,7 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "a9134e7ae801049587f7e46c2a81855b45a80dc0",
+  "commit": "0bbd6716a94f5234cabb401a893d3b0e9f4e76b2",
   "checkout": "dev/CubicChunks",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
@@ -28,7 +28,7 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of the initial commit; 256 Cubature tests per loader, 76 Cleanroom and 74 Forge lab tests, 0 failures. Riven's full check, including a native client and server smoke capture of a fresh world, passed with this build.",
+    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of this commit (the initial commit plus the manual CI workflow's build-input step, which changes no artifact byte); 256 Cubature tests per loader, 76 Cleanroom and 74 Forge lab tests, 0 failures. Riven's full check, including a native client and server smoke capture of a fresh world, passed with this build.",
     "contents": "Initial public commit, version 0.1.4.0, with Orthrus Research as copyright holder and vendor and compile-only build inputs that a standalone clone fetches.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
