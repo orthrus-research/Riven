@@ -363,7 +363,8 @@ public final class Hydro
             IntentSampler intent,
             GroundwaterPotential groundwater,
             ContinentalMap continents,
-            OceanBed oceanBed) {
+            OceanBed oceanBed,
+            WorldScale world) {
         this.seed = SeededNoise.mix(seed ^ Rules.seed(RULES.json, "variationSeed"));
         this.heights = heights;
         this.intent = intent;
@@ -380,11 +381,16 @@ public final class Hydro
         networksPerCell = integer(j, "networksPerCell", 1, 8);
         directions = integer(j, "directions", 4, 12);
         segments = integer(j, "routeSegments", 8, 24);
-        sets = integer(j, "cacheSets", 16, 256);
+        // cacheSets is the memo at the 8 km layout. Plans keep their size while continents scale
+        // with the layout, so the plans a world reads grow with its area: the memo grows with the
+        // layout squared and stays as full at 32 km as at 8 km (timing only).
+        int baseSets = integer(j, "cacheSets", 16, 256);
+        if ((baseSets & (baseSets - 1)) != 0)
+            throw new IllegalStateException("Hydro cache sets must be a power of two");
+        int scaled = (int) Math.ceil(baseSets * world.layout * world.layout);
+        sets = Integer.highestOneBit(Math.max(16, scaled) * 2 - 1);
         ways = integer(j, "cacheWays", 1, 4);
         cacheCapacity = sets * ways;
-        if ((sets & (sets - 1)) != 0)
-            throw new IllegalStateException("Hydro cache sets must be a power of two");
         minimumMoisture = Rules.number(j, "minimumMoisture", 0, 1);
         maxRoute = Rules.number(j, "maximumRouteBlocks", 256, cellBlocks * .6);
         maxCut = Rules.number(j, "maximumCutBlocks", 1, 112);

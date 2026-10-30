@@ -257,7 +257,10 @@ owner cell, which 60% of rays failed, and the routes that fit ran on across the 
 channel (mean 265 blocks at 8 km, now about 60). On a shoaling coast the mouth becomes the same
 funnel estuary as a drainage river's, clear of the lake outlet, wherever the cut limit allows: 159
 of 304 network mouths at 32 km, 145 of the 157 on shoaling coasts. It reads only intent, earlier groundwater head, moisture and reference dimensions; plans
-never consult neighbors or finished terrain. A 512-entry memo keeps immutable geometry.
+never consult neighbors or finished terrain. A memo keeps immutable geometry: `cacheSets` x
+`cacheWays` (512) plans at the 8 km layout, growing with the layout scale squared, since plans
+keep their 2,048 blocks while continents scale (8,192 at 32 km). With 12 players spread over the
+world, `RegionalCacheProbe` counts 122 plans at 8 km and 726 at 32 km.
 
 **Drainage networks** (terrain-v91, `riven-hydrology.json` drainage, `Drainage`): every built
 continent drains its own land on a grid of 32-block cells (a coarse scan of its support finds the

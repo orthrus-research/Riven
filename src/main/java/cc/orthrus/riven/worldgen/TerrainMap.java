@@ -49,7 +49,8 @@ public final class TerrainMap {
             ContinentalMap continents,
             SubstrateMap substrate,
             BaseTerrainMap baseTerrain,
-            RegionalFabricMap fabric) {
+            RegionalFabricMap fabric,
+            WorldScale world) {
         if (climate == null || continents == null || baseTerrain == null || fabric == null)
             throw new NullPointerException();
         this.baseTerrain = baseTerrain;
@@ -75,7 +76,7 @@ public final class TerrainMap {
         erosion = new ErosionFilter(seed, heights);
         groundwater = new Head(seed, heights);
         intentSampler = this::intent;
-        hydro = new Hydro(seed, heights, intentSampler, groundwater, continents, oceanBed);
+        hydro = new Hydro(seed, heights, intentSampler, groundwater, continents, oceanBed, world);
         majorFeatureParent = this::sampleBeforeMajorFeatures;
         hills =
                 new HillTerrain(

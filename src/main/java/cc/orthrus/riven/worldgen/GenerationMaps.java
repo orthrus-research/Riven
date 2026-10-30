@@ -55,7 +55,15 @@ public final class GenerationMaps {
         baseTerrain = new BaseTerrainMap(seed, baseElevation, heights, regions, policy);
         terrain =
                 new TerrainMap(
-                        seed, plates, heights, climate, continents, substrate, baseTerrain, fabric);
+                        seed,
+                        plates,
+                        heights,
+                        climate,
+                        continents,
+                        substrate,
+                        baseTerrain,
+                        fabric,
+                        world);
         surfaces = new SurfaceRules(heights);
         columns = new NativeColumns(terrain, surfaces, heights);
         boulders = new Boulders(seed, terrain);
