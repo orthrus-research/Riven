@@ -257,6 +257,13 @@ either changed while it ran. A pass recorded before a commit therefore names tha
 remaining job needs. The record assumes the tool environments, `.local/settings.json` and the
 pinned JARs are unchanged between runs.
 
+`python tools/push_gate.py install` writes a pre-push hook into Riven and `dev/CubicChunks`; it
+stays local, since git never commits `.git/hooks`. The hook refuses a push whose tip has not
+passed every `ci` job: a Riven commit on its own tree together with the tree of the Cubature
+commit its `dev/cc.lock.json` pins, a Cubature commit on its tree with one Riven tree. Running
+`ci --if-needed` with the pushed commits checked out and nothing uncommitted supplies the missing
+jobs; `git push --no-verify` skips the check.
+
 | Command | Runs |
 | --- | --- |
 | `python tools/setup.py` (`riven.ps1 setup`) | One-time preparation of a clone: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports |
