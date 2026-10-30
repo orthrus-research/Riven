@@ -17,8 +17,11 @@ what is specific to Riven. For a change to generated terrain, open an issue firs
   fingerprinted, so editing one, even its notes, is a content change that needs fresh worlds.
 - **Bounded, pure planning.** Region tiles, per-continent drainage and column caches are pure
   functions of seed, definitions and coordinates, held in bounded caches whose eviction cannot
-  change results. Riven has no background jobs, preparation coordinator or order-dependent state;
-  Cubature's worker pools change timing, never content.
+  change results. Riven has no order-dependent state and starts no threads: its in-build
+  parallelism runs on an executor Cubature supplies, never the JVM's common pool. Preparing pure
+  regional plans ahead of demand is encouraged within the bounds in
+  [docs/DECISIONS.md](docs/DECISIONS.md) (Preparation within bounds). Cubature's worker pools
+  change timing, never content.
 - **One owner per placement.** Riven decides every block in its worlds; no other mod's world
   generator runs there (`useVanillaChunkWorldGenerators=false`). Native cubes and the Distant
   Horizons preview share one sampler and one set of block rules, so a new fluid, light emitter or

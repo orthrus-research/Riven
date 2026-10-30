@@ -23,6 +23,7 @@ superseded instead of deleting it.
   `useVanillaChunkWorldGenerators=false`. *Population superseded 2026-10-23 by the Biomes O'
   Plenty decoration provider.* *Partly superseded 2026-10-22 by the two-tier
   generator:* pure per-tile region plans and per-tile drainage are allowed; the other limits stand.
+  *No preparation coordinator superseded 2026-10-30 (Preparation within bounds).*
 - **Undated. Additional shaping deferred.** Further shaping of water bodies and basins waits
   until the hydrology layers are established.
 - **2026-10-20. Static quality checks.** Formatting, linting and type checks
@@ -54,6 +55,33 @@ superseded instead of deleting it.
   terms, bound to 3.3.3). A fork stays possible if patching stops being enough; it would need its
   own decision, since it supersedes the commitment that this project maintains no derivative DH
   distribution ([PROJECT-COMMITMENTS.md](PROJECT-COMMITMENTS.md)).
+
+- **Cubature supplies Riven's in-build executor.** Riven's in-build parallelism (drainage scans
+  and network builds, hydrology plan builds, and any later parallel regional build) runs on an
+  executor that Cubature supplies. Cubature sizes it from the processor count inside its worker
+  budget, where its governor sees it. It never runs on the JVM's common pool, and tools outside the
+  game supply their own bounded executor. Riven starts no threads of its own, and results stay a
+  pure function of seed, definitions and layout scale. This extends the 2026-10-23 approval of
+  bounded Cubature pools to Riven's in-build work. Evidence (`RegionalCacheProbe`, 12 players,
+  cold pass): drainage network builds still left 49 s of waiting on the common pool at 8 km and
+  86 s at 32 km. That pool holds P - 1 threads outside the budget, and its bursts lined up with
+  98 ms ticks in the land run. Shrinking it instead stretched 32 km network builds from 4.7 s to
+  13.1 s on average and 41 s at worst.
+
+- **Preparation within bounds.** Preparing pure regional plans before a worker needs them is
+  encouraged: hydrology plans, drainage networks and region tiles built ahead of the players'
+  motion, the native view and Distant Horizons' reach, on Cubature's bounded pool. This
+  supersedes "no preparation coordinator" (2026-10-19, restated 2026-10-22 and 2026-10-23), which
+  was stricter than needed. Preparation becomes too planned, and stops, when any of these holds:
+  - it changes content, or lets a result depend on what was prepared or in what order (prepared
+    values are the same pure functions, published through the same bounded memos);
+  - it prepares more than the memos hold with headroom, so plans are evicted before they are read
+    (a 32 km drainage network holds about 14 MB);
+  - it runs ahead of demanded work: the native view comes first, then previews, then preparation,
+    within the governor's permits and never on the server thread;
+  - it reaches further than players can arrive before the plans would be evicted.
+
+  Order-dependent state and unbounded memory stay forbidden.
 
 ## Adopted 2026-10-29
 
@@ -282,7 +310,8 @@ superseded instead of deleting it.
   coordinator or order-dependent state. Evidence: server ticks sat near 60 ms while loading or
   moving because generation filled a 50 ms server-thread budget, which kept DH's health pause on;
   save/purge stalls reached 2,024 ms waiting for the writer to drain its backlog (lifecycle
-  captures, 2026-10-20).
+  captures, 2026-10-20). *Riven's background work and preparation revised 2026-10-30 (Cubature
+  supplies Riven's in-build executor; Preparation within bounds).*
 
 ## Adopted 2026-10-22
 
@@ -293,7 +322,9 @@ superseded instead of deleting it.
   per-column sample cache for native cubes. Still forbidden: background jobs, preparation
   coordinators, order-dependent state and unbounded memory. Every phase is proven with
   `terrain_atlas.py render --verify` and a `compare` against the previous phase. Continents 4-20 km
-  across; land target as set under Coast-first landforms below.
+  across; land target as set under Coast-first landforms below. *Background jobs and preparation
+  coordinators superseded 2026-10-30 (Cubature supplies Riven's in-build executor; Preparation
+  within bounds); order-dependent state and unbounded memory stay forbidden.*
 
 - **Coast-first landforms.** Protect the coast with a coastal height envelope instead of exclusion
   tests, give the world plate-margin classes and provinces, place features by suitability, and
