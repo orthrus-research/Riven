@@ -115,6 +115,45 @@ class LodTraceTest(unittest.TestCase):
         wait = report["client"]["stages"]["build queue wait"]
         self.assertEqual((wait["count"], wait["meanMs"], wait["maxMs"]), (2, 4.5, 8.0))
 
+    def test_slot_breakdown_pools_and_server_health(self):
+        tile = _encode(6, 2, 2)
+        server = [
+            (0, "gen-started", tile, 0),
+            (3 * MS, "preview-start", tile),
+            (10 * MS, "preview-end", tile, 7 * MS),
+            (11 * MS, "gen-finished", tile, 0),
+            (11 * MS, "retrieval-done", tile, 1),
+            (15 * MS, "retrieval-end", tile, 4 * MS),
+            (20 * MS, "pool", 0, 6, 2, 0, 10),
+            (40 * MS, "pool", 0, 2, 4, 1, 12),
+            (20 * MS, "pool", 1, 0, 1, 1, 3),
+            (30 * MS, "server-tick", 0, 40 * MS),
+            (80 * MS, "server-tick", 0, 60 * MS),
+            (90 * MS, "dh-health", 0, 30_000, 60_000, 0),
+            (99 * MS, "dh-health", 0, 10_000, 20_000, 1),
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            trace = Path(temporary) / "trace"
+            trace.mkdir()
+            write(trace, "server", server, 0)
+            result = lod_report(trace, Path(temporary) / "out", "all", charts=False)
+        s = result["report"]["server"]
+        slot = s["slot"]
+        self.assertEqual(slot["waiting for a thread"]["p50Ms"], 3.0)
+        self.assertEqual(slot["sampling"]["p50Ms"], 7.0)
+        self.assertEqual(slot["handoff to DH"]["p50Ms"], 1.0)
+        self.assertEqual(slot["whole slot"]["p50Ms"], 11.0)
+        self.assertEqual(slot["DH update after the slot"]["p50Ms"], 4.0)
+        world_gen = s["pools"]["World Gen"]
+        self.assertEqual(
+            (world_gen["meanQueued"], world_gen["meanRunning"], world_gen["pausedShare"]),
+            (4.0, 3.0, 0.5),
+        )
+        self.assertEqual(s["pools"]["LOD Builder"]["pausedShare"], 0.0)
+        self.assertEqual(s["ticks"]["maxMs"], 60.0)
+        self.assertEqual(s["dhHealth"]["unhealthyShare"], 0.5)
+        self.assertIn("World Gen", result["text"])
+
     def test_partial_last_line_and_open_trace_are_reported(self):
         with tempfile.TemporaryDirectory() as temporary:
             trace = Path(temporary) / "trace"

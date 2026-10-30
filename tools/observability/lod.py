@@ -342,6 +342,73 @@ def response_pairs(server_rows, client_by_op, offset):
     }
 
 
+POOL_NAMES = [
+    "World Gen",
+    "LOD Builder",
+    "IO",
+    "Network Compression",
+    "Update Propagator",
+    "Render Loader",
+]
+
+
+def pool_summary(rows):
+    """DH's shared executors from the 4 Hz pool rows: queue, running threads and paused share."""
+    samples = defaultdict(list)
+    for r in rows:
+        if r[OP] == "pool":
+            samples[r[POS]].append(r)
+    out = {}
+    for i, pool in sorted(samples.items()):
+        n = len(pool)
+        out[POOL_NAMES[i] if i < len(POOL_NAMES) else str(i)] = {
+            "samples": n,
+            "meanQueued": round(sum(r[A] for r in pool) / n, 1),
+            "maxQueued": max(r[A] for r in pool),
+            "meanRunning": round(sum(r[B] for r in pool) / n, 2),
+            "pausedShare": round(sum(1 for r in pool if r[C] == 0) / n, 3),
+        }
+    return out
+
+
+def server_ticks(rows):
+    """Tick event spans, and the share of DH health checks that would pause generation."""
+    ticks = [r[A] for r in rows if r[OP] == "server-tick"]
+    health = [r for r in rows if r[OP] == "dh-health"]
+    out = {"ticks": stats(ticks)}
+    if health:
+        out["dhHealth"] = {
+            "samples": len(health),
+            "unhealthyShare": round(sum(1 for r in health if r[C] == 0) / len(health), 3),
+            "meanAverageMs": round(sum(r[A] for r in health) / len(health) / 1000, 2),
+            "meanP99Ms": round(sum(r[B] for r in health) / len(health) / 1000, 2),
+        }
+    return out
+
+
+def slot_breakdown(by_op, rows):
+    """Where a generation slot's time goes, per tile: waiting for a DH thread, sampling, handing
+    the result back; DH's update after the slot ends runs on the same thread."""
+    parts = {
+        "waiting for a thread": pair_durations(by_op, "gen-started", "preview-start"),
+        "sampling": pair_durations(by_op, "preview-start", "preview-end"),
+        "handoff to DH": pair_durations(by_op, "preview-end", "gen-finished"),
+        "whole slot": pair_durations(by_op, "gen-started", "gen-finished"),
+        "DH update after the slot": [
+            (r[POS] & 0x7F, r[A]) for r in rows if r[OP] == "retrieval-end"
+        ],
+    }
+    out = {}
+    for name, pairs in parts.items():
+        values = [n for _, n in pairs]
+        out[name] = {
+            **stats(values),
+            "totalSeconds": round(sum(values) / 1e9, 2),
+            "byDetail": by_detail(pairs),
+        }
+    return out
+
+
 def lod_report(directory, output, mode="auto", charts=True):
     directory = Path(directory)
     if not directory.is_dir():
@@ -443,7 +510,12 @@ def lod_report(directory, output, mode="auto", charts=True):
             },
             "tilesGenerated": len(sampling),
             "payloadBytes": sum(max(0, r[A]) for r in windowed["server"] if r[OP] == "srv-payload"),
+            "slot": slot_breakdown(by_op, windowed["server"]),
+            "pools": pool_summary(windowed["server"]),
+            **server_ticks(windowed["server"]),
         }
+    if "client" in report:
+        report["client"]["pools"] = pool_summary(windowed["client"])
     origin = {"base": 0}
     if "client" in epochs and "server" in epochs and epochs["client"] and epochs["server"]:
         offset = (epochs["server"] - epochs["client"]) * 1000
@@ -480,6 +552,21 @@ def _row(name, s):
     return f"  {name:<34} {s['count']:>7} {s['p50Ms']:>9} {s['p90Ms']:>9} {s['p99Ms']:>9} {s['maxMs']:>9}"
 
 
+def _pool_lines(title, pools):
+    if not pools:
+        return []
+    lines = [
+        "",
+        f"{title} (4 Hz samples)",
+        f"  {'executor':<20} {'queued mean':>12} {'queued max':>11} {'running mean':>13} {'paused':>8}",
+    ]
+    for name, p in pools.items():
+        lines.append(
+            f"  {name:<20} {p['meanQueued']:>12} {p['maxQueued']:>11} {p['meanRunning']:>13} {p['pausedShare']:>8.0%}"
+        )
+    return lines
+
+
 def render_text(report):
     head = f"  {'stage':<34} {'count':>7} {'p50 ms':>9} {'p90 ms':>9} {'p99 ms':>9} {'max ms':>9}"
     lines = [f"DH LOD trace: {report['trace']} (window {report['window']})"]
@@ -496,6 +583,27 @@ def render_text(report):
             head,
         ]
         lines += [_row(name, v) for name, v in s["stages"].items()]
+        if s["slot"]["whole slot"].get("count"):
+            lines += [
+                "",
+                "Server generation slot, per tile (DH's update runs after the slot)",
+                head,
+            ]
+            lines += [
+                _row(f"{name} ({v['totalSeconds']} s total)", v) for name, v in s["slot"].items()
+            ]
+        lines += _pool_lines("Server DH executors", s["pools"])
+        if s["ticks"].get("count"):
+            t = s["ticks"]
+            lines.append(
+                f"Server ticks: {t['count']}, p50 {t['p50Ms']} ms, p90 {t['p90Ms']} ms, max {t['maxMs']} ms"
+            )
+        if "dhHealth" in s:
+            h = s["dhHealth"]
+            lines.append(
+                f"DH health checks: {h['unhealthyShare']:.0%} unhealthy (generation paused) of "
+                f"{h['samples']}; mean average {h['meanAverageMs']} ms, mean p99 {h['meanP99Ms']} ms"
+            )
     if "crossSide" in report:
         lines += ["", "Across client and server (wall-clock aligned)", head]
         lines += [_row(name, v) for name, v in report["crossSide"].items() if isinstance(v, dict)]
@@ -523,6 +631,7 @@ def render_text(report):
         for detail, v in p["delay"]["byParentDetail"].items():
             lines.append(_row(f"  parent detail {detail}", v))
         lines.append(f"  blocking phase of the last child: {p['blockingPhase']}")
+        lines += _pool_lines("Client DH executors", c.get("pools", {}))
         lines += ["", "Detail level p50/p90 ms (created to first geometry):"]
         for detail, v in sec["createdToFirstGeometry"]["byDetail"].items():
             lines.append(
