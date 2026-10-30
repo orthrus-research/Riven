@@ -159,6 +159,41 @@ cumulative, opt-in experiments, not accepted defaults.
 Different stages are intentional treatment changes and do not pass the existing
 single-artifact strict comparator automatically.
 
+## DH LOD stage trace
+
+The lab's `LabLodTrace` records each DH section's path through generation, delivery and
+rendering, on both JVMs, from start until exit. Build the observer first
+(`dev/CubicChunks/tools/build_cubature.py`, or the lab's Gradle build against the pinned Cubature).
+
+- Directed route: `riven_observe.py capture ... --lod-trace` (any workload, such as
+  `dev/benchmarks/cube-flight-lifecycle.json`) writes `<instance>/lod-trace`. The lab job's
+  start and finish are marked, and the report windows to them.
+- Free flight: `python tools/runtime.py prepare --name <fresh> --lod-trace [OBSERVER_JAR]`
+  installs the observer on both sides of a fresh instance. Each
+  `python tools/runtime.py play --name <fresh>` (tours too) records to
+  `<instance>/lod-traces/<start time>` until you close the client.
+- Report: `python tools/riven_observe.py lod <trace-dir> --output <new-dir> [--window auto|all|lab]`
+  writes `lod-report.json`, `lod-report.txt` and, with the observability venv, `lod-timeline.png`
+  (throughput, client quad-tree queue depths, player speed) and `lod-stages.png`.
+
+Server stages: request received, generation queued, generation started, preview executor wait,
+preview sampling (Cubature's sampler time per tile), generation finished, payload encoded (with
+bytes), response sent after DH's bandwidth pacing. Client stages: network queue wait, request
+round trip, retrieval done, data reload queued, build queue wait, mesh build, GPU upload (empty or
+with geometry) and render-state changes (enabled, can render, upload complete), plus the quad
+tree's enabled, missing, queued and waiting-to-load counts at 4 Hz and the player position at 2 Hz.
+Stages are tabulated per detail level. A parent counts as promoted once all four children have
+rendered; the report gives that delay from the last child's creation and names the last child's
+slower phase (awaiting data and build, or selection after upload). Sections that first uploaded
+empty are counted, since those draw nothing until their data arrives.
+
+Each side's times are its own monotonic clock. Client/server stages (send to receive, response to
+receive) align through each JVM's wall-clock origin, about a millisecond on one machine. Events
+queue without blocking; drops, a reached cap and an unclosed trace (a killed process loses its
+last second, as when a tour ends its client) are reported as warnings. Positions are DH's packed
+section positions, so stages match by position, not by request identity. The observer's
+injections are exact DH 3.3.3 names, all required.
+
 Analysis commands also accept `--no-charts` for a standard-library-only
 readout. Nonzero exits indicate invalid inputs, a native failure or analysis
 failure; retained evidence is not replaced. Never reuse an output directory.

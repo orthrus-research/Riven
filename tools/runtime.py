@@ -102,6 +102,17 @@ def shader_packs(pins, entries):
     return packs
 
 
+LOD_OBSERVER = ROOT / "dev/CubicChunks/lab/build/cleanroom/libs/cubicchunks-lab-0.1.0-cleanroom.jar"
+
+
+def lod_trace_directory(path):
+    """The lab reads cubiclab.lodTrace from a space-separated JVM argument line."""
+    resolved = str(Path(path).resolve())
+    if any(c.isspace() for c in resolved):
+        raise ValueError("A LOD trace directory cannot contain spaces: " + resolved)
+    return resolved
+
+
 def enable_shader_pack(home, pack):
     """Demonica reads its active pack from config/shaders.properties; None turns shaders off."""
     (home / "config/shaders.properties").write_text(
@@ -136,7 +147,15 @@ def prepare(
     shader_pack=None,
     player_effects=None,
     complementary_cave_fog=False,
+    lod_observer=None,
 ):
+    if lod_observer is not None:
+        lod_observer = Path(lod_observer).resolve()
+        if not lod_observer.is_file():
+            raise RuntimeError(
+                "Build the lab observer first (dev/CubicChunks/tools/build_cubature.py): "
+                + str(lod_observer)
+            )
     if not 1 <= dh_bandwidth_kbps <= 1000000 or not 1 <= dh_request_limit <= 100:
         raise ValueError("DH bandwidth must be 1..1000000 KB/s and request limit 1..100")
     if not 1 <= dh_workers <= 16:
@@ -206,6 +225,9 @@ def prepare(
                 selected = ROOT / mod["file"]
                 shutil.copy2(selected, home / "mods" / selected.name)
         shutil.copy2(artifact, home / "mods/riven.jar")
+        if lod_observer:
+            # The lab observer stays idle without a workload; play turns on its LOD trace.
+            shutil.copy2(lod_observer, home / "mods/cubicchunks-lab.jar")
         if side == "client" and packs:
             (home / "shaderpacks").mkdir(exist_ok=True)
             for pack, _ in packs:
@@ -374,6 +396,13 @@ def prepare(
         },
         shaderPacks=[record for _, record in packs],
         complementaryCaveFog=complementary_cave_fog,
+        lodTrace={
+            "observer": str(lod_observer),
+            "sha256": sha(lod_observer),
+            "scope": "Diagnostic lab observer on both sides; each play writes lod-traces/<start time>",
+        }
+        if lod_observer
+        else None,
     )
     lab_files.write_json(directory / "standalone.json", manifest)
     print("Prepared Riven terrain world:", directory, flush=True)
@@ -497,8 +526,17 @@ def play(name, tour=None, window=None, shader_pack=None):
     with lab.native_measurement_lease(ROOT, "flat-" + name):
         commands = directory / "commands.txt"
         commands.write_text("")
-        server_args = [a for a in lab.argv(m, False) if not a.startswith("-Dcubiclab.")]
-        client_args = [a for a in lab.argv(m, True) if not a.startswith("-Dcubiclab.")]
+        # A traced instance carries the lab observer, which needs the lab's loader flags.
+        traced = bool(m.get("lodTrace"))
+        server_args = [a for a in lab.argv(m, False) if traced or not a.startswith("-Dcubiclab.")]
+        client_args = [a for a in lab.argv(m, True) if traced or not a.startswith("-Dcubiclab.")]
+        lod_directory = None
+        if traced:
+            lod_directory = directory / "lod-traces" / time.strftime("%Y%m%d-%H%M%S")
+            flag = "-Dcubiclab.lodTrace=" + lod_trace_directory(lod_directory)
+            server_args[1:1] = [flag]
+            client_args[1:1] = [flag]
+            print("LOD trace: " + str(lod_directory), flush=True)
         if window:
             # The lab launcher fixes 1280x720; a tour may want larger captures.
             width, height = window.lower().split("x")
@@ -584,6 +622,15 @@ def play(name, tour=None, window=None, shader_pack=None):
                     client.kill()
             receipt.update(serverExit=server.poll(), clientExit=client.poll() if client else None)
             lab_files.write_json(directory / "processes.json", receipt)
+            if lod_directory:
+                print(
+                    "LOD trace written: "
+                    + str(lod_directory)
+                    + "\n  report: python tools/riven_observe.py lod "
+                    + str(lod_directory)
+                    + " --output <new directory>",
+                    flush=True,
+                )
 
 
 def descend(server, username, previous, view, step=32, pause=5.0):
@@ -759,6 +806,15 @@ def main():
         default="all",
         help="Cubature: hand DH every loaded column (all) or only edited ones (edits)",
     )
+    p.add_argument(
+        "--lod-trace",
+        nargs="?",
+        type=Path,
+        const=LOD_OBSERVER,
+        metavar="OBSERVER_JAR",
+        help="prepare: install the lab observer (default: the Cleanroom lab build) so every play "
+        "streams DH LOD stage events to lod-traces/<start time> until the client closes",
+    )
     p.add_argument("--text")
     p.add_argument(
         "--tour",
@@ -795,6 +851,7 @@ def main():
             shader_pack=a.shader_pack,
             player_effects=a.player_effects,
             complementary_cave_fog=a.complementary_cave_fog,
+            lod_observer=a.lod_trace,
         )
     elif a.command == "play":
         if a.shader_pack and len(a.shader_pack) != 1:

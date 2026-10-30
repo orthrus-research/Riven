@@ -236,7 +236,9 @@ refused unless its zip matches the pin, or any zip or folder by path (a `-riven`
 on one instance whose DH tiles have persisted. With `--shaders`, `prepare` also turns on
 Cubature's opt-in Complementary cave fog patch in the client's `cubicchunks.cfg` (see Distant
 Horizons below) for local work; `--no-complementary-cave-fog` leaves it off, as Cubature ships it. `/riven` in game
-prints climate, terrain, biome and feature diagnostics at the player's position.
+prints climate, terrain, biome and feature diagnostics at the player's position. `--lod-trace`
+installs the lab observer so every `play` records DH LOD stages (OBSERVABILITY.md, DH LOD stage
+trace).
 
 `tools/runtime.py` imports `cubic_lab` and `cubic_standalone` from `dev/CubicChunks/tools`, so the
 Cubature checkout must be present. `prepare` writes the local runtime identity to

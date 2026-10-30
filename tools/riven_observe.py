@@ -69,6 +69,11 @@ def main(argv=None):
         action="store_true",
         help="Turn off DH's limitIfServerUnhealthy world-generation pause",
     )
+    capture.add_argument(
+        "--lod-trace",
+        action="store_true",
+        help="Stream DH LOD stage events from both JVMs; read them with the lod command",
+    )
     for name, description in [
         ("inspect", "Reconcile raw samples, inputs, failures and native captures"),
         ("trace", "Attribute bounded JFR windows and export a timeline"),
@@ -79,6 +84,20 @@ def main(argv=None):
             "--output", type=Path, required=True, help="New local evidence directory"
         )
         command.add_argument("--no-charts", action="store_true")
+    lod = commands.add_parser(
+        "lod", help="Stage latencies, promotions and throughput from a DH LOD trace directory"
+    )
+    lod.add_argument(
+        "trace", type=Path, help="A lod-trace directory with lod-client/lod-server files"
+    )
+    lod.add_argument("--output", type=Path, required=True, help="New local evidence directory")
+    lod.add_argument(
+        "--window",
+        choices=["auto", "all", "lab"],
+        default="auto",
+        help="lab: only between the lab job's start and finish marks; auto: lab when marked, else all",
+    )
+    lod.add_argument("--no-charts", action="store_true")
     compare = commands.add_parser(
         "compare", help="Compare exact controls and declared source treatment"
     )
@@ -143,6 +162,8 @@ def main(argv=None):
             options.append("--dh-ignore-server-health")
         if args.storage:
             options.append("--storage-diagnostics")
+        if args.lod_trace:
+            options.append("--lod-trace")
         try:
             return measure_pipeline.main(options)
         finally:
@@ -150,10 +171,25 @@ def main(argv=None):
                 "Native evidence: "
                 + str(ROOT / ".local/cubic-standalone" / args.name / "runs/write")
             )
+            if args.lod_trace:
+                print(
+                    "LOD trace: " + str(ROOT / ".local/cubic-standalone" / args.name / "lod-trace")
+                )
     from observability.evidence import compare_runs, inspect_run, public_summary
 
     if args.output.exists():
         raise ValueError("Output already exists; select a new evidence directory")
+    if args.command == "lod":
+        from observability.lod import lod_report
+
+        result = lod_report(args.trace, args.output, args.window, charts=not args.no_charts)
+        print(result["text"])
+        print(
+            json.dumps(
+                {"output": str(args.output.resolve()), "warnings": result["warnings"]}, indent=2
+            )
+        )
+        return 0
     if args.command == "compare":
         before = [inspect_run(path) for path in args.baseline]
         after = [inspect_run(path) for path in args.candidate]

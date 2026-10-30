@@ -164,6 +164,11 @@ def main(argv=None):
         default=0,
         help="Soft whole-cube packet byte target; zero disables",
     )
+    parser.add_argument(
+        "--lod-trace",
+        action="store_true",
+        help="Stream DH LOD stage events on both JVMs to <instance>/lod-trace for the whole run",
+    )
     parser.add_argument("--dh-workers", type=int, default=4)
     parser.add_argument("--dh-ignore-server-health", action="store_true")
     parser.add_argument("--dh-native-feed", choices=["all", "edits"], default="all")
@@ -253,6 +258,10 @@ def main(argv=None):
         manifest["labProperties"]["cubiclab.fullViewTimeoutSeconds"] = str(
             workload.get("timeoutSeconds", 300)
         )
+        if args.lod_trace:
+            manifest["labProperties"]["cubiclab.lodTrace"] = runtime.lod_trace_directory(
+                directory / "lod-trace"
+            )
         manifest["purpose"] = (
             "Measured minimal Riven/DH pipeline; optional observer is outside the normal runtime profile"
         )
