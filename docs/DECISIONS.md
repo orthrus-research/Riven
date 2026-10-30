@@ -39,6 +39,22 @@ superseded instead of deleting it.
   anchor, and the cone fades toward cooler columns like cold forms do (terrain-v55), replacing the
   terrain-v37 rule that every support column be HOT.
 
+## Adopted 2026-10-30
+
+- **8-core baseline that scales up.** Designs and default configuration assume the median player
+  has 8 cores and must serve them well, then keep improving up to 24 cores. Thread pools, budgets
+  and queue sizes derive from the machine's processor count with that baseline in mind, not from
+  fixed numbers tuned on the development workstation (an i9-13900K, 24 cores and 32 threads).
+  This is a design assumption; measurements run on the workstation as it is.
+
+- **Own the Distant Horizons pipeline.** DH 3.3.3 is the long-term base; few upstream updates
+  are expected. Cubature takes ownership of DH's generation, scheduling and delivery behavior
+  and tunes it, preferring code we control over DH's defaults wherever we can change it: its own
+  code where DH's API allows, Mixins or ASM on DH otherwise (each patch under DH's LGPL-3.0-only
+  terms, bound to 3.3.3). A fork stays possible if patching stops being enough; it would need its
+  own decision, since it supersedes the commitment that this project maintains no derivative DH
+  distribution ([PROJECT-COMMITMENTS.md](PROJECT-COMMITMENTS.md)).
+
 ## Adopted 2026-10-29
 
 - **Survey Plate art direction.** Every block Riven draws, and every vanilla block through a
