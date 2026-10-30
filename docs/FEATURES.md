@@ -616,7 +616,11 @@ from the middle layers (each realm also reports depth biomes; see Realms and dep
   under water, so air below a column's water (a lake's dome under a pond) previews as stone, like
   buried lava. Before v88 each column flooded on its own floor's depth and rock, and 9% of cave water stood
   beside air as curtains up to 40 blocks tall on dry cave walls. In frozen ground fewer caves flood now:
-  `DescentCheck` finds 13 frozen pools over 8 km on seed 8675309 (841 before).
+  `DescentCheck` finds 13 frozen pools over 8 km on seed 8675309 (841 before). A memo keeps
+  32,768 cells at the 8 km layout, growing with the layout scale squared (524,288 at 32 km): each
+  column reads 25 cells, a cell costs a geology sample, and 12 players spread over the world read
+  every cell of an 8 km world (7,744 with the ring past its edge) and 59,216 at 32 km, where the
+  4,096 slots before rebuilt each cell about 100 times per pass.
 - Underground lakes (`Lens`, `riven-hydrology.json` layers.lakes): at most one per 2,048-block
   owner cell, at 80% where groundwater feeds a basin or moisture is at least 0.3, an elliptical
   chamber (radius about 30-45 blocks) holds still water up to one waterline and an air dome 1.5

@@ -128,7 +128,7 @@ public final class TerrainMap {
                         hydro.cellBlocks);
         wonders = new WonderTerrain(seed, heights, types.sites, majorFeatureParent, hydro);
         geology = new GeologyMap(seed, plates);
-        floods = new FloodMap(seed, this::sampleGeology);
+        floods = new FloodMap(seed, world, this::sampleGeology);
         caves = new CaveMap(seed, heights, this::sample);
         ores = new OreMap(seed, heights);
         rocky =

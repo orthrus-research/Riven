@@ -98,16 +98,25 @@ final class FloodMap {
         return Math.min(DAM_MAXIMUM, DAM_HALF + DAM_SLOPE * Math.max(0, depth));
     }
 
+    /**
+     * The memo at the 8 km layout. Twelve players reach every cell of an 8 km world, about 7,700
+     * with the ring past its edge, and each costs a geology sample to build. Cells keep their size
+     * while the world grows, so the memo grows with the layout squared; four slots a cell keep the
+     * two-slot memo clear of collisions, so a whole world's cells stay held (timing only).
+     */
+    private static final int BASE_CELLS = 32768;
+
     private final long seed;
     private final Centre centre;
     private final SeededNoise warpX, warpZ, wobble;
-    private final CellMemo<Cell> cells = new CellMemo<>(4096);
+    private final CellMemo<Cell> cells;
     private final ThreadLocal<TerrainMap.Sample> scratch =
             ThreadLocal.withInitial(TerrainMap.Sample::new);
 
-    FloodMap(long worldSeed, Centre centre) {
+    FloodMap(long worldSeed, WorldScale world, Centre centre) {
         seed = SeededNoise.mix(worldSeed ^ 0x464c4f4f44533131L);
         this.centre = centre;
+        cells = new CellMemo<>(world.areaScaled(BASE_CELLS));
         warpX = new SeededNoise(SeededNoise.mix(seed ^ 0x5741525058313131L));
         warpZ = new SeededNoise(SeededNoise.mix(seed ^ 0x574152505a313131L));
         wobble = new SeededNoise(SeededNoise.mix(seed ^ 0x574f42424c453131L));
