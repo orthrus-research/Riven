@@ -523,21 +523,17 @@ final class Drainage {
         IntStream.range(0, cells).parallel().forEach(k -> network(pairs[2 * k], pairs[2 * k + 1]));
     }
 
-    /**
-     * The hydrology owner cells under a continent's land, as (x, z) pairs: each coarse row's own
-     * land, widened by the two coarse cells the fine grid adds, within the grid's box.
-     */
-    private int[] planCells(double[] zs, double[][] rows, double coarse, double[] box) {
+    /** The hydrology owner cells of a grid's own cells, as (x, z) pairs. */
+    private int[] planCells(boolean[] own, int nx, int x0, int z0, double cell) {
         Set<Long> cells = new LinkedHashSet<>();
-        for (int r = 0; r < zs.length; r++) {
-            if (rows[r] == null) continue;
-            int cz0 = planCell(Math.max(box[1], zs[r] - 2 * coarse));
-            int cz1 = planCell(Math.min(box[3], zs[r] + 2 * coarse));
-            int cx0 = planCell(Math.max(box[0], rows[r][0] - 2 * coarse));
-            int cx1 = planCell(Math.min(box[2], rows[r][1] + 2 * coarse));
-            for (int cz = cz0; cz <= cz1; cz++)
-                for (int cx = cx0; cx <= cx1; cx++)
-                    cells.add(((long) cx << 32) ^ (cz & 0xffffffffL));
+        long last = Long.MIN_VALUE;
+        for (int k = 0; k < own.length; k++) {
+            if (!own[k]) continue;
+            int cx = planCell((x0 + k % nx + .5) * cell), cz = planCell((z0 + k / nx + .5) * cell);
+            long key = ((long) cx << 32) ^ (cz & 0xffffffffL);
+            // A row's own cells mostly share one owner cell; skip the set for repeats.
+            if (key != last) cells.add(key);
+            last = key;
         }
         int[] out = new int[2 * cells.size()];
         int k = 0;
@@ -624,10 +620,6 @@ final class Drainage {
         int nx = (int) Math.floor(box[2] / cell) - x0 + 1,
                 nz = (int) Math.floor(box[3] / cell) - z0 + 1;
         int total = nx * nz;
-        // Receiving water reads the hydrology plan of every own-land cell. Those plans are built
-        // first, together, so rows find them built instead of parking on the row building one.
-        int[] owners = planCells(zs, rows, coarse, box);
-        plans.prepare(owners, owners.length / 2);
         // Grid: each cell's own land, ground (intent height), routing height, rain and receivers.
         boolean[] own = new boolean[total], marine = new boolean[total], sink = new boolean[total];
         double[] ground = new double[total], route = new double[total], rain = new double[total];
@@ -635,7 +627,7 @@ final class Drainage {
         double[] filled = new double[total];
         double water = heights.waterTopY;
         // Rows run in parallel: every cell is a pure function of its coordinates, written to its
-        // own index (the hydrology plans it reads are built once, whichever row asks first).
+        // own index.
         IntStream.range(0, nz)
                 .parallel()
                 .forEach(
@@ -653,16 +645,31 @@ final class Drainage {
                                 rain[k] = runoff(s.climate.moisture);
                                 warmth[k] = s.climate.celsius;
                                 moisture[k] = s.climate.moisture;
-                                double level = receiving.applyAsDouble(px, pz);
+                            }
+                        });
+        boolean any = false;
+        for (boolean o : own) any |= o;
+        if (!any) return Network.EMPTY;
+        // Receiving water reads the hydrology plan of each own cell. Exactly those plans are built
+        // first, together, so no row parks on another row's plan build.
+        int[] owners = planCells(own, nx, x0, z0, cell);
+        plans.prepare(owners, owners.length / 2);
+        IntStream.range(0, nz)
+                .parallel()
+                .forEach(
+                        j -> {
+                            for (int i = 0; i < nx; i++) {
+                                int k = j * nx + i;
+                                if (!own[k]) continue;
+                                double level =
+                                        receiving.applyAsDouble(
+                                                (x0 + i + .5) * cell, (z0 + j + .5) * cell);
                                 if (!Double.isNaN(level)) {
                                     sink[k] = true;
                                     filled[k] = level;
                                 }
                             }
                         });
-        boolean any = false;
-        for (boolean o : own) any |= o;
-        if (!any) return Network.EMPTY;
         // Priority flood from the sea and receiving water: every own cell drains to the cell it
         // was reached from. Ties break by index, so the routing never depends on order.
         int[] down = new int[total], order = new int[total];
