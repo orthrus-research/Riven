@@ -56,8 +56,8 @@ import java.util.concurrent.atomic.LongAdder;
  */
 public final class RegionalCacheProbe {
     private static final String[] PASSES = {"cold", "repeat", "moved"};
-    private static final String[] KINDS = {"worker", "common", "other"};
-    private static final int WORKER = 0, COMMON = 1, OTHER = 2;
+    private static final String[] KINDS = {"worker", "common", "build", "other"};
+    private static final int WORKER = 0, COMMON = 1, BUILD = 2, OTHER = 3;
     // Per-pass counters of a memo.
     private static final int BUILDS = 0, REBUILDS = 1, BUILD_NANOS = 2, REENTRIES = 3, RACED = 4;
     private static final int WAITS = 5, WAIT_NANOS = WAITS + KINDS.length;
@@ -67,6 +67,7 @@ public final class RegionalCacheProbe {
 
     private static volatile int pass;
     private static volatile Field flightOwner;
+    private static volatile ForkJoinPool buildPool;
 
     private RegionalCacheProbe() {}
 
@@ -258,8 +259,10 @@ public final class RegionalCacheProbe {
     }
 
     private static int kind(Thread t) {
-        if (t instanceof ForkJoinWorkerThread
-                && ((ForkJoinWorkerThread) t).getPool() == ForkJoinPool.commonPool()) return COMMON;
+        if (t instanceof ForkJoinWorkerThread w) {
+            if (w.getPool() == ForkJoinPool.commonPool()) return COMMON;
+            if (w.getPool() == buildPool) return BUILD;
+        }
         return t.getName().startsWith("probe-worker") ? WORKER : OTHER;
     }
 
@@ -275,6 +278,12 @@ public final class RegionalCacheProbe {
         double scale = Double.parseDouble(value(a, "scale", "1"));
         int players = Integer.parseInt(value(a, "players", "1"));
         int threads = Integer.parseInt(value(a, "threads", "12"));
+        // In-build parallelism on a pool shaped as Cubature's build pool (a quarter of the
+        // processors, 1 to 4), as in the game.
+        int processors = Runtime.getRuntime().availableProcessors();
+        int buildThreads =
+                Integer.parseInt(
+                        value(a, "buildThreads", "" + Math.max(1, Math.min(4, processors / 4))));
         double radius = Double.parseDouble(value(a, "radius", "4096"));
         double farStep = Double.parseDouble(value(a, "farStep", "32"));
         double near = Double.parseDouble(value(a, "near", "192"));
@@ -288,6 +297,8 @@ public final class RegionalCacheProbe {
 
         long t0 = System.nanoTime();
         GenerationMaps maps = new GenerationMaps(seed, new WorldScale(scale));
+        buildPool = buildThreads == 0 ? null : BuildPool.bounded(buildThreads, "probe-build");
+        maps.pool.use(buildPool);
         double mapSeconds = (System.nanoTime() - t0) / 1e9;
         List<Cache> caches = discover(maps);
         Hydro hydro = maps.terrain.hydro;
@@ -363,6 +374,7 @@ public final class RegionalCacheProbe {
         report.addProperty("players", players);
         report.addProperty("spread", spread);
         report.addProperty("threads", threads);
+        report.addProperty("buildThreads", buildThreads);
         report.addProperty("commonParallelism", ForkJoinPool.getCommonPoolParallelism());
         report.addProperty("radius", radius);
         report.addProperty("farStep", farStep);
@@ -622,9 +634,10 @@ public final class RegionalCacheProbe {
         return nanos;
     }
 
-    /** The common ForkJoin pool's size and activity, every 10 ms. */
+    /** The common ForkJoin pool's size and activity, and the build pool's size, every 10 ms. */
     static final class PoolWatch implements Runnable {
         final AtomicLong[] maxSize = longs(), maxActive = longs(), ticks = longs(), busy = longs();
+        final AtomicLong[] buildMax = longs();
         volatile boolean stop;
 
         private static AtomicLong[] longs() {
@@ -639,6 +652,8 @@ public final class RegionalCacheProbe {
             while (!stop) {
                 int p = pass;
                 maxSize[p].accumulateAndGet(common.getPoolSize(), Math::max);
+                ForkJoinPool build = buildPool;
+                if (build != null) buildMax[p].accumulateAndGet(build.getPoolSize(), Math::max);
                 int active = common.getActiveThreadCount();
                 maxActive[p].accumulateAndGet(active, Math::max);
                 ticks[p].incrementAndGet();
@@ -801,6 +816,7 @@ public final class RegionalCacheProbe {
         j.addProperty("taskP99Ms", percentile(sorted, .99) / 1e6);
         j.addProperty("taskMaxMs", sorted.length == 0 ? 0 : sorted[sorted.length - 1] / 1e6);
         j.addProperty("commonPoolMaxSize", watch.maxSize[p].get());
+        j.addProperty("buildPoolMaxSize", watch.buildMax[p].get());
         j.addProperty("commonPoolMaxActive", watch.maxActive[p].get());
         long ticks = Math.max(1, watch.ticks[p].get());
         j.addProperty("commonPoolBusyShare", watch.busy[p].get() / (double) ticks);
@@ -867,18 +883,19 @@ public final class RegionalCacheProbe {
 
     private static void print(JsonObject r) {
         System.out.printf(
-                "seed %d, scale %s (%.0f-block world), %d %s players, %d threads, common pool"
-                        + " parallelism %d, maps %.1fs%n",
+                "seed %d, scale %s (%.0f-block world), %d %s players, %d threads, build pool %d,"
+                        + " common pool parallelism %d, maps %.1fs%n",
                 r.get("seed").getAsLong(),
                 r.get("scale").getAsString(),
                 r.get("worldBlocks").getAsDouble(),
                 r.get("players").getAsInt(),
                 r.get("spread").getAsString(),
                 r.get("threads").getAsInt(),
+                r.get("buildThreads").getAsInt(),
                 r.get("commonParallelism").getAsInt(),
                 r.get("mapSeconds").getAsDouble());
         System.out.printf(
-                "%-7s %8s %9s %8s %8s %8s %7s %7s %6s %9s %9s %7s %6s%n",
+                "%-7s %8s %9s %8s %8s %8s %7s %7s %6s %9s %9s %9s %7s %6s %6s%n",
                 "pass",
                 "seconds",
                 "columns",
@@ -889,13 +906,15 @@ public final class RegionalCacheProbe {
                 "rebuild",
                 "raced",
                 "cmnWaitS",
+                "bldWaitS",
                 "wkrWaitS",
                 "cmnMax",
-                "busy");
+                "busy",
+                "bldMax");
         for (int i = 0; i < r.getAsJsonArray("passes").size(); i++) {
             JsonObject p = r.getAsJsonArray("passes").get(i).getAsJsonObject();
             System.out.printf(
-                    "%-7s %8.1f %9d %7.1fm %7.1fm %7.0fm %7d %7d %6d %9.1f %9.1f %7d %5.0f%%%n",
+                    "%-7s %8.1f %9d %7.1fm %7.1fm %7.0fm %7d %7d %6d %9.1f %9.1f %9.1f %7d %5.0f%% %6d%n",
                     p.get("pass").getAsString(),
                     p.get("seconds").getAsDouble(),
                     p.get("columns").getAsLong(),
@@ -906,9 +925,11 @@ public final class RegionalCacheProbe {
                     p.get("rebuilds").getAsLong(),
                     p.get("raced").getAsLong(),
                     p.get("commonWaitSeconds").getAsDouble(),
+                    p.get("buildWaitSeconds").getAsDouble(),
                     p.get("workerWaitSeconds").getAsDouble(),
                     p.get("commonPoolMaxSize").getAsLong(),
-                    100 * p.get("commonPoolBusyShare").getAsDouble());
+                    100 * p.get("commonPoolBusyShare").getAsDouble(),
+                    p.get("buildPoolMaxSize").getAsLong());
         }
         System.out.printf(
                 "%-58s %6s %6s %6s %13s %7s %6s %8s %9s %6s %13s %8s %8s%n",

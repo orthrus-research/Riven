@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.function.DoubleBinaryOperator;
-import java.util.stream.IntStream;
 
 /**
  * Drainage networks (riven-hydrology.json drainage, terrain-v91). Each built continent routes its
@@ -177,6 +176,7 @@ final class Drainage {
     private final DoubleBinaryOperator receiving;
     private final int planBlocks;
     private final Plans plans;
+    private final BuildPool pool;
     private final double cellBase, relief, runoffDry, runoffSpan, runoffMin, runoffMax, channelArea;
     private final int maximumCells;
     private final double[] reliefWave, reliefWeight;
@@ -221,6 +221,7 @@ final class Drainage {
             DoubleBinaryOperator receiving,
             int planBlocks,
             Plans plans,
+            BuildPool pool,
             double bankScale,
             double maxCut,
             double estuaryLength,
@@ -233,6 +234,7 @@ final class Drainage {
         this.receiving = receiving;
         this.planBlocks = planBlocks;
         this.plans = plans;
+        this.pool = pool;
         this.bankScale = bankScale;
         this.maxCut = maxCut;
         this.estuaryLength = estuaryLength;
@@ -520,7 +522,7 @@ final class Drainage {
             if (!memo.holds((int) q.cells[2 * k], (int) q.cells[2 * k + 1])) missing++;
         if (missing < 2) return;
         long[] pairs = Arrays.copyOf(q.cells, 2 * cells);
-        IntStream.range(0, cells).parallel().forEach(k -> network(pairs[2 * k], pairs[2 * k + 1]));
+        pool.forEach(cells, k -> network(pairs[2 * k], pairs[2 * k + 1]));
     }
 
     /** The hydrology owner cells of a grid's own cells, as (x, z) pairs. */
@@ -584,20 +586,19 @@ final class Drainage {
         double[] xs = steps((Math.floor(box[0] / coarse) + .5) * coarse, box[2], coarse);
         double[] zs = steps((Math.floor(box[1] / coarse) + .5) * coarse, box[3], coarse);
         double[][] rows = new double[zs.length][];
-        IntStream.range(0, zs.length)
-                .parallel()
-                .forEach(
-                        r -> {
-                            ContinentalMap.Sample c = new ContinentalMap.Sample();
-                            double x0 = Double.POSITIVE_INFINITY, x1 = Double.NEGATIVE_INFINITY;
-                            for (double px : xs) {
-                                continents.sample(px, zs[r], c);
-                                if (c.marine || c.owner != owner) continue;
-                                x0 = Math.min(x0, px);
-                                x1 = Math.max(x1, px);
-                            }
-                            rows[r] = x0 <= x1 ? new double[] {x0, x1} : null;
-                        });
+        pool.forEach(
+                zs.length,
+                r -> {
+                    ContinentalMap.Sample c = new ContinentalMap.Sample();
+                    double x0 = Double.POSITIVE_INFINITY, x1 = Double.NEGATIVE_INFINITY;
+                    for (double px : xs) {
+                        continents.sample(px, zs[r], c);
+                        if (c.marine || c.owner != owner) continue;
+                        x0 = Math.min(x0, px);
+                        x1 = Math.max(x1, px);
+                    }
+                    rows[r] = x0 <= x1 ? new double[] {x0, x1} : null;
+                });
         double lx0 = Double.POSITIVE_INFINITY, lz0 = Double.POSITIVE_INFINITY;
         double lx1 = Double.NEGATIVE_INFINITY, lz1 = Double.NEGATIVE_INFINITY;
         for (int r = 0; r < zs.length; r++) {
@@ -628,25 +629,24 @@ final class Drainage {
         double water = heights.waterTopY;
         // Rows run in parallel: every cell is a pure function of its coordinates, written to its
         // own index.
-        IntStream.range(0, nz)
-                .parallel()
-                .forEach(
-                        j -> {
-                            TerrainMap.BaseSample s = new TerrainMap.BaseSample();
-                            for (int i = 0; i < nx; i++) {
-                                int k = j * nx + i;
-                                double px = (x0 + i + .5) * cell, pz = (z0 + j + .5) * cell;
-                                intent.sample(px, pz, s);
-                                marine[k] = s.ocean.marine;
-                                if (marine[k] || s.ocean.owner != owner) continue;
-                                own[k] = true;
-                                ground[k] = s.shore.height;
-                                route[k] = ground[k] + relief(px, pz);
-                                rain[k] = runoff(s.climate.moisture);
-                                warmth[k] = s.climate.celsius;
-                                moisture[k] = s.climate.moisture;
-                            }
-                        });
+        pool.forEach(
+                nz,
+                j -> {
+                    TerrainMap.BaseSample s = new TerrainMap.BaseSample();
+                    for (int i = 0; i < nx; i++) {
+                        int k = j * nx + i;
+                        double px = (x0 + i + .5) * cell, pz = (z0 + j + .5) * cell;
+                        intent.sample(px, pz, s);
+                        marine[k] = s.ocean.marine;
+                        if (marine[k] || s.ocean.owner != owner) continue;
+                        own[k] = true;
+                        ground[k] = s.shore.height;
+                        route[k] = ground[k] + relief(px, pz);
+                        rain[k] = runoff(s.climate.moisture);
+                        warmth[k] = s.climate.celsius;
+                        moisture[k] = s.climate.moisture;
+                    }
+                });
         boolean any = false;
         for (boolean o : own) any |= o;
         if (!any) return Network.EMPTY;
@@ -654,22 +654,20 @@ final class Drainage {
         // first, together, so no row parks on another row's plan build.
         int[] owners = planCells(own, nx, x0, z0, cell);
         plans.prepare(owners, owners.length / 2);
-        IntStream.range(0, nz)
-                .parallel()
-                .forEach(
-                        j -> {
-                            for (int i = 0; i < nx; i++) {
-                                int k = j * nx + i;
-                                if (!own[k]) continue;
-                                double level =
-                                        receiving.applyAsDouble(
-                                                (x0 + i + .5) * cell, (z0 + j + .5) * cell);
-                                if (!Double.isNaN(level)) {
-                                    sink[k] = true;
-                                    filled[k] = level;
-                                }
-                            }
-                        });
+        pool.forEach(
+                nz,
+                j -> {
+                    for (int i = 0; i < nx; i++) {
+                        int k = j * nx + i;
+                        if (!own[k]) continue;
+                        double level =
+                                receiving.applyAsDouble((x0 + i + .5) * cell, (z0 + j + .5) * cell);
+                        if (!Double.isNaN(level)) {
+                            sink[k] = true;
+                            filled[k] = level;
+                        }
+                    }
+                });
         // Priority flood from the sea and receiving water: every own cell drains to the cell it
         // was reached from. Ties break by index, so the routing never depends on order.
         int[] down = new int[total], order = new int[total];

@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.stream.IntStream;
 
 /** Bounded constructive coastal catchments. Only earlier intent is queried.
  * The optional memo holds immutable geometry, never terrain, jobs or world objects.
@@ -336,6 +335,7 @@ public final class Hydro
     private final SharedBuild<Plan> builds = new SharedBuild<>();
 
     private final ContinentalOutlineMap outline;
+    private final BuildPool pool;
 
     /** Drainage networks (hydro-v8): every continent's streams and rivers, memoized per continent. */
     final Drainage drainage;
@@ -365,7 +365,8 @@ public final class Hydro
             GroundwaterPotential groundwater,
             ContinentalMap continents,
             OceanBed oceanBed,
-            WorldScale world) {
+            WorldScale world,
+            BuildPool pool) {
         this.seed = SeededNoise.mix(seed ^ Rules.seed(RULES.json, "variationSeed"));
         this.heights = heights;
         this.intent = intent;
@@ -373,6 +374,7 @@ public final class Hydro
         this.continents = continents;
         this.oceanBed = oceanBed;
         this.outline = continents.outline;
+        this.pool = pool;
         JsonObject j = RULES.json;
         cellBlocks = integer(j, "cellBlocks", 2048, 8192);
         // aquiferIntersects reads one owner per cube, so cubes must never straddle owners.
@@ -442,6 +444,7 @@ public final class Hydro
                         this::receivingWater,
                         cellBlocks,
                         this::prepare,
+                        pool,
                         bankScale,
                         maxCut,
                         estuaryLength,
@@ -464,7 +467,7 @@ public final class Hydro
             missing[2 * n + 1] = z;
             n++;
         }
-        IntStream.range(0, n).parallel().forEach(k -> plan(missing[2 * k], missing[2 * k + 1]));
+        pool.forEach(n, k -> plan(missing[2 * k], missing[2 * k + 1]));
     }
 
     private static int integer(JsonObject j, String key, int min, int max) {

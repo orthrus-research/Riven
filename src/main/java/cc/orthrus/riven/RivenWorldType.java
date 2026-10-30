@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ForkJoinPool;
 
 /** Direct terrain generation. CC owns cube lifetime, lighting and storage. */
 final class RivenWorldType extends WorldType implements ICubicWorldType {
@@ -233,6 +234,15 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             if (ClimateBiomeProvider.inWorld(west, north)
                     && ClimateBiomeProvider.inWorld(west + 15, north + 15))
                 biomes.maps.columns.column(columnX, columnZ);
+        }
+
+        /**
+         * Runs Riven's in-build parallelism on the world's Cubature build pool, or on the calling
+         * thread once the world withdraws it (null).
+         */
+        @Override
+        public void useBuildPool(ForkJoinPool pool) {
+            biomes.maps.pool.use(pool);
         }
 
         @SuppressWarnings("deprecation") // Preserve the older CC generator entry point.

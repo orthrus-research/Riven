@@ -298,10 +298,11 @@ jobs; `git push --no-verify` skips the check.
 - `run_check.py RegionalCacheProbe out=DIR scale=1|4 players=N [spread=dispersed|clustered]`
   measures what Riven's memos must hold under N players' demand: Distant Horizons' 4,096-block
   reach every 32 blocks plus the native view every 4, nearest first, on 12 threads, inside the
-  8 km x scale world. Its passes are cold, repeat (the same demand again, so any build is a
+  8 km x scale world, with in-build work on a pool shaped as Cubature's build pool
+  (`buildThreads=`, by default a quarter of the processors, 1 to 4). Its passes are cold, repeat (the same demand again, so any build is a
   capacity miss) and moved (960 blocks on). For every memo it reports keys built, rebuilds,
   flights that found their key already held (raced, which build nothing),
-  single-flight waits by thread kind (worker or common pool), keys that cannot all be held at
+  single-flight waits by thread kind (worker, common pool or build pool), keys that cannot all be held at
   once, slots replaced per pass and retained heap, plus each continent's drainage scan; memos
   without a `SharedBuild` report slot replacements only. It swaps each `SharedBuild`'s flight map
   by reflection (Java 26 warns once) and changes no generator code. It drives `TerrainMap.sample`

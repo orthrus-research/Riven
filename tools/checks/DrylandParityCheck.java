@@ -90,7 +90,8 @@ public final class DrylandParityCheck {
                             (x, z, earlier) -> -1000,
                             maps.continents,
                             maps.terrain.oceanBed,
-                            WorldScale.DEFAULT);
+                            WorldScale.DEFAULT,
+                            maps.pool);
             TerrainMap.Sample base = new TerrainMap.Sample();
             dryIntent(0, 0, base);
             DrylandTerrain.Result reused = new DrylandTerrain.Result();

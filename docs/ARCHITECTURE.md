@@ -13,9 +13,11 @@ not change any result. Memos publish immutable decisions through atomic referenc
 misses may duplicate cold work but cannot produce different values. Memos with a `SharedBuild`
 (every `CellMemo`, hydrology plans, sediment and rock decisions) give concurrent misses on one key
 a single build, which publishes its value before it lets go of the key and first looks for the
-value again, so a miss that raced a build ending finds the value instead of building it again. A
-`CellMemo` keeps each cell
-in either of two slots and a miss replaces the older entry, so cells no longer read age out and
+value again, so a miss that raced a build ending finds the value instead of building it again.
+In-build parallelism (drainage scans, network and plan builds) runs through `BuildPool` on the
+host's bounded pool (Cubature's build pool in the game, a shared bounded pool in tools) or on the
+calling thread, never the JVM's common pool; the caller always works its own loop, so a bounded
+pool cannot deadlock on a single build. A `CellMemo` keeps each cell in either of two slots and a miss replaces the older entry, so cells no longer read age out and
 two cells sharing a slot do not rebuild each other on every read (with a fixed victim, two
 continents' drainage networks did, and a 16 km check on seed 5 ran for hours). The terrain
 atlas proves this per render: `tools/terrain_atlas.py render --verify` re-samples in reverse
