@@ -1,6 +1,7 @@
 package cc.orthrus.riven.worldgen;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -69,6 +70,18 @@ public final class CellMemo<T> {
         if (e == null) slots.set(a, entry);
         else if (f == null) slots.set(b, entry);
         else slots.set(e.stored - f.stored <= 0 ? a : b, entry);
+    }
+
+    public int capacity() {
+        return slots.length();
+    }
+
+    /** Calls {@code visit} with every value held now (timing only, as {@link #holds}). */
+    public void forEachHeld(Consumer<? super T> visit) {
+        for (int i = 0; i < slots.length(); i++) {
+            Entry<T> e = slots.get(i);
+            if (e != null) visit.accept(e.value);
+        }
     }
 
     /** Whether a cell's value is held now (timing only: it may be evicted at any moment). */

@@ -32,6 +32,7 @@ public final class TerrainMap {
     public final Shore shores;
     public final OceanBed oceanBed;
     public final Hydro hydro;
+    private final BuildPool pool;
     public final Head groundwater;
     private final ContinentalMap continents;
     private final IntentSampler intentSampler;
@@ -55,6 +56,7 @@ public final class TerrainMap {
         if (climate == null || continents == null || baseTerrain == null || fabric == null)
             throw new NullPointerException();
         this.baseTerrain = baseTerrain;
+        this.pool = pool;
         this.heights = heights;
         this.continents = continents;
         this.climate = climate;
@@ -150,6 +152,20 @@ public final class TerrainMap {
                         hydro.cellBlocks,
                         hydro.bankScale,
                         world);
+    }
+
+    /**
+     * Preparation of one hydrology owner cell ahead of demand (Cubature's regional preparation;
+     * docs/DECISIONS.md, "Preparation within bounds"): drainage and the cell's plan first, then
+     * the sediment and rock decisions within it, which read them. False when a memo declines for
+     * lack of room. Timing only.
+     */
+    public boolean prepareRegion(int cellX, int cellZ) {
+        if (!hydro.prepareRegion(cellX, cellZ)) return false;
+        double minX = (double) cellX * hydro.cellBlocks, minZ = (double) cellZ * hydro.cellBlocks;
+        double maxX = minX + hydro.cellBlocks, maxZ = minZ + hydro.cellBlocks;
+        return sediment.prepareRegion(minX, minZ, maxX, maxZ, pool)
+                && rocky.prepareRegion(minX, minZ, maxX, maxZ, pool);
     }
 
     /** Scratch belongs to one call sequence, never to the map or a shared cache. */

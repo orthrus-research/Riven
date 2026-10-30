@@ -299,7 +299,9 @@ jobs; `git push --no-verify` skips the check.
   measures what Riven's memos must hold under N players' demand: Distant Horizons' 4,096-block
   reach every 32 blocks plus the native view every 4, nearest first, on 12 threads, inside the
   8 km x scale world, with in-build work on a pool shaped as Cubature's build pool
-  (`buildThreads=`, by default a quarter of the processors, 1 to 4). Its passes are cold, repeat (the same demand again, so any build is a
+  (`buildThreads=`, by default a quarter of the processors, 1 to 4). `prepareReach=` first
+  prepares every hydrology owner cell within that reach of the players on the build pool, as
+  Cubature's regional preparation would before they arrive, and reports its cost and declines. Its passes are cold, repeat (the same demand again, so any build is a
   capacity miss) and moved (960 blocks on). For every memo it reports keys built, rebuilds,
   flights that found their key already held (raced, which build nothing),
   single-flight waits by thread kind (worker, common pool or build pool), keys that cannot all be held at

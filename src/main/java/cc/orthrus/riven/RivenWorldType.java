@@ -245,6 +245,24 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             biomes.maps.pool.use(pool);
         }
 
+        /** Cubature prepares Riven's regions by hydrology owner cell. */
+        @Override
+        public int preparationRegionBlocks() {
+            return biomes.maps.terrain.hydro.cellBlocks;
+        }
+
+        /**
+         * Builds a region's drainage, hydrology plan and sediment and rock decisions ahead of
+         * demand; a region outside the world needs nothing.
+         */
+        @Override
+        public boolean prepareRegion(int regionX, int regionZ) {
+            long size = preparationRegionBlocks(), x = regionX * size, z = regionZ * size;
+            if (!ClimateBiomeProvider.inWorld(x, z)
+                    && !ClimateBiomeProvider.inWorld(x + size - 1, z + size - 1)) return true;
+            return biomes.maps.terrain.prepareRegion(regionX, regionZ);
+        }
+
         @SuppressWarnings("deprecation") // Preserve the older CC generator entry point.
         @Override
         public CubePrimer generateCube(int x, int y, int z) {

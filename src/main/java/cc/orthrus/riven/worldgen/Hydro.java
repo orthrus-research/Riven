@@ -337,6 +337,12 @@ public final class Hydro
     private final ContinentalOutlineMap outline;
     private final BuildPool pool;
 
+    /**
+     * Heap of drainage networks preparation may hold at the 8 km layout, grown with the world's
+     * area: a whole 32 km world's networks take about 138 MB (docs/DECISIONS.md, 2026-10-30).
+     */
+    static final long PREPARED_DRAINAGE_BYTES = 10L << 20;
+
     /** Drainage networks (hydro-v8): every continent's streams and rivers, memoized per continent. */
     final Drainage drainage;
 
@@ -444,6 +450,7 @@ public final class Hydro
                         cellBlocks,
                         this::prepare,
                         pool,
+                        (long) Math.ceil(PREPARED_DRAINAGE_BYTES * world.layout * world.layout),
                         bankScale,
                         maxCut,
                         estuaryLength,
@@ -489,6 +496,21 @@ public final class Hydro
                     return e != null ? e.plan : build(cellX, cellZ);
                 },
                 built -> store(key, set, built));
+    }
+
+    /**
+     * Preparation of an owner cell ahead of demand: the drainage networks of the continents
+     * reaching it, then its plan. Declines (false) once the plan memo holds a quarter of its
+     * capacity, where four ways stay free of conflicts, or drainage declines (timing only).
+     */
+    boolean prepareRegion(int cellX, int cellZ) {
+        int held = 0;
+        for (int i = 0; i < memo.length(); i++) if (memo.get(i) != null) held++;
+        if (held > cacheCapacity / 4) return false;
+        double x = (cellX + .5) * cellBlocks, z = (cellZ + .5) * cellBlocks;
+        if (!drainage.prepareAround(x, z, cellBlocks * Math.sqrt(.5))) return false;
+        plan(cellX, cellZ);
+        return true;
     }
 
     private Entry find(long key, int set) {

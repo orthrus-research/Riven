@@ -199,6 +199,23 @@ public final class SedimentTerrain {
                 built -> store(key, set, built));
     }
 
+    /**
+     * Preparation ahead of demand: the decisions of every site cell within these block bounds.
+     * Declines (false) once the memo holds a quarter of its capacity (timing only).
+     */
+    boolean prepareRegion(double minX, double minZ, double maxX, double maxZ, BuildPool pool) {
+        int held = 0;
+        for (int i = 0; i < memo.length(); i++) if (memo.get(i) != null) held++;
+        if (held > memo.length() / 4) return false;
+        int x0 = (int) Math.floor(minX / sites.spacing),
+                x1 = (int) Math.floor(maxX / sites.spacing);
+        int z0 = (int) Math.floor(minZ / sites.spacing),
+                z1 = (int) Math.floor(maxZ / sites.spacing);
+        int nx = x1 - x0 + 1;
+        pool.forEach(nx * (z1 - z0 + 1), k -> plan(x0 + k % nx, z0 + k / nx));
+        return true;
+    }
+
     private Entry find(long key, int set) {
         for (int i = set * ways; i < (set + 1) * ways; i++) {
             Entry e = memo.get(i);

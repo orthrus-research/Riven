@@ -55,7 +55,9 @@ import java.util.concurrent.atomic.LongAdder;
  * </pre>
  */
 public final class RegionalCacheProbe {
-    private static final String[] PASSES = {"cold", "repeat", "moved"};
+    // The demand passes, then the optional preparation run before them (prepareReach=).
+    private static final String[] PASSES = {"cold", "repeat", "moved", "prepare"};
+    private static final int DEMAND = 3, PREPARE = 3;
     private static final String[] KINDS = {"worker", "common", "build", "other"};
     private static final int WORKER = 0, COMMON = 1, BUILD = 2, OTHER = 3;
     // Per-pass counters of a memo.
@@ -292,6 +294,7 @@ public final class RegionalCacheProbe {
         double move = Double.parseDouble(value(a, "move", "960"));
         String spread = value(a, "spread", "dispersed");
         boolean sizes = Boolean.parseBoolean(value(a, "sizes", "true"));
+        double prepareReach = Double.parseDouble(value(a, "prepareReach", "0"));
         double half = 4000 * scale;
         Files.createDirectories(out);
 
@@ -340,8 +343,9 @@ public final class RegionalCacheProbe {
         Thread watcher = new Thread(watch, "probe-pool-watch");
         watcher.setDaemon(true);
         watcher.start();
+        JsonObject preparation = prepare(maps, at, half, prepareReach);
         JsonArray passes = new JsonArray();
-        for (int p = 0; p < PASSES.length; p++) {
+        for (int p = 0; p < DEMAND; p++) {
             pass = p;
             List<double[]> work = p == 2 ? second : first;
             Object[][] before = new Object[caches.size()][];
@@ -386,6 +390,7 @@ public final class RegionalCacheProbe {
         report.add("positions", points(at));
         report.add("movedPositions", points(moved));
         report.add("passes", passes);
+        report.add("preparation", preparation);
         JsonArray cacheJson = new JsonArray();
         for (int i = 0; i < caches.size(); i++)
             cacheJson.add(cacheJson(caches.get(i), resident[i], overflow[i]));
@@ -522,6 +527,64 @@ public final class RegionalCacheProbe {
         } catch (ReflectiveOperationException e) {
             return -1;
         }
+    }
+
+    // ---- Preparation
+
+    /**
+     * Prepares every hydrology owner cell within {@code reach} of a player, nearest first, on the
+     * build pool, as Cubature's regional preparation would before the players arrive.
+     */
+    static JsonObject prepare(GenerationMaps maps, double[][] at, double half, double reach)
+            throws Exception {
+        JsonObject j = new JsonObject();
+        j.addProperty("reach", reach);
+        if (reach <= 0) return j;
+        pass = PREPARE;
+        int cell = maps.terrain.hydro.cellBlocks;
+        Map<Long, Double> nearest = new HashMap<>();
+        for (double[] p : at)
+            for (int cz = (int) Math.floor((p[1] - reach) / cell);
+                    cz <= (int) Math.floor((p[1] + reach) / cell);
+                    cz++)
+                for (int cx = (int) Math.floor((p[0] - reach) / cell);
+                        cx <= (int) Math.floor((p[0] + reach) / cell);
+                        cx++) {
+                    double dx =
+                            Math.max(
+                                    0,
+                                    Math.max(cx * (double) cell - p[0], p[0] - (cx + 1.0) * cell));
+                    double dz =
+                            Math.max(
+                                    0,
+                                    Math.max(cz * (double) cell - p[1], p[1] - (cz + 1.0) * cell));
+                    double d = Math.hypot(dx, dz);
+                    if (d > reach
+                            || cx * (double) cell > half
+                            || (cx + 1.0) * cell < -half
+                            || cz * (double) cell > half
+                            || (cz + 1.0) * cell < -half) continue;
+                    nearest.merge(((long) cx << 32) ^ (cz & 0xffffffffL), d, Math::min);
+                }
+        List<Map.Entry<Long, Double>> order = new ArrayList<>(nearest.entrySet());
+        order.sort(Map.Entry.comparingByValue());
+        AtomicInteger declined = new AtomicInteger();
+        long started = System.nanoTime();
+        List<java.util.concurrent.ForkJoinTask<?>> jobs = new ArrayList<>();
+        for (Map.Entry<Long, Double> e : order) {
+            int cx = (int) (e.getKey() >> 32), cz = (int) (long) e.getKey();
+            Runnable job =
+                    () -> {
+                        if (!maps.terrain.prepareRegion(cx, cz)) declined.incrementAndGet();
+                    };
+            if (buildPool == null) job.run();
+            else jobs.add(buildPool.submit(job));
+        }
+        for (java.util.concurrent.ForkJoinTask<?> job : jobs) job.join();
+        j.addProperty("regions", order.size());
+        j.addProperty("declined", declined.get());
+        j.addProperty("seconds", (System.nanoTime() - started) / 1e9);
+        return j;
     }
 
     // ---- Demand
@@ -894,6 +957,14 @@ public final class RegionalCacheProbe {
                 r.get("buildThreads").getAsInt(),
                 r.get("commonParallelism").getAsInt(),
                 r.get("mapSeconds").getAsDouble());
+        JsonObject prep = r.getAsJsonObject("preparation");
+        if (prep.has("regions"))
+            System.out.printf(
+                    "preparation within %.0f blocks: %d regions, %d declined, %.1fs%n",
+                    prep.get("reach").getAsDouble(),
+                    prep.get("regions").getAsInt(),
+                    prep.get("declined").getAsInt(),
+                    prep.get("seconds").getAsDouble());
         System.out.printf(
                 "%-7s %8s %9s %8s %8s %8s %7s %7s %6s %9s %9s %9s %7s %6s %6s%n",
                 "pass",
@@ -949,7 +1020,7 @@ public final class RegionalCacheProbe {
         for (int i = 0; i < r.getAsJsonArray("caches").size(); i++) {
             JsonObject c = r.getAsJsonArray("caches").get(i).getAsJsonObject();
             JsonObject ps = c.getAsJsonObject("passes");
-            long[] b = new long[3], rep = new long[3];
+            long[] b = new long[PASSES.length], rep = new long[PASSES.length];
             long rebuilds = 0, raced = 0;
             double buildS = 0, waitS = 0;
             for (int p = 0; p < PASSES.length; p++) {

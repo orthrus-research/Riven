@@ -168,6 +168,18 @@ final class Drainage {
             return braid == null ? new double[x.length] : braid.clone();
         }
 
+        /** Heap held: the object, its arrays (16-byte headers) and 4-byte references. */
+        long bytes() {
+            long b = 16 + 8 + 6 * 8 + 8 + 11 * 4 + 6 * array(x.length) + 16 + riffle.length;
+            for (double[] a : new double[][] {valley, braid, bar, weave})
+                if (a != null) b += array(a.length);
+            return b;
+        }
+
+        private static long array(int doubles) {
+            return 16 + 8L * doubles;
+        }
+
         /** Tools: riffle as built. */
         double[] riffleCopy() {
             double[] r = new double[riffle.length];
@@ -191,6 +203,9 @@ final class Drainage {
         /** River mouths as (x, z) pairs. */
         final double[] mouths;
 
+        /** Heap this network holds, as counted by {@link Channel#bytes} and {@link Bins#bytes}. */
+        final long bytes;
+
         Network(
                 Channel[] channels,
                 double originX,
@@ -210,6 +225,15 @@ final class Drainage {
             this.refs = refs;
             this.rivers = rivers;
             this.mouths = mouths;
+            long b =
+                    16
+                            + 4L * channels.length
+                            + 16
+                            + 8L * mouths.length
+                            + refs.bytes()
+                            + rivers.bytes();
+            for (Channel c : channels) b += c.bytes();
+            bytes = b;
         }
 
         /** The bin holding a column, or -1 outside the index. */
@@ -285,6 +309,15 @@ final class Drainage {
         int endRun(int k) {
             return first[k + 1];
         }
+
+        long bytes() {
+            return 16
+                    + 8L * occupied.length
+                    + 3 * 16
+                    + 4L * (before.length + first.length)
+                    + 2 * 16
+                    + 4L * (start.length + count.length);
+        }
     }
 
     /** Dry columns this close to a bed stand at least as high as any water beside them. */
@@ -323,6 +356,10 @@ final class Drainage {
     private final double braidSpan;
 
     private final CellMemo<Network> memo;
+
+    /** Heap of networks past which preparation declines (demand still builds them). */
+    private final long preparedBytes;
+
     private final ThreadLocal<ContinentalOutlineMap.TrunkScratch> query =
             ThreadLocal.withInitial(() -> new ContinentalOutlineMap.TrunkScratch(0));
 
@@ -347,6 +384,7 @@ final class Drainage {
             int planBlocks,
             Plans plans,
             BuildPool pool,
+            long preparedBytes,
             double bankScale,
             double maxCut,
             double estuaryLength,
@@ -360,6 +398,7 @@ final class Drainage {
         this.planBlocks = planBlocks;
         this.plans = plans;
         this.pool = pool;
+        this.preparedBytes = preparedBytes;
         this.bankScale = bankScale;
         this.maxCut = maxCut;
         this.estuaryLength = estuaryLength;
@@ -701,6 +740,26 @@ final class Drainage {
 
     private int planCell(double v) {
         return (int) Math.floor(v / planBlocks);
+    }
+
+    /**
+     * Preparation ahead of demand: builds the networks of the continents within {@code margin} of
+     * a column. Declines (false) once the memo holds half its capacity or networks of {@code
+     * preparedBytes}, so preparation never evicts what demand needs (timing only).
+     */
+    boolean prepareAround(double x, double z, double margin) {
+        long[] held = new long[2];
+        memo.forEachHeld(
+                n -> {
+                    held[0]++;
+                    held[1] += n.bytes;
+                });
+        if (held[0] > memo.capacity() / 2 || held[1] > preparedBytes) return false;
+        ContinentalOutlineMap.TrunkScratch q = query.get();
+        int cells = outline.continentCells(x, z, margin, q);
+        long[] pairs = Arrays.copyOf(q.cells, 2 * cells);
+        pool.forEach(cells, k -> network(pairs[2 * k], pairs[2 * k + 1]));
+        return true;
     }
 
     /** Routing relief at a column: gentle multi-scale relief that gathers flats into valleys. */
