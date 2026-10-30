@@ -260,6 +260,7 @@ pinned JARs are unchanged between runs.
 | Command | Runs |
 | --- | --- |
 | `python tools/setup.py` (`riven.ps1 setup`) | One-time preparation of a clone: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports |
+| `riven.ps1 quick` | Before a commit: the `ci` jobs the changes since HEAD (Riven's and Cubature's) can affect, by the `[quick]` rules in `tools/actions.toml`; a path no rule matches takes every `ci` job |
 | `riven.ps1 check` | `quality`, `atlas-golden`, `definitions` and `sample-history` |
 | `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `atlas-golden`, `definitions`, `sample-history` |
 | `python tools/actions.py ci --if-needed` | The `ci` jobs that have not passed for the current trees |

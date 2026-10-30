@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet('setup','build','prepare','play','command','check','ci','full','actions')][string]$Action='play',
+    [ValidateSet('setup','build','prepare','play','command','check','quick','ci','full','actions')][string]$Action='play',
     [string]$Name,
     [int]$Port=25870,
     [string]$Text,
@@ -11,7 +11,7 @@ Push-Location $PSScriptRoot
 try {
     if ($Action -eq 'setup') {
         & python "$PSScriptRoot/tools/setup.py" @Rest
-    } elseif ($Action -in 'check','ci','full') {
+    } elseif ($Action -in 'check','quick','ci','full') {
         # Local actions: tools/actions.toml defines the workflows.
         & python "$PSScriptRoot/tools/actions.py" $Action @Rest
     } elseif ($Action -eq 'actions') {

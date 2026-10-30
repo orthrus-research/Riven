@@ -110,5 +110,54 @@ class PassedJobsTests(Scratch):
         )
 
 
+class QuickRuleTests(unittest.TestCase):
+    """The [quick] rules in tools/actions.toml, as committed."""
+
+    config = actions.load()
+    ci = config["workflows"]["ci"]
+
+    def jobs(self, repository, *paths):
+        found = actions.affected(self.config["quick"][repository], list(paths), self.ci)
+        return [job for job in self.ci if job in found]
+
+    def test_riven_paths(self):
+        atlas = ["quality", "atlas-golden", "definitions", "sample-history"]
+        cases = {
+            "docs/ART-DIRECTION.md": [],
+            "tools/tours/caves-8675309.json": [],
+            "CHANGELOG.md": ["definitions"],
+            "README.md": ["definitions"],
+            "NOTICE.md": ["quality", "riven-build"],
+            "src/main/resources/assets/riven/textures/blocks/a.png": ["quality", "riven-build"],
+            "tools/atlas/build.py": atlas,
+            "tools/checks/TerrainAtlas.java": atlas,
+            "tools/atlas-golden.json": atlas,
+            "tools/build_riven.py": ["quality", "riven-build"],
+            "tools/actions.py": ["quality"],
+            "tools/observability/profiles.py": ["quality"],
+            "tools/content/riven-content-source.json": ["quality"],
+            "src/main/java/riven/worldgen/TerrainMap.java": self.ci,
+            "src/main/resources/riven-terrain.json": self.ci,
+            "tools/actions.toml": self.ci,
+            "dev/cc.lock.json": self.ci,
+            "docs.md": self.ci,
+        }
+        for path, expected in cases.items():
+            with self.subTest(path=path):
+                self.assertEqual(self.jobs("riven", path), expected)
+
+    def test_cubature_paths_reach_only_its_build_and_quality(self):
+        self.assertEqual(self.jobs("cubature", "docs/delivery.md"), [])
+        for path in ("src/main/java/a/B.java", "tools/lab_files.py", "build.gradle"):
+            with self.subTest(path=path):
+                self.assertEqual(self.jobs("cubature", path), ["quality", "cubature-build"])
+
+    def test_a_change_takes_every_path_jobs(self):
+        self.assertEqual(
+            self.jobs("riven", "docs/RUNTIME.md", "README.md", "tools/build_riven.py"),
+            ["quality", "riven-build", "definitions"],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

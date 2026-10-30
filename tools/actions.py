@@ -7,10 +7,12 @@ order; each step's output goes to `.local/actions/<run-id>/<job>/<step>.log` and
 Each summary records the Riven and Cubature trees the run tested: the trees their working trees
 would commit, so a pass recorded before a commit names that commit's tree. `--if-needed` skips the
 jobs that already passed for the current trees; tools/push_gate.py reads the same record.
+`quick` stands for the ci jobs that the changes since HEAD can affect, by the [quick] rules.
 
   python tools/actions.py --list
   python tools/actions.py ci                 # quality, builds, golden atlas digests
   python tools/actions.py ci --if-needed     # only the ci jobs not yet passed for these trees
+  python tools/actions.py quick              # before a commit: the ci jobs its changes can affect
   python tools/actions.py full               # ci plus a native smoke capture
   python tools/actions.py riven-build atlas-golden --keep-going
   python tools/actions.py ci --dry-run
@@ -25,13 +27,14 @@ import sys
 import tempfile
 import time
 import tomllib
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 CUBATURE = ROOT / "dev/CubicChunks"
 CONFIG = ROOT / "tools/actions.toml"
 RUNS = ROOT / ".local/actions"
+REPOSITORIES = (("riven", ROOT), ("cubature", CUBATURE))
 # A hook exports these for its own repository; they would point git at it from the other one.
 GIT_LOCATION = {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_PREFIX"}
 
@@ -144,7 +147,7 @@ def working_tree(repo: Path) -> str | None:
 def trees() -> dict[str, str | None]:
     """The Riven and Cubature trees a run tests; None for one git could not read."""
     result: dict[str, str | None] = {}
-    for name, repo in (("riven", ROOT), ("cubature", CUBATURE)):
+    for name, repo in REPOSITORIES:
         try:
             result[name] = working_tree(repo)
         except OSError, subprocess.CalledProcessError:
@@ -169,6 +172,34 @@ def passed_jobs(runs: Path = RUNS) -> dict[tuple[str, str], set[str]]:
         jobs = passed.setdefault((tested["riven"], tested["cubature"]), set())
         jobs.update(n for n, r in summary.get("jobs", {}).items() if r.get("status") == "passed")
     return passed
+
+
+def affected(rules: list[dict[str, Any]], paths: list[str], everything: list[str]) -> set[str]:
+    """The jobs of the first rule each path matches; every job for a path no rule matches."""
+    jobs: set[str] = set()
+    for path in paths:
+        rule = next(
+            (r for r in rules if any(PurePosixPath(path).full_match(p) for p in r["paths"])), None
+        )
+        jobs.update(everything if rule is None else rule["jobs"])
+    return jobs
+
+
+def quick_jobs(config, tested: dict[str, str | None]) -> tuple[list[str], dict[str, int]]:
+    """The ci jobs that each repository's changes since its HEAD can affect, and how many paths
+    changed in each; every ci job when a tree could not be read."""
+    ci = config["workflows"]["ci"]
+    wanted: set[str] = set()
+    changed = {}
+    for name, repo in REPOSITORIES:
+        tree = tested[name]
+        if tree is None:
+            wanted.update(ci)
+            continue
+        paths = git(repo, "diff", "--no-renames", "--name-only", "HEAD^{tree}", tree).splitlines()
+        changed[name] = len(paths)
+        wanted |= affected(config["quick"][name], paths, ci)
+    return [job for job in ci if job in wanted], changed
 
 
 def acquire_lock():
@@ -204,15 +235,24 @@ def main():
         print("Workflows:")
         for name, jobs in config.get("workflows", {}).items():
             print(f"  {name:<16} {', '.join(jobs)}")
+        print(f"  {'quick':<16} the ci jobs the changes since HEAD can affect ([quick] rules)")
         print("Jobs:")
         for name, job in config["jobs"].items():
             flags = " [native]" if job.get("native") else ""
             print(f"  {name:<16} {job.get('description', '')}{flags}")
         return
-    order = resolve(config, args.targets)
-    tested = None
-    if args.if_needed:
+    targets, tested = args.targets, None
+    if "quick" in targets:
         tested = trees()
+        jobs, changed = quick_jobs(config, tested)
+        counts = ", ".join(f"{count} {name}" for name, count in changed.items())
+        print(f"quick: {counts} paths changed since HEAD; {', '.join(jobs) or 'no ci job'} to run")
+        targets = [target for target in targets if target != "quick"] + jobs
+        if not targets:
+            return
+    order = resolve(config, targets)
+    if args.if_needed:
+        tested = tested or trees()
         done = passed_jobs().get((tested["riven"] or "", tested["cubature"] or ""), set())
         if any(name in done for name in order):
             print("Already passed for these trees: " + ", ".join(n for n in order if n in done))

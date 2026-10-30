@@ -61,3 +61,23 @@ steps = [
   { name = "timing capture", run = ["{python}", "-B", "tools/riven_observe.py", "capture", "--name", "smoke-{run_id}", "--riven", "{frozen}/riven-cleanroom.jar", "--observer", "{frozen}/lab-cleanroom.jar", "--mode", "timing"] },
   { name = "inspect", run = ["{observability_python}", "-B", "tools/riven_observe.py", "inspect", ".local/cubic-standalone/smoke-{run_id}", "--output", ".local/actions/{run_id}/smoke-inspect"] },
 ]
+
+[quick]
+# `actions.py quick` runs the ci jobs that the changes since HEAD can affect: Riven's working tree
+# against its HEAD and dev/CubicChunks against its own. A changed path takes the jobs of the first
+# rule it matches ("**" crosses folders, "*" does not); a path no rule matches takes every ci job.
+# A push still needs every ci job passed for its tree (tools/push_gate.py): ci --if-needed.
+riven = [
+  { paths = ["docs/**", "tools/tours/**", ".github/**", "CONTRIBUTING.md", "THIRD-PARTY.md", ".editorconfig"], jobs = [] },
+  { paths = ["CHANGELOG.md", "README.md"], jobs = ["definitions"] },
+  { paths = ["LICENSE", "NOTICE.md", "src/main/resources/assets/**"], jobs = ["quality", "riven-build"] },
+  { paths = ["tools/atlas/**", "tools/atlas_golden.py", "tools/terrain_atlas.py", "tools/run_check.py", "tools/checks/**", "tools/atlas-golden.json"], jobs = ["quality", "atlas-golden", "definitions", "sample-history"] },
+  { paths = ["tools/build_riven.py"], jobs = ["quality", "riven-build"] },
+  { paths = ["tools/**/*.py", "tools/content/**", "pyproject.toml"], jobs = ["quality"] },
+]
+# Riven builds against the pinned Cubature JARs, so a Cubature change reaches only its own build
+# and the tool tests and types in quality.
+cubature = [
+  { paths = ["docs/**"], jobs = [] },
+  { paths = ["**"], jobs = ["quality", "cubature-build"] },
+]
