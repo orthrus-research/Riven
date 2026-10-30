@@ -295,6 +295,17 @@ jobs; `git push --no-verify` skips the check.
   job runs `SampleHistoryCheck` on six seeds: every stage result in `TerrainMap.Sample` is
   registered with one phase, and a sample reused across 640 shuffled land and sea visits equals a
   fresh one in every field except the scratch and count-bounded arrays the check names.
+- `run_check.py RegionalCacheProbe out=DIR scale=1|4 players=N [spread=dispersed|clustered]`
+  measures what Riven's memos must hold under N players' demand: Distant Horizons' 4,096-block
+  reach every 32 blocks plus the native view every 4, nearest first, on 12 threads, inside the
+  8 km x scale world. Its passes are cold, repeat (the same demand again, so any build is a
+  capacity miss) and moved (960 blocks on). For every memo it reports keys built, rebuilds,
+  single-flight waits by thread kind (worker or common pool), keys that cannot all be held at
+  once, slots replaced per pass and retained heap, plus each continent's drainage scan; memos
+  without a `SharedBuild` report slot replacements only. It swaps each `SharedBuild`'s flight map
+  by reflection (Java 26 warns once) and changes no generator code. It drives `TerrainMap.sample`
+  only: trees, ores and native column builds are outside it, and retained heap is coarse below
+  about 1 MB.
 
 The default build targets Cleanroom (Java 25 bytecode). `gradlew.bat -PrivenLoader=forge
 assemble` builds the Java 8 / Forge 14.23.5.2860 fallback; its native runtime is unqualified.
