@@ -23,9 +23,9 @@ steps = [
 ]
 
 [jobs.riven-build]
-description = "Build Riven (Cleanroom and Forge) and freeze the artifacts for this run"
+description = "Build Riven for Cleanroom and freeze the artifact for this run"
 steps = [
-  { name = "build riven", run = ["{python}", "tools/build_riven.py", "--loader", "both", "--diagnostics", "--no-daemon", "--freeze", "{run_id}"] },
+  { name = "build riven", run = ["{python}", "tools/build_riven.py", "--diagnostics", "--no-daemon", "--freeze", "{run_id}"] },
 ]
 
 [jobs.cubature-build]

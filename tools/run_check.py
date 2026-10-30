@@ -1,7 +1,7 @@
 """Compile the working tree's worldgen with one tools/checks entry point and run it.
 
 The check compiles exactly as the terrain atlas sampler does (worldgen plus contributed kernels,
-Java 8 release, cached by content hash) and runs on the Java 26 from .local/settings.json. Run
+Java 25 release, cached by content hash) and runs on the Java 26 from .local/settings.json. Run
 with the atlas venv interpreter; the exit status is the check's.
 
   .local/atlas-venv/Scripts/python tools/run_check.py SampleHistoryCheck [argument ...]

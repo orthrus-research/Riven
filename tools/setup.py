@@ -143,14 +143,11 @@ def third_party_pins(args: argparse.Namespace) -> bool:
 
 
 def cubature_pins() -> list[tuple[Path, str, str]]:
-    """(pinned file, expected SHA-256, loader) for both loaders' binary and sources JARs."""
+    """(pinned file, expected SHA-256, loader) for the Cleanroom binary and sources JARs."""
     pin = load(ROOT / "dev/cc.lock.json")
-    forge = pin["forgeArtifact"]
     return [
         (ROOT / pin["artifact"], pin["sha256"], "cleanroom"),
         (ROOT / pin["sourcesArtifact"], pin["sourcesSha256"], "cleanroom"),
-        (ROOT / forge["file"], forge["sha256"], "forge"),
-        (ROOT / forge["sourcesFile"], forge["sourcesSha256"], "forge"),
     ]
 
 
@@ -162,9 +159,9 @@ def build_cubature(args: argparse.Namespace) -> bool:
     if args.check:
         print("missing  Cubature artifacts: run setup without --check to build them")
         return False
-    print("building Cubature from dev/CubicChunks (both loaders, with tests)")
+    print("building Cubature from dev/CubicChunks (with tests)")
     subprocess.run(
-        [sys.executable, str(CUBATURE / "tools/build_cubature.py"), "--forge", "--no-lab"],
+        [sys.executable, str(CUBATURE / "tools/build_cubature.py"), "--no-lab"],
         check=True,
     )
     exact = True

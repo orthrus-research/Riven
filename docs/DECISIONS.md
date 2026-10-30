@@ -83,6 +83,13 @@ superseded instead of deleting it.
 
   Order-dependent state and unbounded memory stay forbidden.
 
+- **Cleanroom on Java 25 and later only.** Riven and Cubature target the latest Cleanroom on Java
+  25 or 26, and no Java 8 compatibility will ship. The Forge 14.23.5.2860 / Java 8 fallback is
+  retired: its builds, ci's Forge build, the pin's Forge artifact and their docs are gone, and
+  the atlas and checks compile with `--release 25`. Code on critical paths uses modern Java where
+  it helps instead of working around Java 8; for example, the build pool can take a hard thread cap
+  and a governor can resize it live.
+
 ## Adopted 2026-10-29
 
 - **Survey Plate art direction.** Every block Riven draws, and every vanilla block through a

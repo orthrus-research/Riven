@@ -4,14 +4,8 @@ plugins {
 }
 group = 'cc.orthrus.riven'
 version = mod_version
-def targetLoader = providers.gradleProperty('rivenLoader').getOrElse('cleanroom')
+// Cleanroom on Java 25 or 26 is the only target (docs/DECISIONS.md, 2026-10-30).
 def compilerJavaVersion = providers.gradleProperty('rivenJavaVersion').getOrElse('25').toInteger()
-if (!(targetLoader in ['cleanroom', 'forge'])) {
-    throw new GradleException('rivenLoader must be cleanroom or forge')
-}
-if (targetLoader == 'forge') {
-    layout.buildDirectory = layout.projectDirectory.dir('build/forge')
-}
 base {
     archivesName = 'riven'
 }
@@ -32,7 +26,7 @@ dependencies {
     // Compile-time metadata for Gson; no additional runtime mod or bundled dependency.
     compileOnly 'com.google.errorprone:error_prone_annotations:2.41.0'
     modCompileOnly files(providers.gradleProperty('rivenCubicArtifact')
-        .getOrElse("dev/pins/Cubature-${targetLoader}.jar"))
+        .getOrElse('dev/pins/Cubature-cleanroom.jar'))
     // Optional decoration provider; compiled against, never bundled (runtime.lock.json pins it).
     modCompileOnly files('dev/pins/BiomesOPlenty-1.12.2-7.0.1.2445-universal.jar')
     // Optional ore catalogue provider; compiled against, never bundled (runtime.lock.json pins it).
@@ -43,14 +37,8 @@ unimined.minecraft {
     mappings {
         mcp('stable', '39-1.12')
     }
-    if (targetLoader == 'cleanroom') {
-        cleanroom {
-            loader cleanroom_api
-        }
-    } else {
-        minecraftForge {
-            loader '14.23.5.2860'
-        }
+    cleanroom {
+        loader cleanroom_api
     }
     defaultRemapJar = false
     remap(tasks.named('jar').get())
@@ -61,9 +49,6 @@ unimined.minecraft {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.compilerArgs.addAll(['-Xlint:all,-options', '-Werror'])
-    if (targetLoader == 'forge') {
-        options.release = 8
-    }
 }
 
 // Compile the retained diagnostic entry points without executing their workloads.
@@ -88,15 +73,13 @@ processResources {
 jar {
     archiveClassifier = 'dev'
     manifest {
-        attributes('Implementation-Title': 'Riven', 'Implementation-Version': project.version)
-        if (targetLoader == 'cleanroom') {
-            attributes('ModType': 'CRL')
-        }
+        attributes('Implementation-Title': 'Riven', 'Implementation-Version': project.version,
+                'ModType': 'CRL')
     }
     finalizedBy tasks.named('remapJar')
 }
 tasks.named('remapJar') {
-    archiveClassifier = targetLoader
+    archiveClassifier = 'cleanroom'
 }
 
 // Keep the same license scope visible in binary and matching source distributions.

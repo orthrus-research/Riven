@@ -30,7 +30,7 @@ python -m venv .local/atlas-venv
 ```
 
 The Java toolchain and Gson are the ones `riven.ps1 build` already uses. Sources compile with
-`--release 8` into `.local/terrain-atlas/build/<source hash>`. Raw samples are reused only when
+`--release 25` into `.local/terrain-atlas/build/<source hash>`. Raw samples are reused only when
 compiled sources, overrides and window are identical (`--resample` forces a fresh sample).
 
 ## Commands

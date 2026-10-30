@@ -1,4 +1,4 @@
-"""Build Riven for one or both loaders and record the artifacts.
+"""Build Riven for Cleanroom and record the artifact.
 
 Writes `.local/builds/riven-latest.json` with each artifact's path, size and SHA-256 plus the git
 commit and working-tree state. `--freeze <label>` copies the artifacts to `.local/frozen/<label>/`
@@ -6,7 +6,7 @@ so later captures and comparisons use immutable inputs.
 
 Examples:
   python tools/build_riven.py
-  python tools/build_riven.py --loader both --diagnostics --freeze candidate-01
+  python tools/build_riven.py --diagnostics --freeze candidate-01
 """
 
 import argparse
@@ -21,10 +21,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-ARTIFACTS = {
-    "cleanroom": ROOT / "build/libs/riven-0.0.1-cleanroom.jar",
-    "forge": ROOT / "build/forge/libs/riven-0.0.1-forge.jar",
-}
+# Cleanroom on Java 25 or 26 is the only target (docs/DECISIONS.md, 2026-10-30).
+ARTIFACTS = {"cleanroom": ROOT / "build/libs/riven-0.0.1-cleanroom.jar"}
 
 
 def settings() -> dict:
@@ -79,7 +77,6 @@ def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--loader", choices=("cleanroom", "forge", "both"), default="cleanroom")
     parser.add_argument(
         "--diagnostics", action="store_true", help="also compile tools/checks (Java 26)"
     )
@@ -93,7 +90,7 @@ def main():
     environment["JAVA_HOME"] = str(Path(local["java25"]).parent.parent)
     java26_home = Path(local["java26"]).parent.parent
     wrapper = ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")
-    loaders = ["cleanroom", "forge"] if args.loader == "both" else [args.loader]
+    loaders = list(ARTIFACTS)
     started = time.monotonic()
     for loader in loaders:
         tasks = ["assemble"] + (["compileDiagnosticsJava"] if args.diagnostics else [])
@@ -102,7 +99,6 @@ def main():
             *tasks,
             "--console=plain",
             *(["--no-daemon"] if args.no_daemon else []),
-            f"-PrivenLoader={loader}",
             "-PrivenJavaVersion=26",
             f"-Dorg.gradle.java.installations.paths={java26_home}",
         ]

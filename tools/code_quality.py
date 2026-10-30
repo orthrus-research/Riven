@@ -99,20 +99,18 @@ def check_java(local: dict[str, str]) -> None:
     environment["JAVA_HOME"] = str(Path(local["java25"]).parent.parent)
     java26 = Path(local["java26"]).parent.parent
     wrapper = ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")
-    for loader in ("cleanroom", "forge"):
-        run(
-            [
-                str(wrapper),
-                "assemble",
-                "compileDiagnosticsJava",
-                "--console=plain",
-                "--no-daemon",
-                f"-PrivenLoader={loader}",
-                "-PrivenJavaVersion=26",
-                f"-Dorg.gradle.java.installations.paths={java26}",
-            ],
-            environment,
-        )
+    run(
+        [
+            str(wrapper),
+            "assemble",
+            "compileDiagnosticsJava",
+            "--console=plain",
+            "--no-daemon",
+            "-PrivenJavaVersion=26",
+            f"-Dorg.gradle.java.installations.paths={java26}",
+        ],
+        environment,
+    )
 
 
 def quality(action: Literal["format", "check"]) -> None:

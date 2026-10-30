@@ -120,7 +120,7 @@ def compile_sampler(source_dir, check=SAMPLER):
     argfile.write_text("\n".join(f'"{p.as_posix()}"' for p in [*java_files, sampler]))
     started = time.monotonic()
     result = subprocess.run(
-        [str(java().with_name("javac.exe")), "--release", "8", "-nowarn"]
+        [str(java().with_name("javac.exe")), "--release", "25", "-nowarn"]
         + ["-cp", str(gson()), "-d", str(classes), "@" + str(argfile)],
         capture_output=True,
         text=True,

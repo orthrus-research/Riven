@@ -277,9 +277,9 @@ jobs; `git push --no-verify` skips the check.
 | `riven.ps1 full` | `ci` plus `smoke`, a native timing capture of the run's frozen artifacts |
 | `python tools/actions.py --list` / `<job> ...` / `--dry-run` | Inspect or run individual jobs |
 
-- `tools/build_riven.py [--loader cleanroom|forge|both] [--diagnostics] [--freeze LABEL]` builds
-  Riven and writes `.local/builds/riven-latest.json`.
-- `dev/CubicChunks/tools/build_cubature.py [--forge] [--skip-tests] [--no-lab] [--freeze LABEL]`
+- `tools/build_riven.py [--diagnostics] [--freeze LABEL]` builds Riven for Cleanroom and
+  writes `.local/builds/riven-latest.json`.
+- `dev/CubicChunks/tools/build_cubature.py [--skip-tests] [--no-lab] [--freeze LABEL]`
   builds Cubature with its Java 26 tests, then the lab observer against that exact artifact, and
   writes `.local/builds/cubature-latest.json` with test counts.
 - `--freeze LABEL` copies both projects' artifacts into `.local/frozen/LABEL/` with a shared
@@ -308,8 +308,8 @@ jobs; `git push --no-verify` skips the check.
   only: trees, ores and native column builds are outside it, and retained heap is coarse below
   about 1 MB.
 
-The default build targets Cleanroom (Java 25 bytecode). `gradlew.bat -PrivenLoader=forge
-assemble` builds the Java 8 / Forge 14.23.5.2860 fallback; its native runtime is unqualified.
+Riven and Cubature build for Cleanroom only, as Java 25 bytecode run on Java 25 or 26; the Java 8
+Forge fallback was retired on 2026-10-30 (docs/DECISIONS.md), so code may use any Java 25 API.
 
 `tools/setup.py` creates the pinned tool environments; static checks then run with:
 
@@ -318,8 +318,7 @@ assemble` builds the Java 8 / Forge 14.23.5.2860 fallback; its native runtime is
 ```
 
 `check` verifies Google Java Format (AOSP) and Ruff formatting, runs Ruff and gradual Mypy, and
-compiles production and `tools/checks` Java with Java 26 for both loaders with lint warnings as
-errors. It runs no tests or game. `.local/settings.json` supplies the `java25` and `java26`
+compiles production and `tools/checks` Java with Java 26 with lint warnings as errors. It runs no tests or game. `.local/settings.json` supplies the `java25` and `java26`
 paths. The `quality` job adds `tools/content/build_content.py --check` and both projects' tool
 tests, `unittest discover` over `tools` and `dev/CubicChunks/tools` in the observability
 environment.
