@@ -180,18 +180,32 @@ public final class SedimentTerrain {
 
     public Decision plan(int cx, int cz) {
         long key = ((long) cx << 32) ^ (cz & 0xffffffffL);
-        int set = (int) SeededNoise.mix(key) & (sets - 1), first = set * ways;
-        for (int i = 0; i < ways; i++) {
-            Entry e = memo.get(first + i);
-            if (e != null && e.key == key) return e.decision;
+        int set = (int) SeededNoise.mix(key) & (sets - 1);
+        Entry held = find(key, set);
+        if (held != null) return held.decision;
+        // A miss that raced a build ending finds its decision on the second look.
+        return builds.get(
+                key,
+                () -> {
+                    Entry e = find(key, set);
+                    return e != null ? e.decision : build(cx, cz);
+                },
+                built -> store(key, set, built));
+    }
+
+    private Entry find(long key, int set) {
+        for (int i = set * ways; i < (set + 1) * ways; i++) {
+            Entry e = memo.get(i);
+            if (e != null && e.key == key) return e;
         }
-        Decision built = builds.get(key, () -> build(cx, cz));
-        for (int i = 0; i < ways; i++) {
-            Entry e = memo.get(first + i);
-            if (e != null && e.key == key) return e.decision;
-        }
-        memo.set(first + Math.floorMod(next.getAndIncrement(set), ways), new Entry(key, built));
-        return built;
+        return null;
+    }
+
+    /** Publishes a built decision before its build lets go of the cell. */
+    private void store(long key, int set, Decision built) {
+        if (find(key, set) != null) return;
+        memo.set(
+                set * ways + Math.floorMod(next.getAndIncrement(set), ways), new Entry(key, built));
     }
 
     private static Decision reject(Family family, String reason, Evidence e) {

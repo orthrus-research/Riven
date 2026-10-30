@@ -59,8 +59,8 @@ public final class RegionalCacheProbe {
     private static final String[] KINDS = {"worker", "common", "other"};
     private static final int WORKER = 0, COMMON = 1, OTHER = 2;
     // Per-pass counters of a memo.
-    private static final int BUILDS = 0, REBUILDS = 1, BUILD_NANOS = 2, REENTRIES = 3;
-    private static final int WAITS = 4, WAIT_NANOS = WAITS + KINDS.length;
+    private static final int BUILDS = 0, REBUILDS = 1, BUILD_NANOS = 2, REENTRIES = 3, RACED = 4;
+    private static final int WAITS = 5, WAIT_NANOS = WAITS + KINDS.length;
     private static final int COUNTERS = WAIT_NANOS + KINDS.length;
     private static final ThreadLocal<TerrainMap.Sample> SAMPLE =
             ThreadLocal.withInitial(TerrainMap.Sample::new);
@@ -134,6 +134,21 @@ public final class RegionalCacheProbe {
             }
         }
 
+        /** Whether the memo holds this key now: a flight that starts so finds it on a second look. */
+        boolean holds(long key) {
+            if (slots == null) return false;
+            if (sets > 0) {
+                int first = ((int) SeededNoise.mix(key) & (sets - 1)) * ways;
+                for (int i = first; i < first + ways; i++) if (is(slots.get(i), key)) return true;
+                return false;
+            }
+            if (!kind.equals("cell-memo")) return false;
+            long h = SeededNoise.mix(key);
+            int mask = capacity() - 1;
+            return is(slots.get((int) h & mask), key)
+                    || is(slots.get((int) (h >>> 32) & mask), key);
+        }
+
         void started(Long key, Object flight) {
             int p = pass;
             if (built.computeIfAbsent(key, k -> new AtomicInteger()).incrementAndGet() > 1)
@@ -176,8 +191,10 @@ public final class RegionalCacheProbe {
         @Override
         public Object putIfAbsent(Long key, Object flight) {
             Object other = super.putIfAbsent(key, flight);
-            if (other == null) cache.started(key, flight);
-            else if (owner(other) == Thread.currentThread())
+            if (other == null) {
+                if (cache.holds(key)) cache.counts[pass][RACED].increment();
+                else cache.started(key, flight);
+            } else if (owner(other) == Thread.currentThread())
                 cache.counts[pass][REENTRIES].increment();
             else cache.waited(other);
             return other;
@@ -201,6 +218,41 @@ public final class RegionalCacheProbe {
             }
             return f.get(flight);
         } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static final ConcurrentHashMap<Class<?>, Field[]> ENTRY_FIELDS =
+            new ConcurrentHashMap<>();
+
+    /** Whether a memo entry holds this key: a {@code key} field, or a CellMemo's x and z. */
+    private static boolean is(Object entry, long key) {
+        if (entry == null) return false;
+        Field[] f =
+                ENTRY_FIELDS.computeIfAbsent(
+                        entry.getClass(),
+                        c -> {
+                            try {
+                                for (Field k : c.getDeclaredFields())
+                                    if (k.getName().equals("key")) {
+                                        k.setAccessible(true);
+                                        return new Field[] {k};
+                                    }
+                                Field x = c.getDeclaredField("x"), z = c.getDeclaredField("z");
+                                x.setAccessible(true);
+                                z.setAccessible(true);
+                                return new Field[] {x, z};
+                            } catch (NoSuchFieldException e) {
+                                return new Field[0];
+                            }
+                        });
+        try {
+            if (f.length == 1) return f[0].getLong(entry) == key;
+            if (f.length == 2)
+                return (((long) f[0].getInt(entry) << 32) ^ (f[1].getInt(entry) & 0xffffffffL))
+                        == key;
+            return false;
+        } catch (IllegalAccessException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -752,11 +804,12 @@ public final class RegionalCacheProbe {
         j.addProperty("commonPoolMaxActive", watch.maxActive[p].get());
         long ticks = Math.max(1, watch.ticks[p].get());
         j.addProperty("commonPoolBusyShare", watch.busy[p].get() / (double) ticks);
-        long builds = 0, rebuilds = 0;
+        long builds = 0, rebuilds = 0, raced = 0;
         long[] waits = new long[KINDS.length], waitNanos = new long[KINDS.length];
         for (Cache c : caches) {
             builds += c.count(p, BUILDS);
             rebuilds += c.count(p, REBUILDS);
+            raced += c.count(p, RACED);
             for (int k = 0; k < KINDS.length; k++) {
                 waits[k] += c.count(p, WAITS + k);
                 waitNanos[k] += c.count(p, WAIT_NANOS + k);
@@ -764,6 +817,7 @@ public final class RegionalCacheProbe {
         }
         j.addProperty("builds", builds);
         j.addProperty("rebuilds", rebuilds);
+        j.addProperty("raced", raced);
         for (int k = 0; k < KINDS.length; k++) {
             j.addProperty(KINDS[k] + "Waits", waits[k]);
             j.addProperty(KINDS[k] + "WaitSeconds", waitNanos[k] / 1e9);
@@ -798,6 +852,7 @@ public final class RegionalCacheProbe {
             q.addProperty("buildSeconds", c.count(p, BUILD_NANOS) / 1e9);
             q.addProperty("longestBuildMs", c.longest[p].get() / 1e6);
             q.addProperty("reentries", c.count(p, REENTRIES));
+            q.addProperty("raced", c.count(p, RACED));
             for (int k = 0; k < KINDS.length; k++) {
                 q.addProperty(KINDS[k] + "Waits", c.count(p, WAITS + k));
                 q.addProperty(KINDS[k] + "WaitSeconds", c.count(p, WAIT_NANOS + k) / 1e9);
@@ -823,7 +878,7 @@ public final class RegionalCacheProbe {
                 r.get("commonParallelism").getAsInt(),
                 r.get("mapSeconds").getAsDouble());
         System.out.printf(
-                "%-7s %8s %9s %8s %8s %8s %7s %7s %9s %9s %7s %6s%n",
+                "%-7s %8s %9s %8s %8s %8s %7s %7s %6s %9s %9s %7s %6s%n",
                 "pass",
                 "seconds",
                 "columns",
@@ -832,6 +887,7 @@ public final class RegionalCacheProbe {
                 "taskMax",
                 "builds",
                 "rebuild",
+                "raced",
                 "cmnWaitS",
                 "wkrWaitS",
                 "cmnMax",
@@ -839,7 +895,7 @@ public final class RegionalCacheProbe {
         for (int i = 0; i < r.getAsJsonArray("passes").size(); i++) {
             JsonObject p = r.getAsJsonArray("passes").get(i).getAsJsonObject();
             System.out.printf(
-                    "%-7s %8.1f %9d %7.1fm %7.1fm %7.0fm %7d %7d %9.1f %9.1f %7d %5.0f%%%n",
+                    "%-7s %8.1f %9d %7.1fm %7.1fm %7.0fm %7d %7d %6d %9.1f %9.1f %7d %5.0f%%%n",
                     p.get("pass").getAsString(),
                     p.get("seconds").getAsDouble(),
                     p.get("columns").getAsLong(),
@@ -848,19 +904,21 @@ public final class RegionalCacheProbe {
                     p.get("taskMaxMs").getAsDouble(),
                     p.get("builds").getAsLong(),
                     p.get("rebuilds").getAsLong(),
+                    p.get("raced").getAsLong(),
                     p.get("commonWaitSeconds").getAsDouble(),
                     p.get("workerWaitSeconds").getAsDouble(),
                     p.get("commonPoolMaxSize").getAsLong(),
                     100 * p.get("commonPoolBusyShare").getAsDouble());
         }
         System.out.printf(
-                "%-58s %6s %6s %6s %13s %7s %8s %9s %6s %13s %8s %8s%n",
+                "%-58s %6s %6s %6s %13s %7s %6s %8s %9s %6s %13s %8s %8s%n",
                 "memo",
                 "cap",
                 "held",
                 "keys",
                 "builds c/r/m",
                 "rebuild",
+                "raced",
                 "buildS",
                 "waitS",
                 "over",
@@ -871,13 +929,14 @@ public final class RegionalCacheProbe {
             JsonObject c = r.getAsJsonArray("caches").get(i).getAsJsonObject();
             JsonObject ps = c.getAsJsonObject("passes");
             long[] b = new long[3], rep = new long[3];
-            long rebuilds = 0;
+            long rebuilds = 0, raced = 0;
             double buildS = 0, waitS = 0;
             for (int p = 0; p < PASSES.length; p++) {
                 JsonObject q = ps.getAsJsonObject(PASSES[p]);
                 b[p] = q.get("builds").getAsLong();
                 rep[p] = q.get("slotsReplaced").getAsLong();
                 rebuilds += q.get("rebuilds").getAsLong();
+                raced += q.get("raced").getAsLong();
                 buildS += q.get("buildSeconds").getAsDouble();
                 for (String k : KINDS) waitS += q.get(k + "WaitSeconds").getAsDouble();
             }
@@ -886,13 +945,14 @@ public final class RegionalCacheProbe {
             long bytes = c.get("retainedBytes").getAsLong();
             int denominator = keys > 0 ? Math.min(keys, held) : held;
             System.out.printf(
-                    "%-58s %6d %6d %6s %13s %7s %8.1f %9.1f %6s %13s %8s %8s%n",
+                    "%-58s %6d %6d %6s %13s %7s %6s %8.1f %9.1f %6s %13s %8s %8s%n",
                     c.get("name").getAsString().replaceFirst("^maps\\.", ""),
                     c.get("capacity").getAsInt(),
                     held,
                     c.get("instrumented").getAsBoolean() ? Integer.toString(keys) : "-",
                     b[0] + "/" + b[1] + "/" + b[2],
                     Long.toString(rebuilds),
+                    Long.toString(raced),
                     buildS,
                     waitS,
                     Integer.toString(c.get("overflow").getAsInt()),

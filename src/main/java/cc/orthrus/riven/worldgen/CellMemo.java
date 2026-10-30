@@ -38,22 +38,37 @@ public final class CellMemo<T> {
     public T get(int x, int z, Supplier<T> compute) {
         long key = ((long) x << 32) ^ (z & 0xffffffffL), h = SeededNoise.mix(key);
         int a = (int) h & mask, b = (int) (h >>> 32) & mask;
+        Entry<T> held = find(x, z, a, b);
+        if (held != null) return held.value;
+        // A miss that raced a build ending finds its value on the second look.
+        return builds.get(
+                key,
+                () -> {
+                    Entry<T> e = find(x, z, a, b);
+                    return e != null ? e.value : compute.get();
+                },
+                value -> store(x, z, a, b, value));
+    }
+
+    private Entry<T> find(int x, int z, int a, int b) {
         Entry<T> e = slots.get(a);
-        if (e != null && e.x == x && e.z == z) return e.value;
+        if (e != null && e.x == x && e.z == z) return e;
         Entry<T> f = slots.get(b);
-        if (f != null && f.x == x && f.z == z) return f.value;
-        T value = builds.get(key, compute);
-        // The slots as they stand after the build (other threads may have filled them meanwhile,
-        // this cell among them): an empty one of the two, else the older entry's.
-        e = slots.get(a);
-        f = slots.get(b);
-        if ((e != null && e.x == x && e.z == z) || (f != null && f.x == x && f.z == z))
-            return value;
+        return f != null && f.x == x && f.z == z ? f : null;
+    }
+
+    /**
+     * Holds a built value before its build lets go of the cell. The slots as they stand after the
+     * build (other threads may have filled them meanwhile, this cell among them): an empty one of
+     * the two, else the older entry's.
+     */
+    private void store(int x, int z, int a, int b, T value) {
+        Entry<T> e = slots.get(a), f = slots.get(b);
+        if ((e != null && e.x == x && e.z == z) || (f != null && f.x == x && f.z == z)) return;
         Entry<T> entry = new Entry<>(x, z, value);
         if (e == null) slots.set(a, entry);
         else if (f == null) slots.set(b, entry);
         else slots.set(e.stored - f.stored <= 0 ? a : b, entry);
-        return value;
     }
 
     /** Whether a cell's value is held now (timing only: it may be evicted at any moment). */

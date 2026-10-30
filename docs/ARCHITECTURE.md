@@ -10,7 +10,11 @@ Generated content is a pure function of the world seed, the packaged definitions
 (`src/main/resources/riven-*.json`) and the world's layout scale (`WorldScale`, from the
 generator options level.dat saves; blank means 1). Request order, thread count, cache state and eviction must
 not change any result. Memos publish immutable decisions through atomic references; concurrent
-misses may duplicate cold work but cannot produce different values. A `CellMemo` keeps each cell
+misses may duplicate cold work but cannot produce different values. Memos with a `SharedBuild`
+(every `CellMemo`, hydrology plans, sediment and rock decisions) give concurrent misses on one key
+a single build, which publishes its value before it lets go of the key and first looks for the
+value again, so a miss that raced a build ending finds the value instead of building it again. A
+`CellMemo` keeps each cell
 in either of two slots and a miss replaces the older entry, so cells no longer read age out and
 two cells sharing a slot do not rebuild each other on every read (with a fixed victim, two
 continents' drainage networks did, and a 16 km check on seed 5 ran for hours). The terrain

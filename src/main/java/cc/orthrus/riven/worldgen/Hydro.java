@@ -447,20 +447,36 @@ public final class Hydro
 
     public Plan plan(int cellX, int cellZ) {
         long key = ((long) cellX << 32) ^ (cellZ & 0xffffffffL);
-        int set = (int) SeededNoise.mix(key) & (sets - 1), first = set * ways;
-        for (int i = 0; i < ways; i++) {
-            Entry e = memo.get(first + i);
-            if (e != null && e.key == key) return e.plan;
+        int set = (int) SeededNoise.mix(key) & (sets - 1);
+        Entry held = find(key, set);
+        if (held != null) return held.plan;
+        // Sediment and rocky plans of one owner cell miss it together; build it once for all. A
+        // miss that raced a build ending finds its plan on the second look.
+        return builds.get(
+                key,
+                () -> {
+                    Entry e = find(key, set);
+                    return e != null ? e.plan : build(cellX, cellZ);
+                },
+                built -> store(key, set, built));
+    }
+
+    private Entry find(long key, int set) {
+        for (int i = set * ways; i < (set + 1) * ways; i++) {
+            Entry e = memo.get(i);
+            if (e != null && e.key == key) return e;
         }
-        // Sediment and rocky plans of one owner cell miss it together; build it once for all.
-        Plan built = builds.get(key, () -> build(cellX, cellZ));
-        // Publish only after construction. An eviction cannot alter a sample's geometry.
-        for (int i = 0; i < ways; i++) {
-            Entry e = memo.get(first + i);
-            if (e != null && e.key == key) return e.plan;
-        }
-        memo.set(first + Math.floorMod(next.getAndIncrement(set), ways), new Entry(key, built));
-        return built;
+        return null;
+    }
+
+    /**
+     * Publish only after construction, before the build lets go of the cell. An eviction cannot
+     * alter a sample's geometry.
+     */
+    private void store(long key, int set, Plan built) {
+        if (find(key, set) != null) return;
+        memo.set(
+                set * ways + Math.floorMod(next.getAndIncrement(set), ways), new Entry(key, built));
     }
 
     private Plan build(int cellX, int cellZ) {
