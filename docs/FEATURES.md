@@ -270,7 +270,10 @@ in blocks), over its intent height plus a gentle routing relief (12 blocks of no
 lake or route of a cell network that receives it, so hollows fill and spill and nothing is left
 without an outlet. Receiving water reads each own-land cell's hydrology plan, so the scan finds
 its own land first, builds exactly the plans those cells read, one task per plan, and only then
-reads receiving water: no row waits for another row's plan build (timing only). Rain-weighted area accumulates downstream, a channel begins where it drains 18
+reads receiving water: no row waits for another row's plan build (timing only). A network keeps
+each channel's points (an array that is +0.0 along the whole course is left out, riffles as bytes)
+and a bin index stored as runs of consecutive segments behind a bitmap: about 0.2 MB a continent
+at 8 km and 6.6 MB at 32 km on seed 8675309 (`tools/checks/DrainageFootprint`). Rain-weighted area accumulates downstream, a channel begins where it drains 18
 cells, and every channel continues the upstream channel that brings it the most water: heads join
 into creeks, creeks into rivers. Width grows with the square root of the area drained (1.5 blocks
 at a head, 14 blocks more per extra root square kilometre, at most 48), so rivers widen below every

@@ -308,6 +308,8 @@ jobs; `git push --no-verify` skips the check.
   by reflection (Java 26 warns once) and changes no generator code. It drives `TerrainMap.sample`
   only: trees, ores and native column builds are outside it, and retained heap is coarse below
   about 1 MB.
+- `run_check.py DrainageFootprint <seed> <scale>` builds the drainage network of every continent
+  reaching the world square and reports its heap: channel arrays against the bin index.
 
 Riven and Cubature build for Cleanroom only, as Java 25 bytecode run on Java 25 or 26; the Java 8
 Forge fallback was retired on 2026-10-30 (docs/DECISIONS.md), so code may use any Java 25 API.

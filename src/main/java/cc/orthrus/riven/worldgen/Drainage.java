@@ -51,16 +51,29 @@ final class Drainage {
         }
     }
 
-    /** One channel from its head to the sea, a receiving lake or the channel it joins. */
+    /**
+     * One channel from its head to the sea, a receiving lake or the channel it joins. Arrays that
+     * are +0.0 along the whole course are not kept (null), and riffle (0 or 1) is kept as bytes:
+     * the accessors return the same values, bit for bit, as the full arrays did (heap only).
+     */
     private static final class Channel {
         final long id;
-        final double[] x, z, level, radius, depth, valley;
+        final double[] x, z, level, radius, depth;
+
+        /** Fall per block. */
+        final double[] gradient;
+
+        /** Valley width, braiding (0..1) and point-bar side; null where +0.0 throughout. */
+        private final double[] valley, braid, bar;
 
         /**
-         * Braid phase (cycles of a braided bed's weave, accumulated along the course), fall per
-         * block, braiding (0..1), point-bar side and riffle (1 where the water falls between pools).
+         * Braid phase (cycles of a braided bed's weave, accumulated along the course), read only
+         * where the bed braids, so null when braid is.
          */
-        final double[] weave, gradient, braid, bar, riffle;
+        private final double[] weave;
+
+        /** 1 where the water falls between pools, else 0. */
+        private final byte[] riffle;
 
         final boolean river;
         final double minX, minZ, maxX, maxZ, mouthX, mouthZ;
@@ -89,12 +102,17 @@ final class Drainage {
             this.level = level;
             this.radius = radius;
             this.depth = depth;
-            this.valley = valley;
-            this.weave = weave;
             this.gradient = gradient;
-            this.braid = braid;
-            this.bar = bar;
-            this.riffle = riffle;
+            this.valley = zero(valley) ? null : valley;
+            this.braid = zero(braid) ? null : braid;
+            this.bar = zero(bar) ? null : bar;
+            this.weave = this.braid == null ? null : weave;
+            this.riffle = new byte[riffle.length];
+            for (int i = 0; i < riffle.length; i++) {
+                if (riffle[i] != 0 && riffle[i] != 1)
+                    throw new IllegalStateException("Riffle must be 0 or 1");
+                this.riffle[i] = (byte) riffle[i];
+            }
             this.river = river;
             this.mouthX = mouthX;
             this.mouthZ = mouthZ;
@@ -113,6 +131,49 @@ final class Drainage {
             minZ = c - margin;
             maxZ = d + margin;
         }
+
+        /** Whether every value is +0.0 (by its bits, so -0.0 keeps its array). */
+        private static boolean zero(double[] values) {
+            for (double v : values) if (Double.doubleToRawLongBits(v) != 0) return false;
+            return true;
+        }
+
+        double valley(int i) {
+            return valley == null ? 0 : valley[i];
+        }
+
+        double braid(int i) {
+            return braid == null ? 0 : braid[i];
+        }
+
+        double braid(int i, double t) {
+            return braid == null ? 0 : lerp(braid, i, t);
+        }
+
+        /** Read only where the bed braids. */
+        double weave(int i, double t) {
+            return lerp(weave, i, t);
+        }
+
+        double bar(int i, double t) {
+            return bar == null ? 0 : lerp(bar, i, t);
+        }
+
+        double riffle(int i, double t) {
+            return riffle[i] + t * (riffle[i + 1] - riffle[i]);
+        }
+
+        /** Tools: braid as built, zeros included. */
+        double[] braidCopy() {
+            return braid == null ? new double[x.length] : braid.clone();
+        }
+
+        /** Tools: riffle as built. */
+        double[] riffleCopy() {
+            double[] r = new double[riffle.length];
+            for (int i = 0; i < r.length; i++) r[i] = riffle[i];
+            return r;
+        }
     }
 
     /**
@@ -121,12 +182,11 @@ final class Drainage {
      */
     private static final class Network {
         static final Network EMPTY =
-                new Network(
-                        new Channel[0], 0, 0, 1, 1, 1, new int[1][0], new int[1][0], new double[0]);
+                new Network(new Channel[0], 0, 0, 1, 1, 1, Bins.NONE, Bins.NONE, new double[0]);
         final Channel[] channels;
         final double originX, originZ, bin;
         final int bins, binsZ;
-        final int[][] refs, rivers;
+        final Bins refs, rivers;
 
         /** River mouths as (x, z) pairs. */
         final double[] mouths;
@@ -138,8 +198,8 @@ final class Drainage {
                 double bin,
                 int bins,
                 int binsZ,
-                int[][] refs,
-                int[][] rivers,
+                Bins refs,
+                Bins rivers,
                 double[] mouths) {
             this.channels = channels;
             this.originX = originX;
@@ -152,15 +212,80 @@ final class Drainage {
             this.mouths = mouths;
         }
 
-        int[] at(double x, double z) {
+        /** The bin holding a column, or -1 outside the index. */
+        int bin(double x, double z) {
             int bx = (int) Math.floor((x - originX) / bin),
                     bz = (int) Math.floor((z - originZ) / bin);
-            if (bx < 0 || bz < 0 || bx >= bins || bz >= binsZ) return NONE;
-            return refs[bz * bins + bx];
+            if (bx < 0 || bz < 0 || bx >= bins || bz >= binsZ) return -1;
+            return bz * bins + bx;
         }
     }
 
-    private static final int[] NONE = new int[0];
+    /**
+     * A bin index: each bin's references ({@code channel << 16 | segment}, ascending as they were
+     * added) kept as runs of consecutive values, found through a bitmap of occupied bins and its
+     * rank. It yields the same references in the same order as one array per bin (heap only).
+     */
+    private static final class Bins {
+        static final Bins NONE = of(java.util.Collections.singletonList(null));
+
+        private final long[] occupied;
+        private final int[] before, first;
+
+        /** Run starts and lengths; a bin's runs are {@code first[k]} to {@code first[k + 1]}. */
+        final int[] start, count;
+
+        private Bins(long[] occupied, int[] before, int[] first, int[] start, int[] count) {
+            this.occupied = occupied;
+            this.before = before;
+            this.first = first;
+            this.start = start;
+            this.count = count;
+        }
+
+        static Bins of(List<List<Integer>> lists) {
+            long[] occupied = new long[(lists.size() + 63) >>> 6];
+            int[] before = new int[occupied.length];
+            int bins = 0, runs = 0;
+            for (int i = 0; i < lists.size(); i++) {
+                List<Integer> l = lists.get(i);
+                if (l == null) continue;
+                occupied[i >>> 6] |= 1L << (i & 63);
+                bins++;
+                for (int k = 0; k < l.size(); k++)
+                    if (k == 0 || l.get(k) != l.get(k - 1) + 1) runs++;
+            }
+            for (int w = 1; w < occupied.length; w++)
+                before[w] = before[w - 1] + Long.bitCount(occupied[w - 1]);
+            int[] first = new int[bins + 1], start = new int[runs], count = new int[runs];
+            int bin = 0, run = 0;
+            for (List<Integer> l : lists) {
+                if (l == null) continue;
+                first[bin++] = run;
+                for (int k = 0; k < l.size(); k++) {
+                    if (k == 0 || l.get(k) != l.get(k - 1) + 1) start[run++] = l.get(k);
+                    count[run - 1]++;
+                }
+            }
+            first[bin] = run;
+            return new Bins(occupied, before, first, start, count);
+        }
+
+        /** The index of a bin's runs in {@link #first}, or -1 for an empty bin. */
+        int occupied(int bin) {
+            long bits = occupied[bin >>> 6], bit = 1L << (bin & 63);
+            if ((bits & bit) == 0) return -1;
+            return before[bin >>> 6] + Long.bitCount(bits & (bit - 1));
+        }
+
+        int firstRun(int k) {
+            return first[k];
+        }
+
+        int endRun(int k) {
+            return first[k + 1];
+        }
+    }
 
     /** Dry columns this close to a bed stand at least as high as any water beside them. */
     static final double LEVEE = 1.5;
@@ -334,79 +459,97 @@ final class Drainage {
                     if (d < mouthRadius)
                         mouth[0] = Math.max(mouth[0], 1 - Rules.smooth(d / mouthRadius));
                 }
-            for (int ref : n.at(x, z)) {
-                Channel c = n.channels[ref >>> 16];
-                int i = ref & 0xffff;
-                double vx = c.x[i + 1] - c.x[i], vz = c.z[i + 1] - c.z[i];
-                double length2 = vx * vx + vz * vz;
-                if (length2 == 0) continue;
-                double t =
-                        Math.max(0, Math.min(1, ((x - c.x[i]) * vx + (z - c.z[i]) * vz) / length2));
-                double dist = Math.hypot(x - c.x[i] - t * vx, z - c.z[i] - t * vz);
-                double radius = lerp(c.radius, i, t), braid = lerp(c.braid, i, t);
-                double bed = radius * (1 + braid * braidSpan);
-                // Signed distance across the course, along the normal that meanders offset by.
-                double length = Math.sqrt(length2);
-                double lateral = ((z - c.z[i]) * vx - (x - c.x[i]) * vz) / length;
-                if (dist - bed <= LEVEE) {
-                    // Water beside a column may stand a riffle's step higher than at its nearest
-                    // point: take the level two blocks upstream.
-                    double up = t * length - 2;
-                    levee =
-                            Math.max(
-                                    levee,
-                                    up >= 0
-                                            ? lerp(c.level, i, up / length)
-                                            : c.level[Math.max(0, i - 1)]);
-                }
-                if (dist <= bed) {
-                    double score = dist / bed;
-                    if (score >= wetScore) continue;
-                    wetScore = score;
-                    // A riffle runs shallow over gravel.
-                    double riffle = lerp(c.riffle, i, t), depth = lerp(c.depth, i, t);
-                    wet.set(c, dist, bed, lerp(c.level, i, t), depth - (depth - 1) * riffle);
-                    wet.steep = riffle > .5 || lerp(c.gradient, i, t) >= sandGradient;
-                    if (braid < .05) {
-                        wet.wet = true;
-                        continue;
+            int bin = n.bin(x, z), runs = bin < 0 ? -1 : n.refs.occupied(bin);
+            if (runs >= 0)
+                for (int r = n.refs.firstRun(runs); r < n.refs.endRun(runs); r++)
+                    for (int ref = n.refs.start[r], last = ref + n.refs.count[r];
+                            ref < last;
+                            ref++) {
+                        Channel c = n.channels[ref >>> 16];
+                        int i = ref & 0xffff;
+                        double vx = c.x[i + 1] - c.x[i], vz = c.z[i + 1] - c.z[i];
+                        double length2 = vx * vx + vz * vz;
+                        if (length2 == 0) continue;
+                        double t =
+                                Math.max(
+                                        0,
+                                        Math.min(
+                                                1,
+                                                ((x - c.x[i]) * vx + (z - c.z[i]) * vz) / length2));
+                        double dist = Math.hypot(x - c.x[i] - t * vx, z - c.z[i] - t * vz);
+                        double radius = lerp(c.radius, i, t), braid = c.braid(i, t);
+                        double bed = radius * (1 + braid * braidSpan);
+                        // Signed distance across the course, along the normal that meanders offset
+                        // by.
+                        double length = Math.sqrt(length2);
+                        double lateral = ((z - c.z[i]) * vx - (x - c.x[i]) * vz) / length;
+                        if (dist - bed <= LEVEE) {
+                            // Water beside a column may stand a riffle's step higher than at its
+                            // nearest
+                            // point: take the level two blocks upstream.
+                            double up = t * length - 2;
+                            levee =
+                                    Math.max(
+                                            levee,
+                                            up >= 0
+                                                    ? lerp(c.level, i, up / length)
+                                                    : c.level[Math.max(0, i - 1)]);
+                        }
+                        if (dist <= bed) {
+                            double score = dist / bed;
+                            if (score >= wetScore) continue;
+                            wetScore = score;
+                            // A riffle runs shallow over gravel.
+                            double riffle = c.riffle(i, t), depth = lerp(c.depth, i, t);
+                            wet.set(
+                                    c,
+                                    dist,
+                                    bed,
+                                    lerp(c.level, i, t),
+                                    depth - (depth - 1) * riffle);
+                            wet.steep = riffle > .5 || lerp(c.gradient, i, t) >= sandGradient;
+                            if (braid < .05) {
+                                wet.wet = true;
+                                continue;
+                            }
+                            // A braided reach: a few shallow channels weave across a gravel bed
+                            // whose
+                            // bars stand at the water's level.
+                            double sub = Math.max(1, radius * (1 - .5 * braid));
+                            double weave = c.weave(i, t);
+                            for (int b = 0; b < braidChannels && !wet.wet; b++) {
+                                long h = SeededNoise.mix(c.id + (b + 1) * 0x9e3779b97f4a7c15L);
+                                double centre =
+                                        (bed - sub)
+                                                * Math.sin(
+                                                        2
+                                                                * Math.PI
+                                                                * (weave / (1 + .4 * b)
+                                                                        + SeededNoise.unit(h)));
+                                wet.wet = Math.abs(lateral - centre) <= sub;
+                            }
+                            if (wet.wet) {
+                                wet.distance = 0;
+                                wet.depth = 1;
+                            } else wet.bar = Hydro.Bed.GRAVEL;
+                        } else {
+                            double beyond = dist - bed;
+                            if (beyond >= nearScore) continue;
+                            nearScore = beyond;
+                            near.set(c, dist, bed, lerp(c.level, i, t), lerp(c.depth, i, t));
+                            // A point bar on the inside of a bend: sand where the channel runs
+                            // gently,
+                            // gravel where it runs steeper.
+                            double bar = c.bar(i, t);
+                            if (Math.abs(bar) >= pointBar
+                                    && beyond < 2 * radius
+                                    && Math.signum(lateral) == Math.signum(bar))
+                                near.bar =
+                                        lerp(c.gradient, i, t) < sandGradient
+                                                ? Hydro.Bed.SAND
+                                                : Hydro.Bed.GRAVEL;
+                        }
                     }
-                    // A braided reach: a few shallow channels weave across a gravel bed whose
-                    // bars stand at the water's level.
-                    double sub = Math.max(1, radius * (1 - .5 * braid));
-                    double weave = lerp(c.weave, i, t);
-                    for (int b = 0; b < braidChannels && !wet.wet; b++) {
-                        long h = SeededNoise.mix(c.id + (b + 1) * 0x9e3779b97f4a7c15L);
-                        double centre =
-                                (bed - sub)
-                                        * Math.sin(
-                                                2
-                                                        * Math.PI
-                                                        * (weave / (1 + .4 * b)
-                                                                + SeededNoise.unit(h)));
-                        wet.wet = Math.abs(lateral - centre) <= sub;
-                    }
-                    if (wet.wet) {
-                        wet.distance = 0;
-                        wet.depth = 1;
-                    } else wet.bar = Hydro.Bed.GRAVEL;
-                } else {
-                    double beyond = dist - bed;
-                    if (beyond >= nearScore) continue;
-                    nearScore = beyond;
-                    near.set(c, dist, bed, lerp(c.level, i, t), lerp(c.depth, i, t));
-                    // A point bar on the inside of a bend: sand where the channel runs gently,
-                    // gravel where it runs steeper.
-                    double bar = lerp(c.bar, i, t);
-                    if (Math.abs(bar) >= pointBar
-                            && beyond < 2 * radius
-                            && Math.signum(lateral) == Math.signum(bar))
-                        near.bar =
-                                lerp(c.gradient, i, t) < sandGradient
-                                        ? Hydro.Bed.SAND
-                                        : Hydro.Bed.GRAVEL;
-                }
-            }
         }
         Hit hit = wetScore <= 1 ? wet : nearScore < Double.POSITIVE_INFINITY ? near : null;
         if (hit != null) hit.levee = levee;
@@ -445,34 +588,44 @@ final class Drainage {
             int bz = (int) Math.floor((z + clearance - n.originZ) / n.bin);
             for (int zz = Math.max(0, az); zz <= Math.min(n.binsZ - 1, bz); zz++)
                 for (int xx = Math.max(0, ax); xx <= Math.min(n.bins - 1, bx); xx++)
-                    for (int ref : n.rivers[zz * n.bins + xx]) {
-                        Channel c = n.channels[ref >>> 16];
-                        int i = ref & 0xffff;
-                        double support =
-                                Math.max(
-                                                        c.radius[i] * (1 + c.braid[i] * braidSpan),
-                                                        c.radius[i + 1]
-                                                                * (1 + c.braid[i + 1] * braidSpan))
-                                                * (1 + bankScale)
-                                        + 2
-                                        + Math.max(c.valley[i], c.valley[i + 1]);
-                        double vx = c.x[i + 1] - c.x[i], vz = c.z[i + 1] - c.z[i];
-                        double length2 = vx * vx + vz * vz;
-                        double t =
-                                length2 == 0
-                                        ? 0
-                                        : Math.max(
-                                                0,
-                                                Math.min(
-                                                        1,
-                                                        ((x - c.x[i]) * vx + (z - c.z[i]) * vz)
-                                                                / length2));
-                        clearance =
-                                Math.min(
-                                        clearance,
-                                        Math.hypot(x - c.x[i] - t * vx, z - c.z[i] - t * vz)
-                                                - support);
-                    }
+                    for (int runs = n.rivers.occupied(zz * n.bins + xx),
+                                    r = runs < 0 ? 0 : n.rivers.firstRun(runs),
+                                    end = runs < 0 ? 0 : n.rivers.endRun(runs);
+                            r < end;
+                            r++)
+                        for (int ref = n.rivers.start[r], last = ref + n.rivers.count[r];
+                                ref < last;
+                                ref++) {
+                            Channel c = n.channels[ref >>> 16];
+                            int i = ref & 0xffff;
+                            double support =
+                                    Math.max(
+                                                            c.radius[i]
+                                                                    * (1 + c.braid(i) * braidSpan),
+                                                            c.radius[i + 1]
+                                                                    * (1
+                                                                            + c.braid(i + 1)
+                                                                                    * braidSpan))
+                                                    * (1 + bankScale)
+                                            + 2
+                                            + Math.max(c.valley(i), c.valley(i + 1));
+                            double vx = c.x[i + 1] - c.x[i], vz = c.z[i + 1] - c.z[i];
+                            double length2 = vx * vx + vz * vz;
+                            double t =
+                                    length2 == 0
+                                            ? 0
+                                            : Math.max(
+                                                    0,
+                                                    Math.min(
+                                                            1,
+                                                            ((x - c.x[i]) * vx + (z - c.z[i]) * vz)
+                                                                    / length2));
+                            clearance =
+                                    Math.min(
+                                            clearance,
+                                            Math.hypot(x - c.x[i] - t * vx, z - c.z[i] - t * vz)
+                                                    - support);
+                        }
         }
         return clearance;
     }
@@ -500,8 +653,8 @@ final class Drainage {
                         c.level.clone(),
                         radius,
                         c.gradient.clone(),
-                        c.braid.clone(),
-                        c.riffle.clone()
+                        c.braidCopy(),
+                        c.riffleCopy()
                     });
         }
         return out;
@@ -1093,12 +1246,12 @@ final class Drainage {
             for (int i = 0; i < ch.x.length - 1; i++) {
                 double r =
                         Math.max(
-                                                ch.radius[i] * (1 + ch.braid[i] * braidSpan),
+                                                ch.radius[i] * (1 + ch.braid(i) * braidSpan),
                                                 ch.radius[i + 1]
-                                                        * (1 + ch.braid[i + 1] * braidSpan))
+                                                        * (1 + ch.braid(i + 1) * braidSpan))
                                         * (1 + 2 * bankScale)
                                 + 2
-                                + Math.max(valleyCap, Math.max(ch.valley[i], ch.valley[i + 1]));
+                                + Math.max(valleyCap, Math.max(ch.valley(i), ch.valley(i + 1)));
                 int ax =
                         (int)
                                 Math.floor(
@@ -1137,12 +1290,12 @@ final class Drainage {
             for (int i = 0; i < ch.x.length - 1; i++) {
                 double r =
                         Math.max(
-                                                ch.radius[i] * (1 + ch.braid[i] * braidSpan),
+                                                ch.radius[i] * (1 + ch.braid(i) * braidSpan),
                                                 ch.radius[i + 1]
-                                                        * (1 + ch.braid[i + 1] * braidSpan))
+                                                        * (1 + ch.braid(i + 1) * braidSpan))
                                         * (1 + bankScale)
                                 + 2
-                                + Math.max(ch.valley[i], ch.valley[i + 1]);
+                                + Math.max(ch.valley(i), ch.valley(i + 1));
                 int ax =
                         (int)
                                 Math.floor(
@@ -1176,21 +1329,8 @@ final class Drainage {
                 binBlocks,
                 bins,
                 binsZ,
-                array(lists),
-                array(riverLists),
+                Bins.of(lists),
+                Bins.of(riverLists),
                 mouthArray);
-    }
-
-    private static int[][] array(List<List<Integer>> lists) {
-        int[][] refs = new int[lists.size()][];
-        for (int i = 0; i < refs.length; i++) {
-            List<Integer> l = lists.get(i);
-            if (l == null) refs[i] = NONE;
-            else {
-                refs[i] = new int[l.size()];
-                for (int k = 0; k < refs[i].length; k++) refs[i][k] = l.get(k);
-            }
-        }
-        return refs;
     }
 }
