@@ -268,7 +268,9 @@ land first; in larger layouts the grid coarsens to at most 256 cells a side and 
 in blocks), over its intent height plus a gentle routing relief (12 blocks of noise at 800, 400 and
 200 blocks) that gathers flats into valleys. A priority flood routes each cell to the sea or to the
 lake or route of a cell network that receives it, so hollows fill and spill and nothing is left
-without an outlet. Rain-weighted area accumulates downstream, a channel begins where it drains 18
+without an outlet. Receiving water reads each own-land cell's hydrology plan, so the plans under
+the continent's land are built first, one task per plan, and no row of the scan waits for another
+row's plan build (timing only). Rain-weighted area accumulates downstream, a channel begins where it drains 18
 cells, and every channel continues the upstream channel that brings it the most water: heads join
 into creeks, creeks into rivers. Width grows with the square root of the area drained (1.5 blocks
 at a head, 14 blocks more per extra root square kilometre, at most 48), so rivers widen below every

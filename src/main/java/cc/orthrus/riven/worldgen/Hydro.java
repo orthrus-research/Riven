@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.stream.IntStream;
 
 /** Bounded constructive coastal catchments. Only earlier intent is queried.
  * The optional memo holds immutable geometry, never terrain, jobs or world objects.
@@ -439,10 +440,31 @@ public final class Hydro
                         continents,
                         outline,
                         this::receivingWater,
+                        cellBlocks,
+                        this::prepare,
                         bankScale,
                         maxCut,
                         estuaryLength,
                         estuaryFlare);
+    }
+
+    /**
+     * Builds the missing plans of these owner cells before a drainage scan reads them, one task per
+     * plan. Plans read only earlier intent, never another plan or drainage, so no task waits on
+     * another and no scan row parks on a plan (timing only).
+     */
+    private void prepare(int[] cells, int count) {
+        int[] missing = new int[2 * count];
+        int n = 0;
+        for (int k = 0; k < count; k++) {
+            int x = cells[2 * k], z = cells[2 * k + 1];
+            long key = ((long) x << 32) ^ (z & 0xffffffffL);
+            if (find(key, (int) SeededNoise.mix(key) & (sets - 1)) != null) continue;
+            missing[2 * n] = x;
+            missing[2 * n + 1] = z;
+            n++;
+        }
+        IntStream.range(0, n).parallel().forEach(k -> plan(missing[2 * k], missing[2 * k + 1]));
     }
 
     private static int integer(JsonObject j, String key, int min, int max) {

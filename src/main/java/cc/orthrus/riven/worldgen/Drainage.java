@@ -5,8 +5,10 @@ import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.function.DoubleBinaryOperator;
 import java.util.stream.IntStream;
 
@@ -173,6 +175,8 @@ final class Drainage {
     private final ContinentalMap continents;
     private final ContinentalOutlineMap outline;
     private final DoubleBinaryOperator receiving;
+    private final int planBlocks;
+    private final Plans plans;
     private final double cellBase, relief, runoffDry, runoffSpan, runoffMin, runoffMax, channelArea;
     private final int maximumCells;
     private final double[] reliefWave, reliefWeight;
@@ -197,9 +201,15 @@ final class Drainage {
     private final ThreadLocal<ContinentalOutlineMap.TrunkScratch> query =
             ThreadLocal.withInitial(() -> new ContinentalOutlineMap.TrunkScratch(0));
 
+    /** Builds the hydrology plans of owner cells, given as (x, z) pairs, before a scan reads them. */
+    interface Plans {
+        void prepare(int[] cells, int count);
+    }
+
     /**
      * {@code receiving} gives the water level of a network lake or route at a column, or NaN:
-     * streams that reach it end there.
+     * streams that reach it end there. It reads the hydrology plan of the column's owner cell,
+     * {@code planBlocks} wide, which {@code plans} builds ahead of a scan.
      */
     Drainage(
             long seed,
@@ -209,6 +219,8 @@ final class Drainage {
             ContinentalMap continents,
             ContinentalOutlineMap outline,
             DoubleBinaryOperator receiving,
+            int planBlocks,
+            Plans plans,
             double bankScale,
             double maxCut,
             double estuaryLength,
@@ -219,6 +231,8 @@ final class Drainage {
         this.continents = continents;
         this.outline = outline;
         this.receiving = receiving;
+        this.planBlocks = planBlocks;
+        this.plans = plans;
         this.bankScale = bankScale;
         this.maxCut = maxCut;
         this.estuaryLength = estuaryLength;
@@ -509,6 +523,35 @@ final class Drainage {
         IntStream.range(0, cells).parallel().forEach(k -> network(pairs[2 * k], pairs[2 * k + 1]));
     }
 
+    /**
+     * The hydrology owner cells under a continent's land, as (x, z) pairs: each coarse row's own
+     * land, widened by the two coarse cells the fine grid adds, within the grid's box.
+     */
+    private int[] planCells(double[] zs, double[][] rows, double coarse, double[] box) {
+        Set<Long> cells = new LinkedHashSet<>();
+        for (int r = 0; r < zs.length; r++) {
+            if (rows[r] == null) continue;
+            int cz0 = planCell(Math.max(box[1], zs[r] - 2 * coarse));
+            int cz1 = planCell(Math.min(box[3], zs[r] + 2 * coarse));
+            int cx0 = planCell(Math.max(box[0], rows[r][0] - 2 * coarse));
+            int cx1 = planCell(Math.min(box[2], rows[r][1] + 2 * coarse));
+            for (int cz = cz0; cz <= cz1; cz++)
+                for (int cx = cx0; cx <= cx1; cx++)
+                    cells.add(((long) cx << 32) ^ (cz & 0xffffffffL));
+        }
+        int[] out = new int[2 * cells.size()];
+        int k = 0;
+        for (long c : cells) {
+            out[k++] = (int) (c >> 32);
+            out[k++] = (int) c;
+        }
+        return out;
+    }
+
+    private int planCell(double v) {
+        return (int) Math.floor(v / planBlocks);
+    }
+
     /** Routing relief at a column: gentle multi-scale relief that gathers flats into valleys. */
     private double relief(double x, double z) {
         double v = 0;
@@ -581,6 +624,10 @@ final class Drainage {
         int nx = (int) Math.floor(box[2] / cell) - x0 + 1,
                 nz = (int) Math.floor(box[3] / cell) - z0 + 1;
         int total = nx * nz;
+        // Receiving water reads the hydrology plan of every own-land cell. Those plans are built
+        // first, together, so rows find them built instead of parking on the row building one.
+        int[] owners = planCells(zs, rows, coarse, box);
+        plans.prepare(owners, owners.length / 2);
         // Grid: each cell's own land, ground (intent height), routing height, rain and receivers.
         boolean[] own = new boolean[total], marine = new boolean[total], sink = new boolean[total];
         double[] ground = new double[total], route = new double[total], rain = new double[total];
