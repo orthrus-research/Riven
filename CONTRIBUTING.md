@@ -36,7 +36,7 @@ Supersymmetry is not imported. Adapted material states its source, its license a
 
 | Command | When |
 | --- | --- |
-| `riven.ps1 ci` | Before every pull request: formatting, lint and types, Riven and Cubature builds with tests, golden atlas digests rendered twice for determinism |
+| `riven.ps1 ci` | Before every pull request: formatting, lint and types, Riven and Cubature tool tests, Riven and Cubature builds with tests, golden atlas digests rendered twice for determinism |
 | `riven.ps1 full` | Changes to runtime behavior: `ci` plus a native client and server smoke capture |
 | `.local/quality-venv/Scripts/python tools/code_quality.py format` | Applies the pinned Java and Python formatting |
 | `tools/terrain_atlas.py compare` | Before updating golden digests: shows what changed and where |

@@ -14,10 +14,12 @@ ci = ["quality", "riven-build", "cubature-build", "atlas-golden", "definitions",
 full = ["quality", "riven-build", "cubature-build", "atlas-golden", "definitions", "sample-history", "smoke"]
 
 [jobs.quality]
-description = "Formatting, lint, types and both-loader compile (tools/code_quality.py check)"
+description = "Formatting, lint, types, both-loader compile, content assets and the Riven and Cubature tool tests"
 steps = [
   { name = "code quality", run = ["{quality_python}", "tools/code_quality.py", "check"] },
   { name = "content assets", run = ["{quality_python}", "tools/content/build_content.py", "--check"] },
+  { name = "riven tool tests", run = ["{observability_python}", "-B", "-m", "unittest", "discover", "-s", "tools", "-p", "test_*.py"] },
+  { name = "cubature tool tests", run = ["{observability_python}", "-B", "-m", "unittest", "discover", "-s", "dev/CubicChunks/tools", "-p", "test_*.py"] },
 ]
 
 [jobs.riven-build]

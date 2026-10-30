@@ -289,7 +289,9 @@ assemble` builds the Java 8 / Forge 14.23.5.2860 fallback; its native runtime is
 `check` verifies Google Java Format (AOSP) and Ruff formatting, runs Ruff and gradual Mypy, and
 compiles production and `tools/checks` Java with Java 26 for both loaders with lint warnings as
 errors. It runs no tests or game. `.local/settings.json` supplies the `java25` and `java26`
-paths.
+paths. The `quality` job adds `tools/content/build_content.py --check` and both projects' tool
+tests, `unittest discover` over `tools` and `dev/CubicChunks/tools` in the observability
+environment.
 
 ## Known runtime warnings
 
