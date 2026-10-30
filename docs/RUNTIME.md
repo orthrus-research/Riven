@@ -250,11 +250,19 @@ the reviewed build is noted, not refused.
 under `.local/actions/<run-id>/` and a `summary.json`. A failed job stops the run unless
 `--keep-going`; jobs that need it are skipped.
 
+Each `summary.json` records the Riven and Cubature trees the run tested, hashed as `git add --all`
+would commit them (through a scratch copy of the index; the real index is untouched), and whether
+either changed while it ran. A pass recorded before a commit therefore names that commit's tree.
+`--if-needed` skips the jobs that already passed for the current trees and keeps the jobs a
+remaining job needs. The record assumes the tool environments, `.local/settings.json` and the
+pinned JARs are unchanged between runs.
+
 | Command | Runs |
 | --- | --- |
 | `python tools/setup.py` (`riven.ps1 setup`) | One-time preparation of a clone: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports |
 | `riven.ps1 check` | `quality`, `atlas-golden`, `definitions` and `sample-history` |
 | `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `atlas-golden`, `definitions`, `sample-history` |
+| `python tools/actions.py ci --if-needed` | The `ci` jobs that have not passed for the current trees |
 | `riven.ps1 full` | `ci` plus `smoke`, a native timing capture of the run's frozen artifacts |
 | `python tools/actions.py --list` / `<job> ...` / `--dry-run` | Inspect or run individual jobs |
 

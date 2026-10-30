@@ -4,8 +4,13 @@ Workflows and jobs are defined in `tools/actions.toml`. Jobs run sequentially in
 order; each step's output goes to `.local/actions/<run-id>/<job>/<step>.log` and the run ends with
 `summary.json`. A job is skipped when a job it needs failed. Only one run at a time.
 
+Each summary records the Riven and Cubature trees the run tested: the trees their working trees
+would commit, so a pass recorded before a commit names that commit's tree. `--if-needed` skips the
+jobs that already passed for the current trees; tools/push_gate.py reads the same record.
+
   python tools/actions.py --list
   python tools/actions.py ci                 # quality, builds, golden atlas digests
+  python tools/actions.py ci --if-needed     # only the ci jobs not yet passed for these trees
   python tools/actions.py full               # ci plus a native smoke capture
   python tools/actions.py riven-build atlas-golden --keep-going
   python tools/actions.py ci --dry-run
@@ -14,16 +19,21 @@ order; each step's output goes to `.local/actions/<run-id>/<job>/<step>.log` and
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import tomllib
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+CUBATURE = ROOT / "dev/CubicChunks"
 CONFIG = ROOT / "tools/actions.toml"
 RUNS = ROOT / ".local/actions"
+# A hook exports these for its own repository; they would point git at it from the other one.
+GIT_LOCATION = {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_PREFIX"}
 
 
 def load():
@@ -107,6 +117,60 @@ def tail(log, lines=15):
     return "\n".join("    | " + line for line in text[-lines:])
 
 
+def git(repo: Path, *arguments: str, index: Path | None = None) -> str:
+    environment = {k: v for k, v in os.environ.items() if k not in GIT_LOCATION}
+    if index is not None:
+        environment["GIT_INDEX_FILE"] = str(index)
+    return subprocess.run(
+        ["git", *arguments], cwd=repo, env=environment, capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+def working_tree(repo: Path) -> str | None:
+    """The tree `git add --all` would commit in repo, through a scratch copy of its index so the
+    real one is untouched; None without a checkout."""
+    if not (repo / ".git").exists():
+        return None
+    index = repo / git(repo, "rev-parse", "--git-path", "index")
+    with tempfile.TemporaryDirectory() as scratch:
+        scratch_index = Path(scratch) / "index"
+        if index.is_file():
+            # The copy keeps the index's file stamps, so only changed files are read again.
+            shutil.copyfile(index, scratch_index)
+        git(repo, "add", "--all", index=scratch_index)
+        return git(repo, "write-tree", index=scratch_index)
+
+
+def trees() -> dict[str, str | None]:
+    """The Riven and Cubature trees a run tests; None for one git could not read."""
+    result: dict[str, str | None] = {}
+    for name, repo in (("riven", ROOT), ("cubature", CUBATURE)):
+        try:
+            result[name] = working_tree(repo)
+        except OSError, subprocess.CalledProcessError:
+            result[name] = None
+    return result
+
+
+def passed_jobs(runs: Path = RUNS) -> dict[tuple[str, str], set[str]]:
+    """The jobs passed so far, by the (Riven, Cubature) trees they ran on. A run counts when it
+    recorded both trees and neither changed while it ran."""
+    passed: dict[tuple[str, str], set[str]] = {}
+    for path in sorted(runs.glob("*/summary.json")):
+        try:
+            summary = json.loads(path.read_text(encoding="utf-8"))
+        except OSError, ValueError:
+            continue
+        tested = summary.get("trees") or {}
+        if summary.get("treesChanged", True) or not (
+            tested.get("riven") and tested.get("cubature")
+        ):
+            continue
+        jobs = passed.setdefault((tested["riven"], tested["cubature"]), set())
+        jobs.update(n for n, r in summary.get("jobs", {}).items() if r.get("status") == "passed")
+    return passed
+
+
 def acquire_lock():
     RUNS.mkdir(parents=True, exist_ok=True)
     lock = RUNS / ".lock"
@@ -129,6 +193,11 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="print the plan only")
     parser.add_argument("--keep-going", action="store_true", help="continue after a failure")
     parser.add_argument("--verbose", "-v", action="store_true", help="stream step output")
+    parser.add_argument(
+        "--if-needed",
+        action="store_true",
+        help="skip jobs that already passed for the current Riven and Cubature trees",
+    )
     args = parser.parse_args()
     config = load()
     if args.list or not args.targets:
@@ -141,6 +210,17 @@ def main():
             print(f"  {name:<16} {job.get('description', '')}{flags}")
         return
     order = resolve(config, args.targets)
+    tested = None
+    if args.if_needed:
+        tested = trees()
+        done = passed_jobs().get((tested["riven"] or "", tested["cubature"] or ""), set())
+        if any(name in done for name in order):
+            print("Already passed for these trees: " + ", ".join(n for n in order if n in done))
+        remaining = [name for name in order if name not in done]
+        if not remaining:
+            return
+        # Keep the jobs a remaining job needs: their artifacts are frozen under this run's id.
+        order = resolve(config, remaining)
     run_id = time.strftime("%Y%m%d-%H%M%S")
     values = placeholders(config, run_id)
     if args.dry_run:
@@ -150,6 +230,7 @@ def main():
                 print("  $ " + " ".join(expand(step["run"], values)))
         return
     lock = acquire_lock()
+    tested = tested or trees()
     run_dir = RUNS / run_id
     results: dict[str, dict[str, Any]] = {}
     started = time.monotonic()
@@ -206,6 +287,8 @@ def main():
         summary = {
             "runId": run_id,
             "targets": args.targets,
+            "trees": tested,
+            "treesChanged": trees() != tested,
             "seconds": round(time.monotonic() - started, 1),
             "jobs": results,
         }
