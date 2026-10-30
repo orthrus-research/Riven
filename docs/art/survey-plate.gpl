@@ -1,0 +1,564 @@
+GIMP Palette
+Name: Riven Survey Plate
+Columns: 5
+#
+ 54  59  65	stone ink
+ 86  95 102	stone shadow
+119 130 136	stone body
+146 158 162	stone light
+172 182 185	stone highlight
+ 87  70  66	felsic ink
+136 101  91	felsic shadow
+170 139 122	felsic body
+194 168 149	felsic light
+214 196 178	felsic highlight
+120 120 112	pale ink
+160 159 146	pale shadow
+200 196 183	pale body
+225 219 208	pale light
+246 241 232	pale highlight
+109 100  92	carbonate ink
+153 137 118	carbonate shadow
+186 176 155	carbonate body
+214 205 185	carbonate light
+239 231 215	carbonate highlight
+ 24  27  33	slate ink
+ 50  59  72	slate shadow
+ 80  93 104	slate body
+105 119 128	slate light
+130 142 148	slate highlight
+ 54  59  67	basement ink
+ 85  94 112	basement shadow
+116 129 146	basement body
+142 158 171	basement light
+168 183 192	basement highlight
+ 19  29  27	mafic ink
+ 37  57  52	mafic shadow
+ 64  82  73	mafic body
+ 92 106  96	mafic light
+118 128 119	mafic highlight
+127 110  94	sandstone ink
+176 147 109	sandstone shadow
+208 187 146	sandstone body
+234 215 177	sandstone light
+255 240 211	sandstone highlight
+ 62  35  34	redbed ink
+114  59  51	redbed shadow
+148  96  76	redbed body
+170 126  99	redbed light
+187 154 129	redbed highlight
+ 35  24  20	umber ink
+ 69  48  36	umber shadow
+ 94  76  60	umber body
+117 102  85	umber light
+136 127 112	umber highlight
+ 24  27  32	coal ink
+ 33  36  43	coal shadow
+ 44  45  52	coal body
+ 68  68  75	coal light
+ 91  90  97	coal highlight
+144 134 137	evaporite ink
+191 171 174	evaporite shadow
+230 210 209	evaporite body
+242 225 222	evaporite light
+252 239 234	evaporite highlight
+ 16  38  38	serpentine ink
+ 27  75  71	serpentine shadow
+ 68 109  98	serpentine body
+100 134 119	serpentine light
+132 156 141	serpentine highlight
+ 42  19  23	infernal ink
+ 74  26  31	infernal shadow
+ 93  45  40	infernal body
+116  73  59	infernal light
+132  99  84	infernal highlight
+ 26  26  32	cinder ink
+ 47  45  56	cinder shadow
+ 69  64  75	cinder body
+ 95  88  98	cinder light
+118 111 118	cinder highlight
+ 11  13  22	obsidian ink
+ 18  17  36	obsidian shadow
+ 28  23  41	obsidian body
+ 52  44  61	obsidian light
+ 74  65  79	obsidian highlight
+ 38  22  17	humus ink
+ 78  47  32	humus shadow
+107  78  57	humus body
+129 106  83	humus light
+147 132 111	humus highlight
+ 39  21  19	podzol ink
+ 70  34  24	podzol shadow
+ 88  55  37	podzol body
+109  81  60	podzol light
+127 107  87	podzol highlight
+ 70  75  81	clay ink
+100 112 124	clay shadow
+134 149 158	clay body
+161 177 183	clay light
+189 202 206	clay highlight
+128 130 109	sand ink
+174 170 126	sand shadow
+219 205 163	sand body
+241 223 186	sand light
+254 240 212	sand highlight
+101  72  57	ochre ink
+156 103  61	ochre shadow
+186 143  93	ochre body
+206 175 124	ochre light
+224 203 162	ochre highlight
+ 58  52  48	gravel ink
+ 94  86  80	gravel shadow
+127 121 113	gravel body
+153 149 141	gravel light
+177 173 166	gravel highlight
+149 152 160	snow ink
+186 194 204	snow shadow
+223 233 242	snow body
+233 244 250	snow light
+244 252 255	snow highlight
+ 99 116 130	ice ink
+118 158 184	ice shadow
+152 198 217	ice body
+181 226 238	ice light
+213 250 255	ice highlight
+ 37  22  19	bark ink
+ 69  41  29	bark shadow
+ 91  65  48	bark body
+113  92  72	bark light
+131 117  99	bark highlight
+ 36  23  21	spruce ink
+ 59  34  26	spruce shadow
+ 73  50  37	spruce body
+ 95  75  60	spruce light
+113  99  85	spruce highlight
+ 84  64  51	timber ink
+133  96  62	timber shadow
+164 135  95	timber body
+185 165 126	timber light
+206 191 160	timber highlight
+ 65  37  34	redwood ink
+119  61  49	redwood shadow
+153  98  74	redwood body
+175 129  98	redwood light
+190 157 129	redwood highlight
+127 135 115	endstone ink
+168 176 135	endstone shadow
+214 212 170	endstone body
+236 227 190	endstone light
+253 241 213	endstone highlight
+117 104 102	fired_white ink
+164 140 132	fired_white shadow
+200 178 167	fired_white body
+226 209 195	fired_white light
+248 236 224	fired_white highlight
+ 75  44  39	fired_orange ink
+130  69  50	fired_orange shadow
+163 107  75	fired_orange body
+184 138 101	fired_orange light
+200 167 134	fired_orange highlight
+ 48  33  46	fired_magenta ink
+ 94  58  83	fired_magenta shadow
+132  91 110	fired_magenta body
+159 118 130	fired_magenta light
+179 145 150	fired_magenta highlight
+ 44  48  57	fired_light_blue ink
+ 74  83 100	fired_light_blue shadow
+105 118 134	fired_light_blue body
+130 145 159	fired_light_blue light
+156 170 179	fired_light_blue highlight
+ 93  68  48	fired_yellow ink
+145 100  48	fired_yellow shadow
+174 140  84	fired_yellow body
+196 171 117	fired_yellow light
+217 197 156	fired_yellow highlight
+ 37  50  34	fired_lime ink
+ 67  87  50	fired_lime shadow
+109 119  79	fired_lime body
+142 143 105	fired_lime light
+169 166 136	fired_lime highlight
+ 71  53  58	fired_pink ink
+120  81  88	fired_pink shadow
+156 117 116	fired_pink body
+182 145 139	fired_pink light
+201 173 164	fired_pink highlight
+ 32  24  24	fired_gray ink
+ 54  40  38	fired_gray shadow
+ 71  58  53	fired_gray body
+ 94  83  77	fired_gray light
+114 106 100	fired_gray highlight
+ 60  51  50	fired_silver ink
+102  83  79	fired_silver shadow
+136 118 110	fired_silver body
+161 146 136	fired_silver light
+182 172 163	fired_silver highlight
+ 20  28  31	fired_cyan ink
+ 41  61  65	fired_cyan shadow
+ 72  92  93	fired_cyan body
+ 99 118 116	fired_cyan light
+126 141 138	fired_cyan highlight
+ 30  23  35	fired_purple ink
+ 65  47  70	fired_purple shadow
+ 97  74  94	fired_purple body
+124  99 115	fired_purple light
+146 124 134	fired_purple highlight
+ 23  26  37	fired_blue ink
+ 42  44  68	fired_blue shadow
+ 66  63  86	fired_blue body
+ 94  86 108	fired_blue light
+118 109 127	fired_blue highlight
+ 38  22  19	fired_brown ink
+ 69  37  27	fired_brown shadow
+ 88  58  42	fired_brown body
+110  85  65	fired_brown light
+128 110  92	fired_brown highlight
+ 22  29  18	fired_green ink
+ 45  56  29	fired_green shadow
+ 76  80  51	fired_green body
+105 104  77	fired_green light
+130 126 105	fired_green highlight
+ 44  17  21	fired_red ink
+ 93  36  38	fired_red shadow
+127  70  59	fired_red body
+150  99  80	fired_red light
+166 128 107	fired_red highlight
+ 27  20  21	fired_black ink
+ 38  25  25	fired_black shadow
+ 45  33  30	fired_black body
+ 67  56  52	fired_black light
+ 87  78  73	fired_black highlight
+ 64  42  40	fired_plain ink
+113  69  60	fired_plain shadow
+147 105  87	fired_plain body
+170 135 112	fired_plain light
+187 163 141	fired_plain highlight
+  3  41  21	leaf ink
+  4  81  26	leaf shadow
+ 72 112  47	leaf body
+112 135  70	leaf light
+146 155 103	leaf highlight
+  0  32  29	needle ink
+  0  59  49	needle shadow
+ 26  83  62	needle body
+ 66 107  81	needle light
+101 128 103	needle highlight
+ 38  51  25	olive ink
+ 72  87  23	olive shadow
+117 118  55	olive body
+151 141  86	olive light
+178 164 122	olive highlight
+  0  55  38	canopy ink
+  0  96  56	canopy shadow
+ 59 132  64	canopy body
+110 155  83	canopy light
+150 175 115	canopy highlight
+ 40  72  45	grass ink
+ 60 115  47	grass shadow
+115 147  70	grass body
+156 170  97	grass light
+189 191 134	grass highlight
+ 14  35  12	moss ink
+ 39  71  10	moss shadow
+ 85 101  38	moss body
+120 124  66	moss light
+149 145 100	moss highlight
+ 81  40  26	autumn ink
+141  61   0	autumn shadow
+173 103  35	autumn body
+192 137  69	autumn light
+203 168 112	autumn highlight
+ 73  76  69	pretint ink
+110 112 102	pretint shadow
+147 147 137	pretint body
+176 174 165	pretint light
+203 199 191	pretint highlight
+133 123 116	fungus ink
+178 161 144	fungus shadow
+213 201 181	fungus body
+231 222 203	fungus light
+248 241 226	fungus highlight
+ 31  26  39	mycelium ink
+ 68  54  80	mycelium shadow
+105  86 110	mycelium body
+134 111 131	mycelium light
+157 136 150	mycelium highlight
+ 60  64  70	masonry ink
+ 92 100 110	masonry shadow
+125 136 144	masonry body
+152 164 170	masonry light
+178 189 192	masonry highlight
+ 53  23  26	brick ink
+106  44  43	brick shadow
+141  80  65	brick body
+164 111  87	brick light
+179 140 115	brick highlight
+146 147 139	quartz ink
+188 187 178	quartz shadow
+228 225 216	quartz body
+239 235 226	quartz light
+249 245 236	quartz highlight
+ 37  64  67	prismarine ink
+ 43 105 106	prismarine shadow
+ 85 140 133	prismarine body
+120 167 153	prismarine light
+156 189 175	prismarine highlight
+ 67  59  81	purpur ink
+111  88 132	purpur shadow
+153 121 161	purpur body
+185 148 180	purpur light
+208 175 198	purpur highlight
+ 36  22  26	netherbrick ink
+ 52  23  30	netherbrick shadow
+ 60  31  32	netherbrick body
+ 83  56  52	netherbrick light
+101  79  73	netherbrick highlight
+110 114 121	iron ink
+147 153 160	iron shadow
+184 191 197	iron body
+210 218 224	iron light
+234 244 248	iron highlight
+114 118  63	gold ink
+168 156   0	gold shadow
+222 186  66	gold body
+255 211 114	gold light
+255 240 210	gold highlight
+122 129 135	glass ink
+155 170 179	glass shadow
+192 209 215	glass body
+212 228 231	glass light
+232 245 246	glass highlight
+152 153 145	dye_white ink
+193 194 184	dye_white shadow
+234 232 223	dye_white body
+245 241 233	dye_white light
+254 250 241	dye_white highlight
+118  62  48	dye_orange ink
+189  77  18	dye_orange shadow
+221 123  43	dye_orange body
+239 161  78	dye_orange light
+248 195 127	dye_orange highlight
+ 70  37  84	dye_magenta ink
+130  44 141	dye_magenta shadow
+177  79 159	dye_magenta body
+210 110 169	dye_magenta light
+229 144 180	dye_magenta highlight
+ 70  92 122	dye_light_blue ink
+ 71 133 187	dye_light_blue shadow
+ 97 175 218	dye_light_blue body
+126 206 237	dye_light_blue light
+166 231 249	dye_light_blue highlight
+126 134  75	dye_yellow ink
+180 173   0	dye_yellow shadow
+237 204  72	dye_yellow body
+255 220 147	dye_yellow light
+255 240 210	dye_yellow highlight
+ 59 113  72	dye_lime ink
+ 66 161  57	dye_lime shadow
+140 193  74	dye_lime body
+191 216 101	dye_lime light
+230 237 147	dye_lime highlight
+128  97 117	dye_pink ink
+189 122 156	dye_pink shadow
+232 159 181	dye_pink body
+255 194 201	dye_pink light
+255 232 232	dye_pink highlight
+ 24  27  32	dye_gray ink
+ 48  52  60	dye_gray shadow
+ 72  77  85	dye_gray body
+ 96 103 110	dye_gray light
+119 126 132	dye_gray highlight
+ 77  80  87	dye_silver ink
+112 117 124	dye_silver shadow
+147 153 160	dye_silver body
+174 181 187	dye_silver light
+198 207 212	dye_silver highlight
+ 18  59  71	dye_cyan ink
+  0  99 114	dye_cyan shadow
+ 34 138 143	dye_cyan body
+ 83 165 160	dye_cyan light
+129 187 177	dye_cyan highlight
+ 24  18  60	dye_purple ink
+ 62  29 123	dye_purple shadow
+104  59 146	dye_purple body
+138  85 160	dye_purple light
+163 114 168	dye_purple highlight
+  8  23  62	dye_blue ink
+ 11  37 122	dye_blue shadow
+ 33  64 146	dye_blue body
+ 39  97 166	dye_blue light
+ 67 124 174	dye_blue highlight
+ 42  20  14	dye_brown ink
+ 84  39  19	dye_brown shadow
+109  69  40	dye_brown body
+130  97  65	dye_brown light
+146 124  96	dye_brown highlight
+  0  34  15	dye_green ink
+  0  72  21	dye_green shadow
+ 62 104  34	dye_green body
+103 126  58	dye_green light
+137 147  92	dye_green highlight
+ 59   2  23	dye_red ink
+118   0  39	dye_red shadow
+165  41  43	dye_red body
+189  82  56	dye_red light
+200 119  86	dye_red highlight
+ 11  13  19	dye_black ink
+ 17  20  26	dye_black shadow
+ 24  26  32	dye_black body
+ 47  48  54	dye_black light
+ 68  68  75	dye_black highlight
+ 72  10  32	bloom_red ink
+136   0  46	bloom_red shadow
+182  49  50	bloom_red body
+206  91  62	bloom_red light
+216 129  93	bloom_red highlight
+124  68  49	bloom_orange ink
+193  86   1	bloom_orange shadow
+225 133  40	bloom_orange body
+241 170  79	bloom_orange light
+250 204 131	bloom_orange highlight
+124 131  72	bloom_yellow ink
+176 170   0	bloom_yellow shadow
+233 201  68	bloom_yellow body
+255 218 141	bloom_yellow light
+255 240 210	bloom_yellow highlight
+149 150 142	bloom_white ink
+191 191 176	bloom_white shadow
+232 229 214	bloom_white body
+244 238 225	bloom_white light
+253 248 238	bloom_white highlight
+114  76 106	bloom_pink ink
+179  95 148	bloom_pink shadow
+223 132 168	bloom_pink body
+252 163 183	bloom_pink light
+255 204 208	bloom_pink highlight
+ 46  36  84	bloom_violet ink
+ 92  52 153	bloom_violet shadow
+140  84 178	bloom_violet body
+176 111 191	bloom_violet light
+200 141 198	bloom_violet highlight
+ 40  57  96	bloom_blue ink
+ 55  88 170	bloom_blue shadow
+ 70 130 204	bloom_blue body
+ 87 162 223	bloom_blue light
+122 189 231	bloom_blue highlight
+ 97 139 152	diamond ink
+ 90 187 205	diamond shadow
+133 227 232	diamond body
+161 244 238	diamond light
+201 255 245	diamond highlight
+  0  94  74	emerald ink
+  0 138  97	emerald shadow
+ 32 181  97	emerald body
+119 204 111	emerald light
+174 223 142	emerald highlight
+ 68   0  33	ruby ink
+126   0  54	ruby shadow
+186   1  53	ruby body
+211  69  59	ruby light
+221 114  86	ruby highlight
+  7  23  72	sapphire ink
+ 13  44 152	sapphire shadow
+ 34  86 187	sapphire body
+ 33 121 206	sapphire light
+ 71 150 210	sapphire highlight
+ 43  37  87	amethyst ink
+ 87  51 161	amethyst shadow
+136  84 187	amethyst body
+173 110 200	amethyst light
+198 140 205	amethyst highlight
+142  95  63	topaz ink
+208 123  15	topaz shadow
+235 169  65	topaz body
+250 206 109	topaz light
+255 237 199	topaz highlight
+ 53   3  28	garnet ink
+ 95   0  43	garnet shadow
+133  14  44	garnet body
+159  58  55	garnet light
+172  94  78	garnet highlight
+ 68 115  70	olivine ink
+ 86 162  46	olivine shadow
+154 194  66	olivine body
+203 217  98	olivine light
+240 238 147	olivine highlight
+  6  21  67	lapis ink
+  8  35 135	lapis shadow
+ 41  65 163	lapis body
+ 85  89 182	lapis light
+120 114 189	lapis highlight
+ 45  99 112	turquoise ink
+  0 145 159	turquoise shadow
+ 54 186 186	turquoise body
+110 214 201	turquoise light
+163 236 218	turquoise highlight
+108  71 100	rose ink
+172  89 142	rose shadow
+216 125 162	rose body
+246 157 177	rose light
+255 194 199	rose highlight
+  0  69  60	jade ink
+  0 110  87	jade shadow
+ 43 150 103	jade body
+103 174 119	jade light
+150 194 145	jade highlight
+129  63  53	fire ink
+205  71  22	fire shadow
+239 121  38	fire body
+255 161  76	fire light
+255 201 142	fire highlight
+ 94   3  36	redstone ink
+156   0  47	redstone shadow
+216  22  24	redstone body
+238  85  30	redstone light
+245 133  76	redstone highlight
+128 130  69	native_gold ink
+184 167   0	native_gold shadow
+240 197  67	native_gold body
+255 218 141	native_gold light
+255 240 210	native_gold highlight
+134 137 145	native_silver ink
+173 177 185	native_silver shadow
+210 216 223	native_silver body
+223 231 237	native_silver light
+234 243 249	native_silver highlight
+ 96  48  42	native_copper ink
+162  64  37	native_copper shadow
+196 107  57	native_copper body
+216 142  83	native_copper light
+227 175 123	native_copper highlight
+ 28  49  76	water ink
+ 19  86 137	water shadow
+ 44 125 167	water body
+ 74 155 184	water light
+115 179 197	water highlight
+139  66  48	lava ink
+210  81   0	lava shadow
+246 128   0	lava body
+255 172  84	lava light
+255 210 153	lava highlight
+104  26  36	ember ink
+178   0  22	ember shadow
+219  69   0	ember body
+241 113  25	ember light
+247 155  84	ember highlight
+161 122  85	glow ink
+222 156  56	glow shadow
+248 202 101	glow body
+255 222 153	glow light
+255 240 210	glow highlight
+119 141 149	sea_glow ink
+139 187 197	sea_glow shadow
+178 226 228	sea_glow body
+196 240 236	sea_glow light
+217 250 243	sea_glow highlight
+ 21  14  70	portal ink
+ 60   6 145	portal shadow
+103  49 168	portal body
+139  77 180	portal light
+165 108 183	portal highlight
+  0  45  49	ender ink
+  0  83  84	ender shadow
+  0 122 112	ender body
+ 61 149 128	ender light
+112 170 146	ender highlight

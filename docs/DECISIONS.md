@@ -41,6 +41,18 @@ superseded instead of deleting it.
 
 ## Adopted 2026-10-29
 
+- **Survey Plate art direction.** Every block Riven draws, and every vanilla block through a
+  separate resource pack (Riven Survey Plate, on in prepared instances, off for any pack that
+  leaves it), is drawn in one language: native 16 x 16 faces of large connected forms, ink only
+  where forms meet, five-step hue-shifted ramps from one palette, a saturation budget that leaves
+  color to ores, gems, fluids and light, and a color script by climate and depth
+  ([ART-DIRECTION.md](ART-DIRECTION.md)). It replaces the naturalistic direction of Riven
+  Resources' style guide 1.2; the 3,693 received resources are redrawn under their IDs
+  (Requisition 08). Items, mobs, the GUI and the sky stay vanilla. labPBR maps cover only the
+  textures where light matters. Riven Resources gates its productions itself on
+  `tools/content/survey_plate.py check` and a calibration set; vanilla's noisy faces and the
+  received quiet naturalistic faces both fail those tests.
+
 - **Cubature delivery mode.** `deliveryMode` is Cubature's only delivery input. The
   `incrementalMaintenance` option and the `cubature.deliveryExperiment` JVM property are removed:
   the option with BASELINE gave an unnamed mode (incremental GC driven by player movement, 8 unloads
