@@ -35,7 +35,16 @@ public final class ClimateForcingMap {
      */
     public final double latticeBlocks;
 
-    private final CellMemo<Double> lattice = new CellMemo<>(16384);
+    /**
+     * Lattice nodes in square tiles, each built whole on its first read: a column reads 32 nodes,
+     * mostly four at a time from one tile. The lattice follows the layout, so a world of any size
+     * reads about as many nodes (12 players spread over 8 km read 545,139 in 2,527 tiles, over 32 km
+     * 311,515 in 1,425). A tile holds 2 KB; 16,384 slots keep every tile those read, and bound the
+     * memo to about 34 MB wherever players roam (timing only).
+     */
+    private static final int TILE_SHIFT = 4, TILE = 1 << TILE_SHIFT, TILE_MASK = TILE - 1;
+
+    private final CellMemo<double[]> tiles = new CellMemo<>(16384);
 
     public ClimateForcingMap(ClimateStructureMap structure, TerrainHeightReference heights) {
         this(structure, heights, RULES.json, WorldScale.DEFAULT);
@@ -212,21 +221,43 @@ public final class ClimateForcingMap {
         double u = x / latticeBlocks, v = z / latticeBlocks;
         int ix = (int) Math.floor(u), iz = (int) Math.floor(v);
         double fx = u - ix, fz = v - iz;
-        double a = node(ix, iz),
-                b = node(ix + 1, iz),
-                c = node(ix, iz + 1),
-                d = node(ix + 1, iz + 1);
+        double a, b, c, d;
+        // The four nodes share a tile unless the cell lies on its last row or column.
+        if ((ix & TILE_MASK) != TILE_MASK && (iz & TILE_MASK) != TILE_MASK) {
+            double[] t = tile(ix >> TILE_SHIFT, iz >> TILE_SHIFT);
+            int i = (iz & TILE_MASK) << TILE_SHIFT | (ix & TILE_MASK);
+            a = t[i];
+            b = t[i + 1];
+            c = t[i + TILE];
+            d = t[i + TILE + 1];
+        } else {
+            a = node(ix, iz);
+            b = node(ix + 1, iz);
+            c = node(ix, iz + 1);
+            d = node(ix + 1, iz + 1);
+        }
         return (a + (b - a) * fx) * (1 - fz) + (c + (d - c) * fx) * fz;
     }
 
     private double node(int ix, int iz) {
-        return lattice.get(
-                ix,
-                iz,
+        int i = (iz & TILE_MASK) << TILE_SHIFT | (ix & TILE_MASK);
+        return tile(ix >> TILE_SHIFT, iz >> TILE_SHIFT)[i];
+    }
+
+    private double[] tile(int tx, int tz) {
+        return tiles.get(
+                tx,
+                tz,
                 () -> {
-                    ClimateStructureMap.Sample s = new ClimateStructureMap.Sample();
-                    structure.sample(ix * latticeBlocks, iz * latticeBlocks, s);
-                    return s.obstructionAboveDatum();
+                    double[] t = new double[TILE * TILE];
+                    for (int j = 0; j < TILE; j++)
+                        for (int i = 0; i < TILE; i++) {
+                            int ix = (tx << TILE_SHIFT) + i, iz = (tz << TILE_SHIFT) + j;
+                            ClimateStructureMap.Sample s = new ClimateStructureMap.Sample();
+                            structure.sample(ix * latticeBlocks, iz * latticeBlocks, s);
+                            t[j << TILE_SHIFT | i] = s.obstructionAboveDatum();
+                        }
+                    return t;
                 });
     }
 

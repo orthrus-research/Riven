@@ -52,6 +52,9 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
   from a 32-block lattice in a bounded memo (the column's own read stays exact): dense generation
   is about 2.3 times faster per column, mean moisture moves 0.00007 (at most 0.0044) and 0.05% of
   land changes moisture class. Before v53 the upwind outline reads were 55% of generation time.
+  The memo keeps the lattice in 16 x 16-node tiles of 2 KB, each built whole on its first read, in
+  16,384 slots: 12 players spread over 8 km read 545,139 nodes (2,527 tiles), which 16,384
+  single-node slots rebuilt about 36 times per pass.
 - **Classification**: 15 `ClimateRegion` classes (temperature x moisture) select terrain-qualified
   vanilla biome palettes in `riven-habitats.json`.
 
