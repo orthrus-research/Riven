@@ -52,8 +52,9 @@ during movement, server-health guard on. `prepare` accepts `--dh-bandwidth-kbps`
 `--dh-ignore-server-health`, `--dh-adaptive-transfer`, `--dh-progress-log` (DH's 2-second
 generation progress in the server log) and `--dh-native-feed edits` (Cubature hands DH only edited
 columns); launch checks the recorded settings. `riven_observe.py
-capture` passes `--dh-workers`, `--dh-ignore-server-health` and `--dh-native-feed`. Existing
-instances keep their frozen settings.
+capture` passes `--dh-workers`, `--dh-ignore-server-health` and `--dh-native-feed`, and
+`--dh-visited-only` installs DH on the client only, fed by native cubes with no distant generation
+(the native-only floor; it excludes `--lod-trace`). Existing instances keep their frozen settings.
 
 The pinned Cubature generates cubes and prepares columns on worker threads for Riven,
 which declares concurrent generation (`concurrentGenerationThreads`: a quarter of the processors,

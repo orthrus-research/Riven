@@ -74,6 +74,11 @@ def main(argv=None):
         action="store_true",
         help="Stream DH LOD stage events from both JVMs; read them with the lod command",
     )
+    capture.add_argument(
+        "--dh-visited-only",
+        action="store_true",
+        help="DH on the client only, fed by native cubes; no distant generation (native floor)",
+    )
     for name, description in [
         ("inspect", "Reconcile raw samples, inputs, failures and native captures"),
         ("trace", "Attribute bounded JFR windows and export a timeline"),
@@ -164,6 +169,8 @@ def main(argv=None):
             options.append("--storage-diagnostics")
         if args.lod_trace:
             options.append("--lod-trace")
+        if args.dh_visited_only:
+            options.append("--dh-visited-only")
         try:
             return measure_pipeline.main(options)
         finally:

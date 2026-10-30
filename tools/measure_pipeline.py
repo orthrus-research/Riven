@@ -172,7 +172,14 @@ def main(argv=None):
     parser.add_argument("--dh-workers", type=int, default=4)
     parser.add_argument("--dh-ignore-server-health", action="store_true")
     parser.add_argument("--dh-native-feed", choices=["all", "edits"], default="all")
+    parser.add_argument(
+        "--dh-visited-only",
+        action="store_true",
+        help="DH on the client only, fed by native cubes; no distant generation (native floor)",
+    )
     args = parser.parse_args(argv)
+    if args.dh_visited_only and args.lod_trace:
+        parser.error("--lod-trace observes server-side DH; a visited-only server has none")
     if not 0 <= args.cube_packet_bytes <= 2147483647:
         parser.error("Packet byte target must be 0..2147483647")
     if args.lifecycle_diagnostics:
@@ -205,6 +212,7 @@ def main(argv=None):
             selected_artifact=args.artifact.resolve(),
             cubic_artifact=args.cubic_artifact.resolve() if args.cubic_artifact else None,
             spectator=True,
+            distant_generation=not args.dh_visited_only,
             dh_workers=args.dh_workers,
             dh_ignore_server_health=args.dh_ignore_server_health,
             dh_native_feed=args.dh_native_feed,
@@ -319,6 +327,8 @@ def main(argv=None):
                 )
             for captured in [server, client]:
                 counters = captured.get("threadCosts", {})
+                if args.dh_visited_only and captured is server and not counters.get("threads"):
+                    continue  # A visited-only server runs no DH threads to count.
                 if (
                     not counters.get("enabled")
                     or not counters.get("threads")
