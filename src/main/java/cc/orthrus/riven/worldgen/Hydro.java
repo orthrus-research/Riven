@@ -390,8 +390,7 @@ public final class Hydro
         int baseSets = integer(j, "cacheSets", 16, 256);
         if ((baseSets & (baseSets - 1)) != 0)
             throw new IllegalStateException("Hydro cache sets must be a power of two");
-        int scaled = (int) Math.ceil(baseSets * world.layout * world.layout);
-        sets = Integer.highestOneBit(Math.max(16, scaled) * 2 - 1);
+        sets = world.areaScaled(baseSets);
         ways = integer(j, "cacheWays", 1, 4);
         cacheCapacity = sets * ways;
         minimumMoisture = Rules.number(j, "minimumMoisture", 0, 1);

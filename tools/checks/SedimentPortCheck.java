@@ -96,7 +96,8 @@ public final class SedimentPortCheck {
     private static SedimentTerrain create(Sites sites, Probe p, double bank) {
         int before = p.intents + p.parents + p.plans;
         SedimentTerrain terrain =
-                new SedimentTerrain(SEED, p.heights, sites, p, p, p, p.width, bank);
+                new SedimentTerrain(
+                        SEED, p.heights, sites, p, p, p, p.width, bank, WorldScale.DEFAULT);
         require(before == p.intents + p.parents + p.plans, "Constructor queried a dependency");
         return terrain;
     }
@@ -188,7 +189,16 @@ public final class SedimentPortCheck {
         SedimentTerrain guarded = create(sites, guardProbe, bank);
         boolean rejectedWidth = false;
         try {
-            new SedimentTerrain(SEED, heights, sites, guardProbe, guardProbe, guardProbe, 0, bank);
+            new SedimentTerrain(
+                    SEED,
+                    heights,
+                    sites,
+                    guardProbe,
+                    guardProbe,
+                    guardProbe,
+                    0,
+                    bank,
+                    WorldScale.DEFAULT);
         } catch (IllegalStateException expected) {
             rejectedWidth =
                     expected.getMessage().equals("Sediment cache or finite hydrology reach");

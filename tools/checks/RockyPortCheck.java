@@ -121,7 +121,15 @@ public final class RockyPortCheck {
     private static RockyTerrain create(Sites sites, Probe probe) {
         int before = probe.intents + probe.parents + probe.waters;
         RockyTerrain terrain =
-                new RockyTerrain(SEED, probe.heights, sites, probe, probe, probe, probe.width);
+                new RockyTerrain(
+                        SEED,
+                        probe.heights,
+                        sites,
+                        probe,
+                        probe,
+                        probe,
+                        probe.width,
+                        WorldScale.DEFAULT);
         require(
                 probe.intents + probe.parents + probe.waters == before,
                 "Constructor queried an earlier dependency");

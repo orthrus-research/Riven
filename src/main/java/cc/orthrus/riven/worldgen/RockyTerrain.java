@@ -40,7 +40,8 @@ public final class RockyTerrain {
             IntentSampler earlierIntent,
             RockyCoastParent earlierTerrain,
             BoundedWaterClearance waterClearance,
-            int waterCellBlocks) {
+            int waterCellBlocks,
+            WorldScale world) {
         this.earlierIntent = earlierIntent;
         this.earlierTerrain = earlierTerrain;
         this.waterClearance = waterClearance;
@@ -80,11 +81,16 @@ public final class RockyTerrain {
         maximumColumns = integer(j, "maximumCertificateColumns", 65536, 1048576);
         maximumBodyColumns = integer(j, "maximumBodyColumns", 1024, 65536);
         maximumVoxels = integer(j, "maximumCertificateVoxels", 65536, 2097152);
-        sets = integer(j, "cacheSets", 16, 4096);
+        // cacheSets is the memo at the 8 km layout. Decisions are site cells of a fixed size,
+        // so a world reads layout squared as many; the memo and the prepared anchors grow with
+        // it and stay as full at 32 km as at 8 km (timing only).
+        int baseSets = integer(j, "cacheSets", 16, 4096);
+        sets = world.areaScaled(baseSets);
         ways = integer(j, "cacheWays", 1, 4);
-        if ((sets & (sets - 1)) != 0 || radius + reference.widthMin + 4 > waterCellBlocks)
+        if ((baseSets & (baseSets - 1)) != 0 || radius + reference.widthMin + 4 > waterCellBlocks)
             throw new IllegalStateException("Rocky cache or hydrology reach");
         memo = new AtomicReferenceArray<>(sets * ways);
+        prepared = new CellMemo<>(sets * ways);
         next = new AtomicIntegerArray(sets);
     }
 
@@ -242,7 +248,7 @@ public final class RockyTerrain {
         }
     }
 
-    private final CellMemo<Prepared> prepared = new CellMemo<>(4096);
+    private final CellMemo<Prepared> prepared;
 
     /** Anchors farther from the shore than this cannot reach it inside the lane radius. */
     private final double anchorReach;

@@ -137,7 +137,8 @@ public final class TerrainMap {
                         intentSampler,
                         this::sampleBeforeRocky,
                         hydro,
-                        hydro.cellBlocks);
+                        hydro.cellBlocks,
+                        world);
         sediment =
                 new SedimentTerrain(
                         seed,
@@ -147,7 +148,8 @@ public final class TerrainMap {
                         this::sampleBeforeSediment,
                         hydro,
                         hydro.cellBlocks,
-                        hydro.bankScale);
+                        hydro.bankScale,
+                        world);
     }
 
     /** Scratch belongs to one call sequence, never to the map or a shared cache. */

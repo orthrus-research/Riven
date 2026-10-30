@@ -27,6 +27,16 @@ public final class WorldScale {
         this.layout = layout;
     }
 
+    /**
+     * A memo size tuned at the 8 km layout, grown with the world's area (layout squared) to the
+     * next power of two and at least 16. Memos of cells that keep their size in blocks read that
+     * many more cells in a larger world, so they stay as full (timing only).
+     */
+    public int areaScaled(int base) {
+        int scaled = (int) Math.ceil(base * layout * layout);
+        return Integer.highestOneBit(Math.max(16, scaled) * 2 - 1);
+    }
+
     /** Blank options keep the 8 km tuning. Unknown keys fail rather than silently using 1. */
     public static WorldScale parse(String options) {
         if (options == null || options.trim().isEmpty()) return DEFAULT;

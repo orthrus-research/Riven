@@ -373,7 +373,9 @@ flip along the coast normal, walked out in 8-block steps both ways; the earlier 
 failed beside narrow peninsulas, inlets and islets. Lane radii are 320 blocks (rock) and 576
 (sediment, was 1,088). Sediment exposure is the calm of shoaling, shelter or a river mouth; rock
 intent is the rock or cliff shore class or rugged raised ground. Memos keep 8,192 decisions per
-lane: a decision costs about 10 ms, and a memo smaller than the working set rebuilt every cell on
+lane at the 8 km layout and as many prepared anchors, growing with the layout scale squared
+(131,072 at 32 km, where 12 players spread over the world read about 7,400): a decision costs
+about 10 ms, and a memo smaller than the working set rebuilt every cell on
 each pass (8 km warm pass 8 s against 0.6 s at v67, now 1.0 s). Concurrent misses on one cell share
 a single build (`SharedBuild`), as do hydrology owner-cell plans, which sediment and rock decisions of
 one 2,048-block cell miss together (DH-like cold workload, details 0-4 to 4 km on 8 threads: 12.2 s

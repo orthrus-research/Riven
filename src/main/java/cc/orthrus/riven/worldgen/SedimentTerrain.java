@@ -53,7 +53,8 @@ public final class SedimentTerrain {
             SedimentCoastParent earlierTerrain,
             SurfaceWaterPlanSampler waterPlans,
             int waterCellBlocks,
-            double waterBankScale) {
+            double waterBankScale,
+            WorldScale world) {
         this.earlierIntent = earlierIntent;
         this.earlierTerrain = earlierTerrain;
         this.waterPlans = waterPlans;
@@ -98,11 +99,16 @@ public final class SedimentTerrain {
         maximumIslandColumns = integer(j, "maximumIslandColumns", 1024, 65536);
         shoalingThreshold = Rules.number(j, "minimumShoaling", 0, 1);
         anchorReach = reference.plainWidth * Rules.number(j, "anchorReachInPlainWidths", .1, 2);
-        sets = integer(j, "cacheSets", 16, 4096);
+        // cacheSets is the memo at the 8 km layout. Decisions are site cells of a fixed size,
+        // so a world reads layout squared as many; the memo and the prepared anchors grow with
+        // it and stay as full at 32 km as at 8 km (timing only).
+        int baseSets = integer(j, "cacheSets", 16, 4096);
+        sets = world.areaScaled(baseSets);
         ways = integer(j, "cacheWays", 1, 4);
-        if ((sets & (sets - 1)) != 0 || radius > waterCellBlocks)
+        if ((baseSets & (baseSets - 1)) != 0 || radius > waterCellBlocks)
             throw new IllegalStateException("Sediment cache or finite hydrology reach");
         memo = new AtomicReferenceArray<>(sets * ways);
+        prepared = new CellMemo<>(sets * ways);
         next = new AtomicIntegerArray(sets);
     }
 
@@ -240,7 +246,7 @@ public final class SedimentTerrain {
         }
     }
 
-    private final CellMemo<Prepared> prepared = new CellMemo<>(4096);
+    private final CellMemo<Prepared> prepared;
 
     /**
      * Everything an anchor's own earlier facts decide: family, a shoaling or sheltered coast or a
