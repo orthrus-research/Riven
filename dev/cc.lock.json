@@ -4,7 +4,7 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "1dc3aaede7fbeb16422de9eda5b3db076345fa2e",
+  "commit": "df42fcabdfdc5e82859e12327098e8313d15cec7",
   "checkout": "dev/CubicChunks",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
@@ -28,7 +28,7 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of this commit; 272 Cubature tests per loader, 76 Cleanroom and 74 Forge lab tests, 0 failures. riven.ps1 ci passed with this pin. Native runs of fresh Riven worlds with this build: a PREFETCH flight-and-settle (14,251 unloads and no loads while standing, the 20,538-cube floor), saved blocks of 82,215 cubes away from spawn matching a 9e45a6fa world, the lab generation, maintenance and save contracts under PREFETCH and BASELINE, a BASELINE route whose GC sweep ran at the 201st call, and a step-route full view.",
+    "status": "Cubature 1.12.2-0.1.4.0, built for Cleanroom and Forge from a clean checkout of this commit; 272 Cubature tests per loader (Cleanroom's reported up to date), 80 Cleanroom and 78 Forge lab tests, 0 failures. The four JARs are byte-identical to the 1dc3aaed build; commits after 1dc3aaed change only the lab (Distant Horizons LOD trace and preview survey) and docs. That build, on fresh Riven worlds, passed a PREFETCH flight-and-settle (14,251 unloads and no loads while standing, the 20,538-cube floor), saved blocks of 82,215 cubes away from spawn matching a 9e45a6fa world, the lab generation, maintenance and save contracts under PREFETCH and BASELINE, a BASELINE route whose GC sweep ran at the 201st call, and a step-route full view.",
     "contents": "Version 0.1.4.0 with Orthrus Research as copyright holder and vendor and compile-only build inputs that a standalone clone fetches; since the initial commit, the manual CI workflow's build-input step, deliveryMode as the only delivery input, the periodic autosave as a named provider call, explicit delivery generation timing with run-or-await for work in flight, sender-chosen PacketCubes sizing, a provider and lighting that reach the player cube map only through CubeDemand and SurfaceHeightListener, held teleports kept when a teleport leaves the player in place, PlayerCubeMap, CubeProviderServer and the lab's Python tools split into focused parts, the delivery system in its own core.server.delivery package behind a boundary test, every numeric setting ranged and checked on sync and by the set command, and every test source run on both loaders.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
