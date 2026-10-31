@@ -51,10 +51,10 @@ Cubes entirely below the lowest possible soil are filled with stone directly unl
 intersects them; cubes above the highest possible surface are air. `NativeColumns` holds
 resolved chunk columns in a set-associative cache (`nativeColumnCache` in `riven-terrain.json`,
 1,024 entries, about 8 MB) of immutable entries, so a column is sampled once rather than once per
-cube. A surface query (`NativeColumns.surface`, tree sites' clearance) reads a held chunk column
-or resolves just its one column, with a small per-thread cache, so distant previews do not build
-whole chunk columns for it; `tools/checks/SurfaceQueryCheck` proves it equals the chunk column's
-surface. `ColumnBlocks` holds the block rules over the `TerrainBlock` palette; `TerrainColumn`
+cube. Surface and water queries (`NativeColumns.surface` for tree sites' clearance,
+`NativeColumns.water` for reeds beside water) read a held chunk column or resolve just their one
+column, with a small per-thread cache, so distant previews do not build whole chunk columns for
+them; `tools/checks/SurfaceQueryCheck` proves both equal the chunk column's. `ColumnBlocks` holds the block rules over the `TerrainBlock` palette; `TerrainColumn`
 maps it to Minecraft states. `tools/checks/ColumnRunsCheck` proves runs, per-Y resolution, the
 cached cubes and cached habitats agree. Population is empty unless the optional Biomes O' Plenty
 decoration provider is loaded (FEATURES.md, "Decoration provider"); its placements are the one

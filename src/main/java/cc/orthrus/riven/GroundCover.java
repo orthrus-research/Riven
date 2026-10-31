@@ -6,7 +6,6 @@ import cc.orthrus.riven.worldgen.Boulders;
 import cc.orthrus.riven.worldgen.NativeColumns;
 import cc.orthrus.riven.worldgen.Rules;
 import cc.orthrus.riven.worldgen.SeededNoise;
-import cc.orthrus.riven.worldgen.TerrainBlock;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -180,13 +179,15 @@ final class GroundCover {
         return null;
     }
 
-    /** Whether a neighbouring column holds water at Y in its native blocks. */
+    /**
+     * Whether a neighbouring column holds water at Y in its native blocks: one column's query each
+     * (NativeColumns.water), so a full-detail preview builds no native chunk column for it.
+     */
     private boolean waterBeside(int x, int y, int z) {
         for (EnumFacing side : EnumFacing.Plane.HORIZONTAL) {
             int nx = x + side.getXOffset(), nz = z + side.getZOffset();
             if (!ClimateBiomeProvider.inWorld(nx, nz)) continue;
-            NativeColumns.Column column = provider.maps.columns.column(nx >> 4, nz >> 4);
-            if (column.block(((nz & 15) << 4) | (nx & 15), y) == TerrainBlock.WATER) return true;
+            if (provider.maps.columns.water(nx, y, nz)) return true;
         }
         return false;
     }
@@ -262,8 +263,8 @@ final class GroundCover {
     /**
      * The ground cover of one preview column: its blocks from the surface up, given the column's
      * own runs before boulders and trees, and which heights terrain or trees hold. A cell over two
-     * blocks wide draws no cane: its column is rarely a margin, and checking one reads a native
-     * chunk column. From the footprint where the preview leaves boulders out, cover no longer
+     * blocks wide draws no cane: its column is rarely a margin, and checking one resolves its
+     * neighbours' native blocks. From the footprint where the preview leaves boulders out, cover no longer
      * avoids them either, so a coarse cell asks no boulder lookup.
      */
     IBlockState[] preview(
