@@ -188,7 +188,10 @@ tree's enabled, missing, queued and waiting-to-load counts at 4 Hz and the playe
 Stages are tabulated per detail level. A parent counts as promoted once all four children have
 rendered; the report gives that delay from the last child's creation and names the last child's
 slower phase (awaiting data and build, or selection after upload). Sections that first uploaded
-empty are counted, since those draw nothing until their data arrives.
+empty are counted, since those draw nothing until their data arrives. Each generated tile is also
+placed as it reached the client: the share of it the native view (the instance's horizontal view
+distance) already covered, and whether it lay ahead of, beside or behind the player's travel over
+the second before, with its wanted-to-arrival time. Covered tiles were wasted work.
 
 Each side's times are its own monotonic clock. Client/server stages (send to receive, response to
 receive) align through each JVM's wall-clock origin, about a millisecond on one machine. Events

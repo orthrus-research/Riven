@@ -9,6 +9,7 @@ take the first later event, so a repeated request is measured from each of its s
 import bisect
 import csv
 import json
+import math
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -409,6 +410,105 @@ def slot_breakdown(by_op, rows):
     return out
 
 
+DEFAULT_VIEW_CUBES = 12
+COS_45 = math.sqrt(0.5)
+
+
+def native_view_cubes(directory):
+    """The server's horizontal view distance in cubes, from the instance that holds the trace
+    (<instance>/lod-trace or <instance>/lod-traces/<start>); None when it records none."""
+    for parent in (directory.parent, directory.parent.parent):
+        manifest = parent / "standalone.json"
+        if manifest.is_file():
+            try:
+                view = json.loads(manifest.read_text(encoding="utf-8"))["viewDistance"]
+                return int(view["horizontal"])
+            except KeyError, TypeError, ValueError:
+                return None
+    return None
+
+
+def _overlap(a0, a1, b0, b1):
+    return max(0, min(a1, b1) - max(a0, b0))
+
+
+def tile_use(rows, view_cubes):
+    """Each generated tile as it reached the client, against the player's travel and native view.
+
+    The native view is the (2v + 1)-cube square about the player's cube, and a tile's coverage is
+    the share of its footprint inside it at arrival, so a coarse tile the view half covers counts
+    half. Direction compares the tile's centre with the player's travel over the second before
+    arrival: ahead or behind within 45 degrees, side otherwise, still under 1 block/s. Wanted to
+    arrival runs from the client queueing the request to its data arriving."""
+    track = [(r[T], r[A], r[C]) for r in rows if r[OP] == "player"]
+    if len(track) < 2:
+        return None
+    times = [t for t, _, _ in track]
+    queued = defaultdict(list)
+    for r in rows:
+        if r[OP] == "net-queued":
+            queued[r[POS]].append(r[T])
+
+    def position(t):
+        i = bisect.bisect_left(times, t)
+        if i <= 0:
+            return track[0][1], track[0][2]
+        if i >= len(track):
+            return track[-1][1], track[-1][2]
+        (t0, x0, z0), (t1, x1, z1) = track[i - 1], track[i]
+        f = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
+        return x0 + (x1 - x0) * f, z0 + (z1 - z0) * f
+
+    def group():
+        return {"tiles": 0, "covered": 0.0, "wanted": []}
+
+    details: defaultdict[int, defaultdict[str, dict]] = defaultdict(lambda: defaultdict(group))
+    for r in rows:
+        if r[OP] != "net-response" or r[A] != 0 or r[B] != 1:
+            continue
+        detail, width = r[POS] & 0x7F, 1 << (r[POS] & 0x7F)
+        x0 = _signed((r[POS] >> 8) & 0x0FFFFFFF) * width
+        z0 = _signed((r[POS] >> 36) & 0x0FFFFFFF) * width
+        px, pz = position(r[T])
+        bx, bz = position(r[T] - 1_000_000_000)
+        cx, cz = math.floor(px) >> 4, math.floor(pz) >> 4
+        covered = (
+            _overlap(x0, x0 + width, (cx - view_cubes) * 16, (cx + view_cubes + 1) * 16)
+            * _overlap(z0, z0 + width, (cz - view_cubes) * 16, (cz + view_cubes + 1) * 16)
+            / (width * width)
+        )
+        vx, vz = px - bx, pz - bz
+        dx, dz = x0 + width / 2 - px, z0 + width / 2 - pz
+        speed, distance = math.hypot(vx, vz), math.hypot(dx, dz)
+        if speed < 1:
+            direction = "still"
+        else:
+            cos = (dx * vx + dz * vz) / (distance * speed) if distance else 1.0
+            direction = "ahead" if cos > COS_45 else "behind" if cos < -COS_45 else "side"
+        for name in ("all", direction):
+            g = details[detail][name]
+            g["tiles"] += 1
+            g["covered"] += covered
+            starts = queued.get(r[POS], [])
+            i = bisect.bisect_right(starts, r[T])
+            if i:
+                g["wanted"].append(r[T] - starts[i - 1])
+    return {
+        "viewCubes": view_cubes,
+        "byDetail": {
+            str(detail): {
+                name: {
+                    "tiles": g["tiles"],
+                    "nativeCoveredShare": round(g["covered"] / g["tiles"], 3),
+                    "wantedToArrival": stats(g["wanted"]),
+                }
+                for name, g in sorted(groups.items())
+            }
+            for detail, groups in sorted(details.items())
+        },
+    }
+
+
 def lod_report(directory, output, mode="auto", charts=True):
     directory = Path(directory)
     if not directory.is_dir():
@@ -495,6 +595,14 @@ def lod_report(directory, output, mode="auto", charts=True):
             },
             "promotions": promotions(sections),
         }
+        view = native_view_cubes(directory)
+        use = tile_use(windowed["client"], DEFAULT_VIEW_CUBES if view is None else view)
+        if use:
+            report["client"]["tileUse"] = use
+            if view is None:
+                warnings.append(
+                    f"No instance view distance beside the trace; tile use assumes {DEFAULT_VIEW_CUBES} cubes"
+                )
     if "server" in indexes:
         by_op = indexes["server"]
         sampling = [(r[POS] & 0x7F, r[A]) for r in windowed["server"] if r[OP] == "preview-end"]
@@ -631,6 +739,30 @@ def render_text(report):
         for detail, v in p["delay"]["byParentDetail"].items():
             lines.append(_row(f"  parent detail {detail}", v))
         lines.append(f"  blocking phase of the last child: {p['blockingPhase']}")
+        if "tileUse" in c:
+            u = c["tileUse"]
+            lines += [
+                "",
+                f"Generated tiles at arrival, against the native view ({u['viewCubes']} cubes) and the player's travel",
+                "  share in the native view; wanted to arrival p50/p90 s",
+            ]
+            for detail, groups in u["byDetail"].items():
+                cells = 2 ** (int(detail) - SECTION_MIN_DETAIL)
+                parts = [
+                    f"{name} {g['tiles']} ({g['nativeCoveredShare']:.0%}"
+                    + (
+                        f", {g['wantedToArrival']['p50Ms'] / 1000:.1f}/{g['wantedToArrival']['p90Ms'] / 1000:.1f} s)"
+                        if g["wantedToArrival"].get("count")
+                        else ")"
+                    )
+                    for name, g in groups.items()
+                    if name != "all"
+                ]
+                a = groups["all"]
+                lines.append(
+                    f"  {cells}-block: {a['tiles']} tiles, {a['nativeCoveredShare']:.0%} in native; "
+                    + ", ".join(parts)
+                )
         lines += _pool_lines("Client DH executors", c.get("pools", {}))
         lines += ["", "Detail level p50/p90 ms (created to first geometry):"]
         for detail, v in sec["createdToFirstGeometry"]["byDetail"].items():

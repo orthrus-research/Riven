@@ -154,6 +154,43 @@ class LodTraceTest(unittest.TestCase):
         self.assertEqual(s["dhHealth"]["unhealthyShare"], 0.5)
         self.assertIn("World Gen", result["text"])
 
+    def test_tile_use_places_tiles_against_the_native_view_and_travel(self):
+        second = 1000 * MS
+        # The player flies +x at 20 blocks/s and is at (40, 0), cube (2, 0), when the tiles
+        # arrive; with 12 view cubes the native square spans x and z [-160, 240) and [-192, 208).
+        inside, outside = _encode(6, 1, 0), _encode(6, 5, 0)  # [64, 128) and [320, 384)
+        straddling = _encode(7, 1, 0)  # [128, 256) x [0, 128): 112 of its 128 columns inside
+        behind = _encode(6, -3, 0)  # [-192, -128): 32 of its 64 columns inside
+        client: list[tuple] = [(t * second, "player", 0, 20 * t, 64, 0, -90) for t in (0, 1, 2)]
+        for tile in (inside, outside, straddling, behind):
+            client += [
+                (second // 2, "net-queued", tile, 0, 1),
+                (2 * second, "net-response", tile, 0, 1),
+            ]
+        client.append(
+            (2 * second, "net-response", _encode(6, 9, 9), 2, 1)
+        )  # a failure: not counted
+        with tempfile.TemporaryDirectory() as temporary:
+            instance = Path(temporary)
+            trace = instance / "lod-trace"
+            trace.mkdir()
+            write(trace, "client", client, 0)
+            (instance / "standalone.json").write_text(
+                json.dumps({"viewDistance": {"horizontal": 12}}), encoding="utf-8"
+            )
+            result = lod_report(trace, instance / "out", "all", charts=False)
+        use = result["report"]["client"]["tileUse"]
+        self.assertEqual(use["viewCubes"], 12)
+        full, half = use["byDetail"]["6"], use["byDetail"]["7"]
+        self.assertEqual(full["all"]["tiles"], 3)
+        self.assertEqual(full["ahead"]["tiles"], 2)
+        self.assertEqual(full["ahead"]["nativeCoveredShare"], 0.5)
+        self.assertEqual(full["behind"]["nativeCoveredShare"], 0.5)
+        self.assertEqual(half["ahead"]["nativeCoveredShare"], 0.875)
+        self.assertEqual(full["ahead"]["wantedToArrival"]["p50Ms"], 1500.0)
+        self.assertNotIn("assumes", " ".join(result["warnings"]))
+        self.assertIn("1-block: 3 tiles", result["text"])
+
     def test_partial_last_line_and_open_trace_are_reported(self):
         with tempfile.TemporaryDirectory() as temporary:
             trace = Path(temporary) / "trace"
