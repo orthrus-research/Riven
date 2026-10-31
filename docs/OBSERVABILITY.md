@@ -59,6 +59,20 @@ terrain correctness, whole-map DH data and client visual acceptance remain
 separate. Only after completion and saved coverage checks should the same
 owned instance be opened with `tools/runtime.py play --name <name>`.
 
+`--map world-8k` is a player's fully pregenerated world, for testing a world
+whose terrain is mostly fetched: the 8192 by 8192 block square about spawn,
+262,144 columns of every cube from the world floor to its top (Y -1664 to 384,
+33,554,432 cubes), each column handed to Distant Horizons' server level once
+all its cubes are lit, so DH's database holds native LOD data for the whole
+square. `prepare` takes `--cubic-artifact` (a Cubature with the immediate DH
+feed), and gives the server 16 generation workers (`--workers`) and a queue for
+the 24 columns it schedules ahead (`--ahead`); the storage settings stay the
+player's. The pregenerator flushes the storage writer every 4 batches, so it
+writes while later columns generate. `report` gives the stopped world's bytes
+by kind (cubes, columns, DH database) and the job's throughput. A 1,024-column
+pilot ran at 9.2 columns a second (11 in steady state), about 2.0 KB a cube and
+9.4 KB of DH data a column.
+
 ## Commands
 
 Python 3.11 or later is required for the host tools; native qualification uses
