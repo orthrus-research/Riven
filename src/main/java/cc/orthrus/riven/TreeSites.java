@@ -403,7 +403,8 @@ final class TreeSites {
                     if (TreeShapes.kind(p) != TreeShapes.ROOT)
                         lowest = Math.min(lowest, TreeShapes.dy(p));
                 }
-                if (lowest != Integer.MAX_VALUE && surface(x + dx, z + dz) > base + lowest)
+                if (lowest != Integer.MAX_VALUE
+                        && biomes.maps.columns.surfaceAbove(x + dx, z + dz, base + lowest))
                     return reject(out, "SPACE");
             }
         // A root chain stands where its foot is on the trunk's ground and its blocks in open sky.
@@ -413,8 +414,9 @@ final class TreeSites {
         for (int i = 0; i < shape.count; i++) {
             int p = shape.blocks[i];
             if (TreeShapes.kind(p) == TreeShapes.ROOT
-                    && surface(x + TreeShapes.dx(p), z + TreeShapes.dz(p))
-                            > base + TreeShapes.dy(p)) roots &= ~(1 << TreeShapes.chain(p));
+                    && biomes.maps.columns.surfaceAbove(
+                            x + TreeShapes.dx(p), z + TreeShapes.dz(p), base + TreeShapes.dy(p)))
+                roots &= ~(1 << TreeShapes.chain(p));
         }
         return new Site(
                 layer.index,

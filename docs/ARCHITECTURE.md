@@ -54,7 +54,10 @@ resolved chunk columns in a set-associative cache (`nativeColumnCache` in `riven
 cube. Surface and water queries (`NativeColumns.surface` for tree sites' clearance,
 `NativeColumns.water` for reeds beside water) read a held chunk column or resolve just their one
 column, with a small per-thread cache, so distant previews do not build whole chunk columns for
-them; `tools/checks/SurfaceQueryCheck` proves both equal the chunk column's. `ColumnBlocks` holds the block rules over the `TerrainBlock` palette; `TerrainColumn`
+them. Clearance only asks whether a column rises above a height (`NativeColumns.surfaceAbove`):
+carving never raises a column's top, so the uncarved runs settle most answers and only the rest is
+carved. `tools/checks/SurfaceQueryCheck` proves the queries equal the chunk column's and the bound
+holds. `ColumnBlocks` holds the block rules over the `TerrainBlock` palette; `TerrainColumn`
 maps it to Minecraft states. `tools/checks/ColumnRunsCheck` proves runs, per-Y resolution, the
 cached cubes and cached habitats agree. Population is empty unless the optional Biomes O' Plenty
 decoration provider is loaded (FEATURES.md, "Decoration provider"); its placements are the one

@@ -12,7 +12,8 @@ import java.util.stream.IntStream;
  * where reeds ask it, and at two depths below. It also counts where the column's runs before
  * carving would give another surface, so whether one column's carving is needed. Usage:
  * SurfaceQueryCheck [seed ...]. Chunks along diagonals crossing land and coast, plus a dense block
- * on the land route for 8675309.
+ * on the land route for 8675309. It also proves carving never raises a column's top, the bound
+ * NativeColumns.surfaceAbove relies on, and that surfaceAbove agrees with the exact surface.
  */
 public final class SurfaceQueryCheck {
     private static void require(boolean value, String what, int x, int y, int z, long seed) {
@@ -61,6 +62,24 @@ public final class SurfaceQueryCheck {
                     seed);
     }
 
+    /**
+     * surfaceAbove against the exact surface at heights that walk a slot through each state: the
+     * uncarved top (settled by the bound), one below it (the bound must be carved), and around the
+     * exact surface (answered from the carved top).
+     */
+    private static void bounded(
+            NativeColumns queried, int surface, int uncarved, int x, int z, String how, long seed) {
+        if (surface == Integer.MIN_VALUE) return;
+        for (int h : new int[] {uncarved, uncarved - 1, surface + 1, surface, surface - 1})
+            require(
+                    queried.surfaceAbove(x, z, h) == surface > h,
+                    how + " surfaceAbove",
+                    x,
+                    h,
+                    z,
+                    seed);
+    }
+
     public static void main(String[] args) {
         long[] seeds =
                 args.length == 0
@@ -71,6 +90,7 @@ public final class SurfaceQueryCheck {
             List<int[]> chunks = chunks(seed);
             NativeColumns reference = new GenerationMaps(seed).columns;
             NativeColumns queried = new GenerationMaps(seed).columns;
+            NativeColumns bounds = new GenerationMaps(seed).columns;
             AtomicLong columns = new AtomicLong(), uncarvedDiffers = new AtomicLong();
             long started = System.nanoTime();
             IntStream.range(0, chunks.size())
@@ -83,27 +103,44 @@ public final class SurfaceQueryCheck {
                                     int x = cx * 16 + (index & 15), z = cz * 16 + (index >> 4);
                                     compare(queried, built, index, x, z, "Cold", seed);
                                     compare(queried, built, index, x, z, "Cached", seed);
-                                    if (queried.resolvedSurface(x, z, false)
-                                            != built.surface(index))
-                                        uncarvedDiffers.incrementAndGet();
+                                    int surface = built.surface(index);
+                                    int uncarved = queried.resolvedSurface(x, z, false);
+                                    // Carving never raises a column's top: the bound surfaceAbove
+                                    // uses.
+                                    require(
+                                            surface <= uncarved,
+                                            "Carved above uncarved",
+                                            x,
+                                            0,
+                                            z,
+                                            seed);
+                                    if (uncarved != surface) uncarvedDiffers.incrementAndGet();
+                                    // A fresh cache, so the bound is met cold; then the exact
+                                    // answers after it.
+                                    bounded(bounds, surface, uncarved, x, z, "Cold", seed);
+                                    compare(bounds, built, index, x, z, "After bound", seed);
+                                    bounded(bounds, surface, uncarved, x, z, "Exact", seed);
                                     columns.incrementAndGet();
                                 }
                                 // Held: the chunk column in the memo answers the same.
                                 queried.column(cx, cz);
-                                for (int index = 0; index < 256; index++)
-                                    compare(
+                                for (int index = 0; index < 256; index++) {
+                                    int x = cx * 16 + (index & 15), z = cz * 16 + (index >> 4);
+                                    compare(queried, built, index, x, z, "Held", seed);
+                                    bounded(
                                             queried,
-                                            built,
-                                            index,
-                                            cx * 16 + (index & 15),
-                                            cz * 16 + (index >> 4),
+                                            built.surface(index),
+                                            built.surface(index),
+                                            x,
+                                            z,
                                             "Held",
                                             seed);
+                                }
                             });
             total += columns.get();
             System.out.printf(
-                    "seed %d: %d columns match, surface and water (cold, cached, held); uncarved runs"
-                            + " differ at %d; %.1f s%n",
+                    "seed %d: %d columns match, surface, water and surfaceAbove (cold, cached, held);"
+                            + " carved never above uncarved, lower at %d; %.1f s%n",
                     seed,
                     columns.get(),
                     uncarvedDiffers.get(),

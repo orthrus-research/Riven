@@ -219,18 +219,30 @@ public final class NativeColumns {
 
     private static final class Resolved {
         final long[] keys = new long[SLOTS];
+        final boolean[] filled = new boolean[SLOTS];
         final int[] tops = new int[SLOTS];
+        // A slot's water runs, non-null once its carved answer is held; null while its top is only
+        // the uncarved bound.
         final int[][] waters = new int[SLOTS][];
         final TerrainMap.Sample sample = new TerrainMap.Sample();
         final int[] bottoms = new int[ColumnBlocks.maximumRuns() + 1];
         final TerrainBlock[] blocks = new TerrainBlock[ColumnBlocks.maximumRuns()];
         boolean resolving;
-        // The last resolve: its surface and its water runs as [bottom, top) pairs.
+        // The last resolve: its surface, and its water runs as [bottom, top) pairs (null for a
+        // bound).
         int top;
         int[] water;
     }
 
     private final ThreadLocal<Resolved> resolved = ThreadLocal.withInitial(Resolved::new);
+
+    private static long key(int x, int z) {
+        return ((long) x << 32) ^ (z & 0xffffffffL);
+    }
+
+    private Column held(int x, int z) {
+        return held(((long) (x >> 4) << 32) ^ ((z >> 4) & 0xffffffffL));
+    }
 
     /**
      * The top of the highest non-air run of the column at (x, z), its ground or water over it: the
@@ -240,10 +252,10 @@ public final class NativeColumns {
      * its tree reaches, so neighbouring sites ask again; each thread keeps its recent answers.
      */
     public int surface(int x, int z) {
-        Column held = held(((long) (x >> 4) << 32) ^ ((z >> 4) & 0xffffffffL));
+        Column held = held(x, z);
         if (held != null) return held.surface(((z & 15) << 4) | (x & 15));
         Resolved r = resolved.get();
-        return r.tops[slot(x, z, r)];
+        return r.tops[exact(x, z, r)];
     }
 
     /**
@@ -251,38 +263,81 @@ public final class NativeColumns {
      * z >> 4).block(index, y) == WATER} says; answered like {@link #surface}.
      */
     public boolean water(int x, int y, int z) {
-        Column held = held(((long) (x >> 4) << 32) ^ ((z >> 4) & 0xffffffffL));
+        Column held = held(x, z);
         if (held != null) return held.block(((z & 15) << 4) | (x & 15), y) == TerrainBlock.WATER;
         Resolved r = resolved.get();
-        int[] water = r.waters[slot(x, z, r)];
+        int[] water = r.waters[exact(x, z, r)];
         for (int i = 0; i < water.length; i += 2)
             if (y >= water[i] && y < water[i + 1]) return true;
         return false;
     }
 
-    /** The cache slot holding the column at (x, z), resolved into it on a miss. */
-    private int slot(int x, int z, Resolved r) {
-        long key = ((long) x << 32) ^ (z & 0xffffffffL);
+    /**
+     * Whether the column at (x, z) rises above {@code height}: {@code surface(x, z) > height}.
+     * Carving only takes blocks away or floods them and never raises a column's top, so the
+     * uncarved runs bound the surface from above. Where they reach no higher than height the
+     * answer is no without carving, and only the rest is carved. Tree sites' clearance asks this.
+     */
+    public boolean surfaceAbove(int x, int z, int height) {
+        Column held = held(x, z);
+        if (held != null) return held.surface(((z & 15) << 4) | (x & 15)) > height;
+        Resolved r = resolved.get();
+        long key = key(x, z);
         int slot = (int) SeededNoise.mix(key) & (SLOTS - 1);
-        if (r.waters[slot] != null && r.keys[slot] == key) return slot;
+        if (r.filled[slot] && r.keys[slot] == key) {
+            // An exact top, or a bound that already settles it.
+            if (r.waters[slot] != null || r.tops[slot] <= height) return r.tops[slot] > height;
+            return r.tops[exact(x, z, r)] > height;
+        }
+        Resolved scratch = r.resolving ? new Resolved() : r;
+        scratch.resolving = true;
+        try {
+            terrain.sample(x, z, scratch.sample);
+            readRuns(scratch, false);
+            if (scratch.top > height) {
+                terrain.caves.carve(x, z, scratch.sample);
+                readRuns(scratch, true);
+            }
+            store(r, slot, key, scratch);
+            return scratch.top > height;
+        } finally {
+            scratch.resolving = false;
+        }
+    }
+
+    /** The slot holding the column's carved answer, resolved into it if absent or only bounded. */
+    private int exact(int x, int z, Resolved r) {
+        long key = key(x, z);
+        int slot = (int) SeededNoise.mix(key) & (SLOTS - 1);
+        if (r.filled[slot] && r.keys[slot] == key && r.waters[slot] != null) return slot;
         // A resolve never nests, but a scratch in use is never shared.
         Resolved scratch = r.resolving ? new Resolved() : r;
         scratch.resolving = true;
         try {
             resolve(x, z, scratch, true);
-            r.keys[slot] = key;
-            r.tops[slot] = scratch.top;
-            r.waters[slot] = scratch.water;
+            store(r, slot, key, scratch);
             return slot;
         } finally {
             scratch.resolving = false;
         }
     }
 
+    private static void store(Resolved r, int slot, long key, Resolved from) {
+        r.keys[slot] = key;
+        r.filled[slot] = true;
+        r.tops[slot] = from.top;
+        r.waters[slot] = from.water;
+    }
+
     /** One column's runs, carved or (for the parity check) not: its surface and its water runs. */
     private void resolve(int x, int z, Resolved s, boolean carved) {
         terrain.sample(x, z, s.sample);
         if (carved) terrain.caves.carve(x, z, s.sample);
+        readRuns(s, true);
+    }
+
+    /** The sample's runs as it stands: its surface, and its water runs when they are wanted. */
+    private void readRuns(Resolved s, boolean water) {
         int count =
                 ColumnBlocks.runs(
                         s.sample,
@@ -296,14 +351,18 @@ public final class NativeColumns {
             if (s.blocks[i] != TerrainBlock.AIR) top = s.bottoms[i + 1];
             if (s.blocks[i] == TerrainBlock.WATER) waters++;
         }
-        int[] water = waters == 0 ? DRY : new int[2 * waters];
+        s.top = top;
+        if (!water) {
+            s.water = null;
+            return;
+        }
+        int[] runs = waters == 0 ? DRY : new int[2 * waters];
         for (int i = 0, w = 0; i < count; i++)
             if (s.blocks[i] == TerrainBlock.WATER) {
-                water[w++] = s.bottoms[i];
-                water[w++] = s.bottoms[i + 1];
+                runs[w++] = s.bottoms[i];
+                runs[w++] = s.bottoms[i + 1];
             }
-        s.top = top;
-        s.water = water;
+        s.water = runs;
     }
 
     /** One column's surface resolved afresh, carved or not, without the memo or cache (parity checks). */
