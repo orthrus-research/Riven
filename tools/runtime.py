@@ -149,6 +149,7 @@ def prepare(
     complementary_cave_fog=False,
     lod_observer=None,
     preview_threads=None,
+    arrival_plan=True,
 ):
     if lod_observer is not None:
         lod_observer = Path(lod_observer).resolve()
@@ -263,6 +264,7 @@ def prepare(
                     if preview_threads is not None
                     else ""
                 )
+                + ("" if arrival_plan else "\n    B:distantHorizonsArrivalPlan=false")
                 + (
                     "\n    B:complementaryCaveFog=true"
                     if complementary_cave_fog and side == "client"
@@ -388,6 +390,7 @@ def prepare(
             "adaptiveTransferSpeed": dh_adaptive_transfer if distant_generation else None,
             **({"cubatureNativeFeed": "EDITS"} if dh_native_feed == "edits" else {}),
             **({"cubaturePreviewThreads": preview_threads} if preview_threads is not None else {}),
+            **({} if arrival_plan else {"cubatureArrivalPlan": False}),
             "qualification": "Explicit candidate CC; see native receipt"
             if cubic_artifact
             else "Pinned unmodified upstream DH; see dev/dh.lock.json and the instance native receipt",
@@ -823,6 +826,11 @@ def main():
         help="Cubature previewThreads, the server's preview pool; unset keeps Cubature's default",
     )
     p.add_argument(
+        "--no-arrival-plan",
+        action="store_true",
+        help="Cubature: keep DH's nearest-first request order (distantHorizonsArrivalPlan=false)",
+    )
+    p.add_argument(
         "--lod-trace",
         nargs="?",
         type=Path,
@@ -869,6 +877,7 @@ def main():
             complementary_cave_fog=a.complementary_cave_fog,
             lod_observer=a.lod_trace,
             preview_threads=a.preview_threads,
+            arrival_plan=not a.no_arrival_plan,
         )
     elif a.command == "play":
         if a.shader_pack and len(a.shader_pack) != 1:

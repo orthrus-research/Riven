@@ -72,6 +72,11 @@ def main(argv=None):
         help="Cubature previewThreads, the server's preview pool; unset keeps Cubature's default",
     )
     capture.add_argument(
+        "--no-arrival-plan",
+        action="store_true",
+        help="Cubature: keep DH's nearest-first request order (distantHorizonsArrivalPlan=false)",
+    )
+    capture.add_argument(
         "--dh-ignore-server-health",
         action="store_true",
         help="Turn off DH's limitIfServerUnhealthy world-generation pause",
@@ -172,6 +177,8 @@ def main(argv=None):
         options += ["--dh-native-feed", args.dh_native_feed]
         if args.preview_threads is not None:
             options += ["--preview-threads", str(args.preview_threads)]
+        if args.no_arrival_plan:
+            options.append("--no-arrival-plan")
         if args.dh_ignore_server_health:
             options.append("--dh-ignore-server-health")
         if args.storage:
