@@ -190,11 +190,9 @@ public final class NativeColumns {
 
     public Column column(int chunkX, int chunkZ) {
         long key = ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
+        Column held = held(key);
+        if (held != null) return held;
         int set = (int) SeededNoise.mix(key) & (sets - 1), first = set * ways;
-        for (int i = 0; i < ways; i++) {
-            Entry e = memo.get(first + i);
-            if (e != null && e.key == key) return e.column;
-        }
         Column built = build(chunkX, chunkZ);
         for (int i = 0; i < ways; i++) {
             Entry e = memo.get(first + i);
@@ -202,6 +200,81 @@ public final class NativeColumns {
         }
         memo.set(first + Math.floorMod(next.getAndIncrement(set), ways), new Entry(key, built));
         return built;
+    }
+
+    /** The chunk column of a key if the memo holds it now (timing only). */
+    private Column held(long key) {
+        int first = ((int) SeededNoise.mix(key) & (sets - 1)) * ways;
+        for (int i = 0; i < ways; i++) {
+            Entry e = memo.get(first + i);
+            if (e != null && e.key == key) return e.column;
+        }
+        return null;
+    }
+
+    /** Recent one-column surfaces of this thread, direct-mapped by position. */
+    private static final int SURFACE_SLOTS = 4096;
+
+    private static final class Surfaces {
+        final long[] keys = new long[SURFACE_SLOTS];
+        final int[] tops = new int[SURFACE_SLOTS];
+        final boolean[] filled = new boolean[SURFACE_SLOTS];
+        final TerrainMap.Sample sample = new TerrainMap.Sample();
+        final int[] bottoms = new int[ColumnBlocks.maximumRuns() + 1];
+        final TerrainBlock[] blocks = new TerrainBlock[ColumnBlocks.maximumRuns()];
+        boolean resolving;
+    }
+
+    private final ThreadLocal<Surfaces> surfaces = ThreadLocal.withInitial(Surfaces::new);
+
+    /**
+     * The top of the highest non-air run of the column at (x, z), its ground or water over it: the
+     * value {@code column(x >> 4, z >> 4).surface(index)} gives. A held chunk column answers;
+     * otherwise this one column is resolved as {@link #build} resolves it (sampled, carved, its
+     * runs), without its ores, habitats or the other 255 columns. A tree site asks for every column
+     * its tree reaches, so neighbouring sites ask again; each thread keeps its recent answers.
+     */
+    public int surface(int x, int z) {
+        long key = ((long) x << 32) ^ (z & 0xffffffffL);
+        Column held = held(((long) (x >> 4) << 32) ^ ((z >> 4) & 0xffffffffL));
+        if (held != null) return held.surface(((z & 15) << 4) | (x & 15));
+        Surfaces s = surfaces.get();
+        int slot = (int) SeededNoise.mix(key) & (SURFACE_SLOTS - 1);
+        if (s.filled[slot] && s.keys[slot] == key) return s.tops[slot];
+        // A resolve never nests, but a scratch in use is never shared.
+        Surfaces scratch = s.resolving ? new Surfaces() : s;
+        scratch.resolving = true;
+        try {
+            int top = resolveSurface(x, z, scratch, true);
+            s.keys[slot] = key;
+            s.tops[slot] = top;
+            s.filled[slot] = true;
+            return top;
+        } finally {
+            scratch.resolving = false;
+        }
+    }
+
+    /** One column's surface from its own runs, carved or (for the parity check) not. */
+    private int resolveSurface(int x, int z, Surfaces s, boolean carved) {
+        terrain.sample(x, z, s.sample);
+        if (carved) terrain.caves.carve(x, z, s.sample);
+        int count =
+                ColumnBlocks.runs(
+                        s.sample,
+                        ColumnBlocks.bareStone(s.sample, rules),
+                        rules,
+                        heights,
+                        s.bottoms,
+                        s.blocks);
+        int top = Integer.MIN_VALUE;
+        for (int i = 0; i < count; i++) if (s.blocks[i] != TerrainBlock.AIR) top = s.bottoms[i + 1];
+        return top;
+    }
+
+    /** One column's surface resolved afresh, carved or not, without the memo or cache (parity checks). */
+    public int resolvedSurface(int x, int z, boolean carved) {
+        return resolveSurface(x, z, new Surfaces(), carved);
     }
 
     /**

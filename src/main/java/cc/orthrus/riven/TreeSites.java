@@ -445,9 +445,12 @@ final class TreeSites {
         return near[0];
     }
 
-    /** Top of the highest non-air run of a column: its ground, or water over it. */
+    /**
+     * Top of the highest non-air run of a column: its ground, or water over it. One column's query,
+     * so a distant preview's tree sites do not build whole native chunk columns.
+     */
     private int surface(int x, int z) {
-        return biomes.maps.columns.column(x >> 4, z >> 4).surface(((z & 15) << 4) | (x & 15));
+        return biomes.maps.columns.surface(x, z);
     }
 
     private static int candidate(int g, int cell, long id, int salt) {

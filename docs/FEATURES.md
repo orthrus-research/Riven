@@ -479,7 +479,7 @@ stands, the first whose climate holds at the candidate deciding (cool woodland e
 and maple, warm beaches and deltas get palms and mangroves); a stand gives each layer a chance and
 species weights. A site is valid on its species' ground (grass and dirt, mud included; palms and
 mangroves also sand; cold conifers and birch also snow), every trunk column of a 2 x 2 trunk at one height, and with every column its tree reaches
-open sky from the tree's lowest block there up (cached native columns), so no tree grows into a
+open sky from the tree's lowest block there up (`NativeColumns.surface`, one column's query), so no tree grows into a
 cliff, an overhang or water. 34 species over the 28 woods draw from four families: broadleaf (a
 crown cluster at the trunk top and branches ending in clusters; willows hang strands; kapok,
 mahogany and strangler fig stand on buttresses and mangroves on prop roots that keep only where
