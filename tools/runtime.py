@@ -510,6 +510,37 @@ def load(name):
     return directory, m
 
 
+def adopt_world(name, source):
+    """Replaces a freshly prepared instance's empty world with a full copy of another stopped
+    instance's world (its region files, level data, Riven's recorded definitions and Distant
+    Horizons' database), so a run starts on terrain already generated. The source is only read.
+    Both must hold the same Riven artifact, so the copied definitions are the ones in use."""
+    directory, manifest = target(name), load_json(target(name) / "standalone.json")
+    origin = load_json(target(source) / "standalone.json")
+    if origin["modHashes"]["server"].get("riven.jar") != manifest["modHashes"]["server"].get(
+        "riven.jar"
+    ):
+        raise RuntimeError("The source world was generated with a different Riven artifact")
+    world, copied = Path(manifest["server"]) / "world", Path(origin["server"]) / "world"
+    if not (copied / "level.dat").is_file():
+        raise RuntimeError("The source instance has no generated world: " + source)
+    if (world / "level.dat").exists() or any(world.glob("region3d/*")):
+        raise RuntimeError("The prepared world is not empty")
+    if world.exists():
+        shutil.rmtree(world)
+    shutil.copytree(copied, world, ignore=shutil.ignore_patterns("session.lock"))
+    size = sum(p.stat().st_size for p in world.rglob("*") if p.is_file())
+    manifest["worldFrom"] = {
+        "instance": source,
+        "bytes": size,
+        "levelSha256": sha(world / "level.dat"),
+        "scope": "A full copy taken before the first launch; the source world is unchanged.",
+    }
+    lab_files.write_json(directory / "standalone.json", manifest)
+    print(f"Copied {size / 1e9:.1f} GB of world from {source}", flush=True)
+    return size
+
+
 def load_tour(path):
     """Viewpoints for a capture tour: a JSON list of {label, x, y, z, yaw, pitch}."""
     views = json.loads(Path(path).read_text(encoding="utf-8"))

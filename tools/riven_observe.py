@@ -72,6 +72,10 @@ def main(argv=None):
         help="Cubature previewThreads, the server's preview pool; unset keeps Cubature's default",
     )
     capture.add_argument(
+        "--world-from",
+        help="start from a full copy of this stopped instance's world (a pregenerated world)",
+    )
+    capture.add_argument(
         "--no-arrival-plan",
         action="store_true",
         help="Cubature: keep DH's nearest-first request order (distantHorizonsArrivalPlan=false)",
@@ -179,6 +183,8 @@ def main(argv=None):
             options += ["--preview-threads", str(args.preview_threads)]
         if args.no_arrival_plan:
             options.append("--no-arrival-plan")
+        if args.world_from:
+            options += ["--world-from", args.world_from]
         if args.dh_ignore_server_health:
             options.append("--dh-ignore-server-health")
         if args.storage:

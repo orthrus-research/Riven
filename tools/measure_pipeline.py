@@ -180,6 +180,10 @@ def main(argv=None):
         help="Cubature previewThreads; unset keeps Cubature's default",
     )
     parser.add_argument(
+        "--world-from",
+        help="start from a full copy of this stopped instance's world (a pregenerated world)",
+    )
+    parser.add_argument(
         "--no-arrival-plan",
         action="store_true",
         help="Cubature: keep DH's nearest-first request order",
@@ -233,6 +237,8 @@ def main(argv=None):
             # The config file selects the delivery mode; Cubature reads it as the server starts.
             cubature_delivery=args.delivery_experiment,
         )
+        if args.world_from:
+            runtime.adopt_world(args.name, args.world_from)
         directory = runtime.target(args.name)
         manifest = runtime.load_json(directory / "standalone.json")
         policy = SimpleNamespace(
