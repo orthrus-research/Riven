@@ -4,8 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Riven's caves (riven-caves.json): voids rooted in the geology, with a character per realm. In
@@ -62,7 +60,7 @@ public final class CaveMap {
             GEODE = 15;
     private static final int ROOF, WET_ROOF, FLOOR_MARGIN, CAP, LINING_CAP, H, V, CHUNK_CACHE;
     private static final double SKIN_DEPTH, SKIN_PENALTY, SKIN_NARROWING;
-    private static final Set<GeologyMap.Unit> BASEMENT = new HashSet<>();
+    private static final UnitSet BASEMENT = new UnitSet();
     private static final double CAVERN_WAVELENGTH,
             CAVERN_SQUASH,
             DETAIL_WAVELENGTH,
@@ -130,7 +128,7 @@ public final class CaveMap {
             RIVER_CEILING_VARIATION;
     private static final double GEODE_CELL, GEODE_CHANCE, GEODE_LINING;
     private static final double[] GEODE_RADIUS, GEODE_Y;
-    private static final Set<GeologyMap.Unit> GEODE_HOSTS = new HashSet<>();
+    private static final UnitSet GEODE_HOSTS = new UnitSet();
     private static final TerrainBlock[] GEODE_LININGS;
     private static final double CHAMBER_AIR;
     private static final double SINKHOLE_CELL,

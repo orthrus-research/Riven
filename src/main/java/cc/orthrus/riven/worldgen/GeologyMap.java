@@ -32,8 +32,13 @@ public final class GeologyMap {
         public final int color;
         public final double solubility, permeability, strength;
 
-        Unit(String name, JsonObject j) {
+        /** Its place in the definitions' units, for {@link UnitSet}. */
+        public final int index;
+
+        Unit(String name, JsonObject j, int index) {
+            if (index >= 64) throw new IllegalStateException("At most 64 rock units");
             this.name = name;
+            this.index = index;
             block = TerrainBlock.valueOf(j.get("block").getAsString());
             color = Integer.parseInt(j.get("color").getAsString().substring(1), 16);
             solubility = Rules.number(j, "solubility", 0, 1);
@@ -161,7 +166,8 @@ public final class GeologyMap {
     static {
         JsonObject j = RULES.json;
         for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("units").entrySet())
-            UNITS.put(e.getKey(), new Unit(e.getKey(), e.getValue().getAsJsonObject()));
+            UNITS.put(
+                    e.getKey(), new Unit(e.getKey(), e.getValue().getAsJsonObject(), UNITS.size()));
         long seed = Rules.seed(j, "variationSeed");
         LOWER = formations(j.getAsJsonArray("lowerSequence"), 0, seed);
         UPPER = formations(j.getAsJsonArray("upperSequence"), 64, seed);

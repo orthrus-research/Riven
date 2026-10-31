@@ -6,11 +6,9 @@ import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Riven's ore bodies (riven-ores.json): GTCEu's overworld vein catalogue placed by geological
@@ -48,7 +46,7 @@ public final class OreMap {
     private static final class Deposit {
         final String name, source;
         final int origin;
-        final Set<GeologyMap.Unit> hosts = new HashSet<>(), partners = new HashSet<>();
+        final UnitSet hosts = new UnitSet(), partners = new UnitSet();
         final int yLo, yHi;
         final double cell, chance, nodeChance;
         final boolean solid;
@@ -151,7 +149,7 @@ public final class OreMap {
             DEPOSITS[i] = new Deposit(d.get(i).getAsJsonObject(), i, index);
     }
 
-    private static void units(JsonArray names, Set<GeologyMap.Unit> out) {
+    private static void units(JsonArray names, UnitSet out) {
         for (JsonElement e : names) {
             GeologyMap.Unit u = GeologyMap.named(e.getAsString());
             if (u == null) throw new IllegalStateException("Unit: " + e);

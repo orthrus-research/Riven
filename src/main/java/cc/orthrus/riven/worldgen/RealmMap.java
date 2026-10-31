@@ -107,7 +107,7 @@ public final class RealmMap {
         final Crust realm;
         final Depth depth;
         final boolean[] temperatures, moistures;
-        final Set<GeologyMap.Unit> units;
+        final UnitSet units;
         final double solubility, permeability, floodBand, aboveLava;
         final double[] celsius, humidity, air;
         final boolean conditional, climate, flooded;
@@ -135,7 +135,7 @@ public final class RealmMap {
             temperatures = bands(j, "temperature", TemperatureBand.values());
             moistures = bands(j, "moisture", MoistureBand.values());
             if (j.has("units")) {
-                units = new HashSet<>();
+                units = new UnitSet();
                 for (JsonElement e : j.getAsJsonArray("units"))
                     units.add(GeologyMap.named(e.getAsString()));
             } else units = null;
