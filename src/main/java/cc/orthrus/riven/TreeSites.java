@@ -351,10 +351,8 @@ final class TreeSites {
         TreeShapes.Species species =
                 part.species[Math.max(0, Rules.choose(part.weights, TreeShapes.unit(id, 4)))];
         int w = species.width;
-        if (crowded(layer, x, z, w)) return reject(out, "UNDER");
         // Each trunk column's ground, as the preview and native cubes see it, must be the
-        // species' ground at one height, with open sky above. (The earlier layers' sites built
-        // above share this thread's scratch, so every column samples afresh.)
+        // species' ground at one height, with open sky above.
         int base = Integer.MIN_VALUE, grass = 0;
         for (int j = 0; j < w; j++)
             for (int i = 0; i < w; i++) {
@@ -385,6 +383,11 @@ final class TreeSites {
                 base = r.tops[top];
                 if (r.states[top].getBlock() instanceof BlockGrass) grass |= 1 << (i + 2 * j);
             }
+        // A site is valid only if every test passes, so their order sets the cost, never the
+        // outcome. Crowding builds the earlier layers' sites nearby, so it waits for the cheap
+        // ground test. Those builds reuse this thread's scratch; from here on only locals and the
+        // shape, drawn after them, are read.
+        if (crowded(layer, x, z, w)) return reject(out, "UNDER");
         TreeShapes.Shape shape = s.shape;
         TreeShapes.shape(species, id, shape);
         int low = Math.min(-1, shape.minY);
