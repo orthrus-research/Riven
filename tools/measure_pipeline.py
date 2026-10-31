@@ -318,8 +318,12 @@ def main(argv=None):
         lab_files.write_json(directory / "standalone.json", manifest)
         runtime.load(args.name)
         lab_workload.verify(manifest)
-        if (Path(manifest["server"]) / "world/level.dat").exists():
-            raise RuntimeError("This measurement requires a fresh world")
+        # A world already present must be the untouched --world-from copy recorded at adoption.
+        level, adopted = Path(manifest["server"]) / "world/level.dat", manifest.get("worldFrom")
+        if level.exists() and not (adopted and sha(level) == adopted["levelSha256"]):
+            raise RuntimeError(
+                "This measurement requires a fresh world or an untouched --world-from copy"
+            )
 
         def frozen_inputs(value):
             runtime.load(args.name)
