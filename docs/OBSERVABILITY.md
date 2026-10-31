@@ -198,6 +198,23 @@ Analysis commands also accept `--no-charts` for a standard-library-only
 readout. Nonzero exits indicate invalid inputs, a native failure or analysis
 failure; retained evidence is not replaced. Never reuse an output directory.
 
+## Preview survey
+
+The lab's `cubiclab preview-survey` samples the overworld's DH preview over a square window at
+each footprint as Cubature's generator does, writing per-footprint rasters (top, ground top, water
+top, topmost kind) and each tile's CPU time. `tools/preview_survey.py` runs it on a copy of a
+capture's server with a chosen Riven jar, so the source capture is never touched:
+
+```
+.local/observability-venv/Scripts/python tools/preview_survey.py run <capture> <riven.jar> <fresh-name>
+.local/observability-venv/Scripts/python tools/preview_survey.py compare <survey-a> <survey-b>
+```
+
+`run` defaults to the land route's 2,048-block window at (3120, -26032), footprints 64 to 1, on
+16 threads, and prints CPU per column per footprint. `compare` byte-compares every raster and
+exits 1 with the count and first block coordinates of differing cells. Identical rasters prove a
+preview-path change left distant terrain unchanged; the atlas digests do not cover the preview.
+
 ## Required capabilities
 
 1. **Doctor:** verify exact runtime/mod inputs, Java 26, observer availability
