@@ -501,6 +501,10 @@ public final class CaveMap {
     }
 
     private final long seed;
+
+    /** The lattice's noise fields, each read through its own fixed rotation. */
+    private final Rotation cavern, detail, hall, hallDetail, tunnelA, tunnelB;
+
     private final int minimumY, levels, side;
     private final SeededNoise[] karst = new SeededNoise[Math.max(1, KARST_LEVELS)],
             wander = new SeededNoise[Math.max(1, KARST_LEVELS)];
@@ -533,6 +537,12 @@ public final class CaveMap {
 
     CaveMap(long worldSeed, TerrainHeightReference heights, Sampler sampler) {
         seed = SeededNoise.mix(worldSeed ^ Rules.seed(RULES.json, "variationSeed"));
+        cavern = new Rotation(seed ^ 0x43415645524e3131L);
+        detail = new Rotation(seed ^ 0x44455441494c3131L);
+        hall = new Rotation(seed ^ 0x4445455043415631L);
+        hallDetail = new Rotation(seed ^ 0x48414c4c44455431L);
+        tunnelA = new Rotation(seed ^ 0x54554e4e454c4131L);
+        tunnelB = new Rotation(seed ^ 0x54554e4e454c4231L);
         decor = new CaveDecor(worldSeed, heights);
         CavePools.Carver carver =
                 new CavePools.Carver() {
@@ -573,19 +583,30 @@ public final class CaveMap {
     }
 
     /**
-     * Smooth 3D value noise in [-1, 1], read through a fixed rotation per seed so its lattice never
-     * lines up with the world's axes (tunnels would turn at right angles).
+     * A noise field's fixed rotation, from its seed, so its lattice never lines up with the world's
+     * axes (tunnels would turn at right angles). Its angles depend on the seed alone, so they are
+     * taken once rather than on every read (StrictMath, the same values).
      */
-    private static double rotated(long seed, double x, double y, double z) {
-        double a = 0.61 + SeededNoise.unit(seed) * 0.9,
-                b = 0.37 + SeededNoise.unit(SeededNoise.mix(seed)) * 0.9;
-        double ca = StrictMath.cos(a),
-                sa = StrictMath.sin(a),
-                cb = StrictMath.cos(b),
-                sb = StrictMath.sin(b);
-        double x1 = x * ca - z * sa, z1 = x * sa + z * ca;
-        double y1 = y * cb - z1 * sb, z2 = y * sb + z1 * cb;
-        return noise3(seed, x1, y1, z2);
+    private static final class Rotation {
+        final long seed;
+        final double ca, sa, cb, sb;
+
+        Rotation(long seed) {
+            this.seed = seed;
+            double a = 0.61 + SeededNoise.unit(seed) * 0.9,
+                    b = 0.37 + SeededNoise.unit(SeededNoise.mix(seed)) * 0.9;
+            ca = StrictMath.cos(a);
+            sa = StrictMath.sin(a);
+            cb = StrictMath.cos(b);
+            sb = StrictMath.sin(b);
+        }
+    }
+
+    /** Smooth 3D value noise in [-1, 1], read through a field's rotation. */
+    private static double rotated(Rotation r, double x, double y, double z) {
+        double x1 = x * r.ca - z * r.sa, z1 = x * r.sa + z * r.ca;
+        double y1 = y * r.cb - z1 * r.sb, z2 = y * r.sb + z1 * r.cb;
+        return noise3(r.seed, x1, y1, z2);
     }
 
     /** Smooth 3D value noise in [-1, 1]. */
@@ -653,12 +674,6 @@ public final class CaveMap {
      */
     private Lattice lattice(int chunkX, int chunkZ, int first, int count) {
         Lattice l = new Lattice(side * side * count, first, count);
-        long cavernSeed = seed ^ 0x43415645524e3131L,
-                detailSeed = seed ^ 0x44455441494c3131L,
-                hallSeed = seed ^ 0x4445455043415631L,
-                hallDetailSeed = seed ^ 0x48414c4c44455431L,
-                aSeed = seed ^ 0x54554e4e454c4131L,
-                bSeed = seed ^ 0x54554e4e454c4231L;
         for (int a = 0; a < side; a++)
             for (int b = 0; b < side; b++) {
                 double x = chunkX * 16 + a * H, z = chunkZ * 16 + b * H;
@@ -668,13 +683,13 @@ public final class CaveMap {
                     l.cavern[base + k] =
                             (1 - DETAIL_WEIGHT)
                                             * rotated(
-                                                    cavernSeed,
+                                                    cavern,
                                                     x / CAVERN_WAVELENGTH,
                                                     y * CAVERN_SQUASH / CAVERN_WAVELENGTH,
                                                     z / CAVERN_WAVELENGTH)
                                     + DETAIL_WEIGHT
                                             * rotated(
-                                                    detailSeed,
+                                                    detail,
                                                     x / DETAIL_WAVELENGTH,
                                                     y * CAVERN_SQUASH / DETAIL_WAVELENGTH,
                                                     z / DETAIL_WAVELENGTH);
@@ -683,25 +698,25 @@ public final class CaveMap {
                     l.hall[base + k] =
                             (1 - HALL_DETAIL_WEIGHT)
                                             * rotated(
-                                                    hallSeed,
+                                                    hall,
                                                     x / HALL_WAVELENGTH_DEEP,
                                                     y * HALL_SQUASH / HALL_WAVELENGTH_DEEP,
                                                     z / HALL_WAVELENGTH_DEEP)
                                     + HALL_DETAIL_WEIGHT
                                             * rotated(
-                                                    hallDetailSeed,
+                                                    hallDetail,
                                                     x / HALL_DETAIL_WAVELENGTH,
                                                     y * HALL_SQUASH / HALL_DETAIL_WAVELENGTH,
                                                     z / HALL_DETAIL_WAVELENGTH);
                     l.tunnelA[base + k] =
                             rotated(
-                                    aSeed,
+                                    tunnelA,
                                     x / TUNNEL_WAVELENGTH,
                                     y * TUNNEL_SQUASH / TUNNEL_WAVELENGTH,
                                     z / TUNNEL_WAVELENGTH);
                     l.tunnelB[base + k] =
                             rotated(
-                                    bSeed,
+                                    tunnelB,
                                     x / TUNNEL_WAVELENGTH,
                                     y * TUNNEL_SQUASH / TUNNEL_WAVELENGTH,
                                     z / TUNNEL_WAVELENGTH);
