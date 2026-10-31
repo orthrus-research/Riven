@@ -173,6 +173,13 @@ def main(argv=None):
     parser.add_argument("--dh-ignore-server-health", action="store_true")
     parser.add_argument("--dh-native-feed", choices=["all", "edits"], default="all")
     parser.add_argument(
+        "--preview-threads",
+        type=int,
+        choices=range(-1, 17),
+        metavar="-1..16",
+        help="Cubature previewThreads; unset keeps Cubature's default",
+    )
+    parser.add_argument(
         "--dh-visited-only",
         action="store_true",
         help="DH on the client only, fed by native cubes; no distant generation (native floor)",
@@ -216,6 +223,7 @@ def main(argv=None):
             dh_workers=args.dh_workers,
             dh_ignore_server_health=args.dh_ignore_server_health,
             dh_native_feed=args.dh_native_feed,
+            preview_threads=args.preview_threads,
             # The config file selects the delivery mode; Cubature reads it as the server starts.
             cubature_delivery=args.delivery_experiment,
         )

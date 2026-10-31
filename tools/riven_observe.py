@@ -65,6 +65,13 @@ def main(argv=None):
     )
     capture.add_argument("--dh-native-feed", choices=["all", "edits"], default="all")
     capture.add_argument(
+        "--preview-threads",
+        type=int,
+        choices=range(-1, 17),
+        metavar="-1..16",
+        help="Cubature previewThreads, the server's preview pool; unset keeps Cubature's default",
+    )
+    capture.add_argument(
         "--dh-ignore-server-health",
         action="store_true",
         help="Turn off DH's limitIfServerUnhealthy world-generation pause",
@@ -163,6 +170,8 @@ def main(argv=None):
         options += ["--delivery-experiment", args.delivery_experiment]
         options += ["--dh-workers", str(args.dh_workers)]
         options += ["--dh-native-feed", args.dh_native_feed]
+        if args.preview_threads is not None:
+            options += ["--preview-threads", str(args.preview_threads)]
         if args.dh_ignore_server_health:
             options.append("--dh-ignore-server-health")
         if args.storage:

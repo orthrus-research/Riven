@@ -148,6 +148,7 @@ def prepare(
     player_effects=None,
     complementary_cave_fog=False,
     lod_observer=None,
+    preview_threads=None,
 ):
     if lod_observer is not None:
         lod_observer = Path(lod_observer).resolve()
@@ -164,6 +165,8 @@ def prepare(
         raise ValueError("Cubature delivery must be one of " + ", ".join(DELIVERY_MODES))
     if dh_native_feed not in ("all", "edits"):
         raise ValueError("DH native feed must be all or edits")
+    if preview_threads is not None and not -1 <= preview_threads <= 16:
+        raise ValueError("Cubature preview threads must be -1..16")
     if not 0.5 <= layout_scale <= 8:
         raise ValueError("Riven layout scale must be 0.5..8")
     pins = load_json(ROOT / "runtime.lock.json")
@@ -255,6 +258,11 @@ def prepare(
                 "general {\n    B:useVanillaChunkWorldGenerators=false"
                 # Only a non-default feed is written; older Cubature does not know the key.
                 + ("\n    S:distantHorizonsNativeFeed=EDITS" if dh_native_feed == "edits" else "")
+                + (
+                    "\n    I:previewThreads=" + str(preview_threads)
+                    if preview_threads is not None
+                    else ""
+                )
                 + (
                     "\n    B:complementaryCaveFog=true"
                     if complementary_cave_fog and side == "client"
@@ -379,6 +387,7 @@ def prepare(
             "generationRequestRateLimit": dh_request_limit if distant_generation else None,
             "adaptiveTransferSpeed": dh_adaptive_transfer if distant_generation else None,
             **({"cubatureNativeFeed": "EDITS"} if dh_native_feed == "edits" else {}),
+            **({"cubaturePreviewThreads": preview_threads} if preview_threads is not None else {}),
             "qualification": "Explicit candidate CC; see native receipt"
             if cubic_artifact
             else "Pinned unmodified upstream DH; see dev/dh.lock.json and the instance native receipt",
@@ -807,6 +816,13 @@ def main():
         help="Cubature: hand DH every loaded column (all) or only edited ones (edits)",
     )
     p.add_argument(
+        "--preview-threads",
+        type=int,
+        choices=range(-1, 17),
+        metavar="-1..16",
+        help="Cubature previewThreads, the server's preview pool; unset keeps Cubature's default",
+    )
+    p.add_argument(
         "--lod-trace",
         nargs="?",
         type=Path,
@@ -852,6 +868,7 @@ def main():
             player_effects=a.player_effects,
             complementary_cave_fog=a.complementary_cave_fog,
             lod_observer=a.lod_trace,
+            preview_threads=a.preview_threads,
         )
     elif a.command == "play":
         if a.shader_pack and len(a.shader_pack) != 1:
