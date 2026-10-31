@@ -1,5 +1,6 @@
 package cc.orthrus.riven;
 
+import cc.orthrus.riven.worldgen.BuildPool;
 import cc.orthrus.riven.worldgen.ColumnBlocks;
 import cc.orthrus.riven.worldgen.NativeColumns;
 import cc.orthrus.riven.worldgen.RealmMap;
@@ -200,23 +201,29 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
                                 Blocks.AIR.getDefaultState());
                         return;
                     }
-                    biomes.maps.terrain.sample(x, z, sample);
-                    TerrainColumn.preview(
-                            sample,
-                            biomes.look(sample, x, z),
-                            biomes.biome(sample, x, z),
-                            ColumnBlocks.bareStone(sample, biomes.maps.surfaces),
-                            biomes.maps.surfaces,
-                            HEIGHTS,
-                            surfaces,
-                            biomes.maps.boulders,
-                            trees,
-                            cover,
-                            footprint,
-                            x,
-                            z,
-                            scratch,
-                            consumer);
+                    // Preview columns build regional plans on this thread alone (BuildPool.alone).
+                    boolean was = BuildPool.alone(true);
+                    try {
+                        biomes.maps.terrain.sample(x, z, sample);
+                        TerrainColumn.preview(
+                                sample,
+                                biomes.look(sample, x, z),
+                                biomes.biome(sample, x, z),
+                                ColumnBlocks.bareStone(sample, biomes.maps.surfaces),
+                                biomes.maps.surfaces,
+                                HEIGHTS,
+                                surfaces,
+                                biomes.maps.boulders,
+                                trees,
+                                cover,
+                                footprint,
+                                x,
+                                z,
+                                scratch,
+                                consumer);
+                    } finally {
+                        BuildPool.alone(was);
+                    }
                 }
             };
         }

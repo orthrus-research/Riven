@@ -17,10 +17,22 @@ import java.util.function.IntConsumer;
  * <p>The calling thread always works its own loop and waits only for items a helper has started,
  * never for queued helpers. A build that holds a single flight therefore finishes even when every
  * pool thread is blocked waiting on that flight, so a bounded pool cannot deadlock on it.
+ *
+ * <p>A thread marked {@link #alone} keeps its builds to itself. The preview sampler marks its
+ * columns so: a distant preview tile can start regional builds native generation will not need for
+ * a while, and on the shared pool those would hold helpers native generation's own builds wait for.
  */
 public final class BuildPool {
     private static volatile ForkJoinPool tools;
+    private static final ThreadLocal<Boolean> ALONE = ThreadLocal.withInitial(() -> Boolean.FALSE);
     private volatile ForkJoinPool pool;
+
+    /** Marks the calling thread to build on itself alone, or not; returns the previous mark. */
+    public static boolean alone(boolean alone) {
+        boolean was = ALONE.get();
+        ALONE.set(alone);
+        return was;
+    }
 
     /** Splits work across this pool from now on, or keeps it on the calling thread for null. */
     public void use(ForkJoinPool pool) {
@@ -70,7 +82,7 @@ public final class BuildPool {
     /** Runs {@code body} for each index below {@code count}, across the pool and the caller. */
     void forEach(int count, IntConsumer body) {
         ForkJoinPool p = pool;
-        if (p == null || count < 2) {
+        if (p == null || count < 2 || ALONE.get()) {
             for (int i = 0; i < count; i++) body.accept(i);
             return;
         }
