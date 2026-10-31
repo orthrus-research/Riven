@@ -214,6 +214,19 @@ final class TerrainColumn {
         return kept.getBlock() == Blocks.ICE ? Blocks.PACKED_ICE.getDefaultState() : null;
     }
 
+    /**
+     * One caller's reusable buffers for {@link #preview}: a preview tile's sampler, or a thread's
+     * tree sites (whose trunk columns are previewed inside a preview column's trees, so the two
+     * never share one). Nothing in them outlives a call.
+     */
+    static final class Scratch {
+        final int[] bottoms = new int[ColumnBlocks.maximumRuns() + 1];
+        final TerrainBlock[] blocks = new TerrainBlock[ColumnBlocks.maximumRuns()];
+        final TerrainBlock[] riven = new TerrainBlock[256];
+        final TreeSites.Recorder recorder = new TreeSites.Recorder();
+        final TreeSites.Canopy canopy = new TreeSites.Canopy();
+    }
+
     static void preview(
             TerrainMap.Sample sample,
             Biome biome,
@@ -228,9 +241,10 @@ final class TerrainColumn {
             int footprint,
             int x,
             int z,
+            Scratch scratch,
             ICubicTerrainPreview.ColumnConsumer target) {
-        int[] bottoms = new int[ColumnBlocks.maximumRuns() + 1];
-        TerrainBlock[] blocks = new TerrainBlock[ColumnBlocks.maximumRuns()];
+        int[] bottoms = scratch.bottoms;
+        TerrainBlock[] blocks = scratch.blocks;
         int count = ColumnBlocks.runs(sample, bareStone, rules, heights, bottoms, blocks);
         target.begin(reported);
         // Boulders show in fine cells only: coarser cells are wider than most boulders.
@@ -238,8 +252,8 @@ final class TerrainColumn {
                 boulders == null || footprint >= BOULDER_FOOTPRINT ? null : boulders.at(x, z);
         // With tree sites or a boulder the column is recorded first, then replayed with the
         // boulder's rock on its ground and its trees in the sky.
-        TreeSites.Recorder recorded =
-                trees == null && boulder == null ? null : new TreeSites.Recorder();
+        TreeSites.Recorder recorded = trees == null && boulder == null ? null : scratch.recorder;
+        if (recorded != null) recorded.reset();
         ICubicTerrainPreview.ColumnConsumer consumer = recorded == null ? target : recorded;
         // The preview shows surfaces only: the realms below the crust floor are one run of rock.
         if (heights.worldMinimumY < heights.minimumY)
@@ -249,7 +263,8 @@ final class TerrainColumn {
         int index = 0;
         if (surfaces != null) {
             // The same kept band as native cubes, from this column's own runs.
-            TerrainBlock[] riven = new TerrainBlock[256];
+            TerrainBlock[] riven = scratch.riven;
+            java.util.Arrays.fill(riven, TerrainBlock.AIR);
             int ground = Integer.MIN_VALUE;
             for (int i = 0; i < count; i++) {
                 for (int y = Math.max(0, bottoms[i]); y < Math.min(256, bottoms[i + 1]); y++)
@@ -257,7 +272,6 @@ final class TerrainColumn {
                 if (blocks[i] != TerrainBlock.AIR && blocks[i] != TerrainBlock.WATER)
                     ground = bottoms[i + 1];
             }
-            for (int y = 0; y < 256; y++) if (riven[y] == null) riven[y] = TerrainBlock.AIR;
             surface = surfaces.column(riven, ground, biome, x, z);
         }
         int lo = surface == null ? Integer.MAX_VALUE : surface.bandBottom(index);
@@ -296,7 +310,17 @@ final class TerrainColumn {
             if (blocks[i] != TerrainBlock.AIR) surfaceY = bottoms[i + 1];
         if (trees != null)
             replayWithTrees(
-                    recorded, trees, cover, surfaceY, footprint, x, z, reported, sample, target);
+                    recorded,
+                    trees,
+                    cover,
+                    surfaceY,
+                    footprint,
+                    x,
+                    z,
+                    reported,
+                    sample,
+                    scratch.canopy,
+                    target);
         else
             for (int i = 0; i < recorded.count; i++)
                 target.addRun(recorded.bottoms[i], recorded.tops[i], recorded.states[i]);
@@ -345,10 +369,11 @@ final class TerrainColumn {
             int z,
             Biome reported,
             TerrainMap.Sample sample,
+            TreeSites.Canopy canopy,
             ICubicTerrainPreview.ColumnConsumer target) {
         int top = r.count - 1;
         while (top >= 0 && r.states[top].getMaterial() == Material.AIR) top--;
-        TreeSites.Canopy canopy = new TreeSites.Canopy();
+        canopy.clear();
         if (top >= 0)
             trees.canopy(x, z, footprint, r.tops[top], reported, sample, r.states[top], canopy);
         // The cover the cube writes on the surface where terrain, boulders and trees leave air.

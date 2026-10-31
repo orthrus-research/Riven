@@ -31,14 +31,19 @@ final class SurfaceTranscription {
     /** Stands in for Riven's stone: a block surface routines never convert. */
     private static final IBlockState HELD = Blocks.BEDROCK.getDefaultState();
 
-    /** One chunk column's kept surface: per column the ground top and its band, or null. */
+    /**
+     * One chunk column's kept surface, or one preview column's: per column the ground top and its
+     * band, or null.
+     */
     static final class Surface {
         final long key;
-        final int[] tops = new int[256];
-        final IBlockState[][] bands = new IBlockState[256][];
+        final int[] tops;
+        final IBlockState[][] bands;
 
-        Surface(long key) {
+        Surface(long key, int columns) {
             this.key = key;
+            tops = new int[columns];
+            bands = new IBlockState[columns][];
         }
 
         /** Bottom of a column's band, or a large value where none was kept. */
@@ -88,7 +93,7 @@ final class SurfaceTranscription {
     }
 
     private Surface build(long key, int chunkX, int chunkZ) {
-        Surface out = new Surface(key);
+        Surface out = new Surface(key, 256);
         NativeColumns.Column column = biomes.maps.columns.column(chunkX, chunkZ);
         TerrainBlock[] line = new TerrainBlock[16];
         TerrainBlock[] riven = new TerrainBlock[TOP + 1];
@@ -112,7 +117,7 @@ final class SurfaceTranscription {
      * other 255 columns of its chunk. The result has the column at index 0.
      */
     Surface column(TerrainBlock[] riven, int ground, Biome biome, int x, int z) {
-        Surface out = new Surface(0);
+        Surface out = new Surface(0, 1);
         out.tops[0] = ground;
         if (ground - BAND >= 1 && ground <= TOP) out.bands[0] = band(riven, ground, biome, x, z);
         return out;

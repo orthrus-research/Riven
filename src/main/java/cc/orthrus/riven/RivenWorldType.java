@@ -181,8 +181,9 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
 
         @Override
         public Sampler createTerrainPreviewSampler() {
-            // The maps are immutable. Only this sampler's scratch sample is mutable.
+            // The maps are immutable. Only this sampler's scratch sample and buffers are mutable.
             TerrainMap.Sample sample = new TerrainMap.Sample();
+            TerrainColumn.Scratch scratch = new TerrainColumn.Scratch();
             return new Sampler() {
                 @Override
                 public void sampleColumn(int x, int z, ColumnConsumer consumer) {
@@ -214,6 +215,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
                             footprint,
                             x,
                             z,
+                            scratch,
                             consumer);
                 }
             };

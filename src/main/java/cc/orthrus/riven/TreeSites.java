@@ -216,6 +216,7 @@ final class TreeSites {
         final TerrainMap.Sample sample = new TerrainMap.Sample();
         final Recorder recorder = new Recorder();
         final TreeShapes.Shape shape = new TreeShapes.Shape();
+        final TerrainColumn.Scratch column = new TerrainColumn.Scratch();
     }
 
     /** Recently drawn trees of one thread; neighbouring cubes and columns share most sites. */
@@ -375,6 +376,7 @@ final class TreeSites {
                         1,
                         x + i,
                         z + j,
+                        s.column,
                         r);
                 int top = r.count - 1;
                 while (top >= 0 && r.states[top].getMaterial() == Material.AIR) top--;
@@ -696,6 +698,7 @@ final class TreeSites {
                 1,
                 x,
                 z,
+                new TerrainColumn.Scratch(),
                 r);
         return r;
     }
