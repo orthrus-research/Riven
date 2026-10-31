@@ -509,7 +509,7 @@ and entries in order, and the first entry whose ground fits and whose draw falls
 decides. Patch noise gathers an entry into drifts over a share of the land at the same mean density,
 so flowers come in sweeps and litter under its trees' crowns of color. Cover stands on the column's
 surface (the top of its highest non-air run) where terrain, boulders and trees leave air, never on a
-boulder; a two-block plant or a cane needs all its blocks free of terrain and trees (the tree sites
+boulder (in the preview from 4-block cells, which draw no boulders, cover no longer avoids them); a two-block plant or a cane needs all its blocks free of terrain and trees (the tree sites
 answer which blocks they hold). Reeds are Riven's: the Common Reed (`riven:cane_common_reed`,
 Requisition 03's reed art as stem and top pieces) is a cane of 2 to 4 blocks on grass, dirt, mud,
 sand, gravel or sandstone that stands only where a neighbouring column's native blocks hold water

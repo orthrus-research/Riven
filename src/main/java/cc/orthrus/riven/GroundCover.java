@@ -263,7 +263,8 @@ final class GroundCover {
      * The ground cover of one preview column: its blocks from the surface up, given the column's
      * own runs before boulders and trees, and which heights terrain or trees hold. A cell over two
      * blocks wide draws no cane: its column is rarely a margin, and checking one reads a native
-     * chunk column.
+     * chunk column. From the footprint where the preview leaves boulders out, cover no longer
+     * avoids them either, so a coarse cell asks no boulder lookup.
      */
     IBlockState[] preview(
             Biome reported,
@@ -273,7 +274,8 @@ final class GroundCover {
             int z,
             int footprint,
             IntPredicate taken) {
-        if (provider.maps.boulders.at(x, z) != null) return null;
+        if (footprint < TerrainColumn.BOULDER_FOOTPRINT && provider.maps.boulders.at(x, z) != null)
+            return null;
         Entry e = decide(reported, groundBlock, x, s, z, footprint <= 2);
         if (e == null) return null;
         int n = height(e, x, z);

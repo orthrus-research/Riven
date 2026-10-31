@@ -302,8 +302,8 @@ final class TerrainColumn {
                 target.addRun(recorded.bottoms[i], recorded.tops[i], recorded.states[i]);
     }
 
-    /** Footprints from which the preview leaves boulders out. */
-    private static final int BOULDER_FOOTPRINT = 4;
+    /** Footprints from which the preview leaves boulders out (and ground cover stops avoiding them). */
+    static final int BOULDER_FOOTPRINT = 4;
 
     /** Writes the boulder rock inside one cube, from each column's ground block to its top. */
     static void placeBoulders(
