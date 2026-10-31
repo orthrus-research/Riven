@@ -83,6 +83,13 @@ superseded instead of deleting it.
 
   Order-dependent state and unbounded memory stay forbidden.
 
+- **Bounded pools for preview sampling.** The 2026-10-23 approval of bounded Cubature worker
+  pools extends to Distant Horizons preview sampling: Cubature may run one bounded preview pool
+  per server in place of DH's World Gen executor, sized from the processor count and paced by its
+  own governor (Cubature `docs/LOD-DELIVERY.md`, step 3). DH still chooses which tile comes next
+  and owns its request limits, propagation, persistence and delivery. The pool changes when
+  previews are produced, never their content, and the native view still comes first.
+
 - **Cleanroom on Java 25 and later only.** Riven and Cubature target the latest Cleanroom on Java
   25 or 26, and no Java 8 compatibility will ship. The Forge 14.23.5.2860 / Java 8 fallback is
   retired: its builds, ci's Forge build, the pin's Forge artifact and their docs are gone, and
