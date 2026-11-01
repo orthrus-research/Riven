@@ -24,6 +24,7 @@ from typing import Any
 
 import runtime
 from measure_pipeline import controller_sources, input_files, retain_inputs
+from observability import telemetry
 from observability.profiles import sha
 
 ROOT, lab = runtime.ROOT, runtime.lab
@@ -239,22 +240,25 @@ def run(args):
 
         # Keep native launch, bounded progress waits and orderly save/stop in the
         # maintained lab runner. Only its manifest/preparation boundary is adapted.
-        return lab.survey(
-            SimpleNamespace(
-                native_operation="pregenerate",
-                survey_id=plan["id"],
-                survey_origin_x=plan["originChunkX"],
-                survey_origin_z=plan["originChunkZ"],
-                survey_width=plan["widthColumns"],
-                survey_height=plan["heightColumns"],
-                survey_max_columns=args.max_columns,
-                jfr=args.jfr,
-            ),
-            load=lambda unused: (directory, manifest),
-            prime_lab=lambda unused: None,
-            record=frozen_inputs,
-            retain=retain_inputs,
-        )
+        try:
+            return lab.survey(
+                SimpleNamespace(
+                    native_operation="pregenerate",
+                    survey_id=plan["id"],
+                    survey_origin_x=plan["originChunkX"],
+                    survey_origin_z=plan["originChunkZ"],
+                    survey_width=plan["widthColumns"],
+                    survey_height=plan["heightColumns"],
+                    survey_max_columns=args.max_columns,
+                    jfr=args.jfr,
+                ),
+                load=lambda unused: (directory, manifest),
+                prime_lab=lambda unused: None,
+                record=frozen_inputs,
+                retain=retain_inputs,
+            )
+        finally:
+            telemetry.collect_quietly(args.name)
 
 
 def status(args):

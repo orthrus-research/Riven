@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import runtime
+from observability import telemetry
 from observability.profiles import sha
 
 ROOT = runtime.ROOT
@@ -385,15 +386,21 @@ def main(argv=None):
         )
         # Adapt only the minimal manifest/preparation boundary. The reviewed runner
         # retains native lifecycle, real-client, GUI, JVM and workload validation.
-        return lab.run(
-            run_args,
-            load=lambda unused: (directory, manifest),
-            prime_lab=lambda unused: None,
-            select=lambda unused, value: value["benchmarkWorkload"]["value"]["scenarios"]["write"],
-            record=frozen_inputs,
-            retain=retain_inputs,
-            validate=validate_pose,
-        )
+        try:
+            return lab.run(
+                run_args,
+                load=lambda unused: (directory, manifest),
+                prime_lab=lambda unused: None,
+                select=lambda unused, value: value["benchmarkWorkload"]["value"]["scenarios"][
+                    "write"
+                ],
+                record=frozen_inputs,
+                retain=retain_inputs,
+                validate=validate_pose,
+            )
+        finally:
+            # Every capture, passed or failed, joins the telemetry ledger.
+            telemetry.collect_quietly(args.name)
 
 
 if __name__ == "__main__":

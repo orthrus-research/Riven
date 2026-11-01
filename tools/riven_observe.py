@@ -139,7 +139,39 @@ def main(argv=None):
         action="store_true",
         help="Explicitly compare matched instrumented screens; never optimization acceptance",
     )
+    telemetry = commands.add_parser(
+        "telemetry",
+        help="The run ledger: one dated JSON record per native run in .local/telemetry",
+    )
+    telemetry.add_argument(
+        "action",
+        choices=["record", "backfill", "index", "export"],
+        help="record one instance's runs (captures do this themselves), backfill every instance, "
+        "rebuild the ordered index, or export the sanitized website dataset",
+    )
+    telemetry.add_argument("--name", help="record: the instance under .local/cubic-standalone")
+    telemetry.add_argument("--output", type=Path, help="export: the website dataset to write")
     args = parser.parse_args(argv)
+    if args.command == "telemetry":
+        from observability import telemetry as ledger
+
+        if args.action == "record":
+            if not args.name:
+                raise ValueError("telemetry record needs --name")
+            result = {"written": [str(p) for p in ledger.collect(ledger.INSTANCES / args.name)]}
+        elif args.action == "backfill":
+            result = ledger.backfill()
+        elif args.action == "index":
+            index = ledger.build_index()
+            result = {key: index[key] for key in ["byKind", "first", "last"]} | {
+                "runs": len(index["runs"])
+            }
+        else:
+            if not args.output:
+                raise ValueError("telemetry export needs --output")
+            result = ledger.export(args.output)
+        print(json.dumps(result, indent=2))
+        return 0
     if args.command in ("doctor", "capture"):
         result = doctor(args.riven, args.cubature, args.observer)
         if args.command == "doctor":

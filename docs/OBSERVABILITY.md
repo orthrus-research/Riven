@@ -188,6 +188,36 @@ cumulative, opt-in experiments, not accepted defaults.
 Different stages are intentional treatment changes and do not pass the existing
 single-artifact strict comparator automatically.
 
+## Telemetry ledger
+
+Every capture and pregeneration, passed or failed, ends by writing one compact JSON record
+(about 4 KB) to `.local/telemetry/runs/<YYYY>/<MM-DD>/<HHMMSS>Z-<kind>-<instance>.json`, and
+refreshes `.local/telemetry/index.json`, which lists every record in the order the runs started,
+numbered, with counts by kind and workload. The kinds are `capture`, `smoke` (the ci smoke
+capture) and `pregeneration`. A failure to record is printed and never changes the run's result.
+
+A capture's record holds its setup (delivery mode, view distance, DH workers and Cubature's DH
+options, a `--world-from` source), the machine, the frozen artifacts' build names, the server and
+client processes' start time, peak working set and CPU, and per scenario: server tick and frame
+time (p50, p95, p99, max, mean and counts over 50 ms or 16.7 ms), client tick and render work,
+delivered cubes and payload, loads, unloads and saves, save submission and blocking flush with
+the storage spans' p99 and max where storage diagnostics ran, and, with `--lod-trace`, LOD
+delivery: requests, answers per second, request-to-answer time by detail, generated tiles and the
+share of the 200-4096 block ring (and of its 200-768 block near part) whose finest data is at
+DH's MEDIUM wanted detail at the scenario's end. A pregeneration record holds its run time and
+the job's throughput, save time, peak heap and world size.
+
+```powershell
+.local/observability-venv/Scripts/python.exe -B tools/riven_observe.py telemetry backfill
+.local/observability-venv/Scripts/python.exe -B tools/riven_observe.py telemetry record --name <instance>
+.local/observability-venv/Scripts/python.exe -B tools/riven_observe.py telemetry export --output <harness-runs.json>
+```
+
+`backfill` rewrites the records of every instance under `.local/cubic-standalone`; `export`
+writes the sanitized dataset the website's harness charts read: one record per scenario with
+dates, an anonymous run number, workload and scenario names and numbers only. The ledger itself
+names instances and artifacts and stays local.
+
 ## DH LOD stage trace
 
 The lab's `LabLodTrace` records each DH section's path through generation, delivery and
