@@ -510,17 +510,27 @@ def load(name):
     return directory, m
 
 
+def packaged_definitions(jar):
+    """The riven-*.json definitions a Riven artifact packages, by name, as SHA-256 digests."""
+    with zipfile.ZipFile(jar) as archive:
+        return {
+            entry: hashlib.sha256(archive.read(entry)).hexdigest()
+            for entry in archive.namelist()
+            if re.fullmatch(r"riven-[^/]+\.json", entry)
+        }
+
+
 def adopt_world(name, source):
     """Replaces a freshly prepared instance's empty world with a full copy of another stopped
     instance's world (its region files, level data, Riven's recorded definitions and Distant
     Horizons' database), so a run starts on terrain already generated. The source is only read.
-    Both must hold the same Riven artifact, so the copied definitions are the ones in use."""
+    Both Riven artifacts must package the same definitions (every riven-*.json), so the copied
+    world's definitions are the ones in use; a code change between them is the run's treatment."""
     directory, manifest = target(name), load_json(target(name) / "standalone.json")
     origin = load_json(target(source) / "standalone.json")
-    if origin["modHashes"]["server"].get("riven.jar") != manifest["modHashes"]["server"].get(
-        "riven.jar"
-    ):
-        raise RuntimeError("The source world was generated with a different Riven artifact")
+    jars = [Path(m["server"]) / "mods/riven.jar" for m in (origin, manifest)]
+    if packaged_definitions(jars[0]) != packaged_definitions(jars[1]):
+        raise RuntimeError("The source world was generated with different Riven definitions")
     world, copied = Path(manifest["server"]) / "world", Path(origin["server"]) / "world"
     if not (copied / "level.dat").is_file():
         raise RuntimeError("The source instance has no generated world: " + source)
@@ -534,6 +544,7 @@ def adopt_world(name, source):
         "instance": source,
         "bytes": size,
         "levelSha256": sha(world / "level.dat"),
+        "sourceRivenSha256": sha(jars[0]),
         "scope": "A full copy taken before the first launch; the source world is unchanged.",
     }
     lab_files.write_json(directory / "standalone.json", manifest)
