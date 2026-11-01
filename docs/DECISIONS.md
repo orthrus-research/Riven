@@ -104,11 +104,11 @@ superseded instead of deleting it.
   leaves it), is drawn in one language: native 16 x 16 faces of large connected forms, ink only
   where forms meet, five-step hue-shifted ramps from one palette, a saturation budget that leaves
   color to ores, gems, fluids and light, and a color script by climate and depth
-  ([ART-DIRECTION.md](ART-DIRECTION.md)). It replaces the naturalistic direction of Riven
+  (Riven Resources' `docs/ART-DIRECTION.md`). It replaces the naturalistic direction of Riven
   Resources' style guide 1.2; the 3,693 received resources are redrawn under their IDs
   (Requisition 08). Items, mobs, the GUI and the sky stay vanilla. labPBR maps cover only the
   textures where light matters. Riven Resources gates its productions itself on
-  `tools/content/survey_plate.py check` and a calibration set; vanilla's noisy faces and the
+  `tools/survey_plate.py check` and a calibration set; vanilla's noisy faces and the
   received quiet naturalistic faces both fail those tests.
 
 - **Cubature delivery mode.** `deliveryMode` is Cubature's only delivery input. The

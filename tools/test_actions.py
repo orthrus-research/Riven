@@ -123,7 +123,7 @@ class QuickRuleTests(unittest.TestCase):
     def test_riven_paths(self):
         atlas = ["quality", "atlas-golden", "definitions", "sample-history"]
         cases = {
-            "docs/ART-DIRECTION.md": [],
+            "docs/ART-REQUISITIONS.md": [],
             "tools/tours/caves-8675309.json": [],
             "CHANGELOG.md": ["definitions"],
             "README.md": ["definitions"],
