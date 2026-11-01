@@ -23,7 +23,9 @@ superseded instead of deleting it.
   `useVanillaChunkWorldGenerators=false`. *Population superseded 2026-10-23 by the Biomes O'
   Plenty decoration provider.* *Partly superseded 2026-10-22 by the two-tier
   generator:* pure per-tile region plans and per-tile drainage are allowed; the other limits stand.
-  *No preparation coordinator superseded 2026-10-30 (Preparation within bounds).*
+  *No preparation coordinator superseded 2026-10-30 (Preparation within bounds).* *No global
+  drainage simulation partly superseded 2026-11-01: a coarse network per land body is computed at
+  world creation (The surface).*
 - **Undated. Additional shaping deferred.** Further shaping of water bodies and basins waits
   until the hydrology layers are established.
 - **2026-10-20. Static quality checks.** Formatting, linting and type checks
@@ -32,15 +34,70 @@ superseded instead of deleting it.
 - **2026-10-21. Parent classifications.** Downstream features qualify against higher-level
   parent classifications. Recorded direction: earlier stages own broad intent, marine/shore
   ownership, supplied-water reservations and legal headroom, and downstream stages consume them
-  with explicit reasons and coverage. Not yet implemented.
+  with explicit reasons and coverage. Not yet implemented. *Taken up 2026-11-01 by provinces and
+  the coast plan (The surface).*
 - **2026-10-21. Water-shape planners.** Both remaining water-shape planners are to be revisited.
-  Open.
+  *Taken up 2026-11-01 by the coast plan and drainage (The surface).*
 - **2026-10-21. Volcanoes.** Volcanoes are reserved for hot biomes and will get a dedicated
   design pass; the design pass is still open. **2026-10-22 revision:** a volcano needs a HOT
   anchor, and the cone fades toward cooler columns like cold forms do (terrain-v55), replacing the
-  terrain-v37 rule that every support column be HOT.
+  terrain-v37 rule that every support column be HOT. *Set aside 2026-11-01 (The surface).*
 
 ## Adopted 2026-11-01
+
+- **A data-driven engine.** Riven is an engine in Java, and data configures it. Definitions choose
+  blocks for conditions the engine defines and set its numbers; they never express logic, and Riven
+  gains no extra language. Configuration is something that can be done, not the paradigm.
+  Definitions are read once at initialization and built into immutable, array-backed structures,
+  so generation reads no strings, maps or JSON. Reproducing the earlier world is not a goal: each
+  step proves its own world correct by properties (determinism, well-formed runs, role rules, held
+  water, cost, the atlas diversity target) rather than by matching the old one. The engine lands in
+  buildable, playable steps on two tracks in parallel, blocks (B1 to B5) and surface (S1 to S7),
+  each raising the terrain version. The generator review's CI expansion waits behind this work.
+  B1 (terrain-v100) and S1 (terrain-v101) are the first steps; `docs/ARCHITECTURE.md` describes
+  what has landed.
+- **The column: zones, horizons, cavities and roles.** A column is assembled once per zone, as
+  runs of catalogue entry, role and zone (`worldgen.engine`, Minecraft-free), and every per-block
+  answer reads those runs. Zones are data from a fixed menu: boundaries by `y`, `depth` or
+  `horizon`, nesting, absence in a setting, and transition bands where both zones' rock blends,
+  including around a carve that crosses them. Every zone boundary is a surface; geology publishes
+  the unconformity and the basement top as horizons, and a horizon a column lacks makes what reads
+  it absent. The default tree is the crust (surface, skin, layered, basement and root sub-zones),
+  the **beneath** and the **infernal** (`nether` becomes `infernal`). A zone holds a list of
+  cavities, open space with ground: the crust's is the sky, and the realms have inner ground
+  between floor and roof fields, with tunnels and caves winding through it. Overlapping cavities
+  join, soil forms only at a cavity's floor, and realm cavities may hold deposits and built forms.
+  Roles are a fixed vocabulary (solid: `top`, `soil`, `subsoil`, `bed`, `deposit`, `roof`,
+  `lining`, `floor`; open: `air`, `fluid`, `decor`), and modifiers such as ore act only inside
+  their role and zone masks.
+- **Caves and fills.** Shape operations run in a fixed order (raise, lay, build, carve, pocket).
+  Each cave form picks a carve family: `field`, `sphere`, `segment`, analytic `worm`, or
+  `entrance`, the only families that may breach a cavity floor. Worms carry trunk routes, lava
+  tubes and karst tubes, and field families carry the crust's mazes and networks, which stay its
+  identity. Routes between zones are left to chance (worm density is a parameter), and worm
+  mouths may open onto realm cavities. Fill precedence is fixed in the engine: lava, pocket,
+  pool, flood, cavity fluid, then air. Every carve keeps a roof band under each cavity floor (8
+  blocks under dry ground, 16 under fluid); the numbers are data, the rule is the engine's.
+- **The surface: land share, provinces, coast and drainage.** The surface is a chain: outline
+  with land check, provinces, coast plan, base ground, drainage, landform primitives, biomes,
+  blocks. Land targets a 50% mean (from 40.6%), held by redrawing an outline that misses its band
+  (35 to 65%); the band is data and the mean is a target the atlas measures. Provinces are a
+  seeded regional map precomputed as a pure plan, covering sea (a few ocean classes, such as
+  warm or cold, deep or shallow) as well as land. A province is the parent of its biomes and owns
+  the rules that ease transitions between them, blending recipe parameters, not heights, at its
+  margins. The coastal band's width is set per coast type. Drainage comes after the coast plan:
+  a coarse network per land body, computed at world creation and recorded with the world, and
+  fine channels refined per region on demand, never over open sea. Volcanoes are set aside;
+  climate decides where they may stand when they return, and a feature that never appears is a
+  tuning failure of the 8 km world's diversity, not a reason to loosen its rules.
+- **Biomes within provinces.** A province restricts its biomes to a subset: strong expressions
+  toward its centre, mild members between, and shared transition biomes at its edges, so
+  climatically opposite biomes are never neighbours. Ecotone widths are per biome pair in data
+  (about 16 blocks for abrupt pairs, 64 for gradual ones). Provinces carry bounded climate offsets
+  (about ±4 °C and ±0.1 moisture) blended by intensity, and effective climate is published once
+  for every reader. Elevation reaches biomes as climate, through a lapse rate on the smoothed
+  height before landforms; snowline, treeline and alpine cover are column-height settings with
+  the same lapse rate.
 
 - **Art lives outside the repositories.** Commissioned art is fabricated by Asset Factory
   (`orthrus-research/AssetFactory`), organized and catalogued by Riven Resources
