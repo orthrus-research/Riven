@@ -58,7 +58,9 @@ cube. Surface and water queries (`NativeColumns.surface` for tree sites' clearan
 column, with a small per-thread cache, so distant previews do not build whole chunk columns for
 them. Clearance only asks whether a column rises above a height (`NativeColumns.surfaceAbove`):
 carving never raises a column's top, so the uncarved runs settle most answers and only the rest is
-carved. `tools/checks/SurfaceQueryCheck` proves the queries equal the chunk column's and the bound
+carved. Population asks the same way whether a cube holds its anchor column's surface, so a sky
+cube beside cubes loaded from disk (a pregenerated world) does not build a cold chunk column on
+the server thread. `tools/checks/SurfaceQueryCheck` proves the queries equal the chunk column's and the bound
 holds. `ColumnBlocks` holds the block rules over the `TerrainBlock` palette; `TerrainColumn`
 maps it to Minecraft states. `tools/checks/ColumnRunsCheck` proves runs, per-Y resolution, the
 cached cubes and cached habitats agree. Population is empty unless the optional Biomes O' Plenty

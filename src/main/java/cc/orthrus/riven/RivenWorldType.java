@@ -509,9 +509,16 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             int ax = cubeX * 16 + 16, az = cubeZ * 16 + 16;
             if (!ClimateBiomeProvider.inWorld(cubeX * 16L, cubeZ * 16L)
                     || !ClimateBiomeProvider.inWorld(ax + 16L, az + 16L)) return;
-            NativeColumns.Column anchor = biomes.maps.columns.column(ax >> 4, az >> 4);
-            int index = ((az & 15) << 4) | (ax & 15), surface = anchor.surface(index);
-            if (Math.floorDiv(surface, 16) != cube.getY()) return;
+            // Only the cube holding the anchor column's surface decorates. The one-column answers
+            // settle that without building the anchor's chunk column (256 columns with geology,
+            // caves and ores): a sky cube from its uncarved runs alone, so a cube loaded from disk
+            // next to fresh sky does not build a cold column on the server thread.
+            NativeColumns columns = biomes.maps.columns;
+            int bottom = cube.getY() * 16;
+            if (!columns.surfaceAbove(ax, az, bottom - 1) || columns.surface(ax, az) >= bottom + 16)
+                return;
+            NativeColumns.Column anchor = columns.column(ax >> 4, az >> 4);
+            int index = ((az & 15) << 4) | (ax & 15);
             Random random = new Random(world.getSeed());
             long a = random.nextLong() / 2 * 2 + 1, b = random.nextLong() / 2 * 2 + 1;
             random.setSeed(cubeX * a + cubeZ * b ^ world.getSeed());
