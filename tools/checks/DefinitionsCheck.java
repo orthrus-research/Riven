@@ -61,12 +61,17 @@ public final class DefinitionsCheck {
         if (!problems.isEmpty()) throw new AssertionError("Definitions: " + problems);
         int revised = 0;
         for (Rules rules : Definitions.loadAll()) if (rules.revision() != null) revised++;
+        // Loading the catalogue checks its kinds, tags, block states and one entry per
+        // TerrainBlock.
+        int entries = Catalogue.entries().size();
         System.out.println(
                 "definitions catalogued and loaded: "
                         + catalogued.size()
                         + " ("
                         + revised
-                        + " with a revision); terrain-v"
+                        + " with a revision); catalogue "
+                        + entries
+                        + " entries; terrain-v"
                         + TerrainMap.VERSION
                         + " in TerrainMap, CHANGELOG.md and README.md");
     }

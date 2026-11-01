@@ -1,0 +1,913 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "about": "Riven's catalogue (catalogue-v1): every block the generator places, one entry each, with one id every definition can name. An id is its kind, or the kind, a dot and a name (rock.gabbro). block lists candidate block states (modid:block or modid:block[property=value,...]); the first that resolves wins, so later candidates are the stand-ins. terrain names the generator's TerrainBlock the entry stands for while the generator still uses that enum.",
+  "kinds": {
+    "air": "empty space",
+    "fluid": "water and lava",
+    "soil": "ground plants root in",
+    "sediment": "loose sand, gravel, clay and ash",
+    "ice": "snow and ice",
+    "rock": "solid rock, from vanilla stones to Riven host stones and realm rocks",
+    "formation": "pointed pieces that grow from cave floors and ceilings",
+    "plant": "plants and fungi the generator places",
+    "decor": "other placed objects"
+  },
+  "tags": {
+    "host-stone": "a Riven host stone (ores may form in it)",
+    "realm": "a rock of the realms below the crust",
+    "beneath": "the Beneath",
+    "infernal": "the Infernal Deep",
+    "transition": "a boundary rock between realms",
+    "terracotta": "a terracotta band",
+    "volcanic": "from volcanism or heat",
+    "evaporite": "from evaporation",
+    "frozen": "ice or snow",
+    "karst": "from dissolved rock (dripstone)",
+    "fungus": "a fungus",
+    "luminous": "gives light",
+    "provider": "its first candidate is an optional provider mod's block"
+  },
+  "entries": {
+    "air": {
+      "kind": "air",
+      "terrain": "AIR",
+      "block": [
+        "minecraft:air"
+      ]
+    },
+    "fluid.water": {
+      "kind": "fluid",
+      "terrain": "WATER",
+      "block": [
+        "minecraft:water"
+      ]
+    },
+    "fluid.lava": {
+      "kind": "fluid",
+      "terrain": "LAVA",
+      "tags": [
+        "volcanic",
+        "luminous"
+      ],
+      "block": [
+        "minecraft:lava"
+      ]
+    },
+    "soil.dirt": {
+      "kind": "soil",
+      "terrain": "DIRT",
+      "block": [
+        "minecraft:dirt"
+      ]
+    },
+    "soil.grass": {
+      "kind": "soil",
+      "terrain": "GRASS",
+      "block": [
+        "minecraft:grass"
+      ]
+    },
+    "soil.coarse_dirt": {
+      "kind": "soil",
+      "terrain": "COARSE_DIRT",
+      "block": [
+        "minecraft:dirt[variant=coarse_dirt]"
+      ]
+    },
+    "soil.mud": {
+      "kind": "soil",
+      "terrain": "MUD",
+      "tags": [
+        "provider"
+      ],
+      "block": [
+        "biomesoplenty:mud[variant=mud]",
+        "minecraft:clay"
+      ]
+    },
+    "sediment.sand": {
+      "kind": "sediment",
+      "terrain": "SAND",
+      "block": [
+        "minecraft:sand"
+      ]
+    },
+    "sediment.gravel": {
+      "kind": "sediment",
+      "terrain": "GRAVEL",
+      "block": [
+        "minecraft:gravel"
+      ]
+    },
+    "sediment.clay": {
+      "kind": "sediment",
+      "terrain": "CLAY",
+      "block": [
+        "minecraft:clay"
+      ]
+    },
+    "sediment.white_sand": {
+      "kind": "sediment",
+      "terrain": "WHITE_SAND",
+      "tags": [
+        "provider",
+        "evaporite"
+      ],
+      "block": [
+        "biomesoplenty:white_sand",
+        "minecraft:sand"
+      ]
+    },
+    "sediment.ash": {
+      "kind": "sediment",
+      "terrain": "ASH",
+      "tags": [
+        "provider",
+        "volcanic"
+      ],
+      "block": [
+        "biomesoplenty:ash_block",
+        "minecraft:gravel"
+      ]
+    },
+    "ice.snow": {
+      "kind": "ice",
+      "terrain": "SNOW",
+      "tags": [
+        "frozen"
+      ],
+      "block": [
+        "minecraft:snow"
+      ]
+    },
+    "ice.ice": {
+      "kind": "ice",
+      "terrain": "ICE",
+      "tags": [
+        "frozen"
+      ],
+      "block": [
+        "minecraft:ice"
+      ]
+    },
+    "ice.packed_ice": {
+      "kind": "ice",
+      "terrain": "PACKED_ICE",
+      "tags": [
+        "frozen"
+      ],
+      "block": [
+        "minecraft:packed_ice"
+      ]
+    },
+    "rock.bedrock": {
+      "kind": "rock",
+      "terrain": "BEDROCK",
+      "block": [
+        "minecraft:bedrock"
+      ]
+    },
+    "rock.stone": {
+      "kind": "rock",
+      "terrain": "STONE",
+      "block": [
+        "minecraft:stone"
+      ]
+    },
+    "rock.granite": {
+      "kind": "rock",
+      "terrain": "GRANITE",
+      "block": [
+        "minecraft:stone[variant=granite]"
+      ]
+    },
+    "rock.diorite": {
+      "kind": "rock",
+      "terrain": "DIORITE",
+      "block": [
+        "minecraft:stone[variant=diorite]"
+      ]
+    },
+    "rock.andesite": {
+      "kind": "rock",
+      "terrain": "ANDESITE",
+      "block": [
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.sandstone": {
+      "kind": "rock",
+      "terrain": "SANDSTONE",
+      "block": [
+        "minecraft:sandstone"
+      ]
+    },
+    "rock.red_sandstone": {
+      "kind": "rock",
+      "terrain": "RED_SANDSTONE",
+      "block": [
+        "minecraft:red_sandstone"
+      ]
+    },
+    "rock.terracotta": {
+      "kind": "rock",
+      "terrain": "TERRACOTTA",
+      "tags": [
+        "terracotta"
+      ],
+      "block": [
+        "minecraft:hardened_clay"
+      ]
+    },
+    "rock.terracotta_orange": {
+      "kind": "rock",
+      "terrain": "TERRACOTTA_ORANGE",
+      "tags": [
+        "terracotta"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=orange]"
+      ]
+    },
+    "rock.terracotta_yellow": {
+      "kind": "rock",
+      "terrain": "TERRACOTTA_YELLOW",
+      "tags": [
+        "terracotta"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=yellow]"
+      ]
+    },
+    "rock.terracotta_brown": {
+      "kind": "rock",
+      "terrain": "TERRACOTTA_BROWN",
+      "tags": [
+        "terracotta"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=brown]"
+      ]
+    },
+    "rock.terracotta_red": {
+      "kind": "rock",
+      "terrain": "TERRACOTTA_RED",
+      "tags": [
+        "terracotta"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=red]"
+      ]
+    },
+    "rock.terracotta_white": {
+      "kind": "rock",
+      "terrain": "TERRACOTTA_WHITE",
+      "tags": [
+        "terracotta"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=white]"
+      ]
+    },
+    "rock.terracotta_gray": {
+      "kind": "rock",
+      "terrain": "TERRACOTTA_GRAY",
+      "tags": [
+        "terracotta"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=gray]"
+      ]
+    },
+    "rock.terracotta_black": {
+      "kind": "rock",
+      "terrain": "TERRACOTTA_BLACK",
+      "tags": [
+        "terracotta"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=black]"
+      ]
+    },
+    "rock.magma": {
+      "kind": "rock",
+      "terrain": "MAGMA",
+      "tags": [
+        "volcanic",
+        "luminous"
+      ],
+      "block": [
+        "minecraft:magma"
+      ]
+    },
+    "rock.netherrack": {
+      "kind": "rock",
+      "terrain": "NETHERRACK",
+      "block": [
+        "minecraft:netherrack"
+      ]
+    },
+    "rock.dripstone_block": {
+      "kind": "rock",
+      "terrain": "DRIPSTONE_BLOCK",
+      "tags": [
+        "karst"
+      ],
+      "block": [
+        "riven:dripstone_block",
+        "minecraft:stone"
+      ]
+    },
+    "rock.gabbro": {
+      "kind": "rock",
+      "terrain": "GABBRO",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:gabbro",
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.gneiss": {
+      "kind": "rock",
+      "terrain": "GNEISS",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:gneiss",
+        "minecraft:stone"
+      ]
+    },
+    "rock.graphite_schist": {
+      "kind": "rock",
+      "terrain": "GRAPHITE_SCHIST",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:graphite",
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.limestone": {
+      "kind": "rock",
+      "terrain": "LIMESTONE",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:limestone",
+        "minecraft:stone[variant=diorite]"
+      ]
+    },
+    "rock.mica_schist": {
+      "kind": "rock",
+      "terrain": "MICA_SCHIST",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:mica",
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.phyllite": {
+      "kind": "rock",
+      "terrain": "PHYLLITE",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:phyllite",
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.quartzite": {
+      "kind": "rock",
+      "terrain": "QUARTZITE",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:quartzite",
+        "minecraft:stone"
+      ]
+    },
+    "rock.shale": {
+      "kind": "rock",
+      "terrain": "SHALE",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:shale",
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.slate": {
+      "kind": "rock",
+      "terrain": "SLATE",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:slate",
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.soapstone": {
+      "kind": "rock",
+      "terrain": "SOAPSTONE",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:soapstone",
+        "minecraft:stone"
+      ]
+    },
+    "rock.kimberlite": {
+      "kind": "rock",
+      "terrain": "KIMBERLITE",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:kimberlite",
+        "minecraft:stone"
+      ]
+    },
+    "rock.anorthosite": {
+      "kind": "rock",
+      "terrain": "ANORTHOSITE",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:anorthosite",
+        "minecraft:stone[variant=diorite]"
+      ]
+    },
+    "rock.leucobasalt": {
+      "kind": "rock",
+      "terrain": "LEUCOBASALT",
+      "tags": [
+        "host-stone"
+      ],
+      "block": [
+        "riven:leucobasalt",
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.granulite": {
+      "kind": "rock",
+      "terrain": "GRANULITE",
+      "tags": [
+        "realm",
+        "beneath"
+      ],
+      "block": [
+        "riven:granulite",
+        "minecraft:stone"
+      ]
+    },
+    "rock.migmatite": {
+      "kind": "rock",
+      "terrain": "MIGMATITE",
+      "tags": [
+        "realm",
+        "beneath"
+      ],
+      "block": [
+        "riven:migmatite",
+        "minecraft:stone"
+      ]
+    },
+    "rock.eclogite": {
+      "kind": "rock",
+      "terrain": "ECLOGITE",
+      "tags": [
+        "realm",
+        "beneath"
+      ],
+      "block": [
+        "riven:eclogite",
+        "minecraft:stone"
+      ]
+    },
+    "rock.peridotite": {
+      "kind": "rock",
+      "terrain": "PERIDOTITE",
+      "tags": [
+        "realm",
+        "beneath"
+      ],
+      "block": [
+        "riven:peridotite",
+        "minecraft:stone"
+      ]
+    },
+    "rock.serpentinite": {
+      "kind": "rock",
+      "terrain": "SERPENTINITE",
+      "tags": [
+        "realm",
+        "beneath"
+      ],
+      "block": [
+        "riven:serpentinite",
+        "minecraft:stone"
+      ]
+    },
+    "rock.blueschist": {
+      "kind": "rock",
+      "terrain": "BLUESCHIST",
+      "tags": [
+        "realm",
+        "beneath"
+      ],
+      "block": [
+        "riven:blueschist",
+        "minecraft:stone"
+      ]
+    },
+    "rock.garnet_rock": {
+      "kind": "rock",
+      "terrain": "GARNET_ROCK",
+      "tags": [
+        "realm",
+        "beneath"
+      ],
+      "block": [
+        "riven:garnet_rock",
+        "minecraft:stone"
+      ]
+    },
+    "rock.chromite_peridotite": {
+      "kind": "rock",
+      "terrain": "CHROMITE_PERIDOTITE",
+      "tags": [
+        "realm",
+        "beneath"
+      ],
+      "block": [
+        "riven:chromite_peridotite",
+        "minecraft:stone"
+      ]
+    },
+    "rock.jadeite_serpentinite": {
+      "kind": "rock",
+      "terrain": "JADEITE_SERPENTINITE",
+      "tags": [
+        "realm",
+        "beneath"
+      ],
+      "block": [
+        "riven:jadeite_serpentinite",
+        "minecraft:stone"
+      ]
+    },
+    "rock.moonstone_faint": {
+      "kind": "rock",
+      "terrain": "MOONSTONE_FAINT",
+      "tags": [
+        "realm",
+        "beneath",
+        "luminous"
+      ],
+      "block": [
+        "riven:moonstone_faint",
+        "minecraft:stone"
+      ]
+    },
+    "rock.moonstone_bright": {
+      "kind": "rock",
+      "terrain": "MOONSTONE_BRIGHT",
+      "tags": [
+        "realm",
+        "beneath",
+        "luminous"
+      ],
+      "block": [
+        "riven:moonstone_bright",
+        "minecraft:stone"
+      ]
+    },
+    "rock.infernal_rock": {
+      "kind": "rock",
+      "terrain": "INFERNAL_ROCK",
+      "tags": [
+        "realm",
+        "infernal"
+      ],
+      "block": [
+        "riven:infernal_rock",
+        "minecraft:stone"
+      ]
+    },
+    "rock.slag_stone": {
+      "kind": "rock",
+      "terrain": "SLAG_STONE",
+      "tags": [
+        "realm",
+        "infernal"
+      ],
+      "block": [
+        "riven:slag_stone",
+        "minecraft:stone"
+      ]
+    },
+    "rock.brimstone": {
+      "kind": "rock",
+      "terrain": "BRIMSTONE",
+      "tags": [
+        "realm",
+        "infernal"
+      ],
+      "block": [
+        "riven:brimstone",
+        "minecraft:stone"
+      ]
+    },
+    "rock.cinder_rock": {
+      "kind": "rock",
+      "terrain": "CINDER_ROCK",
+      "tags": [
+        "realm",
+        "infernal"
+      ],
+      "block": [
+        "riven:cinder_rock",
+        "minecraft:stone"
+      ]
+    },
+    "rock.ash_shale": {
+      "kind": "rock",
+      "terrain": "ASH_SHALE",
+      "tags": [
+        "realm",
+        "infernal"
+      ],
+      "block": [
+        "riven:ash_shale",
+        "minecraft:stone"
+      ]
+    },
+    "rock.jasper_bands": {
+      "kind": "rock",
+      "terrain": "JASPER_BANDS",
+      "tags": [
+        "realm",
+        "infernal"
+      ],
+      "block": [
+        "riven:jasper_bands",
+        "minecraft:stone"
+      ]
+    },
+    "rock.molten_seams": {
+      "kind": "rock",
+      "terrain": "MOLTEN_SEAMS",
+      "tags": [
+        "realm",
+        "infernal",
+        "luminous"
+      ],
+      "block": [
+        "riven:molten_seams",
+        "minecraft:stone"
+      ]
+    },
+    "rock.soul_ash": {
+      "kind": "rock",
+      "terrain": "SOUL_ASH",
+      "tags": [
+        "realm",
+        "infernal",
+        "luminous"
+      ],
+      "block": [
+        "riven:soul_ash",
+        "minecraft:stone"
+      ]
+    },
+    "rock.crust_floor_transition": {
+      "kind": "rock",
+      "terrain": "CRUST_FLOOR_TRANSITION",
+      "tags": [
+        "realm",
+        "beneath",
+        "transition"
+      ],
+      "block": [
+        "riven:crust_floor_transition",
+        "minecraft:stone"
+      ]
+    },
+    "rock.beneath_infernal_transition": {
+      "kind": "rock",
+      "terrain": "BENEATH_INFERNAL_TRANSITION",
+      "tags": [
+        "realm",
+        "infernal",
+        "transition",
+        "luminous"
+      ],
+      "block": [
+        "riven:beneath_infernal_transition",
+        "minecraft:stone"
+      ]
+    },
+    "formation.dripstone_up": {
+      "kind": "formation",
+      "terrain": "DRIPSTONE_UP",
+      "tags": [
+        "karst"
+      ],
+      "block": [
+        "riven:pointed_dripstone[direction=up,thickness=tip_merge]",
+        "minecraft:air"
+      ]
+    },
+    "formation.dripstone_down": {
+      "kind": "formation",
+      "terrain": "DRIPSTONE_DOWN",
+      "tags": [
+        "karst"
+      ],
+      "block": [
+        "riven:pointed_dripstone[direction=down,thickness=tip_merge]",
+        "minecraft:air"
+      ]
+    },
+    "formation.ice_up": {
+      "kind": "formation",
+      "terrain": "ICE_UP",
+      "tags": [
+        "frozen"
+      ],
+      "block": [
+        "riven:pointed_ice[direction=up,thickness=tip_merge]",
+        "minecraft:air"
+      ]
+    },
+    "formation.ice_down": {
+      "kind": "formation",
+      "terrain": "ICE_DOWN",
+      "tags": [
+        "frozen"
+      ],
+      "block": [
+        "riven:pointed_ice[direction=down,thickness=tip_merge]",
+        "minecraft:air"
+      ]
+    },
+    "formation.salt_up": {
+      "kind": "formation",
+      "terrain": "SALT_UP",
+      "tags": [
+        "evaporite"
+      ],
+      "block": [
+        "riven:pointed_salt[direction=up,thickness=tip_merge]",
+        "minecraft:air"
+      ]
+    },
+    "formation.salt_down": {
+      "kind": "formation",
+      "terrain": "SALT_DOWN",
+      "tags": [
+        "evaporite"
+      ],
+      "block": [
+        "riven:pointed_salt[direction=down,thickness=tip_merge]",
+        "minecraft:air"
+      ]
+    },
+    "formation.basalt_up": {
+      "kind": "formation",
+      "terrain": "BASALT_UP",
+      "tags": [
+        "volcanic"
+      ],
+      "block": [
+        "riven:pointed_basalt[direction=up,thickness=tip_merge]",
+        "minecraft:air"
+      ]
+    },
+    "formation.basalt_down": {
+      "kind": "formation",
+      "terrain": "BASALT_DOWN",
+      "tags": [
+        "volcanic"
+      ],
+      "block": [
+        "riven:pointed_basalt[direction=down,thickness=tip_merge]",
+        "minecraft:air"
+      ]
+    },
+    "plant.root": {
+      "kind": "plant",
+      "terrain": "ROOT",
+      "tags": [
+        "provider"
+      ],
+      "block": [
+        "biomesoplenty:plant_1[variant=root]",
+        "minecraft:air"
+      ]
+    },
+    "plant.toadstool": {
+      "kind": "plant",
+      "terrain": "TOADSTOOL",
+      "tags": [
+        "provider",
+        "fungus"
+      ],
+      "block": [
+        "biomesoplenty:mushroom[variant=toadstool]",
+        "minecraft:red_mushroom"
+      ]
+    },
+    "plant.portobello": {
+      "kind": "plant",
+      "terrain": "PORTOBELLO",
+      "tags": [
+        "provider",
+        "fungus"
+      ],
+      "block": [
+        "biomesoplenty:mushroom[variant=portobello]",
+        "minecraft:brown_mushroom"
+      ]
+    },
+    "plant.brown_mushroom": {
+      "kind": "plant",
+      "terrain": "BROWN_MUSHROOM",
+      "tags": [
+        "fungus"
+      ],
+      "block": [
+        "minecraft:brown_mushroom"
+      ]
+    },
+    "plant.red_mushroom": {
+      "kind": "plant",
+      "terrain": "RED_MUSHROOM",
+      "tags": [
+        "fungus"
+      ],
+      "block": [
+        "minecraft:red_mushroom"
+      ]
+    },
+    "plant.miners_delight": {
+      "kind": "plant",
+      "terrain": "MINERS_DELIGHT",
+      "tags": [
+        "provider"
+      ],
+      "block": [
+        "biomesoplenty:flower_1[variant=miners_delight]",
+        "minecraft:air"
+      ]
+    },
+    "plant.glowshroom": {
+      "kind": "plant",
+      "terrain": "GLOWSHROOM",
+      "tags": [
+        "provider",
+        "fungus",
+        "luminous"
+      ],
+      "block": [
+        "biomesoplenty:mushroom[variant=glowshroom]",
+        "minecraft:brown_mushroom"
+      ]
+    },
+    "plant.algae": {
+      "kind": "plant",
+      "terrain": "ALGAE",
+      "tags": [
+        "provider"
+      ],
+      "block": [
+        "biomesoplenty:coral[level=0,variant=algae]",
+        "minecraft:water"
+      ]
+    },
+    "decor.cobweb": {
+      "kind": "decor",
+      "terrain": "COBWEB",
+      "block": [
+        "minecraft:web"
+      ]
+    }
+  },
+  "contract": [
+    "The catalogue is the generator's vocabulary: definitions are to name entries by id, never block names. An id's prefix is its kind; every tag is declared in tags. Each entry resolves to its first candidate whose block is registered and whose properties fit it. Every TerrainBlock has exactly one entry."
+  ]
+}

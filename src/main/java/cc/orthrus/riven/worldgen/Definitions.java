@@ -20,6 +20,7 @@ public final class Definitions {
                             "riven-biomes.json",
                             "riven-bop.json",
                             "riven-boulders.json",
+                            "riven-catalogue.json",
                             "riven-cave-decor.json",
                             "riven-caves.json",
                             "riven-climate-forcing.json",

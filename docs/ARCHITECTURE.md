@@ -62,7 +62,11 @@ carved. Population asks the same way whether a cube holds its anchor column's su
 cube beside cubes loaded from disk (a pregenerated world) does not build a cold chunk column on
 the server thread. `tools/checks/SurfaceQueryCheck` proves the queries equal the chunk column's and the bound
 holds. `ColumnBlocks` holds the block rules over the `TerrainBlock` palette; `TerrainColumn`
-maps it to Minecraft states. `tools/checks/ColumnRunsCheck` proves runs, per-Y resolution, the
+maps it to Minecraft states through the catalogue (`riven-catalogue.json`, `Catalogue`): one entry
+per palette block, its id prefixed by its kind (`rock.gabbro`), with tags and candidate states of
+which the first registered wins, so later candidates are the stand-ins. Until the generator names
+entries directly, startup also builds the former hard-coded table and fails on any difference, and
+logs which entries resolved to a stand-in. `tools/checks/ColumnRunsCheck` proves runs, per-Y resolution, the
 cached cubes and cached habitats agree. Population is empty unless the optional Biomes O' Plenty
 decoration provider is loaded (FEATURES.md, "Decoration provider"); its placements are the one
 recorded exception to order independence.
@@ -247,3 +251,4 @@ substitutes for the integer, canonical native/DH path when checking parity.
 | `riven-shores.json`, `riven-ocean-floors.json`, `riven-rocky-coasts.json`, `riven-sedimentary-coasts.json`, `riven-estuaries.json` | Coast and seabed |
 | `riven-hydrology.json`, `riven-lakes.json`, `riven-rivers.json` | Water |
 | `riven-habitats.json`, `riven-surface-rules.json` | Biome palettes and block materials |
+| `riven-catalogue.json` | Every block the generator places (`Catalogue`): kind, tags, candidate block states |

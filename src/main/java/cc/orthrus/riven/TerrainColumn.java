@@ -1,6 +1,7 @@
 package cc.orthrus.riven;
 
 import cc.orthrus.riven.worldgen.Boulders;
+import cc.orthrus.riven.worldgen.Catalogue;
 import cc.orthrus.riven.worldgen.ColumnBlocks;
 import cc.orthrus.riven.worldgen.RealmMap;
 import cc.orthrus.riven.worldgen.SurfaceRules;
@@ -22,11 +23,51 @@ import net.minecraft.item.EnumDyeColor;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.biome.Biome;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /** Minecraft states for Riven's shared block rules ({@link ColumnBlocks}). */
 final class TerrainColumn {
-    private static final IBlockState[] STATES = states();
+    /** Entries that resolved to a later candidate than their first (a stand-in). */
+    private static final List<String> STAND_INS = new ArrayList<>();
+
+    private static final IBlockState[] STATES = catalogued();
+
+    /**
+     * Each terrain block's state from its catalogue entry (riven-catalogue.json), the first
+     * candidate that resolves. Until the generator leaves TerrainBlock, the legacy table is built
+     * beside it and any difference fails startup.
+     */
+    private static IBlockState[] catalogued() {
+        IBlockState[] legacy = states(), result = new IBlockState[legacy.length];
+        List<String> differ = new ArrayList<>();
+        for (TerrainBlock b : TerrainBlock.values()) {
+            Catalogue.Entry entry = Catalogue.entry(b);
+            IBlockState state = null;
+            for (int i = 0; i < entry.candidates.size() && state == null; i++) {
+                state = Mappings.parse(entry.candidates.get(i));
+                if (state != null && i > 0) STAND_INS.add(entry.id);
+            }
+            if (state == null)
+                throw new IllegalStateException(entry.id + ": no candidate block is registered");
+            result[b.ordinal()] = state;
+            if (!state.equals(legacy[b.ordinal()]))
+                differ.add(entry.id + " " + state + " (legacy " + legacy[b.ordinal()] + ")");
+        }
+        if (!differ.isEmpty())
+            throw new IllegalStateException(
+                    "Riven catalogue differs from the legacy table: " + differ);
+        return result;
+    }
+
+    /** The startup log line: how the catalogue resolved. */
+    static String catalogueSummary() {
+        return "Riven catalogue: "
+                + STATES.length
+                + " entries resolve as the legacy table; stand-ins "
+                + STAND_INS;
+    }
 
     private static IBlockState[] states() {
         IBlockState[] result = new IBlockState[TerrainBlock.values().length];
