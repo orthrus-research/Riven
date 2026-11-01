@@ -100,7 +100,8 @@ def compile_sampler(source_dir, check=SAMPLER):
     package = package_of(source_dir)
     base = source_dir / "java" / package.replace(".", "/")
     kernels = base if package == PACKAGE else source_dir / "java/riven"
-    java_files = sorted((base / "worldgen").glob("*.java"))
+    # Worldgen and its subpackages (the column engine, worldgen/engine, since B1).
+    java_files = sorted((base / "worldgen").rglob("*.java"))
     # Trees before 2026-10-29 keep the continents kernel under contribution/.
     for name in ("contrib", "contribution"):
         java_files += sorted((kernels / name).rglob("*.java"))

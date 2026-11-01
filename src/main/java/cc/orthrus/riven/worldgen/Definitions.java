@@ -58,13 +58,15 @@ public final class Definitions {
                             "riven-subsurface-climate.json",
                             "riven-surface-carvers.json",
                             "riven-surface-rules.json",
+                            "riven-surface.json",
                             "riven-terrain-height-reference.json",
                             "riven-terrain-passes.json",
                             "riven-terrain-regions.json",
                             "riven-terrain.json",
                             "riven-trees.json",
                             "riven-volcanic.json",
-                            "riven-wonders.json"));
+                            "riven-wonders.json",
+                            "riven-zones.json"));
 
     private Definitions() {}
 

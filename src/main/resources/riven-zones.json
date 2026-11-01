@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "zones": [
+    {
+      "id": "crust",
+      "top": {"horizon": "top"},
+      "bottom": {"horizon": "crust-floor"},
+      "bed": "geology",
+      "fluid": "fluid.water",
+      "carve": ["caves"],
+      "cavities": [
+        {"id": "sky", "floor": {"horizon": "ground"}, "fluid": {"level": {"horizon": "water"}}, "settings": "crust", "biome": "column"}
+      ]
+    }
+  ],
+  "contract": [
+    "The world's vertical levels, top-down; the column engine (worldgen.engine) assembles each column zone by zone. A boundary is a fixed Y ({\"y\": n}), a depth below the column's ground ({\"depth\": n}) or a horizon an operator publishes ({\"horizon\": name}); a zone without its own bottom ends at the next zone's top.",
+    "A zone names its bed source (geology: the crust's strata), the fluid that fills its open space, the carve families that may cut it and its cavities. A cavity is open space with ground: its floor horizon is where its setting table's layers count down from, and its fluid fills to its level horizon.",
+    "The crust runs from the reference top to the crust floor (the realms below keep their own cube path until they become zones). Its one cavity is the sky: its floor is the ground, water fills it to the water horizon, and riven-surface.json's crust table chooses its ground's layers. Its sub-zones by depth come with carve families; until then today's caves arrive through the temporary carve named caves."
+  ]
+}

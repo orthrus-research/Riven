@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "thresholds": {
+    "crust": {
+      "shallowFromReference": "shoal",
+      "barWithinBlocksOfChannelHead": 1,
+      "greenAboveWaterWeight": 0.5,
+      "reflectiveBelowShoaling": 0.25,
+      "drylandCoverFrom": 0.2,
+      "roughAboveSlope": 0.12,
+      "steepAboveSlope": 0.2,
+      "clayPatch": {"variationSeed": "0x4d4154455249414c", "wavelengthBlocks": 48, "threshold": 0.35}
+    }
+  },
+  "tables": {
+    "crust": {
+      "depths": {"top": 1, "soil": 2, "subsoil": 3},
+      "rows": [
+        {"setting": "sediment", "top": "sediment.sand", "soil": "sediment.sand"},
+        {"setting": "rocky", "top": "bed", "soil": "bed"},
+        {"setting": "marine-shallow", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "bed"},
+        {"setting": "marine-deep", "top": "sediment.gravel", "soil": "sediment.gravel", "subsoil": "bed"},
+        {"setting": "lagoon-shallow", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "bed"},
+        {"setting": "lagoon-deep", "top": "sediment.gravel", "soil": "sediment.gravel", "subsoil": "bed"},
+        {"setting": "water-bed-sand", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "bed"},
+        {"setting": "water-bed-clay", "top": "sediment.clay", "soil": "sediment.clay", "subsoil": "bed"},
+        {"setting": "water-bed-dirt", "top": "soil.dirt", "soil": "soil.dirt", "subsoil": "bed"},
+        {"setting": "water-bed-gravel", "top": "sediment.gravel", "soil": "sediment.gravel", "subsoil": "bed"},
+        {"setting": "bar-sand", "top": "sediment.sand", "soil": "sediment.sand"},
+        {"setting": "bar-gravel", "top": "sediment.gravel", "soil": "sediment.gravel"},
+        {"setting": "green", "top": "soil.grass", "soil": "soil.dirt"},
+        {"setting": "bare-stone", "top": "bed", "soil": "bed", "subsoil": "bed"},
+        {"setting": "shore-reflective", "top": "sediment.gravel", "soil": "sediment.gravel", "subsoil": "bed"},
+        {"setting": "shore-sandy", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "rock.sandstone"},
+        {"setting": "dryland-pavement", "top": "sediment.gravel", "soil": "sediment.gravel"},
+        {"setting": "dryland-sand", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "rock.sandstone"},
+        {"setting": "climate-sand", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "rock.sandstone"},
+        {"setting": "snow", "top": "ice.snow", "soil": "soil.dirt", "subsoil": "bed"},
+        {"setting": "steep", "top": "sediment.gravel", "soil": "soil.dirt", "subsoil": "bed"},
+        {"setting": "rough", "top": "soil.coarse_dirt", "soil": "soil.dirt", "subsoil": "bed"},
+        {"setting": "default", "top": "soil.grass", "soil": "soil.dirt", "subsoil": "bed"}
+      ]
+    }
+  },
+  "contract": [
+    "Settings are conditions the column engine computes at a cavity's floor from facts at that column only; this file gives their thresholds and, per cavity, the table that chooses blocks for them.",
+    "Crust thresholds: marine and lagoon beds are shallow from the sea level plus shallowFromReference's lowest elevation offset (riven-terrain-height-reference.json). A channel's dry bar counts within barWithinBlocksOfChannelHead of its water's level; oases and wetlands are green above greenAboveWaterWeight. A sandy shore whose coast shoals less than reflectiveBelowShoaling (a steep, reflective coast) is shore-reflective. Dryland pavement or sand cover counts from drylandCoverFrom (pavement where it is the larger). Ground steeper than steepAboveSlope (the smoothed broad slope, which stays under about 0.2 on soil) is steep, and rough above roughAboveSlope. A dirt water bed is clay where a value noise of wavelengthBlocks exceeds threshold.",
+    "A table's rows are tried in order; a column takes the first whose setting holds, and default always holds. Each row names the entries of three layers counted down from the floor, top, soil and subsoil, with the table's depths (a row may give its own); bed shows the zone's rock. A row without a subsoil takes the subsoil of the next row that holds and names one, so a cover over the ground (sediment, a rocky build-up, a bar, green margins, pavement) keeps the ground's subsoil.",
+    "The crust table reproduces the cover the surface rules laid before the engine (terrain-v99): bare stone (riven-surface-rules.json) shows rock, sand Riven places as soil rests on sandstone, and laid deposits keep their own material."
+  ]
+}

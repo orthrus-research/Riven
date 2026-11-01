@@ -10,11 +10,12 @@ import java.util.Map;
 final class Materials {
     private static final Rules RULES = Rules.load("riven-materials.json", 1);
     static final String FINGERPRINT = RULES.fingerprint;
-    private static final long SEED = Rules.seed(RULES.json, "variationSeed");
-    private static final SeededNoise TILT = new SeededNoise(SeededNoise.mix(SEED ^ 0x54494c54L)),
-            CLAY = new SeededNoise(SeededNoise.mix(SEED ^ 0x434c4159L));
+    static final long SEED = Rules.seed(RULES.json, "variationSeed");
+    static final SeededNoise TILT = new SeededNoise(SeededNoise.mix(SEED ^ 0x54494c54L));
+    private static final SeededNoise CLAY = new SeededNoise(SeededNoise.mix(SEED ^ 0x434c4159L));
     static final int STRATA_DEPTH, SANDSTONE_DEPTH, THICKNESS;
-    private static final double TILT_BLOCKS, TILT_WAVELENGTH, CLAY_WAVELENGTH, CLAY_THRESHOLD;
+    static final double TILT_BLOCKS, TILT_WAVELENGTH;
+    private static final double CLAY_WAVELENGTH, CLAY_THRESHOLD;
     static final double GRAVEL_BEACH_SHOALING, COARSE_SLOPE, GRAVEL_SLOPE;
     private static final Map<String, TerrainBlock[]> NAMED = new HashMap<>();
 
