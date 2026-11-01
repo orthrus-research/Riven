@@ -481,10 +481,15 @@ def _path(record):
     )
 
 
+def _save(path, text):
+    """UTF-8 with LF line ends on every platform."""
+    path.write_bytes(text.encode("utf-8"))
+
+
 def write(record):
     path = _path(record)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(record, separators=(",", ":")) + "\n", encoding="utf-8")
+    _save(path, json.dumps(record, separators=(",", ":")) + "\n")
     return path
 
 
@@ -554,7 +559,7 @@ def build_index():
         "runsInOrder": runs,
     }
     LEDGER.mkdir(parents=True, exist_ok=True)
-    (LEDGER / "index.json").write_text(json.dumps(index, indent=1) + "\n", encoding="utf-8")
+    _save(LEDGER / "index.json", json.dumps(index, indent=1) + "\n")
     index["runs"] = runs
     return index
 
@@ -637,7 +642,12 @@ def export(target):
     }
     target = Path(target)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(data, separators=(",", ":")) + "\n", encoding="utf-8")
+    # One record per line: compact, and a diff shows the runs that changed.
+    lines = ",\n".join(json.dumps(r, separators=(",", ":")) for r in records)
+    _save(
+        target,
+        '{"meta":' + json.dumps(data["meta"], indent=1) + ',\n"records":[\n' + lines + "\n]}\n",
+    )
     return {
         "path": str(target),
         "runs": runs,
