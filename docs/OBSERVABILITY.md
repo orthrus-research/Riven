@@ -77,11 +77,13 @@ took 8.4 hours at 8.65 columns a second and holds 33.5 GB: 31.5 GB of cubes
 column). Captures fly on a copy of it with `riven_observe.py capture
 --world-from <instance>`.
 
-Open: on a pregenerated world the server tick runs slower than on a fresh one
-(flight p95 77-81 ms against 47-63 ms). JFR puts the difference in Riven's
-`populate` on the server thread building cold `NativeColumns` columns only to
-find that a sky cube above the pregenerated top holds no surface; on a fresh
-world the generation workers have already built them.
+On that copy a 16 b/s flight along z -1500 runs a server tick p95 of 38 ms
+(a fresh world: 47 ms) and reaches the full view in 200 ticks (fresh: 660),
+with DH answering from its database instead of generating. Before population
+settled its surface cube with one-column queries, sky cubes above the
+pregenerated top built cold chunk columns on the server thread and the same
+flight ran 77 ms. Open: joining still costs one tick of about 5 s, and DH's
+full-detail tiles from the database wait behind its 2,000 KB/s delivery limit.
 
 ## Commands
 
