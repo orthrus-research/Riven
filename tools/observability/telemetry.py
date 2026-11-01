@@ -70,7 +70,9 @@ def _artifact(entry):
     if not entry:
         return None
     path = Path(entry.get("path") or entry.get("source") or "")
-    name = path.parent.name if path.parent.name not in ("", "pins", "libs") else path.name
+    folder = path.parent.name
+    # dev/pins holds the accepted pin; other folders name a frozen build.
+    name = "pinned" if folder == "pins" else folder if folder not in ("", "libs") else path.name
     return {"build": name, "sha256": (entry.get("sha256") or "")[:12] or None}
 
 
@@ -323,7 +325,9 @@ def capture_record(instance, commits=None):
     record = {
         "schema": SCHEMA,
         "kind": "smoke" if name.startswith("smoke-") else "capture",
-        "mode": (manifest.get("observability") or {}).get("mode"),
+        # A timing capture's manifest names no mode; its scenarios name their measurement.
+        "mode": (manifest.get("observability") or {}).get("mode")
+        or ((first.get("server") or {}).get("measurementMode")),
         "instance": name,
         "startedUtc": started,
         "workload": (
