@@ -937,7 +937,7 @@
     "kinds. stone: a full rock block, either one texture by name (all) or Riven Resources face sets (textures.source, a folder under tools/content/, and faces: all, or side and top with the top also below; the main set first), one set by position so wide walls do not repeat. pointed_dripstone: a stalactite (direction down) or stalagmite (direction up) whose thickness (tip_merge, tip, frustum, middle, base) follows its neighbours along its direction. A stalactite that loses the block it hangs from falls; a falling piece hurts what it lands on with fallDamagePerBlock per block fallen, at most fallDamageMax, and breaks on landing. A stalagmite that loses its base breaks. Landing on a stalagmite tip deals fall damage for the distance plus stalagmiteExtraFallBlocks, times stalagmiteDamageMultiplier. A stalactite tip drips water or lava (dripChance per display tick) when that fluid sits on top of the block its column hangs from, and a water drip fills a cauldron up to cauldronReachBlocks below (cauldronFillChance per random tick). The same kind serves every pointed formation material (pointed_ice, pointed_salt, pointed_basalt): a piece's thickness follows only neighbours of its own block, so two materials never merge into one column.",
     "ores: one block riven:ore_<mineral> per mineral, its host property indexing hosts (Riven's host stones); each state draws its host stone's face sets, one by position as the host shows them, under an overlay (ore_overlay_<shine>) tinted with the mineral's color. With GTCEu, a mineral naming a gregtech material drops that material's GTCEu ore, so GTCEu processing applies; otherwise the block drops itself. Minerals with gregtech null are Supersymmetry minerals GTCEu lacks.",
     "unstable: one block riven:unstable_<host> per host rock, named Unstable <host>: the host's own faces under an untinted crack overlay (overlay, a texture). block and meta name the host's registered state (what it drops and how it maps), terrain the generator's rock (TerrainBlock) it replaces where a cave floor is unstable (riven-cave-decor.json unstable), and dust the colour of the dust it sheds into open space below (dustChance per display tick). A Riven host takes its block's face sets and name; another names its textures (all, or top, bottom and side). A player who steps or lands on it without sneaking sets it off: it creaks and, after triggerDelayTicks, the unstable stone joined to it within spreadRadiusBlocks (at most maximumBlocks, any host) falls ring by ring outward, spreadTicksPerBlock apart, each column from the bottom up. A falling piece hurts what it lands on (fallDamagePerBlock per block fallen, at most fallDamageMax) and shatters, dropping its host's drops at debrisDropChance. Mined it drops its host's drops; silk touch keeps it, and placed again it behaves the same. Unstable stone holds otherwise: no neighbour change or missing support sets it off.",
-    "oreDictionary: Forge ore dictionary names, registered with the items, so recipes, GroovyScript and GTCEu: Reloaded (first-class support) see Riven's blocks. A stone block lists its names (oreDictionary). Every ore block registers, on each host state, ores.oreDictionary followed by its mineral's gregtech material id in upper camel case without its namespace (oreCopper, oreAnglesite), as GTCEu names its ores. A gregtech id is a GTCEu material: bare for GTCEu's own materials, riven: for materials that are Riven's (Riven's GTCEu material registry). Woods list names per part (log, planks, leaves, sapling)."
+    "oreDictionary: Forge ore dictionary names, registered with the items, so recipes, GroovyScript and GTCEu: Reloaded (first-class support) see Riven's blocks. A stone block lists its names (oreDictionary). Every ore block registers, on each host state, ores.oreDictionary followed by its mineral's gregtech material id in upper camel case without its namespace (oreCopper, oreAnglesite), as GTCEu names its ores. A gregtech id is a GTCEu material: bare for GTCEu's own materials, riven: for materials that are Riven's. With GTCEu, Riven creates the riven material registry and builds each riven: mineral's material there (material: id, fixed for ever once worlds hold it, components, element ids to counts, and an optional name where the mineral's own would repeat a GTCEu material's), with dust and ore properties, the mineral's color and an icon set by its shine. Woods list names per part (log, planks, leaves, sapling)."
   ],
   "ores": {
     "hosts": [
@@ -1390,91 +1390,213 @@
         "name": "Anglesite",
         "color": "#e0ded5",
         "shine": "dull",
-        "gregtech": "riven:anglesite"
+        "gregtech": "riven:anglesite",
+        "material": {
+          "id": 1,
+          "components": {
+            "lead": 1,
+            "sulfur": 1,
+            "oxygen": 4
+          }
+        }
       },
       "cerussite": {
         "name": "Cerussite",
         "color": "#e0d9ba",
         "shine": "dull",
-        "gregtech": "riven:cerussite"
+        "gregtech": "riven:cerussite",
+        "material": {
+          "id": 2,
+          "components": {
+            "lead": 1,
+            "carbon": 1,
+            "oxygen": 3
+          }
+        }
       },
       "chlorapatite": {
         "name": "Chlorapatite",
         "color": "#c7af85",
         "shine": "shiny",
-        "gregtech": "riven:chlorapatite"
+        "gregtech": "riven:chlorapatite",
+        "material": {
+          "id": 3,
+          "components": {
+            "calcium": 5,
+            "phosphorus": 3,
+            "oxygen": 12,
+            "chlorine": 1
+          }
+        }
       },
       "fluorapatite": {
         "name": "Fluorapatite",
         "color": "#cc9681",
         "shine": "shiny",
-        "gregtech": "riven:fluorapatite"
+        "gregtech": "riven:fluorapatite",
+        "material": {
+          "id": 4,
+          "components": {
+            "calcium": 5,
+            "phosphorus": 3,
+            "oxygen": 12,
+            "fluorine": 1
+          }
+        }
       },
       "hydroxyapatite": {
         "name": "Hydroxyapatite",
         "color": "#c7afaa",
         "shine": "shiny",
-        "gregtech": "riven:hydroxyapatite"
+        "gregtech": "riven:hydroxyapatite",
+        "material": {
+          "id": 5,
+          "components": {
+            "calcium": 5,
+            "phosphorus": 3,
+            "oxygen": 13,
+            "hydrogen": 1
+          }
+        }
       },
       "arsenopyrite": {
         "name": "Arsenopyrite",
         "color": "#7d7269",
         "shine": "shiny",
-        "gregtech": "riven:arsenopyrite"
+        "gregtech": "riven:arsenopyrite",
+        "material": {
+          "id": 6,
+          "components": {
+            "iron": 1,
+            "arsenic": 1,
+            "sulfur": 1
+          }
+        }
       },
       "raw_electrum": {
         "name": "Electrum",
         "color": "#fcf403",
         "shine": "dull",
-        "gregtech": "riven:raw_electrum"
+        "gregtech": "riven:raw_electrum",
+        "material": {
+          "id": 7,
+          "name": "Native Electrum",
+          "components": {
+            "gold": 1,
+            "silver": 1
+          }
+        }
       },
       "fluorite": {
         "name": "Fluorite",
         "color": "#9c7ad6",
         "shine": "shiny",
-        "gregtech": "riven:fluorite"
+        "gregtech": "riven:fluorite",
+        "material": {
+          "id": 8,
+          "components": {
+            "calcium": 1,
+            "fluorine": 2
+          }
+        }
       },
       "proustite": {
         "name": "Proustite",
         "color": "#73142d",
         "shine": "shiny",
-        "gregtech": "riven:proustite"
+        "gregtech": "riven:proustite",
+        "material": {
+          "id": 9,
+          "components": {
+            "silver": 3,
+            "arsenic": 1,
+            "sulfur": 3
+          }
+        }
       },
       "pyrargyrite": {
         "name": "Pyrargyrite",
         "color": "#362a2a",
         "shine": "shiny",
-        "gregtech": "riven:pyrargyrite"
+        "gregtech": "riven:pyrargyrite",
+        "material": {
+          "id": 10,
+          "components": {
+            "silver": 3,
+            "antimony": 1,
+            "sulfur": 3
+          }
+        }
       },
       "acanthite": {
         "name": "Acanthite",
         "color": "#2c332d",
         "shine": "shiny",
-        "gregtech": "riven:acanthite"
+        "gregtech": "riven:acanthite",
+        "material": {
+          "id": 11,
+          "components": {
+            "silver": 2,
+            "sulfur": 1
+          }
+        }
       },
       "sperrylite": {
         "name": "Sperrylite",
         "color": "#b3af86",
         "shine": "shiny",
-        "gregtech": "riven:sperrylite"
+        "gregtech": "riven:sperrylite",
+        "material": {
+          "id": 12,
+          "components": {
+            "platinum": 1,
+            "arsenic": 2
+          }
+        }
       },
       "braggite": {
         "name": "Braggite",
         "color": "#686b5f",
         "shine": "dull",
-        "gregtech": "riven:braggite"
+        "gregtech": "riven:braggite",
+        "material": {
+          "id": 13,
+          "components": {
+            "platinum": 1,
+            "palladium": 1,
+            "nickel": 1,
+            "sulfur": 3
+          }
+        }
       },
       "smithsonite": {
         "name": "Smithsonite",
         "color": "#6aadab",
         "shine": "dull",
-        "gregtech": "riven:smithsonite"
+        "gregtech": "riven:smithsonite",
+        "material": {
+          "id": 14,
+          "components": {
+            "zinc": 1,
+            "carbon": 1,
+            "oxygen": 3
+          }
+        }
       },
       "vanadinite": {
         "name": "Vanadinite",
         "color": "#bf5915",
         "shine": "shiny",
-        "gregtech": "riven:vanadinite"
+        "gregtech": "riven:vanadinite",
+        "material": {
+          "id": 15,
+          "components": {
+            "lead": 5,
+            "vanadium": 3,
+            "oxygen": 12,
+            "chlorine": 1
+          }
+        }
       }
     }
   },

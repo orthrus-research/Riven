@@ -19,6 +19,13 @@ public final class Riven {
     static boolean withholdProviderBiomes = true;
 
     @Mod.EventHandler
+    public void construct(net.minecraftforge.fml.common.event.FMLConstructionEvent event) {
+        // GTCEu posts its material events in its own preInit, which may run before Riven's.
+        if (net.minecraftforge.fml.common.Loader.isModLoaded("gregtech"))
+            MinecraftForge.EVENT_BUS.register(cc.orthrus.riven.content.GregTechMaterials.class);
+    }
+
+    @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         net.minecraftforge.common.config.Configuration config =
                 new net.minecraftforge.common.config.Configuration(

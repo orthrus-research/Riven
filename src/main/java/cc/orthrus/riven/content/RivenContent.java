@@ -34,7 +34,7 @@ import java.util.List;
  */
 @Mod.EventBusSubscriber(modid = "riven")
 public final class RivenContent {
-    private static final Rules RULES = Rules.load("riven-content.json", 1);
+    static final Rules RULES = Rules.load("riven-content.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;
     private static final List<Block> BLOCKS = new ArrayList<>();
 

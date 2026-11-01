@@ -471,6 +471,11 @@ def assets() -> dict[str, bytes]:
         out.update(ore_assets(definitions["ores"], {b["id"]: b for b in definitions["blocks"]}))
         for mineral, spec in definitions["ores"]["minerals"].items():
             lang[f"tile.riven.ore_{mineral}.name"] = f"{spec['name']} Ore"
+            # GTCEu names Riven's own materials (riven:) by <namespace>.material.<path>.
+            if spec["gregtech"].startswith("riven:"):
+                lang[f"riven.material.{spec['gregtech'][6:]}"] = spec["material"].get(
+                    "name", spec["name"]
+                )
     if "unstable" in definitions:
         blocks = {b["id"]: b for b in definitions["blocks"]}
         out.update(unstable_assets(definitions["unstable"], blocks))

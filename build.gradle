@@ -31,6 +31,10 @@ dependencies {
     modCompileOnly files('dev/pins/BiomesOPlenty-1.12.2-7.0.1.2445-universal.jar')
     // Optional ore catalogue provider; compiled against, never bundled (runtime.lock.json pins it).
     modCompileOnly files('dev/pins/gregtech-1.12.2-2.8.10-beta.jar')
+    // ZenScript's annotations, which GTCEu's material classes carry; compiled against, never
+    // bundled. CraftTweaker2:ZenScript:4.1.20.700 from https://maven.blamejared.com, the version
+    // GTCEu builds with (sha256 1762abd341d6161826dcbefe027ae3ee3199611a122bae017788e9d8378e661c).
+    compileOnly files('dev/pins/ZenScript-4.1.20.700.jar')
 }
 unimined.minecraft {
     version '1.12.2'

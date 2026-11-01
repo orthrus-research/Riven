@@ -907,8 +907,15 @@ from cave decoration, ore blocks, and unstable stone on the floors cave decorati
   it, under a painted overlay tinted with the mineral's color. Every mineral names a GTCEu
   material id (`gregtech`): bare for GTCEu's own materials (71), `riven:` for the 15 that are
   Riven's (`riven:anglesite`). With GTCEu, a mineral whose material is registered drops its GTCEu
-  ore so GTCEu processing applies; otherwise the block drops itself. Riven does not register its
-  `riven:` materials yet; until it does, those 15 drop themselves.
+  ore so GTCEu processing applies; otherwise the block drops itself.
+- **Riven's GTCEu materials** (`GregTechMaterials`, GTCEu only): Riven creates GTCEu's `riven`
+  material registry and builds its 15 `riven:` materials there from each mineral's `material`
+  (an id that never changes once worlds hold it, a composition from the mineral's formula, and a
+  name where the mineral's would repeat a GTCEu material's: Native Electrum), with dust and ore
+  properties, the mineral's color and an icon set by its shine. GTCEu then makes their ores, dusts
+  and processing, and registers its per-registry items and blocks under `riven:` (`meta_dust` and
+  the like). A material name is global across a pack: GTCEu names ore blocks by bare name
+  (`gregtech:ore_anglesite_0`), so no other mod may define these 15.
 - **Ore dictionary** (`oreDictionary`, registered with the items, before any recipe): GTCEu:
   Reloaded is Riven's first-class integration, and GTCEu recognizes other mods' items by these
   names. Each ore block registers `ore` plus its material id in upper camel case, without the
