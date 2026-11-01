@@ -42,9 +42,9 @@ instance.
 
 | Path | Caller | What it samples |
 | --- | --- | --- |
-| `RivenWorldType.Generator.generateCube` | Cubature, native cubes | One `NativeColumns` entry per chunk column: `TerrainMap.sample` once per column, stored as `ColumnBlocks.runs`, read by every cube between the lowest soil and the reference top (Y 351); cubes wholly under the ground also read each 4x4x4 cell's depth biome from the entry |
+| `RivenWorldType.Generator.generateCube` | Cubature, native cubes | One `NativeColumns` entry per chunk column: `TerrainMap.sample` once per column, assembled by the column engine and stored as its runs of blocks and roles, read by every cube between the lowest soil and the reference top (Y 351); cubes wholly under the ground also read each 4x4x4 cell's depth biome from the entry |
 | `RivenWorldType.Generator.generateColumn` | Cubature, biome arrays | The same `NativeColumns` entry's habitats |
-| `createTerrainPreviewSampler` | Cubature DH provider | `TerrainMap.sample` per preview column, emitted as `ColumnBlocks.runs` |
+| `createTerrainPreviewSampler` | Cubature DH provider | `TerrainMap.sample` per preview column, assembled by the column engine and emitted as its runs |
 | `ClimateBiomeProvider` | Minecraft biome queries | `surfaceHabitat`; spawn biomes exclude ocean, deep ocean, river, swamp and all three beach biomes |
 | `RivenSpawn` | Forge `CreateSpawnPosition` | First dry land column, in 64-block rings out to 16,384 blocks, with a 16-block dry margin |
 | `/riven` (`RivenCommand`, report in `ColumnReport`) | Player | All observations at the player's column |
@@ -61,15 +61,14 @@ carving never raises a column's top, so the uncarved runs settle most answers an
 carved. Population asks the same way whether a cube holds its anchor column's surface, so a sky
 cube beside cubes loaded from disk (a pregenerated world) does not build a cold chunk column on
 the server thread. `tools/checks/SurfaceQueryCheck` proves the queries equal the chunk column's and the bound
-holds. `ColumnBlocks` holds the block rules over the catalogue (`riven-catalogue.json`): every
-block the generator places is one `TerrainBlock` entry, its id prefixed by its kind
+holds. Blocks come from the catalogue (`riven-catalogue.json`): every block the generator places
+is one `TerrainBlock` entry, its id prefixed by its kind
 (`rock.gabbro`), with tags and candidate states of which the first registered wins, so later
 candidates are the stand-ins. Definitions name entries by id; the generator's code names the
 vanilla, soil, decoration and formation entries it needs as `TerrainBlock` constants.
 `TerrainColumn` resolves each entry to its Minecraft state. Until the remaining Java block rules
 move into the catalogue, startup also builds the former hard-coded table and fails on any
-difference, and logs which entries resolved to a stand-in. `tools/checks/ColumnRunsCheck` proves runs, per-Y resolution, the
-cached cubes and cached habitats agree. Population is empty unless the optional Biomes O' Plenty
+difference, and logs which entries resolved to a stand-in. Population is empty unless the optional Biomes O' Plenty
 decoration provider is loaded (FEATURES.md, "Decoration provider"); its placements are the one
 recorded exception to order independence.
 
@@ -165,11 +164,40 @@ Within `Hydro`, construction runs network and lake, supplemental basins, expande
 decisions, lens, then river decisions, so rivers see completed coastal reservations. Sampling
 applies the lens, network/lake/river, then basins; later bodies keep existing wet ownership.
 
-`TerrainColumn` resolves blocks in this precedence: world bounds and bedrock, rocky solid/void
-edits, earlier-parent delegation for rocky volumes, cave and lake fills, surface water and air,
-then surface materials (`SurfaceRules`). DH runs use the same resolver. The native cube writer
-then swaps rock blocks for content where the column says so: an ore body's ore first, else the
-host rock's unstable stone on an unstable floor; the distant preview keeps the rock.
+## The column engine
+
+`worldgen.engine` assembles each column's crust once, as runs of `bottom`, catalogue entry, role
+and zone (`AssembledColumn`), for native cubes, the distant preview, the one-column queries and
+`/riven` alike. It is Minecraft-free; `TerrainColumn` maps entries to states. Definitions are read
+once (`Assembly`): the zone tree in `riven-zones.json` (the crust, from the reference top to the
+crust floor, with one cavity, the sky) and the setting thresholds and tables in
+`riven-surface.json`.
+
+An `Assembler` runs fixed passes, each writing half-open intervals by splitting runs, so cost
+follows a column's transitions:
+
+1. **Shape** (`CrustShape` over the terrain sample): raise the ground to the sky's floor (for a
+   rocky volume, the ground before it); lay sediment and a rocky shore's build-up over it; build a
+   rocky volume's solid and carve its arch; carve wonder voids; open the aquifer as a pocket; then
+   today's caves (`CaveMap.Voids` with its fill, linings and decorations) as a temporary carve.
+2. **Materials:** the classifier (`CrustSettings`) says which settings hold at the floor, the
+   cavity's table picks the first in its order, and its top, soil and subsoil layers are written
+   over raised rock, counted down from the floor. A row without a subsoil takes the next holding
+   row's.
+3. **Bed:** bed runs take their rock from the zone's bed source (`CrustStrata`: geology, tint
+   bands, wonder palettes).
+4. **Fills:** open space takes its cavity's fluid up to its level (water to the water horizon), a
+   pocket its own level, and air above.
+
+What a pass may write over is the engine's rule (`Shape.Pass`): built rock is never carved, caves
+never cut a rocky or wonder void, a pocket only opens raised or laid ground, and materials touch
+raised rock only. `tools/checks/AssembledColumnCheck` proves runs cover the crust, `at` and `role`
+agree with them, columns are equal cold, from reused buffers and in reverse order, soil roles lie
+only in their layer and every role is legal for its pass, and that native chunk columns store
+exactly the assembled runs. The native cube writer then swaps rock for content where the column
+says so: an ore body's ore first (only below the top of the column's highest bed run), else the
+host rock's unstable stone on an unstable floor; the distant preview keeps the rock. Realms keep
+their own cube path below the crust floor.
 
 ## Feature sites
 
@@ -252,5 +280,6 @@ substitutes for the integer, canonical native/DH path when checking parity.
 | `riven-lowlands.json`, `riven-hills.json`, `riven-mountains.json`, `riven-plateaus.json`, `riven-drylands.json`, `riven-cold-regions.json`, `riven-volcanic.json`, `riven-general-surface-cuts.json` | Contributed land families |
 | `riven-shores.json`, `riven-ocean-floors.json`, `riven-rocky-coasts.json`, `riven-sedimentary-coasts.json`, `riven-estuaries.json` | Coast and seabed |
 | `riven-hydrology.json`, `riven-lakes.json`, `riven-rivers.json` | Water |
-| `riven-habitats.json`, `riven-surface-rules.json` | Biome palettes and block materials |
+| `riven-habitats.json`, `riven-surface-rules.json` | Biome palettes; why a column's ground shows rock |
+| `riven-zones.json`, `riven-surface.json` | The column engine's zones, setting thresholds and setting tables |
 | `riven-catalogue.json` | Every block the generator places (`TerrainBlock` entries): kind, tags, candidate block states; definitions name entries by id |

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 6,
+  "revision": 7,
   "variationSeed": "0x4d4154455249414c",
   "strata": {
     "depthBlocks": 24,
@@ -17,17 +17,9 @@
       "basalt": ["rock.terracotta_gray", "rock.andesite", "rock.terracotta_gray", "rock.terracotta_black", "rock.terracotta_gray"]
     }
   },
-  "sandstoneDepthBlocks": 3,
-  "gravelBeachBelowShoaling": 0.25,
-  "coarseDirtAboveSlope": 0.12,
-  "gravelAboveSlope": 0.2,
-  "clayPatch": {"wavelengthBlocks": 48, "threshold": 0.35},
   "contract": [
-    "Riven-owned block variety, shared by native cubes and the DH preview; no block changes the land's shape.",
+    "Wonder strata, shared by native cubes and the DH preview through the crust's bed source; no block changes the land's shape. The cover a column's ground takes (sand, sandstone, gravel beaches, slopes, clay beds) is the column engine's setting table, riven-surface.json.",
     "Named palettes are for wonders, which bring their own rock (riven-wonders.json): their strata band from the wonder's floor upward, under soil too.",
-    "Exposed rock and all rock below the soil come from the geology (riven-geology.json); these palettes serve only wonders, banded in their top depthBlocks: strata thicknessBlocks thick, tilted by up to tiltBlocks over tiltWavelengthBlocks, each band picked by a hash of the band index.",
-    "Soil Riven places as sand rests on sandstoneDepthBlocks of sandstone. A sandy shore whose coast shoals less than gravelBeachBelowShoaling (a steep, reflective coast) is gravel instead.",
-    "Grass on soil steeper than coarseDirtAboveSlope (the smoothed broad slope, which stays under about 0.2 on soil) is coarse dirt, and gravel above gravelAboveSlope: about 7% and 2% of soil on the main seed.",
-    "River and lake beds of dirt are clay in patches where a value noise of wavelengthBlocks exceeds threshold."
+    "Exposed rock and all rock below the soil come from the geology (riven-geology.json); these palettes serve only wonders, banded in their top depthBlocks: strata thicknessBlocks thick, tilted by up to tiltBlocks over tiltWavelengthBlocks, each band picked by a hash of the band index."
   ]
 }

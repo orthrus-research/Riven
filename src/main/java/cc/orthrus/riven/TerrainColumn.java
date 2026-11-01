@@ -1,12 +1,12 @@
 package cc.orthrus.riven;
 
 import cc.orthrus.riven.worldgen.Boulders;
-import cc.orthrus.riven.worldgen.ColumnBlocks;
 import cc.orthrus.riven.worldgen.RealmMap;
-import cc.orthrus.riven.worldgen.SurfaceRules;
 import cc.orthrus.riven.worldgen.TerrainBlock;
 import cc.orthrus.riven.worldgen.TerrainHeightReference;
 import cc.orthrus.riven.worldgen.TerrainMap;
+import cc.orthrus.riven.worldgen.engine.AssembledColumn;
+import cc.orthrus.riven.worldgen.engine.Assembler;
 
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubicTerrainPreview;
 
@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** Minecraft states for Riven's shared block rules ({@link ColumnBlocks}). */
+/** Minecraft states for the entries Riven's column engine assembles ({@link Assembler}). */
 final class TerrainColumn {
     /** Entries that resolved to a later candidate than their first (a stand-in). */
     private static final List<String> STAND_INS = new ArrayList<>();
@@ -231,13 +231,10 @@ final class TerrainColumn {
         return STATES[block.index()];
     }
 
+    /** The block at Y of a sample's crust column, assembled afresh (reports). */
     static IBlockState blockAt(
-            long y,
-            TerrainMap.Sample sample,
-            boolean bareStone,
-            SurfaceRules rules,
-            TerrainHeightReference heights) {
-        return state(ColumnBlocks.at(y, sample, bareStone, rules, heights));
+            int y, TerrainMap.Sample sample, Assembler<TerrainMap.Sample> crust) {
+        return state(crust.assemble(sample, new AssembledColumn()).at(y));
     }
 
     /**
@@ -259,8 +256,7 @@ final class TerrainColumn {
      * never share one). Nothing in them outlives a call.
      */
     static final class Scratch {
-        final int[] bottoms = new int[ColumnBlocks.maximumRuns() + 1];
-        final TerrainBlock[] blocks = new TerrainBlock[ColumnBlocks.maximumRuns()];
+        final AssembledColumn column = new AssembledColumn();
         final TerrainBlock[] riven = new TerrainBlock[256];
         final TreeSites.Recorder recorder = new TreeSites.Recorder();
         final TreeSites.Canopy canopy = new TreeSites.Canopy();
@@ -270,8 +266,7 @@ final class TerrainColumn {
             TerrainMap.Sample sample,
             Biome biome,
             Biome reported,
-            boolean bareStone,
-            SurfaceRules rules,
+            Assembler<TerrainMap.Sample> crust,
             TerrainHeightReference heights,
             SurfaceTranscription surfaces,
             Boulders boulders,
@@ -282,9 +277,8 @@ final class TerrainColumn {
             int z,
             Scratch scratch,
             ICubicTerrainPreview.ColumnConsumer target) {
-        int[] bottoms = scratch.bottoms;
-        TerrainBlock[] blocks = scratch.blocks;
-        int count = ColumnBlocks.runs(sample, bareStone, rules, heights, bottoms, blocks);
+        AssembledColumn column = crust.assemble(sample, scratch.column);
+        int count = column.count();
         target.begin(reported);
         // Boulders show in fine cells only: coarser cells are wider than most boulders.
         Boulders.Site boulder =
@@ -306,10 +300,11 @@ final class TerrainColumn {
             java.util.Arrays.fill(riven, TerrainBlock.AIR);
             int ground = Integer.MIN_VALUE;
             for (int i = 0; i < count; i++) {
-                for (int y = Math.max(0, bottoms[i]); y < Math.min(256, bottoms[i + 1]); y++)
-                    riven[y] = blocks[i];
-                if (blocks[i] != TerrainBlock.AIR && blocks[i] != TerrainBlock.WATER)
-                    ground = bottoms[i + 1];
+                TerrainBlock block = column.runBlock(i);
+                for (int y = Math.max(0, column.bottom(i)); y < Math.min(256, column.top(i)); y++)
+                    riven[y] = block;
+                if (block != TerrainBlock.AIR && block != TerrainBlock.WATER)
+                    ground = column.top(i);
             }
             surface = surfaces.column(riven, ground, biome, x, z);
         }
@@ -318,18 +313,19 @@ final class TerrainColumn {
         // The preview cannot light air under water: air below a column's highest water (an
         // underground lake's dome under a pond) never shows from the sky and previews as stone.
         int highestWater = -1;
-        for (int i = 0; i < count; i++) if (blocks[i] == TerrainBlock.WATER) highestWater = i;
+        for (int i = 0; i < count; i++)
+            if (column.runBlock(i) == TerrainBlock.WATER) highestWater = i;
         for (int i = 0; i < count; i++) {
+            TerrainBlock block = column.runBlock(i);
             // Buried magma never shows from the sky, and the preview cannot light emitting or
             // translucent blocks: a frozen pool in an entrance previews as packed ice.
             IBlockState own =
-                    blocks[i] == TerrainBlock.LAVA
-                                    || (blocks[i] == TerrainBlock.AIR && i < highestWater)
+                    block == TerrainBlock.LAVA || (block == TerrainBlock.AIR && i < highestWater)
                             ? Blocks.STONE.getDefaultState()
-                            : blocks[i] == TerrainBlock.ICE
+                            : block == TerrainBlock.ICE
                                     ? Blocks.PACKED_ICE.getDefaultState()
-                                    : state(blocks[i], biome);
-            int bottom = bottoms[i], top = bottoms[i + 1];
+                                    : state(block, biome);
+            int bottom = column.bottom(i), top = column.top(i);
             // Below and above a column's kept band the run is Riven's own; inside it, per block.
             if (bottom < Math.min(top, lo)) consumer.addRun(bottom, Math.min(top, lo), own);
             for (int y = Math.max(bottom, lo); y < Math.min(top, hi); y++) {
@@ -346,7 +342,7 @@ final class TerrainColumn {
         // Ground cover stands on the column's own surface: the top of its highest non-air run.
         int surfaceY = Integer.MIN_VALUE;
         for (int i = 0; i < count; i++)
-            if (blocks[i] != TerrainBlock.AIR) surfaceY = bottoms[i + 1];
+            if (column.runBlock(i) != TerrainBlock.AIR) surfaceY = column.top(i);
         if (trees != null)
             replayWithTrees(
                     recorded,

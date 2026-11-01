@@ -1,0 +1,7 @@
+[
+  {"label": "surface", "x": 0, "y": 157, "z": 70, "yaw": 180, "pitch": 30, "commands": ["gamerule doDaylightCycle false", "weather clear 100000", "time set 1000"]},
+  {"label": "coast", "x": 1536, "y": 111, "z": -2618, "yaw": 180, "pitch": 30, "commands": ["execute {player} ~ ~ ~ riven column 0 40"]},
+  {"label": "chasm-rim", "x": 1024, "y": 125, "z": -1140, "yaw": 180, "pitch": 75, "commands": ["execute {player} ~ ~ ~ riven column 1536 -2650", "effect {player} minecraft:night_vision 100000 0 true"]},
+  {"label": "chasm-inside", "x": 1024, "y": 40, "z": -1156, "yaw": 90, "pitch": 10},
+  {"label": "panorama", "x": 300.5, "y": 300, "z": -1250.5, "yaw": 122, "pitch": 10, "commands": ["execute {player} ~ ~ ~ riven column 1024 -1156"]}
+]

@@ -1,7 +1,6 @@
 package cc.orthrus.riven;
 
 import cc.orthrus.riven.worldgen.CellMemo;
-import cc.orthrus.riven.worldgen.ColumnBlocks;
 import cc.orthrus.riven.worldgen.Rules;
 import cc.orthrus.riven.worldgen.SeededNoise;
 import cc.orthrus.riven.worldgen.TerrainHeightReference;
@@ -364,8 +363,7 @@ final class TreeSites {
                         s.sample,
                         look,
                         look,
-                        ColumnBlocks.bareStone(s.sample, biomes.maps.surfaces),
-                        biomes.maps.surfaces,
+                        biomes.maps.columns.assembler(),
                         heights,
                         surfaces,
                         biomes.maps.boulders,
@@ -693,8 +691,7 @@ final class TreeSites {
                 sample,
                 biomes.look(sample, x, z),
                 biomes.biome(sample, x, z),
-                ColumnBlocks.bareStone(sample, biomes.maps.surfaces),
-                biomes.maps.surfaces,
+                biomes.maps.columns.assembler(),
                 heights,
                 surfaces,
                 biomes.maps.boulders,

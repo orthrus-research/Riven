@@ -55,8 +55,8 @@ public final class WaterCheck {
 
     static Stats window(GenerationMaps maps, int x0, int z0, int size) {
         TerrainHeightReference h = TerrainHeightReference.DEFAULT;
-        int[] bottoms = new int[ColumnBlocks.maximumRuns() + 1];
-        TerrainBlock[] blocks = new TerrainBlock[ColumnBlocks.maximumRuns()];
+        cc.orthrus.riven.worldgen.engine.AssembledColumn column =
+                new cc.orthrus.riven.worldgen.engine.AssembledColumn();
         TerrainMap.Sample s = new TerrainMap.Sample();
         int n = size * size, y0 = h.minimumY, top = h.minimumY;
         int[] surface = new int[n], lakeLo = new int[n], lakeLevel = new int[n];
@@ -70,16 +70,15 @@ public final class WaterCheck {
             family[i] = new byte[h.maximumYExclusive - h.minimumY];
             maps.terrain.caves.carve(x, z, s, family[i]);
             if (s.caves.pools > 0) pools++;
-            int count =
-                    ColumnBlocks.runs(
-                            s,
-                            ColumnBlocks.bareStone(s, maps.surfaces),
-                            maps.surfaces,
-                            h,
-                            bottoms,
-                            blocks);
-            runBottoms[i] = java.util.Arrays.copyOf(bottoms, count + 1);
-            runBlocks[i] = java.util.Arrays.copyOf(blocks, count);
+            maps.columns.assembler().assemble(s, column);
+            int count = column.count();
+            runBottoms[i] = new int[count + 1];
+            runBlocks[i] = new TerrainBlock[count];
+            for (int r = 0; r < count; r++) {
+                runBottoms[i][r] = column.bottom(r);
+                runBlocks[i][r] = column.runBlock(r);
+            }
+            runBottoms[i][count] = column.topY();
             surface[i] = s.blockY();
             boolean lake = s.water.aquiferMin <= s.water.aquiferMax;
             lakeLo[i] = lake ? s.water.aquiferMin : Integer.MAX_VALUE;

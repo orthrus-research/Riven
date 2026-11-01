@@ -1,21 +1,27 @@
 package cc.orthrus.riven.worldgen;
 
+import cc.orthrus.riven.worldgen.engine.AssembledColumn;
+import cc.orthrus.riven.worldgen.engine.Assembler;
+import cc.orthrus.riven.worldgen.engine.Role;
+
 import com.google.gson.JsonObject;
 
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
- * Resolved native chunk columns: each 16 x 16 column is sampled once, stored as block runs and
- * habitat, and reused by every cube and the biome array of that column. Entries are immutable
- * pure functions of seed, definitions and position, so eviction and request order cannot change
- * any block; concurrent misses may duplicate work but publish identical values.
+ * Resolved native chunk columns: each 16 x 16 column is sampled once, assembled by the crust's
+ * column engine into runs of blocks and roles, stored with its habitat, and reused by every cube
+ * and the biome array of that column. Entries are immutable pure functions of seed, definitions
+ * and position, so eviction and request order cannot change any block; concurrent misses may
+ * duplicate work but publish identical values.
  */
 public final class NativeColumns {
     /** One immutable resolved chunk column. Column index is (z << 4) | x. */
     public static final class Column {
         private final int[] offsets, bottoms;
         private final TerrainBlock[] blocks;
+        private final byte[] roles;
         private final String[] habitats, keys;
         private final byte[] climates;
         private final OreMap ores;
@@ -30,6 +36,7 @@ public final class NativeColumns {
                 int[] offsets,
                 int[] bottoms,
                 TerrainBlock[] blocks,
+                byte[] roles,
                 String[] habitats,
                 String[] keys,
                 byte[] climates,
@@ -48,6 +55,7 @@ public final class NativeColumns {
             this.offsets = offsets;
             this.bottoms = bottoms;
             this.blocks = blocks;
+            this.roles = roles;
             this.habitats = habitats;
             this.keys = keys;
             this.climates = climates;
@@ -127,11 +135,22 @@ public final class NativeColumns {
 
         /** The block at Y of one column. */
         public TerrainBlock block(int index, int y) {
+            int run = run(index, y);
+            return run < 0 ? TerrainBlock.AIR : blocks[run];
+        }
+
+        /** The role of the block at Y of one column (air outside the crust). */
+        public Role role(int index, int y) {
+            int run = run(index, y);
+            return run < 0 ? Role.AIR : Role.of(roles[run]);
+        }
+
+        private int run(int index, int y) {
             int first = offsets[index], sentinel = offsets[index + 1] - 1;
-            if (y < bottoms[first] || y >= bottoms[sentinel]) return TerrainBlock.AIR;
+            if (y < bottoms[first] || y >= bottoms[sentinel]) return -1;
             int run = first;
             while (y >= bottoms[run + 1]) run++;
-            return blocks[run];
+            return run;
         }
 
         public String habitat(int index) {
@@ -163,7 +182,7 @@ public final class NativeColumns {
     }
 
     private final TerrainMap terrain;
-    private final SurfaceRules rules;
+    private final Assembler<TerrainMap.Sample> crust;
     private final TerrainHeightReference heights;
     private final int sets, ways;
     private final AtomicReferenceArray<Entry> memo;
@@ -171,7 +190,7 @@ public final class NativeColumns {
 
     NativeColumns(TerrainMap terrain, SurfaceRules rules, TerrainHeightReference heights) {
         this.terrain = terrain;
-        this.rules = rules;
+        crust = CrustShape.assembler(rules, heights);
         this.heights = heights;
         JsonObject j = Terrain.nativeColumnCache();
         sets = integer(j, "sets", 16, 4096);
@@ -180,6 +199,11 @@ public final class NativeColumns {
             throw new IllegalStateException("Native column cache sets must be a power of two");
         memo = new AtomicReferenceArray<>(sets * ways);
         next = new AtomicIntegerArray(sets);
+    }
+
+    /** The crust's column assembler every native and preview column is built with. */
+    public Assembler<TerrainMap.Sample> assembler() {
+        return crust;
     }
 
     private static int integer(JsonObject j, String key, int min, int max) {
@@ -225,8 +249,7 @@ public final class NativeColumns {
         // the uncarved bound.
         final int[][] waters = new int[SLOTS][];
         final TerrainMap.Sample sample = new TerrainMap.Sample();
-        final int[] bottoms = new int[ColumnBlocks.maximumRuns() + 1];
-        final TerrainBlock[] blocks = new TerrainBlock[ColumnBlocks.maximumRuns()];
+        final AssembledColumn column = new AssembledColumn();
         boolean resolving;
         // The last resolve: its surface, and its water runs as [bottom, top) pairs (null for a
         // bound).
@@ -338,18 +361,11 @@ public final class NativeColumns {
 
     /** The sample's runs as it stands: its surface, and its water runs when they are wanted. */
     private void readRuns(Resolved s, boolean water) {
-        int count =
-                ColumnBlocks.runs(
-                        s.sample,
-                        ColumnBlocks.bareStone(s.sample, rules),
-                        rules,
-                        heights,
-                        s.bottoms,
-                        s.blocks);
-        int top = Integer.MIN_VALUE, waters = 0;
+        AssembledColumn c = crust.assemble(s.sample, s.column);
+        int count = c.count(), top = Integer.MIN_VALUE, waters = 0;
         for (int i = 0; i < count; i++) {
-            if (s.blocks[i] != TerrainBlock.AIR) top = s.bottoms[i + 1];
-            if (s.blocks[i] == TerrainBlock.WATER) waters++;
+            if (c.runBlock(i) != TerrainBlock.AIR) top = c.top(i);
+            if (c.runBlock(i) == TerrainBlock.WATER) waters++;
         }
         s.top = top;
         if (!water) {
@@ -358,9 +374,9 @@ public final class NativeColumns {
         }
         int[] runs = waters == 0 ? DRY : new int[2 * waters];
         for (int i = 0, w = 0; i < count; i++)
-            if (s.blocks[i] == TerrainBlock.WATER) {
-                runs[w++] = s.bottoms[i];
-                runs[w++] = s.bottoms[i + 1];
+            if (c.runBlock(i) == TerrainBlock.WATER) {
+                runs[w++] = c.bottom(i);
+                runs[w++] = c.top(i);
             }
         s.water = runs;
     }
@@ -373,31 +389,23 @@ public final class NativeColumns {
     }
 
     /**
-     * One above the highest block of a column's own rock: below the cover its surface rules lay
-     * (soil, sand, beach, bar and slope gravel, the sandstone under sand), past air and water. Where
-     * the cover reaches the material depth, ore stays below it.
+     * One above the highest block of a column's own rock: the top of its highest bed run, so the
+     * cover its setting lays (soil, sand, beach, bar and slope gravel, the sandstone under sand)
+     * and its deposits stay above it. Ore stays below it.
      */
-    static int bedrockTop(
-            TerrainMap.Sample sample, SurfaceRules rules, TerrainHeightReference heights) {
-        int surface = sample.blockY(), floor = surface - ColumnBlocks.materialDepth(rules);
-        boolean bare = ColumnBlocks.bareStone(sample, rules);
-        for (int y = surface; y > floor; y--) {
-            TerrainBlock block = ColumnBlocks.at(y, sample, bare, rules, heights);
-            if (block == TerrainBlock.AIR || block == TerrainBlock.WATER) continue;
-            if (block == Materials.stratum(sample, y, surface)) return y + 1;
-        }
-        return floor + 1;
+    static int bedrockTop(AssembledColumn c) {
+        for (int i = c.count() - 1; i >= 0; i--) if (c.runRole(i) == Role.BED) return c.top(i);
+        return c.bottomY();
     }
 
     /** Resolves without the cache; also the reference for parity checks. */
     public Column build(int chunkX, int chunkZ) {
-        int capacity = ColumnBlocks.maximumRuns();
-        int[] offsets = new int[257], bottoms = new int[256 * (capacity + 1)];
-        TerrainBlock[] blocks = new TerrainBlock[256 * capacity];
+        int[] offsets = new int[257], bottoms = new int[256 * 24];
+        TerrainBlock[] blocks = new TerrainBlock[bottoms.length];
+        byte[] roles = new byte[bottoms.length];
         String[] habitats = new String[256], keys = new String[256];
         byte[] climates = new byte[256];
-        int[] runBottoms = new int[capacity + 1];
-        TerrainBlock[] runBlocks = new TerrainBlock[capacity];
+        AssembledColumn assembled = new AssembledColumn();
         TerrainMap.Sample sample = new TerrainMap.Sample();
         OreMap.Bodies bodies = new OreMap.Bodies();
         int[] oreOffsets = new int[257],
@@ -417,8 +425,9 @@ public final class NativeColumns {
                 terrain.sample(chunkX * 16 + x, chunkZ * 16 + z, sample);
                 terrain.caves.carve(chunkX * 16 + x, chunkZ * 16 + z, sample);
                 terrain.ores.bodies(chunkX * 16 + x, chunkZ * 16 + z, sample, bodies);
-                // Ore replaces the bed's own rock only, never the cover the surface rules lay.
-                int bedrock = bedrockTop(sample, rules, heights);
+                AssembledColumn c = crust.assemble(sample, assembled);
+                // Ore replaces the bed's own rock only, never the cover its setting lays.
+                int bedrock = bedrockTop(c);
                 oreOffsets[index] = ores;
                 for (int i = 0; i < bodies.count(); i++) {
                     int hi = Math.min(bodies.hi(i), bedrock);
@@ -437,26 +446,27 @@ public final class NativeColumns {
                     unstableLo[unstables] = voids.unstableLo(i);
                     unstableHi[unstables++] = voids.unstableHi(i);
                 }
-                int count =
-                        ColumnBlocks.runs(
-                                sample,
-                                ColumnBlocks.bareStone(sample, rules),
-                                rules,
-                                heights,
-                                runBottoms,
-                                runBlocks);
+                int count = c.count();
+                if (n + count + 1 > bottoms.length) {
+                    int grown = Math.max(2 * bottoms.length, n + count + 1);
+                    bottoms = java.util.Arrays.copyOf(bottoms, grown);
+                    blocks = java.util.Arrays.copyOf(blocks, grown);
+                    roles = java.util.Arrays.copyOf(roles, grown);
+                }
                 offsets[index] = n;
                 for (int i = 0; i < count; i++) {
-                    bottoms[n] = runBottoms[i];
-                    blocks[n++] = runBlocks[i];
+                    bottoms[n] = c.bottom(i);
+                    roles[n] = c.runRole(i).code();
+                    blocks[n++] = c.runBlock(i);
                 }
                 // The allocation top closes the column; it is never read as a run block.
-                bottoms[n] = runBottoms[count];
+                bottoms[n] = c.topY();
+                roles[n] = Role.AIR.code();
                 blocks[n++] = TerrainBlock.AIR;
                 habitats[index] = Habitats.at(sample);
                 keys[index] = Habitats.key(sample);
                 climates[index] = (byte) Habitats.climate(sample);
-                int ground = ground(runBottoms, runBlocks, count);
+                int ground = ground(c);
                 minimumGround = Math.min(minimumGround, ground);
                 // Cell columns read their centre column (x and z of 2 within the cell).
                 if ((x & 3) == 2 && (z & 3) == 2) {
@@ -484,6 +494,7 @@ public final class NativeColumns {
                 offsets,
                 java.util.Arrays.copyOf(bottoms, n),
                 java.util.Arrays.copyOf(blocks, n),
+                java.util.Arrays.copyOf(roles, n),
                 habitats,
                 keys,
                 climates,
@@ -505,11 +516,13 @@ public final class NativeColumns {
      * The ground of a column's runs: the Y of its highest block that is neither air nor fluid
      * (an entrance's floor where one opens, the bed under surface water).
      */
-    static int ground(int[] bottoms, TerrainBlock[] blocks, int count) {
-        for (int i = count - 1; i >= 0; i--)
-            if (blocks[i] != TerrainBlock.AIR
-                    && blocks[i] != TerrainBlock.WATER
-                    && blocks[i] != TerrainBlock.LAVA) return bottoms[i + 1] - 1;
-        return bottoms[0] - 1;
+    static int ground(AssembledColumn c) {
+        for (int i = c.count() - 1; i >= 0; i--) {
+            TerrainBlock block = c.runBlock(i);
+            if (block != TerrainBlock.AIR
+                    && block != TerrainBlock.WATER
+                    && block != TerrainBlock.LAVA) return c.top(i) - 1;
+        }
+        return c.bottomY() - 1;
     }
 }

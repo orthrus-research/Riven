@@ -96,11 +96,14 @@ public final class DescentCheck {
             int lx = index & 15, lz = index >> 4, x = cx * 16 + lx, z = cz * 16 + lz;
             maps.terrain.sample(x, z, s);
             maps.terrain.caves.carve(x, z, s);
-            boolean bare = ColumnBlocks.bareStone(s, maps.surfaces);
+            cc.orthrus.riven.worldgen.engine.AssembledColumn assembled =
+                    maps.columns
+                            .assembler()
+                            .assemble(s, new cc.orthrus.riven.worldgen.engine.AssembledColumn());
             // The ground, scanned block by block from the top.
             int ground = h.maximumYExclusive - 1;
             while (ground > h.minimumY) {
-                TerrainBlock b = ColumnBlocks.at(ground, s, bare, maps.surfaces, h);
+                TerrainBlock b = assembled.at(ground);
                 if (b != TerrainBlock.AIR && b != TerrainBlock.WATER && b != TerrainBlock.LAVA)
                     break;
                 ground--;

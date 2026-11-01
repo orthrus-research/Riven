@@ -153,25 +153,20 @@ public final class GeologySection {
             double x = Double.parseDouble(a[i]), z = Double.parseDouble(a[i + 1]);
             maps.terrain.sample(x, z, s);
             int y = s.blockY();
-            boolean bare = ColumnBlocks.bareStone(s, maps.surfaces);
+            cc.orthrus.riven.worldgen.engine.AssembledColumn c =
+                    maps.columns
+                            .assembler()
+                            .assemble(s, new cc.orthrus.riven.worldgen.engine.AssembledColumn());
             StringBuilder b = new StringBuilder();
-            for (int d = 0; d < 8; d++)
-                b.append(' ')
-                        .append(
-                                ColumnBlocks.at(
-                                        y - d,
-                                        s,
-                                        bare,
-                                        maps.surfaces,
-                                        TerrainHeightReference.DEFAULT));
+            for (int d = 0; d < 8; d++) b.append(' ').append(c.at(y - d));
             System.out.printf(
-                    "%.0f,%.0f surface=%d region=%s reason=%s bare=%b unit=%s blocks:%s%n",
+                    "%.0f,%.0f surface=%d region=%s reason=%s setting=%s unit=%s blocks:%s%n",
                     x,
                     z,
                     y,
                     s.climate.region,
                     maps.surfaces.reason(s),
-                    bare,
+                    cc.orthrus.riven.worldgen.engine.Settings.name(c.setting()),
                     s.geology.unit(y).name,
                     b);
         }
@@ -380,6 +375,8 @@ public final class GeologySection {
         TerrainMap.Sample s = new TerrainMap.Sample();
         TerrainHeightReference h = TerrainHeightReference.DEFAULT;
         long previewColumns = 0, previewBad = 0, nativeColumns = 0, nativeBad = 0, voids = 0;
+        cc.orthrus.riven.worldgen.engine.AssembledColumn column =
+                new cc.orthrus.riven.worldgen.engine.AssembledColumn();
         for (int z = -3000; z < 3000; z += 4)
             for (int x = -3000; x < 3000; x += 4) {
                 maps.terrain.sample(x, z, s);
@@ -392,11 +389,11 @@ public final class GeologySection {
                         if (!carve) continue;
                         maps.terrain.caves.carve(x, z, s);
                     }
-                    boolean bare = ColumnBlocks.bareStone(s, maps.surfaces);
+                    maps.columns.assembler().assemble(s, column);
                     boolean bad = false;
-                    TerrainBlock below = ColumnBlocks.at(h.minimumY, s, bare, maps.surfaces, h);
+                    TerrainBlock below = column.at(h.minimumY);
                     for (int y = h.minimumY + 1; y <= s.blockY() + 1; y++) {
-                        TerrainBlock here = ColumnBlocks.at(y, s, bare, maps.surfaces, h);
+                        TerrainBlock here = column.at(y);
                         if (here == TerrainBlock.WATER && below == TerrainBlock.AIR) bad = true;
                         below = here;
                     }

@@ -1,7 +1,6 @@
 package cc.orthrus.riven;
 
 import cc.orthrus.riven.worldgen.BuildPool;
-import cc.orthrus.riven.worldgen.ColumnBlocks;
 import cc.orthrus.riven.worldgen.NativeColumns;
 import cc.orthrus.riven.worldgen.RealmMap;
 import cc.orthrus.riven.worldgen.RivenBiomeTable;
@@ -209,8 +208,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
                                 sample,
                                 biomes.look(sample, x, z),
                                 biomes.biome(sample, x, z),
-                                ColumnBlocks.bareStone(sample, biomes.maps.surfaces),
-                                biomes.maps.surfaces,
+                                biomes.maps.columns.assembler(),
                                 HEIGHTS,
                                 surfaces,
                                 biomes.maps.boulders,
@@ -290,7 +288,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
                 return fill(primer, Blocks.AIR.getDefaultState());
             if (top < HEIGHTS.minimumY) return realmCube(primer, cubeX, cubeY, cubeZ);
             int minimumSoilY =
-                    terrain.minimumSurfaceY - ColumnBlocks.materialDepth(biomes.maps.surfaces) + 1;
+                    terrain.minimumSurfaceY - biomes.maps.columns.assembler().materialDepth() + 1;
             boolean aquifer =
                     top < minimumSoilY && terrain.hydro.aquiferIntersects(cubeX, cubeY, cubeZ);
             if (top < minimumSoilY && !aquifer) {
@@ -318,8 +316,8 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
                     }
                 return depthBiomes(primer, deep, cubeX, cubeY, cubeZ);
             }
-            // Every cube of a chunk column reuses one resolved column (ColumnRunsCheck proves the
-            // runs equal per-block resolution).
+            // Every cube of a chunk column reuses one assembled column (AssembledColumnCheck proves
+            // the stored runs equal the engine's).
             NativeColumns.Column column = biomes.maps.columns.column(cubeX, cubeZ);
             TerrainBlock[] line = new TerrainBlock[16];
             SurfaceTranscription.Surface surface =

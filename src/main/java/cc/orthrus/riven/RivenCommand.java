@@ -364,19 +364,28 @@ final class RivenCommand extends CommandBase {
         sender.sendMessage(new TextComponentString(out.toString()));
         cc.orthrus.riven.worldgen.TerrainBlock[] line =
                 new cc.orthrus.riven.worldgen.TerrainBlock[16];
-        int[] bottoms = new int[cc.orthrus.riven.worldgen.ColumnBlocks.maximumRuns() + 1];
-        cc.orthrus.riven.worldgen.TerrainBlock[] blocks =
-                new cc.orthrus.riven.worldgen.TerrainBlock
-                        [cc.orthrus.riven.worldgen.ColumnBlocks.maximumRuns()];
-        int count =
-                cc.orthrus.riven.worldgen.ColumnBlocks.runs(
-                        sample,
-                        cc.orthrus.riven.worldgen.ColumnBlocks.bareStone(
-                                sample, provider.maps.surfaces),
-                        provider.maps.surfaces,
-                        cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT,
-                        bottoms,
-                        blocks);
+        // The preview's column (uncarved), as the engine assembles it.
+        cc.orthrus.riven.worldgen.engine.AssembledColumn assembled =
+                provider.maps
+                        .columns
+                        .assembler()
+                        .assemble(sample, new cc.orthrus.riven.worldgen.engine.AssembledColumn());
+        int count = assembled.count();
+        sender.sendMessage(
+                new TextComponentString(
+                        String.format(
+                                Locale.ROOT,
+                                "  assembled %d runs in zone %s: setting %s, subsoil from %s",
+                                count,
+                                provider.maps.columns.assembler().zone.id,
+                                assembled.setting() < 0
+                                        ? "none"
+                                        : cc.orthrus.riven.worldgen.engine.Settings.name(
+                                                assembled.setting()),
+                                assembled.subsoilSetting() < 0
+                                        ? "none"
+                                        : cc.orthrus.riven.worldgen.engine.Settings.name(
+                                                assembled.subsoilSetting()))));
         TreeSites sites = RivenWorldType.trees(world);
         TreeSites.Recorder preview = sites == null ? null : sites.previewColumn(x, z);
         net.minecraft.world.biome.Biome nativeLook = provider.look(native_, index, x, z),
@@ -399,11 +408,12 @@ final class RivenCommand extends CommandBase {
                 new cc.orthrus.riven.worldgen.TerrainBlock[256];
         int ground = Integer.MIN_VALUE;
         for (int i = 0; i < count; i++) {
-            for (int y = Math.max(0, bottoms[i]); y < Math.min(256, bottoms[i + 1]); y++)
-                riven[y] = blocks[i];
-            if (blocks[i] != cc.orthrus.riven.worldgen.TerrainBlock.AIR
-                    && blocks[i] != cc.orthrus.riven.worldgen.TerrainBlock.WATER)
-                ground = bottoms[i + 1];
+            cc.orthrus.riven.worldgen.TerrainBlock block = assembled.runBlock(i);
+            for (int y = Math.max(0, assembled.bottom(i)); y < Math.min(256, assembled.top(i)); y++)
+                riven[y] = block;
+            if (block != cc.orthrus.riven.worldgen.TerrainBlock.AIR
+                    && block != cc.orthrus.riven.worldgen.TerrainBlock.WATER)
+                ground = assembled.top(i);
         }
         for (int y = 0; y < 256; y++)
             if (riven[y] == null) riven[y] = cc.orthrus.riven.worldgen.TerrainBlock.AIR;
@@ -426,17 +436,26 @@ final class RivenCommand extends CommandBase {
                                 + (single == null ? null : single.bandTop(0))));
         for (int y = surface - 5; y <= surface + 1; y++) {
             native_.cube(index, Math.floorDiv(y, 16) * 16, line);
-            cc.orthrus.riven.worldgen.TerrainBlock sampled = null;
-            for (int i = 0; i < count; i++)
-                if (y >= bottoms[i] && y < bottoms[i + 1]) sampled = blocks[i];
+            int run = assembled.run(y);
             sender.sendMessage(
                     new TextComponentString(
                             String.format(
                                     Locale.ROOT,
-                                    "  y=%d terrain native=%s sample=%s | preview=%s world=%s",
+                                    "  y=%d terrain native=%s (%s) sample=%s (%s, zone %s) | preview=%s world=%s",
                                     y,
                                     line[Math.floorMod(y, 16)],
-                                    sampled,
+                                    native_.role(index, y),
+                                    assembled.at(y),
+                                    assembled.role(y),
+                                    run < 0
+                                            ? "none"
+                                            : provider.maps
+                                                    .columns
+                                                    .assembler()
+                                                    .assembly
+                                                    .zones
+                                                    .zone(assembled.runZone(run))
+                                                    .id,
                                     preview == null ? null : preview.at(y),
                                     world.getBlockState(new BlockPos(x, y, z)))));
         }

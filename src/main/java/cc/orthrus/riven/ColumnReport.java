@@ -445,23 +445,35 @@ final class ColumnReport {
                 new TextComponentString(
                         "Dryland family admission="
                                 + java.util.Arrays.toString(terrain.drylands.reasons)));
+        // The column's setting and the depth its top and soil reach (the substrate lies below).
+        cc.orthrus.riven.worldgen.engine.Assembler<cc.orthrus.riven.worldgen.TerrainMap.Sample>
+                crust = provider.maps.columns.assembler();
+        cc.orthrus.riven.worldgen.engine.AssembledColumn assembled =
+                crust.assemble(terrain, new cc.orthrus.riven.worldgen.engine.AssembledColumn());
+        cc.orthrus.riven.worldgen.engine.SettingTable table = crust.settings();
+        int row = assembled.setting() < 0 ? -1 : table.rowOf(assembled.setting());
+        int soil =
+                row < 0
+                        ? 0
+                        : table.depth(row, cc.orthrus.riven.worldgen.engine.SettingTable.TOP)
+                                + table.depth(
+                                        row, cc.orthrus.riven.worldgen.engine.SettingTable.SOIL);
         sender.sendMessage(
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Cover=%s stoneFromY=%d soilDepth=%d | expectedSurface=%s substrate=%s",
+                                "Cover=%s stoneFromY=%d setting=%s soilDepth=%d | expectedSurface=%s substrate=%s",
                                 provider.maps.surfaces.reason(terrain),
                                 provider.maps.surfaces.stoneAboveY,
-                                provider.maps.surfaces.soilDepth,
-                                TerrainColumn.blockAt(
-                                                terrain.blockY(),
-                                                terrain,
-                                                provider.maps.surfaces.bareStone(terrain),
-                                                provider.maps.surfaces,
-                                                provider.context.terrainHeights)
+                                row < 0
+                                        ? "none"
+                                        : cc.orthrus.riven.worldgen.engine.Settings.name(
+                                                assembled.setting()),
+                                soil,
+                                TerrainColumn.blockAt(terrain.blockY(), terrain, crust)
                                         .getBlock()
                                         .getRegistryName(),
-                                world.getBlockState(surface.down(provider.maps.surfaces.soilDepth))
+                                world.getBlockState(surface.down(soil))
                                         .getBlock()
                                         .getRegistryName())));
     }

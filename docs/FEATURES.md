@@ -639,8 +639,9 @@ from the middle layers (each realm also reports depth biomes; see Realms and dep
   sky. They are part of every column sample, so the distant preview shows them.
 
 The 3D caves are carved only into native chunk columns, from rotated value noise on a 4-block
-lattice cached per chunk; runs stay exact (`ColumnRunsCheck` compares carved native columns with
-per-block resolution). On seed 8675309 (terrain-v88), caves fill 2.6% of the skin, 10.2% of the
+lattice cached per chunk; they reach native columns through the column engine's temporary
+carve (`AssembledColumnCheck` compares carved native columns with the assembled ones). On seed
+8675309 (terrain-v88), caves fill 2.6% of the skin, 10.2% of the
 layered deep, 6.1% of the basement and 14.3% of the root. By volume, pillar halls are 49%,
 caverns 13%, joint mazes 14%, tunnels 10% and bedding planes 6%, and each remaining family is
 under 5% (`GeologySection families`). Flood cells and the new joint mazes add about 1.5 ms (6%)
@@ -648,7 +649,7 @@ to a chunk column's build in one of `GeologySection cost`'s two sample areas and
 measurable in the other.
 
 **Cave decoration** (prototype, `riven-cave-decor.json`, `CaveDecor`): placed on each native column's
-cave floors and ceilings as runs (`ColumnRunsCheck` covers them); voids touching a planned entrance
+cave floors and ceilings as runs (`AssembledColumnCheck` covers them); voids touching a planned entrance
 stay bare so the distant preview still matches the sky view. What a floor or ceiling holds follows
 the depth biome (riven-realms.json; table below) reported where the cave space it bounds lies,
 the 4-block cell row of the void's lowest or highest block, so a biome's name tells what its caves
@@ -874,11 +875,17 @@ and on `/riven effects reload` (operators). Unknown keys, unregistered potions (
 turns the router off. `RivenClimate.at(world, pos)` gives any server-side caller the climate, realm and depth
 biome at a block, for machines later; `/riven` prints them with the effects that apply.
 
-**Block variety** (prototype, `riven-materials.json`, `Materials`): rock comes from the geology
-(above); the named strata palettes now serve only wonders. Sand rests on three blocks of
-sandstone; sandy shores on reflective coasts (shoaling under 0.25) are gravel; grass on the
-steepest soil (broad slope over 0.12, about 7% of soil) is coarse dirt, and gravel over 0.2; dirt
-river and lake beds are clay in patches.
+**Ground cover** (`riven-surface.json`, the column engine's crust settings): each column's ground
+takes the first of 23 settings that holds, in the crust table's order, and the table names its top
+(one block), soil (two) and subsoil (three). Sediment and a rocky shore's build-up lie over their
+own deposits; marine and lagoon beds are sand down to the shoal level and gravel below; river and
+lake beds are sand, dirt, gravel or clay in patches; channel bars, green oasis and wetland margins,
+bare stone (riven-surface-rules.json), sandy shores (gravel on reflective coasts, shoaling under
+0.25), dryland pavement and sand, climate sand and snow follow; grass on the steepest soil (broad
+slope over 0.12, about 7% of soil) is coarse dirt, and gravel over 0.2. Sand Riven places as soil
+rests on three blocks of sandstone, and covers over it (bars, green margins, pavement, beach sand)
+keep it. Rock comes from the geology (above); the named strata palettes in `riven-materials.json`
+serve only wonders.
 
 ## Riven content
 

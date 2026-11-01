@@ -17,8 +17,9 @@ import java.util.TreeMap;
  * role(y) equal the runs at every boundary; a column assembled cold, from the reused buffer and
  * in reverse order is the same column; soil roles lie only in their layer under the sky's floor;
  * every run's role is one its pass writes; nothing above the highest surface but air, and no soil
- * or deposit below the lowest soil. Until the engine is wired, every block also equals
- * ColumnBlocks (the first setting table reproduces today's blocks).
+ * or deposit below the lowest soil. Native chunk columns store exactly the assembled columns
+ * (every cube, block and role), and a cache filled in reverse order returns identical columns,
+ * ores and unstable floors included.
  */
 public final class AssembledColumnCheck {
     private static void require(boolean value, String message) {
@@ -89,22 +90,17 @@ public final class AssembledColumnCheck {
                 args.length == 0 ? new long[] {8675309L, 101L, 1L, 5L} : new long[args.length];
         for (int i = 0; i < args.length; i++) seeds[i] = Long.parseLong(args[i]);
         TerrainHeightReference h = TerrainHeightReference.DEFAULT;
-        int[] bottoms = new int[ColumnBlocks.maximumRuns() + 1];
-        TerrainBlock[] blocks = new TerrainBlock[ColumnBlocks.maximumRuns()];
         TreeMap<String, Integer> coverage = new TreeMap<>(), settings = new TreeMap<>();
-        long columns = 0, chunkColumns = 0, runs = 0, perBlock = 0;
-        int maximumRuns = 0;
+        long columns = 0, chunkColumns = 0, runs = 0;
+        int maximumRuns = 0, materialDepth = 0;
         AssembledColumn reused = new AssembledColumn();
         for (long seed : seeds) {
             GenerationMaps maps = new GenerationMaps(seed);
             TerrainMap terrain = maps.terrain;
-            SurfaceRules rules = maps.surfaces;
-            Assembler<TerrainMap.Sample> crust = CrustShape.assembler(rules, h);
+            Assembler<TerrainMap.Sample> crust = maps.columns.assembler();
             SettingTable table = crust.settings();
-            int minimumSoilY = terrain.minimumSurfaceY - crust.materialDepth() + 1;
-            require(
-                    crust.materialDepth() == ColumnBlocks.materialDepth(rules),
-                    "Material depth differs from ColumnBlocks");
+            materialDepth = crust.materialDepth();
+            int minimumSoilY = terrain.minimumSurfaceY - materialDepth + 1;
             TerrainMap.Sample s = new TerrainMap.Sample();
             ContinentalMap.Sample probe = new ContinentalMap.Sample();
             int patches = 0;
@@ -144,34 +140,32 @@ public final class AssembledColumnCheck {
                                         wx + "," + wz + " seed " + seed,
                                         minimumSoilY,
                                         h,
-                                        bottoms,
-                                        blocks,
                                         columns,
                                         coverage,
                                         settings);
                                 AssembledColumn c = reused;
                                 runs += c.count();
                                 maximumRuns = Math.max(maximumRuns, c.count());
-                                if (columns % 16 == 0) perBlock++;
                             }
                     }
                 }
-            chunkColumns += chunks(maps, h, seed, table, bottoms, blocks);
+            chunkColumns += chunks(maps, h, seed, table);
         }
         System.out.println(
-                "PASS carved chunk columns: well formed, equal ColumnBlocks, cold = reused ="
-                        + " reverse order; chunkColumns="
+                "PASS native chunk columns: carved columns well formed, stored cubes, blocks and"
+                        + " roles = assembled, cold = reused = reverse order (ores and unstable"
+                        + " floors too); chunkColumns="
                         + chunkColumns);
         System.out.println(
                 "PASS assembled columns: cover the crust, at = runs, roles legal per pass, soil"
-                        + " only in its layer, equal ColumnBlocks; columns="
+                        + " only in its layer; materialDepth="
+                        + materialDepth
+                        + " columns="
                         + columns
                         + " runs="
                         + runs
                         + " maxRuns="
                         + maximumRuns
-                        + " perBlockColumns="
-                        + perBlock
                         + " coverage="
                         + coverage
                         + " settings="
@@ -191,8 +185,6 @@ public final class AssembledColumnCheck {
             String where,
             int minimumSoilY,
             TerrainHeightReference h,
-            int[] bottoms,
-            TerrainBlock[] blocks,
             long columns,
             TreeMap<String, Integer> coverage,
             TreeMap<String, Integer> settings) {
@@ -208,7 +200,6 @@ public final class AssembledColumnCheck {
             require(
                     !c.runRole(i).soil() && c.runRole(i) != Role.DEPOSIT,
                     "Soil or deposit below the lowest soil at " + where);
-        parity(c, s, maps.surfaces, h, bottoms, blocks, columns % 16 == 0, where);
         settings.merge(Settings.name(c.setting()), 1, Integer::sum);
         if (s.ocean.marine) coverage.merge("marine", 1, Integer::sum);
         if (s.water.wet) coverage.merge("wet", 1, Integer::sum);
@@ -225,24 +216,21 @@ public final class AssembledColumnCheck {
     }
 
     /**
-     * Carved chunk columns along a diagonal: assembled forward with the reused buffer, then in
-     * reverse order by a fresh assembler over fresh maps, each well formed and equal to
-     * ColumnBlocks.
+     * Carved chunk columns along a diagonal: each column assembled with the reused buffer is well
+     * formed and is what the cached native chunk column stores; a fresh cache over fresh maps,
+     * filled in reverse order, assembles and stores the same columns.
      */
     private static int chunks(
-            GenerationMaps maps,
-            TerrainHeightReference h,
-            long seed,
-            SettingTable table,
-            int[] bottoms,
-            TerrainBlock[] blocks) {
+            GenerationMaps maps, TerrainHeightReference h, long seed, SettingTable table) {
         int[][] chunks = new int[160][];
         for (int i = 0; i < chunks.length; i++) chunks[i] = new int[] {i * 3 - 240, i * 2 - 160};
-        Assembler<TerrainMap.Sample> crust = CrustShape.assembler(maps.surfaces, h);
+        Assembler<TerrainMap.Sample> crust = maps.columns.assembler();
         AssembledColumn reused = new AssembledColumn();
         TerrainMap.Sample s = new TerrainMap.Sample();
-        int[][][] forward = new int[chunks.length][256][];
-        for (int i = 0; i < chunks.length; i++)
+        NativeColumns.Column[] forward = new NativeColumns.Column[chunks.length];
+        int[][][] assembled = new int[chunks.length][256][];
+        for (int i = 0; i < chunks.length; i++) {
+            forward[i] = maps.columns.column(chunks[i][0], chunks[i][1]);
             for (int index = 0; index < 256; index++) {
                 int x = chunks[i][0] * 16 + (index & 15), z = chunks[i][1] * 16 + (index >> 4);
                 maps.terrain.sample(x, z, s);
@@ -250,71 +238,91 @@ public final class AssembledColumnCheck {
                 AssembledColumn c = crust.assemble(s, reused);
                 String where = x + "," + z + " seed " + seed + " carved";
                 wellFormed(c, h, table, where);
-                parity(c, s, maps.surfaces, h, bottoms, blocks, index % 16 == 0, where);
-                forward[i][index] = snapshot(c);
+                stored(forward[i], index, c, h, index % 16 == 0, where);
+                assembled[i][index] = snapshot(c);
             }
+        }
         GenerationMaps fresh = new GenerationMaps(seed);
-        Assembler<TerrainMap.Sample> again = CrustShape.assembler(fresh.surfaces, h);
-        for (int i = chunks.length - 1; i >= 0; i--)
+        Assembler<TerrainMap.Sample> again = fresh.columns.assembler();
+        for (int i = chunks.length - 1; i >= 0; i--) {
+            NativeColumns.Column back = fresh.columns.column(chunks[i][0], chunks[i][1]);
             for (int index = 255; index >= 0; index--) {
                 int x = chunks[i][0] * 16 + (index & 15), z = chunks[i][1] * 16 + (index >> 4);
                 fresh.terrain.sample(x, z, s);
                 fresh.terrain.caves.carve(x, z, s);
+                AssembledColumn c = again.assemble(s, new AssembledColumn());
+                String where = x + "," + z + " seed " + seed;
                 require(
-                        Arrays.equals(
-                                forward[i][index],
-                                snapshot(again.assemble(s, new AssembledColumn()))),
-                        "Reverse-order cold column differs at " + x + "," + z + " seed " + seed);
+                        Arrays.equals(assembled[i][index], snapshot(c)),
+                        "Reverse-order cold column differs at " + where);
+                same(forward[i], back, index, c, x, z, h, index % 16 == 0, where);
             }
+        }
         return chunks.length;
     }
 
     /**
-     * The assembled column equals ColumnBlocks at every boundary of either (both are constant
-     * between their boundaries), and at every Y when full is set; returns 1 for a full check.
+     * A native chunk column stores the assembled column: its block and role at every run boundary,
+     * and every cube's blocks when full is set.
      */
-    private static int parity(
+    private static void stored(
+            NativeColumns.Column column,
+            int index,
             AssembledColumn c,
-            TerrainMap.Sample s,
-            SurfaceRules rules,
             TerrainHeightReference h,
-            int[] bottoms,
-            TerrainBlock[] blocks,
             boolean full,
             String where) {
-        boolean bare = ColumnBlocks.bareStone(s, rules);
-        int count = ColumnBlocks.runs(s, bare, rules, h, bottoms, blocks);
-        for (int i = 0; i < count; i++)
-            for (int y : new int[] {bottoms[i], bottoms[i + 1] - 1})
-                require(
-                        c.at(y) == blocks[i],
-                        "Assembled "
-                                + c.at(y)
-                                + " != ColumnBlocks "
-                                + blocks[i]
-                                + " at "
-                                + where
-                                + " y "
-                                + y);
         for (int i = 0; i < c.count(); i++)
-            for (int y : new int[] {c.bottom(i), c.top(i) - 1}) {
-                TerrainBlock expected = ColumnBlocks.at(y, s, bare, rules, h);
+            for (int y : new int[] {c.bottom(i), c.top(i) - 1})
                 require(
-                        c.runBlock(i) == expected,
-                        "Assembled "
-                                + c.runBlock(i)
-                                + " != ColumnBlocks "
-                                + expected
-                                + " at "
-                                + where
-                                + " y "
-                                + y);
-            }
-        if (!full) return 0;
-        for (int y = h.minimumY; y < h.maximumYExclusive; y++)
-            require(
-                    c.at(y) == ColumnBlocks.at(y, s, bare, rules, h),
-                    "Assembled differs from ColumnBlocks at " + where + " y " + y);
-        return 1;
+                        column.block(index, y) == c.runBlock(i)
+                                && column.role(index, y) == c.runRole(i),
+                        "Stored column differs from the assembled one at " + where + " y " + y);
+        if (!full) return;
+        TerrainBlock[] line = new TerrainBlock[16];
+        for (int bottom = h.minimumY - 16; bottom < h.maximumYExclusive + 16; bottom += 16) {
+            column.cube(index, bottom, line);
+            for (int y = 0; y < 16; y++)
+                require(
+                        line[y] == c.at(bottom + y),
+                        "Stored cube differs at " + where + " y " + (bottom + y));
+        }
+    }
+
+    /**
+     * Two native chunk columns, one from each cache, are the same column: blocks, roles, ores and
+     * unstable floors at every run boundary, and at every Y when full is set.
+     */
+    private static void same(
+            NativeColumns.Column a,
+            NativeColumns.Column b,
+            int index,
+            AssembledColumn c,
+            int x,
+            int z,
+            TerrainHeightReference h,
+            boolean full,
+            String where) {
+        for (int i = 0; i < c.count(); i++)
+            for (int y : new int[] {c.bottom(i), c.top(i) - 1}) same(a, b, index, x, y, z, where);
+        if (full)
+            for (int y = h.minimumY; y < h.maximumYExclusive; y++)
+                same(a, b, index, x, y, z, where);
+    }
+
+    private static void same(
+            NativeColumns.Column a,
+            NativeColumns.Column b,
+            int index,
+            int x,
+            int y,
+            int z,
+            String where) {
+        require(
+                a.block(index, y) == b.block(index, y)
+                        && a.role(index, y) == b.role(index, y)
+                        && a.ore(index, x, y, z) == b.ore(index, x, y, z)
+                        && a.unstable(index, y) == b.unstable(index, y),
+                "Reverse-order cache differs at " + where + " y " + y);
     }
 }

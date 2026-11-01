@@ -3,10 +3,11 @@ package cc.orthrus.riven.worldgen;
 import com.google.gson.JsonObject;
 
 /**
- * Inexpensive default cover policy shared by native terrain and distant previews. Soil comes
- * before rock (terrain-v90): rocky coasts show rock only in the splash zone and on cliff faces,
- * cut floors keep their soil where the climate grows it back, and high ground turns to rock above
- * a treeline set by the column's temperature.
+ * Why a column's ground shows rock: the facts the crust's bare-stone setting reads (CrustSettings).
+ * Soil comes before rock (terrain-v90): rocky coasts show rock only in the splash zone and on cliff
+ * faces, cut floors keep their soil where the climate grows it back, and high ground turns to rock
+ * above a treeline set by the column's temperature. The blocks each setting lays are the column
+ * engine's (riven-surface.json).
  */
 public final class SurfaceRules {
     private static final Definition DEFINITION = Definition.load();
@@ -21,12 +22,10 @@ public final class SurfaceRules {
         HIGH_ALTITUDE,
         MOUNTAIN,
         EXPOSED_CUT,
-        DRY_SAND,
-        DRY_PAVEMENT,
         WONDER_ROCK
     }
 
-    public final int stoneAboveY, soilDepth;
+    public final int stoneAboveY;
     private final double mountainBlend, exposedCutDepth;
 
     public SurfaceRules(TerrainHeightReference heights) {
@@ -36,9 +35,8 @@ public final class SurfaceRules {
         stoneAboveY = (int) Math.ceil(heights.seaLevel + mountain.elevationOffset.min);
         if (stoneAboveY < heights.lowestSurface || stoneAboveY > heights.highestSurface)
             throw new IllegalStateException("Stone cutoff outside allocated surface range");
-        soilDepth = DEFINITION.soilDepth;
         mountainBlend = DEFINITION.mountainBlend;
-        exposedCutDepth = soilDepth * DEFINITION.exposedLayers;
+        exposedCutDepth = DEFINITION.exposedCut;
     }
 
     public CoverReason reason(TerrainMap.Sample sample) {
@@ -73,7 +71,7 @@ public final class SurfaceRules {
         if ((landmark == RegionalLandmarks.Family.RIMMED_BASIN
                         || landmark == RegionalLandmarks.Family.BRANCHING_RAVINE)
                 && sample.landmarks.appliedDisplacement <= -cut) return CoverReason.EXPOSED_CUT;
-        return drylandCover(sample);
+        return CoverReason.CLIMATE;
     }
 
     /**
@@ -121,16 +119,6 @@ public final class SurfaceRules {
     /** The temperature above which aridity rises (degrees Celsius). */
     private static final double ARID_FROM = 10;
 
-    /** A cover threshold changes blocks only; continuous terrain admission is unchanged. */
-    public CoverReason drylandCover(TerrainMap.Sample sample) {
-        double threshold = DEFINITION.minimumDrylandCover;
-        if (sample.drylands.pavement >= threshold
-                && sample.drylands.pavement >= sample.drylands.sandCover)
-            return CoverReason.DRY_PAVEMENT;
-        if (sample.drylands.sandCover >= threshold) return CoverReason.DRY_SAND;
-        return CoverReason.CLIMATE;
-    }
-
     public boolean bareStone(TerrainMap.Sample sample) {
         return stone(reason(sample));
     }
@@ -156,13 +144,12 @@ public final class SurfaceRules {
 
     private static final class Definition {
         final String fingerprint, reference;
-        final int soilDepth;
         final boolean exposePlateauCuts,
                 exposeDrylandCuts,
                 exposeColdCuts,
                 exposeVolcanicCuts,
                 exposeGeneralCuts;
-        final double mountainBlend, exposedLayers, minimumDrylandCover;
+        final double mountainBlend, exposedCut;
         final double splash, capeSplash, cliffFace;
         final double treelineCelsius, treelinePerDegree, treelineBelow, treelineAbove;
         final double mountainBelowTreeline, growingCut;
@@ -174,7 +161,6 @@ public final class SurfaceRules {
                 throw new IllegalStateException("Surface rule schema");
             this.fingerprint = fingerprint;
             reference = json.get("stoneAboveReference").getAsString();
-            soilDepth = json.get("soilDepth").getAsInt();
             exposePlateauCuts =
                     json.has("exposePlateauCuts") && json.get("exposePlateauCuts").getAsBoolean();
             exposeDrylandCuts =
@@ -185,10 +171,6 @@ public final class SurfaceRules {
                     json.has("exposeVolcanicCuts") && json.get("exposeVolcanicCuts").getAsBoolean();
             exposeGeneralCuts =
                     json.has("exposeGeneralCuts") && json.get("exposeGeneralCuts").getAsBoolean();
-            minimumDrylandCover =
-                    json.has("minimumDrylandCover")
-                            ? Rules.number(json, "minimumDrylandCover", .001, 1)
-                            : 1;
             mountainBlend = json.get("minimumMountainBlend").getAsDouble();
             JsonObject shore = json.getAsJsonObject("rockyShore");
             splash = Rules.number(shore, "splashBlocks", 0, 256);
@@ -206,14 +188,9 @@ public final class SurfaceRules {
             moistureSpan = Rules.number(cut, "moistureSpan", .01, 1);
             cutCelsius = range(cut, "celsiusRange");
             growingCut = Rules.number(cut, "growingCutBlocks", 1, 256);
-            exposedLayers = json.get("exposedCutDepthInSoilLayers").getAsDouble();
-            if (soilDepth < 1
-                    || soilDepth > 16
-                    || !Double.isFinite(mountainBlend)
-                    || mountainBlend <= 0
-                    || mountainBlend > 1
-                    || !Double.isFinite(exposedLayers)
-                    || exposedLayers <= 0) throw new IllegalStateException("Surface rule range");
+            exposedCut = Rules.number(json, "exposedCutDepthBlocks", .001, 256);
+            if (!Double.isFinite(mountainBlend) || mountainBlend <= 0 || mountainBlend > 1)
+                throw new IllegalStateException("Surface rule range");
         }
 
         private static double[] range(JsonObject json, String key) {
