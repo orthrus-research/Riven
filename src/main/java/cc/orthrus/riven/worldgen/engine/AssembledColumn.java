@@ -13,8 +13,11 @@ import java.util.Arrays;
 public final class AssembledColumn {
     private static final TerrainBlock[] ENTRIES = TerrainBlock.values();
 
-    /** Placeholder entries while shaping: the bed's rock, a cavity's fill, a pocket's fill. */
-    static final short BED_ENTRY = -1, CAVITY_FILL = -2, POCKET_FILL = -3;
+    /**
+     * Placeholder entries while shaping: the bed's rock, a cavity's fill, a pocket's fill, and a
+     * carved cave's fill (resolved by the fills' fixed precedence, D15).
+     */
+    static final short BED_ENTRY = -1, CAVITY_FILL = -2, POCKET_FILL = -3, CAVE_FILL = -4;
 
     private int count;
     private int[] bottoms = new int[65];
@@ -30,10 +33,24 @@ public final class AssembledColumn {
 
     final int[] horizons = new int[Horizons.count()];
     final Shape shape = new Shape(this);
+    int flags;
+    Zone zoneDefinition;
     Zone.Cavity cavity;
     int zoneBottom, zoneTop;
     private byte zone;
     private int setting = -1, subsoilSetting = -1;
+
+    // Cave pools the shaper names: [poolLo, poolHi), frozen or not.
+    private int pools;
+    private int[] poolLo = new int[4], poolHi = new int[4];
+    private boolean[] poolFrozen = new boolean[4];
+
+    // Sub-zone bands, and the runs before they split at them.
+    private int[] bandBottoms = new int[0];
+    private byte[] bandZones = new byte[0];
+    private int[] unbandedBottoms = new int[65];
+    private short[] unbandedEntries = new short[64];
+    private byte[] unbandedRoles = new byte[64], unbandedPasses = new byte[64];
 
     // The bed's boundaries for up to two depth tops, sorted: [offset, offset + count).
     private int[] bounds = new int[0];
@@ -125,11 +142,19 @@ public final class AssembledColumn {
         return subsoilSetting;
     }
 
+    /** Whether the column states a flag ({@link Flags}). */
+    public boolean flag(int flag) {
+        return (flags & (1 << flag)) != 0;
+    }
+
     /** Starts a column of a zone: horizons absent but the frame's, one open run. */
     void begin(Zone zone, Zone.Cavity cavity, int[] frame, int bottom, int top) {
         Arrays.fill(horizons, Horizons.ABSENT);
         System.arraycopy(frame, 0, horizons, 0, frame.length);
         this.zone = (byte) zone.index;
+        zoneDefinition = zone;
+        flags = 0;
+        pools = 0;
         this.cavity = cavity;
         zoneBottom = bottom;
         zoneTop = top;
@@ -141,6 +166,19 @@ public final class AssembledColumn {
         refs[0] = cavity.level;
         shapedRoles[0] = Role.AIR.code();
         shapedPasses[0] = (byte) Shape.Pass.RAISE.ordinal();
+    }
+
+    /** Names a cave pool over [bottom, top): a carved cave's fill there is its water (or ice). */
+    void addPool(int bottom, int top, boolean frozen) {
+        if (top <= bottom) return;
+        if (pools == poolLo.length) {
+            poolLo = Arrays.copyOf(poolLo, 2 * pools);
+            poolHi = Arrays.copyOf(poolHi, 2 * pools);
+            poolFrozen = Arrays.copyOf(poolFrozen, 2 * pools);
+        }
+        poolLo[pools] = bottom;
+        poolHi[pools] = top;
+        poolFrozen[pools++] = frozen;
     }
 
     void settings(int setting, int subsoilSetting) {
@@ -239,14 +277,108 @@ public final class AssembledColumn {
                     emit(bottom, fluid, wet, pass);
                     emit(level + 1, air, open, pass);
                 }
-            } else emit(bottom, entry, role, pass);
+            } else if (entry == CAVE_FILL) caveFill(bottom, top, refs[i] != 0, pass);
+            else emit(bottom, entry, role, pass);
         }
         bottoms[count] = zoneTop;
+        if (zoneDefinition.subs() > 0) band();
+    }
+
+    /**
+     * Fills carved cave space over [bottom, top) by the fixed precedence (D15): lava up to the lava
+     * horizon, then a pocket's band (water to its level, air above), then a pool, then a flood
+     * cell's band, then air. Water in a frozen void or pool is the zone's frozen entry.
+     */
+    private void caveFill(int bottom, int top, boolean frozen, byte pass) {
+        Zone z = zoneDefinition;
+        int lava = horizons[Horizons.LAVA],
+                pocketFloor = horizons[Horizons.POCKET_FLOOR],
+                pocketRoof = horizons[Horizons.POCKET_ROOF],
+                pocketLevel = horizons[Horizons.POCKET_LEVEL],
+                floodFloor = horizons[Horizons.FLOOD_FLOOR],
+                floodLevel = horizons[Horizons.FLOOD_LEVEL];
+        boolean pocket = pocketFloor != Horizons.ABSENT, flood = floodFloor != Horizons.ABSENT;
+        short air = (short) TerrainBlock.AIR.index();
+        byte open = Role.AIR.code(), wet = Role.FLUID.code();
+        int y = bottom;
+        while (y < top) {
+            // The next Y where any fill's extent starts or ends.
+            int next = top;
+            if (lava != Horizons.ABSENT) next = after(next, y, lava + 1);
+            if (pocket) {
+                next = after(next, y, pocketFloor);
+                next = after(next, y, pocketRoof);
+                next = after(next, y, pocketLevel + 1);
+            }
+            for (int k = 0; k < pools; k++) {
+                next = after(next, y, poolLo[k]);
+                next = after(next, y, poolHi[k]);
+            }
+            if (flood) {
+                next = after(next, y, floodFloor + 1);
+                next = after(next, y, floodLevel + 1);
+            }
+            short entry = air;
+            if (lava != Horizons.ABSENT && y <= lava) entry = z.lava;
+            else if (pocket && y >= pocketFloor && y < pocketRoof) {
+                if (y <= pocketLevel) entry = z.fluid;
+            } else {
+                int pool = -1;
+                for (int k = 0; k < pools && pool < 0; k++)
+                    if (y >= poolLo[k] && y < poolHi[k]) pool = k;
+                if (pool >= 0) entry = poolFrozen[pool] ? z.frozen : z.fluid;
+                else if (flood && y > floodFloor && y <= floodLevel)
+                    entry = frozen ? z.frozen : z.fluid;
+            }
+            emit(y, entry, entry == air ? open : wet, pass);
+            y = next;
+        }
+    }
+
+    private static int after(int next, int y, int candidate) {
+        return candidate > y && candidate < next ? candidate : next;
+    }
+
+    /** Splits the runs where a sub-zone band starts, and gives each run its band's zone. */
+    private void band() {
+        Zone z = zoneDefinition;
+        if (bandBottoms.length < z.maximumBands() + 1) {
+            bandBottoms = new int[z.maximumBands() + 1];
+            bandZones = new byte[z.maximumBands()];
+        }
+        z.bands(horizons, zoneBottom, zoneTop, bandBottoms, bandZones);
+        int runs = count;
+        if (unbandedEntries.length < runs) {
+            unbandedBottoms = new int[entries.length + 1];
+            unbandedEntries = new short[entries.length];
+            unbandedRoles = new byte[entries.length];
+            unbandedPasses = new byte[entries.length];
+        }
+        System.arraycopy(bottoms, 0, unbandedBottoms, 0, runs + 1);
+        System.arraycopy(entries, 0, unbandedEntries, 0, runs);
+        System.arraycopy(roles, 0, unbandedRoles, 0, runs);
+        System.arraycopy(passes, 0, unbandedPasses, 0, runs);
+        count = 0;
+        int b = 0;
+        for (int i = 0; i < runs; i++) {
+            int y = unbandedBottoms[i], end = unbandedBottoms[i + 1];
+            while (y < end) {
+                while (bandBottoms[b + 1] <= y) b++;
+                zone = bandZones[b];
+                emit(y, unbandedEntries[i], unbandedRoles[i], unbandedPasses[i]);
+                y = Math.min(end, bandBottoms[b + 1]);
+            }
+        }
+        bottoms[count] = zoneTop;
+        zone = (byte) z.index;
     }
 
     /** Appends a run from bottom upward, merged into the last one where it is the same. */
     private void emit(int bottom, short entry, byte role, byte pass) {
-        if (count > 0 && entries[count - 1] == entry && roles[count - 1] == role) return;
+        if (count > 0
+                && entries[count - 1] == entry
+                && roles[count - 1] == role
+                && zones[count - 1] == zone) return;
         if (count + 1 >= entries.length) {
             int n = entries.length * 2;
             bottoms = Arrays.copyOf(bottoms, n + 1);

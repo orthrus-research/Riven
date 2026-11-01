@@ -21,7 +21,12 @@ public final class Horizons {
         "water",
         "pocket-floor",
         "pocket-roof",
-        "pocket-level"
+        "pocket-level",
+        "deep",
+        "lava",
+        "unconformity",
+        "flood-floor",
+        "flood-level"
     };
 
     /** The frame: one above the highest block, the sea, the crust's lowest Y and the world's. */
@@ -38,6 +43,15 @@ public final class Horizons {
      * above its highest and its highest water.
      */
     public static final int WATER = 7, POCKET_FLOOR = 8, POCKET_ROOF = 9, POCKET_LEVEL = 10;
+
+    /**
+     * Geology: the lowest Y above the deep surface (the root lies below it), the highest Y lava
+     * fills, and the lowest Y above the unconformity.
+     */
+    public static final int DEEP = 11, LAVA = 12, UNCONFORMITY = 13;
+
+    /** A flood cell's band: water holds where flood-floor < y <= flood-level. */
+    public static final int FLOOD_FLOOR = 14, FLOOD_LEVEL = 15;
 
     private Horizons() {}
 

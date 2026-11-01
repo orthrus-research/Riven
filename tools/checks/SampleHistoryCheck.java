@@ -37,6 +37,7 @@ public final class SampleHistoryCheck {
         bounded("worldgen.CaveMap$Voids", "count", "lo", "hi");
         bounded("worldgen.CaveMap$Voids", "linings", "liningLo", "liningHi", "liningBlock");
         bounded("worldgen.CaveMap$Voids", "decorations", "decorLo", "decorHi", "decorBlock");
+        bounded("worldgen.CaveMap$Voids", "entrances", "entranceLo", "entranceHi");
         bounded("worldgen.FloodMap$Column", "dams", "damDistance", "damLo", "damHi");
         bounded("worldgen.RockyTerrain$Result", "cutCount", "cuts");
         // Erosion's per-octave orientation (phacelle) and the passes' per-kind scores and shapes.

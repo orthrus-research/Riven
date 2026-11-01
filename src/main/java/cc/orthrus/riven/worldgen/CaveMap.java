@@ -1,5 +1,10 @@
 package cc.orthrus.riven.worldgen;
 
+import cc.orthrus.riven.worldgen.engine.Assembly;
+import cc.orthrus.riven.worldgen.engine.Flags;
+import cc.orthrus.riven.worldgen.engine.Horizons;
+import cc.orthrus.riven.worldgen.engine.Zone;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -42,6 +47,80 @@ public final class CaveMap {
         "lava river",
         "geode"
     };
+
+    /**
+     * The crust's carve forms, in the fixed order the walk tries them (the first that opens a block
+     * names its family). riven-zones.json names the forms each crust sub-zone allows: a form a
+     * sub-zone does not name never cuts it. Hosts are the forms' own: the chamber room alone cuts
+     * magma; basement forms cut basement units (realms.basementUnits), the others every other unit.
+     */
+    static final String[] FORMS = {
+        "chamber-room",
+        "fissure",
+        "lava-tube",
+        "geode",
+        "lava-river",
+        "pillar-hall",
+        "root-tunnel",
+        "basement-cavern",
+        "joint-maze",
+        "vein-gallery",
+        "basement-tunnel",
+        "cavern",
+        "tunnel",
+        "karst",
+        "bedding-plane",
+        "dome",
+        "salt-hall"
+    };
+
+    private static final int F_CHAMBER = 0,
+            F_FISSURE = 1,
+            F_LAVA_TUBE = 2,
+            F_GEODE = 3,
+            F_LAVA_RIVER = 4,
+            F_PILLAR_HALL = 5,
+            F_ROOT_TUNNEL = 6,
+            F_BASEMENT_CAVERN = 7,
+            F_JOINT = 8,
+            F_VEIN = 9,
+            F_BASEMENT_TUNNEL = 10,
+            F_CAVERN = 11,
+            F_TUNNEL = 12,
+            F_KARST = 13,
+            F_BEDDING = 14,
+            F_DOME = 15,
+            F_SALT = 16;
+
+    /** The crust zone, each zone index's allowed forms (bits of FORMS) and the skin's index. */
+    private static final Zone CRUST = Assembly.packaged().zones.zone("crust");
+
+    private static final int[] ALLOWED;
+    private static final int SKIN;
+
+    static {
+        int last = CRUST.index;
+        for (int i = 0; i < CRUST.subs(); i++) last = Math.max(last, CRUST.sub(i).index);
+        ALLOWED = new int[last + 1];
+        for (int i = 0; i < CRUST.subs(); i++) {
+            Zone.Sub sub = CRUST.sub(i);
+            for (String form : sub.forms()) {
+                int f = java.util.Arrays.asList(FORMS).indexOf(form);
+                if (f < 0)
+                    throw new IllegalStateException(
+                            "riven-zones.json crust." + sub.id + ": unknown carve form " + form);
+                ALLOWED[sub.index] |= 1 << f;
+            }
+        }
+        int skin = -1;
+        for (int i = 0; i < CRUST.subs(); i++)
+            if (CRUST.sub(i).id.equals("skin")) skin = CRUST.sub(i).index;
+        SKIN = skin;
+    }
+
+    private static boolean allows(int forms, int form) {
+        return (forms & (1 << form)) != 0;
+    }
 
     private static final int CAVERN = 1,
             PILLAR_HALL = 2,
@@ -308,8 +387,21 @@ public final class CaveMap {
         final TerrainBlock[] decorBlock = new TerrainBlock[CaveDecor.CAP];
         int count, linings, decorations;
 
+        /** The entrance (at most one per column), apart from the void it joins. */
+        final int[] entranceLo = new int[1], entranceHi = new int[1];
+
+        int entrances;
+
         public void clear() {
-            count = linings = decorations = pools = unstables = 0;
+            count = linings = decorations = pools = unstables = entrances = 0;
+        }
+
+        /** Adds an entrance's void [from, to) and records it as the entrance. */
+        void addEntrance(int from, int to) {
+            add(from, to);
+            if (to <= from || entrances == entranceLo.length) return;
+            entranceLo[entrances] = from;
+            entranceHi[entrances++] = to;
         }
 
         /** Adds pool water over [from, to) (CavePools); beyond the cap a pool is dropped. */
@@ -505,7 +597,7 @@ public final class CaveMap {
     /** The lattice's noise fields, each read through its own fixed rotation. */
     private final Rotation cavern, detail, hall, hallDetail, tunnelA, tunnelB;
 
-    private final int minimumY, levels, side;
+    private final int minimumY, maximumY, levels, side;
     private final SeededNoise[] karst = new SeededNoise[Math.max(1, KARST_LEVELS)],
             wander = new SeededNoise[Math.max(1, KARST_LEVELS)];
     private final SeededNoise canyonMask,
@@ -559,6 +651,7 @@ public final class CaveMap {
         pools = new CavePools(worldSeed, carver);
         seeps = new CaveSeeps(worldSeed, carver);
         minimumY = heights.minimumY;
+        maximumY = heights.maximumYExclusive;
         levels = (heights.maximumYExclusive - heights.minimumY) / V + 2;
         side = 16 / H + 1;
         for (int k = 0; k < karst.length; k++) {
@@ -792,7 +885,7 @@ public final class CaveMap {
                         > CHASM_MASK_THRESHOLD
                 && g.faultDistance < chasmWidth(x, z) / 2) {
             double d = (chasmWidth.sample(x / 97.0, z / 97.0) + 1) / 2;
-            out.add(shaftFloor(surface - (int) lerp(CHASM_DEPTH, d), s), surface + 1);
+            out.addEntrance(shaftFloor(surface - (int) lerp(CHASM_DEPTH, d), s), surface + 1);
             return;
         }
         if (g.unit(surface - 3).solubility < KARST_SOLUBILITY) return;
@@ -805,7 +898,7 @@ public final class CaveMap {
                 double theta = StrictMath.atan2(oz, ox);
                 double radius = h[2] * (1 + 0.18 * StrictMath.sin(3 * theta + h[3]));
                 if (ox * ox + oz * oz < radius * radius) {
-                    out.add(shaftFloor(surface - (int) h[3], s), surface + 1);
+                    out.addEntrance(shaftFloor(surface - (int) h[3], s), surface + 1);
                     return;
                 }
             }
@@ -949,6 +1042,177 @@ public final class CaveMap {
         if (start != Integer.MIN_VALUE) out.add(start, top + 1);
         if (lining != null) out.addLining(liningStart, top + 1, lining);
         return true;
+    }
+
+    /**
+     * For checks until the switch: the column's 3D cave voids within [from, to] as the forms walk
+     * carves them (the same voids, linings and families {@link #carveVoids} gives), into its
+     * sample's voids after its entrances; false where the column has no room for caves.
+     */
+    boolean carveForms(int x, int z, TerrainMap.Sample s, byte[] families, int from, int to) {
+        Voids out = s.caves;
+        int surface = s.blockY();
+        int roof = CRUST.cavity(0).roof(wet(s) ? 1 << Flags.WET : 0);
+        int top = surface - roof, bottom = minimumY + FLOOR_MARGIN;
+        if (top <= bottom) return false;
+        bottom = Math.max(bottom, from);
+        top = Math.min(top, to);
+        if (top < bottom) return true;
+        GeologyMap.Column g = s.geology;
+        Lattice l =
+                from == Integer.MIN_VALUE && to == Integer.MAX_VALUE
+                        ? lattice(Math.floorDiv(x, 16), Math.floorDiv(z, 16))
+                        : rangedLattice(
+                                Math.floorDiv(x, 16),
+                                Math.floorDiv(z, 16),
+                                Math.max(0, (bottom - minimumY) / V),
+                                Math.min(levels, (top - minimumY) / V + 2)
+                                        - Math.max(0, (bottom - minimumY) / V));
+        Plan p = plan(x, z, s, g, l);
+        // The crust's sub-zones over the column, from the horizons the shape publishes.
+        int[] horizons = new int[Horizons.count()];
+        java.util.Arrays.fill(horizons, Horizons.ABSENT);
+        CrustShape.horizons(s, (h, y) -> horizons[h] = y);
+        int[] bandBottoms = new int[CRUST.maximumBands() + 1];
+        byte[] bandZones = new byte[CRUST.maximumBands()];
+        CRUST.bands(horizons, minimumY, maximumY, bandBottoms, bandZones);
+        int band = 0;
+
+        int[] planes = new int[GeologyMap.MAXIMUM_BOUNDARIES + 2];
+        int planeCount = g.boundaries(bottom - 1, Math.max(bottom, top), planes, 0);
+        java.util.Arrays.sort(planes, 0, planeCount);
+        int next = 0;
+        GeologyMap.Unit unit = g.unit(bottom);
+        while (next < planeCount && planes[next] <= bottom) next++;
+        int start = Integer.MIN_VALUE, liningStart = Integer.MIN_VALUE;
+        TerrainBlock lining = null;
+        FloodMap.Column flood = s.flood;
+        Hydro.Sample w = s.water;
+        if (w.aquiferMin <= w.aquiferMax)
+            out.add(Math.max(w.aquiferMin, bottom), Math.min(w.aquiferMax, top) + 1);
+        for (int y = bottom; y <= top; y++) {
+            while (next < planeCount && planes[next] <= y) {
+                next++;
+                unit = g.unit(y);
+            }
+            while (bandBottoms[band + 1] <= y) band++;
+            int zone = bandZones[band];
+            int family =
+                    flood.sealed(y) || (y >= w.aquiferShellLo && y <= w.aquiferShellHi)
+                            ? 0
+                            : formFamily(y, unit, ALLOWED[zone], zone == SKIN, g, l, p);
+            if (families != null) families[y - minimumY] = (byte) family;
+            boolean carved = family != 0;
+            if (carved && start == Integer.MIN_VALUE) start = y;
+            else if (!carved && start != Integer.MIN_VALUE) {
+                out.add(start, y);
+                start = Integer.MIN_VALUE;
+            }
+            TerrainBlock shell = carved ? null : shellAt(y, unit, p);
+            if (shell != lining) {
+                if (lining != null) out.addLining(liningStart, y, lining);
+                lining = shell;
+                liningStart = y;
+            }
+        }
+        if (start != Integer.MIN_VALUE) out.add(start, top + 1);
+        if (lining != null) out.addLining(liningStart, top + 1, lining);
+        return true;
+    }
+
+    /**
+     * The family that carves block Y under the forms a sub-zone allows, or 0 where the rock stands:
+     * the first allowed form that opens it, in {@link #FORMS} order. The skin narrows tunnels and
+     * raises the caverns' threshold.
+     */
+    private int formFamily(
+            int y,
+            GeologyMap.Unit unit,
+            int forms,
+            boolean skin,
+            GeologyMap.Column g,
+            Lattice l,
+            Plan p) {
+        if (unit == MAGMA) return allows(forms, F_CHAMBER) && y > p.chamberAir ? CHAMBER : 0;
+        double t = (y - minimumY) / (double) V;
+        int k = (int) t;
+        double f = t - k;
+        double strength = unit.strength, soluble = unit.solubility;
+        double ta = at(l.tunnelA, k, f, p), tb = at(l.tunnelB, k, f, p);
+        if (allows(forms, F_FISSURE)
+                && p.nearFault
+                && y >= FISSURE_BOTTOM
+                && g.faultDistance < p.fissure * (0.75 + 0.5 * Math.abs(ta))) return FISSURE;
+        if (allows(forms, F_LAVA_TUBE)
+                && unit == BASALT
+                && p.tube < LAVA_TUBE_WIDTH
+                && g.unit(y + TUBE_CLEARANCE) == BASALT
+                && g.unit(y - TUBE_CLEARANCE) == BASALT) return LAVA_TUBE;
+        if (allows(forms, F_GEODE))
+            for (int i = 0; i < p.geodeCount; i++)
+                if (y >= p.geodeLo[i] && y <= p.geodeHi[i] && GEODE_HOSTS.contains(unit))
+                    return GEODE;
+        if (allows(forms, F_LAVA_RIVER)
+                && p.river < RIVER_WIDTH * (1 + RIVER_WIDTH_VARIATION * tb)
+                && y >= g.lavaY - RIVER_BELOW
+                && y <= g.lavaY + RIVER_ABOVE * (1 + RIVER_CEILING_VARIATION * ta))
+            return LAVA_RIVER;
+        if (allows(forms, F_PILLAR_HALL) && !p.pillar && at(l.hall, k, f, p) > HALL_THRESHOLD_DEEP)
+            return PILLAR_HALL;
+        if (allows(forms, F_ROOT_TUNNEL)) {
+            double width = TUNNEL_WIDTH * BASEMENT_NARROWING;
+            if (ta * ta + tb * tb < width * width) return TUNNEL;
+        }
+        if (BASEMENT.contains(unit)) {
+            if (allows(forms, F_BASEMENT_CAVERN)) {
+                double threshold =
+                        BASEMENT_THRESHOLD
+                                + STRONG_PENALTY * Math.max(0, strength - 0.7) / 0.3
+                                + (skin ? SKIN_PENALTY : 0);
+                if (at(l.cavern, k, f, p) > threshold) return CAVERN;
+            }
+            if (allows(forms, F_JOINT) && jointOpen(y, p, ta)) return JOINT;
+            if (allows(forms, F_VEIN) && unit == DOLERITE && tb > VEIN_MASK) return VEIN;
+            if (allows(forms, F_BASEMENT_TUNNEL)) {
+                double width = TUNNEL_WIDTH * BASEMENT_NARROWING * (skin ? SKIN_NARROWING : 1);
+                if (ta * ta + tb * tb < width * width) return TUNNEL;
+            }
+            return 0;
+        }
+        if (allows(forms, F_CAVERN)) {
+            double threshold =
+                    LAYERED_THRESHOLD
+                            - SOLUBLE_BONUS * soluble
+                            - (strength < 0.5 ? WEAK_BONUS : 0)
+                            + (skin ? SKIN_PENALTY : 0);
+            if (at(l.cavern, k, f, p) > threshold) return CAVERN;
+        }
+        if (allows(forms, F_TUNNEL)) {
+            double width =
+                    TUNNEL_WIDTH
+                            * (1 + WEAK_WIDENING * (1 - strength))
+                            * (skin ? SKIN_NARROWING : 1);
+            if (ta * ta + tb * tb < width * width) return TUNNEL;
+        }
+        if (allows(forms, F_KARST) && soluble >= KARST_SOLUBILITY)
+            for (int i = 0; i < p.karstLo.length; i++)
+                if (y >= p.karstLo[i]) {
+                    if (y <= p.karstHi[i]) return KARST;
+                    if (y <= p.canyonHi[i]) return CANYON;
+                }
+        if (allows(forms, F_BEDDING))
+            for (int i = 0; i < p.beddings; i++)
+                if (y >= p.beddingLo[i] && y <= p.beddingHi[i]) return BEDDING;
+        if (allows(forms, F_DOME) && strength <= DOME_STRENGTH)
+            for (int i = 0; i < p.domeCount; i++)
+                if (y >= p.domeLo[i] && y <= p.domeHi[i]) return DOME;
+        if (allows(forms, F_SALT) && unit == EVAPORITE && p.salt > SALT_THRESHOLD) return SALT_HALL;
+        return 0;
+    }
+
+    /** For checks until the switch: the cascade's carve of the same column (no pools or decor). */
+    boolean carveCascade(int x, int z, TerrainMap.Sample s, byte[] families) {
+        return carveVoids(x, z, s, families, Integer.MIN_VALUE, Integer.MAX_VALUE);
     }
 
     /** For checks: pool cell (i, j)'s pool as {x, z, level}, or null (CavePools). */

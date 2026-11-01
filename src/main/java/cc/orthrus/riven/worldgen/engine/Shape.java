@@ -147,6 +147,35 @@ public final class Shape {
                 ANY);
     }
 
+    /** States a flag of this column ({@link Flags}); set flags before carving. */
+    public void flag(int flag) {
+        column.flags |= 1 << flag;
+    }
+
+    /**
+     * Carves cave space over [bottom, top), kept under the cavity's roof band: nothing but an
+     * entrance cuts within the band's blocks under the floor. The cave's fill is resolved by the
+     * fixed precedence (D15); frozen says whether water in this void freezes.
+     */
+    public void cave(int bottom, int top, boolean frozen) {
+        int floor = column.horizons[column.cavity.floor];
+        if (floor != Horizons.ABSENT)
+            top = Math.min(top, floor - column.cavity.roof(column.flags) + 1);
+        column.write(
+                bottom, top, AssembledColumn.CAVE_FILL, Role.AIR, Pass.CAVES, frozen ? 1 : 0, ANY);
+    }
+
+    /** An entrance: cave space over [bottom, top) that may breach the roof band and the floor. */
+    public void entrance(int bottom, int top, boolean frozen) {
+        column.write(
+                bottom, top, AssembledColumn.CAVE_FILL, Role.AIR, Pass.CAVES, frozen ? 1 : 0, ANY);
+    }
+
+    /** A cave pool over [bottom, top): carved space there holds its water, or ice if frozen. */
+    public void pool(int bottom, int top, boolean frozen) {
+        column.addPool(bottom, top, frozen);
+    }
+
     /** The temporary cave carve: open space over [bottom, top) holding its fill (air or fluid). */
     public void caveVoid(int bottom, int top, TerrainBlock fill) {
         column.write(
