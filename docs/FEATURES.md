@@ -915,7 +915,10 @@ from cave decoration, ore blocks, and unstable stone on the floors cave decorati
   properties, the mineral's color and an icon set by its shine. GTCEu then makes their ores, dusts
   and processing, and registers its per-registry items and blocks under `riven:` (`meta_dust` and
   the like). A material name is global across a pack: GTCEu names ore blocks by bare name
-  (`gregtech:ore_anglesite_0`), so no other mod may define these 15.
+  (`gregtech:ore_anglesite_0`), so no other mod may define these 15. At startup Riven logs how
+  GTCEu took its names: on a fresh instance with GTCEu 2.8.10 it unifies 1,200 of 1,258 Riven ore
+  dictionary stacks, leaving `oreLignite`, `oreAnthracite`, `treeLeaves` and `treeSapling`, and the
+  world's registry holds GTCEu's ores for all 15 `riven:` materials and 40 `riven:meta_*` items.
 - **Ore dictionary** (`oreDictionary`, registered with the items, before any recipe): GTCEu:
   Reloaded is Riven's first-class integration, and GTCEu recognizes other mods' items by these
   names. Each ore block registers `ore` plus its material id in upper camel case, without the
