@@ -258,7 +258,7 @@ public final class CaveMap {
         JsonArray linings = geodes.getAsJsonArray("linings");
         GEODE_LININGS = new TerrainBlock[linings.size()];
         for (int i = 0; i < GEODE_LININGS.length; i++)
-            GEODE_LININGS[i] = TerrainBlock.valueOf(linings.get(i).getAsString());
+            GEODE_LININGS[i] = TerrainBlock.of(linings.get(i).getAsString());
         CHAMBER_AIR = Rules.number(j.getAsJsonObject("chambers"), "airShare", 0, 1);
         JsonObject entrances = j.getAsJsonObject("entrances");
         SINKHOLE_CELL = Rules.number(entrances, "sinkholeCellBlocks", 32, 4096);

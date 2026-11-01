@@ -207,67 +207,67 @@ public final class DescentCheck {
             // floor block lies just under the void's lowest block.
             RealmMap.Depth floor = RealmMap.cell(lo, s), under = RealmMap.cell(hi, s);
             RealmMap.Depth ceiling = RealmMap.cell(hi - 1L, s);
-            switch (b) {
-                case TOADSTOOL:
-                case PORTOBELLO:
-                case BROWN_MUSHROOM:
-                case RED_MUSHROOM:
-                case MINERS_DELIGHT:
-                case GLOWSHROOM:
-                case ALGAE:
+            switch (b.id) {
+                case "plant.toadstool":
+                case "plant.portobello":
+                case "plant.brown_mushroom":
+                case "plant.red_mushroom":
+                case "plant.miners_delight":
+                case "plant.glowshroom":
+                case "plant.algae":
                     require(floor.life, b + " in lifeless " + floor.biome + at);
-                    decor.incrementAndGet(floor.index * n + b.ordinal());
+                    decor.incrementAndGet(floor.index * n + b.index());
                     break;
-                case DRIPSTONE_UP:
+                case "formation.dripstone_up":
                     require(
                             floor.dripstone || (floor.faultDripstone && faulted(s)),
                             b + " in " + floor.biome + at);
-                    decor.incrementAndGet(floor.index * n + b.ordinal());
+                    decor.incrementAndGet(floor.index * n + b.index());
                     break;
-                case DRIPSTONE_DOWN:
+                case "formation.dripstone_down":
                     require(
                             ceiling.dripstone || (ceiling.faultDripstone && faulted(s)),
                             b + " in " + ceiling.biome + at);
-                    decor.incrementAndGet(ceiling.index * n + b.ordinal());
+                    decor.incrementAndGet(ceiling.index * n + b.index());
                     break;
-                case ICE_UP:
-                case SALT_UP:
-                case BASALT_UP:
+                case "formation.ice_up":
+                case "formation.salt_up":
+                case "formation.basalt_up":
                     require(
                             floor.formation == formation(b)
                                     || (b == TerrainBlock.BASALT_UP
                                             && s.geology.unit(lo - 1).name.equals("basalt")),
                             b + " in " + floor.biome + at);
-                    decor.incrementAndGet(floor.index * n + b.ordinal());
+                    decor.incrementAndGet(floor.index * n + b.index());
                     break;
-                case ICE_DOWN:
-                case SALT_DOWN:
-                case BASALT_DOWN:
+                case "formation.ice_down":
+                case "formation.salt_down":
+                case "formation.basalt_down":
                     require(
                             ceiling.formation == formation(b)
                                     || (b == TerrainBlock.BASALT_DOWN
                                             && s.geology.unit(hi).name.equals("basalt")),
                             b + " in " + ceiling.biome + at);
-                    decor.incrementAndGet(ceiling.index * n + b.ordinal());
+                    decor.incrementAndGet(ceiling.index * n + b.index());
                     break;
-                case ROOT:
+                case "plant.root":
                     require(
                             ceiling.ceiling == RealmMap.Ceiling.ROOTS,
                             "Roots in " + ceiling.biome + at);
-                    decor.incrementAndGet(ceiling.index * n + b.ordinal());
+                    decor.incrementAndGet(ceiling.index * n + b.index());
                     break;
-                case COBWEB:
+                case "decor.cobweb":
                     require(
                             ceiling.ceiling == RealmMap.Ceiling.COBWEBS,
                             "Cobweb in " + ceiling.biome + at);
-                    decor.incrementAndGet(ceiling.index * n + b.ordinal());
+                    decor.incrementAndGet(ceiling.index * n + b.index());
                     break;
-                case MAGMA:
-                case ASH:
-                case PACKED_ICE:
-                case SAND:
-                case MUD:
-                case WHITE_SAND:
+                case "rock.magma":
+                case "sediment.ash":
+                case "ice.packed_ice":
+                case "sediment.sand":
+                case "soil.mud":
+                case "sediment.white_sand":
                     // A floor block replaces the rock under a void (the run ends at the void).
                     require(s.geology.unit(lo) != magma, b + " on lava" + at);
                     RealmMap.Floor kind = under.floor;
@@ -285,7 +285,7 @@ public final class DescentCheck {
                                             || (b == TerrainBlock.SAND
                                                     && kind == RealmMap.Floor.SAND),
                             b + " floor in " + under.biome + at);
-                    decor.incrementAndGet(under.index * n + b.ordinal());
+                    decor.incrementAndGet(under.index * n + b.index());
                     break;
                 default:
                     break;
@@ -354,12 +354,8 @@ public final class DescentCheck {
         for (RealmMap.Depth depth : depths) {
             StringBuilder row = new StringBuilder(String.format(Locale.ROOT, "%-18s", depth.biome));
             for (TerrainBlock b : TerrainBlock.values()) {
-                long count = decor.get(depth.index * n + b.ordinal());
-                if (count > 0)
-                    row.append(' ')
-                            .append(b.name().toLowerCase(Locale.ROOT))
-                            .append('=')
-                            .append(count);
+                long count = decor.get(depth.index * n + b.index());
+                if (count > 0) row.append(' ').append(b.id).append('=').append(count);
             }
             System.out.println(row);
         }

@@ -24,7 +24,7 @@ final class UnstableBlocks {
         if (!column.unstable(index, y)) return rock;
         IBlockState[] t = table;
         if (t == null) t = build();
-        IBlockState unstable = t[block.ordinal()];
+        IBlockState unstable = t[block.index()];
         return unstable != null ? unstable : rock;
     }
 
@@ -33,7 +33,7 @@ final class UnstableBlocks {
         IBlockState[] result = new IBlockState[TerrainBlock.values().length];
         for (Block b : RivenContent.blocks())
             if (b instanceof BlockUnstableStone)
-                result[((BlockUnstableStone) b).terrain.ordinal()] = b.getDefaultState();
+                result[((BlockUnstableStone) b).terrain.index()] = b.getDefaultState();
         table = result;
         return result;
     }

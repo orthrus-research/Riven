@@ -304,24 +304,24 @@ public final class Boulders {
      * listed (sand, gravel, clay) never does.
      */
     private static final TerrainBlock[] HARDNESS = {
-        TerrainBlock.QUARTZITE,
-        TerrainBlock.GRANITE,
-        TerrainBlock.GNEISS,
-        TerrainBlock.ANORTHOSITE,
-        TerrainBlock.GABBRO,
-        TerrainBlock.LEUCOBASALT,
-        TerrainBlock.DIORITE,
-        TerrainBlock.ANDESITE,
-        TerrainBlock.STONE,
-        TerrainBlock.SANDSTONE,
-        TerrainBlock.RED_SANDSTONE,
-        TerrainBlock.LIMESTONE,
-        TerrainBlock.SLATE,
-        TerrainBlock.MICA_SCHIST,
-        TerrainBlock.PHYLLITE,
-        TerrainBlock.GRAPHITE_SCHIST,
-        TerrainBlock.SHALE,
-        TerrainBlock.SOAPSTONE
+        TerrainBlock.of("rock.quartzite"),
+        TerrainBlock.of("rock.granite"),
+        TerrainBlock.of("rock.gneiss"),
+        TerrainBlock.of("rock.anorthosite"),
+        TerrainBlock.of("rock.gabbro"),
+        TerrainBlock.of("rock.leucobasalt"),
+        TerrainBlock.of("rock.diorite"),
+        TerrainBlock.of("rock.andesite"),
+        TerrainBlock.of("rock.stone"),
+        TerrainBlock.of("rock.sandstone"),
+        TerrainBlock.of("rock.red_sandstone"),
+        TerrainBlock.of("rock.limestone"),
+        TerrainBlock.of("rock.slate"),
+        TerrainBlock.of("rock.mica_schist"),
+        TerrainBlock.of("rock.phyllite"),
+        TerrainBlock.of("rock.graphite_schist"),
+        TerrainBlock.of("rock.shale"),
+        TerrainBlock.of("rock.soapstone")
     };
 
     /** A rock's place from the softest (1) to the hardest; 0 for none or a loose deposit. */

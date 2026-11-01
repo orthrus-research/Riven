@@ -706,8 +706,7 @@ public final class GeologySection {
         System.out.printf(
                 "land columns %d, with decoration %.1f%%%n", columns, 100.0 * decorated / columns);
         for (int k = 0; k < kinds.length; k++) {
-            StringBuilder line =
-                    new StringBuilder(String.format("%-16s", kinds[k].name().toLowerCase()));
+            StringBuilder line = new StringBuilder(String.format("%-24s", kinds[k].id));
             for (RealmMap.Crust r : realms)
                 line.append(String.format(" %s %d", r.name().toLowerCase(), count[k][r.ordinal()]));
             line.append("   spot: ")

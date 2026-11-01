@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 5,
+  "revision": 6,
   "variationSeed": "0x4d4154455249414c",
   "strata": {
     "depthBlocks": 24,
@@ -8,13 +8,13 @@
     "tiltBlocks": 9,
     "tiltWavelengthBlocks": 420,
     "palettes": {
-      "pillar": ["STONE", "ANDESITE", "STONE", "SANDSTONE", "STONE", "ANDESITE", "DIORITE"],
-      "tepui": ["SANDSTONE", "STONE", "RED_SANDSTONE", "STONE", "SANDSTONE", "GRANITE"],
-      "hoodoo": ["TERRACOTTA_ORANGE", "TERRACOTTA_WHITE", "TERRACOTTA_RED", "TERRACOTTA_ORANGE", "TERRACOTTA", "TERRACOTTA_WHITE", "RED_SANDSTONE"],
-      "karst": ["DIORITE", "STONE", "DIORITE", "ANDESITE", "DIORITE", "STONE"],
-      "entrada": ["RED_SANDSTONE", "TERRACOTTA_ORANGE", "RED_SANDSTONE", "SANDSTONE", "RED_SANDSTONE", "TERRACOTTA_RED"],
-      "richat": ["SANDSTONE", "TERRACOTTA_BROWN", "RED_SANDSTONE", "SANDSTONE", "TERRACOTTA", "TERRACOTTA_BROWN"],
-      "basalt": ["TERRACOTTA_GRAY", "ANDESITE", "TERRACOTTA_GRAY", "TERRACOTTA_BLACK", "TERRACOTTA_GRAY"]
+      "pillar": ["rock.stone", "rock.andesite", "rock.stone", "rock.sandstone", "rock.stone", "rock.andesite", "rock.diorite"],
+      "tepui": ["rock.sandstone", "rock.stone", "rock.red_sandstone", "rock.stone", "rock.sandstone", "rock.granite"],
+      "hoodoo": ["rock.terracotta_orange", "rock.terracotta_white", "rock.terracotta_red", "rock.terracotta_orange", "rock.terracotta", "rock.terracotta_white", "rock.red_sandstone"],
+      "karst": ["rock.diorite", "rock.stone", "rock.diorite", "rock.andesite", "rock.diorite", "rock.stone"],
+      "entrada": ["rock.red_sandstone", "rock.terracotta_orange", "rock.red_sandstone", "rock.sandstone", "rock.red_sandstone", "rock.terracotta_red"],
+      "richat": ["rock.sandstone", "rock.terracotta_brown", "rock.red_sandstone", "rock.sandstone", "rock.terracotta", "rock.terracotta_brown"],
+      "basalt": ["rock.terracotta_gray", "rock.andesite", "rock.terracotta_gray", "rock.terracotta_black", "rock.terracotta_gray"]
     }
   },
   "sandstoneDepthBlocks": 3,

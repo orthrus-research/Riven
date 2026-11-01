@@ -1,26 +1,26 @@
 {
   "schema": 1,
-  "revision": 3,
+  "revision": 4,
   "variationSeed": "0x47454f4c4f475931",
   "units": {
-    "gneiss":    {"block": "GNEISS",         "color": "#8c8a86", "solubility": 0,    "permeability": 0.1, "strength": 0.95, "hosts": ["veins", "pegmatite"]},
-    "schist":    {"block": "MICA_SCHIST",      "color": "#6f7a74", "solubility": 0,    "permeability": 0.1, "strength": 0.7,  "hosts": ["veins", "gold"]},
-    "granite":   {"block": "GRANITE",       "color": "#b98472", "solubility": 0,    "permeability": 0.1, "strength": 0.95, "hosts": ["porphyry", "tin", "tungsten"]},
-    "dolerite":  {"block": "ANDESITE",      "color": "#2f3a36", "solubility": 0,    "permeability": 0.05,"strength": 0.95, "hosts": ["veins", "native-copper"]},
-    "limestone": {"block": "LIMESTONE",       "color": "#e3e0d6", "solubility": 0.9,  "permeability": 0.6, "strength": 0.6,  "hosts": ["skarn", "lead-zinc", "karst-bauxite"]},
-    "dolostone": {"block": "LIMESTONE",         "color": "#c9c2ad", "solubility": 0.55, "permeability": 0.5, "strength": 0.75, "hosts": ["lead-zinc"]},
-    "shale":     {"block": "SHALE",      "color": "#5b5f63", "solubility": 0,    "permeability": 0.05,"strength": 0.35, "hosts": ["coal", "phosphorite", "fossils"]},
-    "sandstone": {"block": "SANDSTONE",     "color": "#d8c690", "solubility": 0,    "permeability": 0.85,"strength": 0.4,  "hosts": ["roll-front"]},
-    "redbeds":   {"block": "RED_SANDSTONE", "color": "#b8623d", "solubility": 0,    "permeability": 0.5, "strength": 0.4,  "hosts": ["red-bed-copper", "evaporite"]},
-    "ironstone": {"block": "QUARTZITE",         "color": "#7a4a3a", "solubility": 0,    "permeability": 0.1, "strength": 0.85, "hosts": ["banded-iron"]},
-    "evaporite": {"block": "DIORITE",       "color": "#f1e2dc", "solubility": 1.0,  "permeability": 0.0, "strength": 0.3,  "hosts": ["salt", "potash", "sulfur"]},
-    "loosesand": {"block": "SAND",          "color": "#efe0a8", "solubility": 0,    "permeability": 0.95,"strength": 0.0,  "hosts": ["placer"]},
-    "gravel":    {"block": "GRAVEL",        "color": "#9a938a", "solubility": 0,    "permeability": 0.95,"strength": 0.0,  "hosts": ["placer"]},
-    "basalt":    {"block": "LEUCOBASALT",      "color": "#3b3a3e", "solubility": 0,    "permeability": 0.3, "strength": 0.9,  "hosts": ["massive-sulfide", "native-copper"]},
-    "gabbro":    {"block": "GABBRO",      "color": "#2c3330", "solubility": 0,    "permeability": 0.02,"strength": 0.98, "hosts": ["chromite", "nickel"]},
-    "anorthosite": {"block": "ANORTHOSITE",     "color": "#cfd3d6", "solubility": 0,    "permeability": 0.02,"strength": 0.95, "hosts": ["platinum-reef"]},
-    "kimberlite": {"block": "KIMBERLITE",        "color": "#4f6a73", "solubility": 0,    "permeability": 0.1, "strength": 0.6,  "hosts": ["diamond"]},
-    "magma":     {"block": "LAVA",          "color": "#e0581c", "solubility": 0,    "permeability": 0,   "strength": 0,    "hosts": []}
+    "gneiss":    {"block": "rock.gneiss",        "color": "#8c8a86", "solubility": 0,    "permeability": 0.1, "strength": 0.95, "hosts": ["veins", "pegmatite"]},
+    "schist":    {"block": "rock.mica_schist",   "color": "#6f7a74", "solubility": 0,    "permeability": 0.1, "strength": 0.7,  "hosts": ["veins", "gold"]},
+    "granite":   {"block": "rock.granite",       "color": "#b98472", "solubility": 0,    "permeability": 0.1, "strength": 0.95, "hosts": ["porphyry", "tin", "tungsten"]},
+    "dolerite":  {"block": "rock.andesite",      "color": "#2f3a36", "solubility": 0,    "permeability": 0.05,"strength": 0.95, "hosts": ["veins", "native-copper"]},
+    "limestone": {"block": "rock.limestone",     "color": "#e3e0d6", "solubility": 0.9,  "permeability": 0.6, "strength": 0.6,  "hosts": ["skarn", "lead-zinc", "karst-bauxite"]},
+    "dolostone": {"block": "rock.limestone",     "color": "#c9c2ad", "solubility": 0.55, "permeability": 0.5, "strength": 0.75, "hosts": ["lead-zinc"]},
+    "shale":     {"block": "rock.shale",         "color": "#5b5f63", "solubility": 0,    "permeability": 0.05,"strength": 0.35, "hosts": ["coal", "phosphorite", "fossils"]},
+    "sandstone": {"block": "rock.sandstone",     "color": "#d8c690", "solubility": 0,    "permeability": 0.85,"strength": 0.4,  "hosts": ["roll-front"]},
+    "redbeds":   {"block": "rock.red_sandstone", "color": "#b8623d", "solubility": 0,    "permeability": 0.5, "strength": 0.4,  "hosts": ["red-bed-copper", "evaporite"]},
+    "ironstone": {"block": "rock.quartzite",     "color": "#7a4a3a", "solubility": 0,    "permeability": 0.1, "strength": 0.85, "hosts": ["banded-iron"]},
+    "evaporite": {"block": "rock.diorite",       "color": "#f1e2dc", "solubility": 1.0,  "permeability": 0.0, "strength": 0.3,  "hosts": ["salt", "potash", "sulfur"]},
+    "loosesand": {"block": "sediment.sand",      "color": "#efe0a8", "solubility": 0,    "permeability": 0.95,"strength": 0.0,  "hosts": ["placer"]},
+    "gravel":    {"block": "sediment.gravel",    "color": "#9a938a", "solubility": 0,    "permeability": 0.95,"strength": 0.0,  "hosts": ["placer"]},
+    "basalt":    {"block": "rock.leucobasalt",   "color": "#3b3a3e", "solubility": 0,    "permeability": 0.3, "strength": 0.9,  "hosts": ["massive-sulfide", "native-copper"]},
+    "gabbro":    {"block": "rock.gabbro",        "color": "#2c3330", "solubility": 0,    "permeability": 0.02,"strength": 0.98, "hosts": ["chromite", "nickel"]},
+    "anorthosite": {"block": "rock.anorthosite", "color": "#cfd3d6", "solubility": 0,    "permeability": 0.02,"strength": 0.95, "hosts": ["platinum-reef"]},
+    "kimberlite": {"block": "rock.kimberlite",   "color": "#4f6a73", "solubility": 0,    "permeability": 0.1, "strength": 0.6,  "hosts": ["diamond"]},
+    "magma":     {"block": "fluid.lava",         "color": "#e0581c", "solubility": 0,    "permeability": 0,   "strength": 0,    "hosts": []}
   },
   "lowerSequence": [
     {"name": "Grey shale",        "unit": "shale",     "thickness": 30, "interbed": "sandstone", "bed": 5, "share": 0.3},
@@ -147,12 +147,12 @@
     },
     "palettes": {
       "arid": {
-        "shale": ["TERRACOTTA", "TERRACOTTA_ORANGE", "TERRACOTTA_BROWN", "TERRACOTTA_WHITE", "TERRACOTTA_RED", "TERRACOTTA_YELLOW"],
-        "limestone": ["TERRACOTTA_WHITE", "TERRACOTTA_YELLOW"],
-        "redbeds": ["TERRACOTTA_RED", "TERRACOTTA_ORANGE", "RED_SANDSTONE"],
-        "dolostone": ["TERRACOTTA_YELLOW", "TERRACOTTA"],
-        "evaporite": ["TERRACOTTA_WHITE"],
-        "basalt": ["TERRACOTTA_BLACK", "TERRACOTTA_GRAY"]
+        "shale": ["rock.terracotta", "rock.terracotta_orange", "rock.terracotta_brown", "rock.terracotta_white", "rock.terracotta_red", "rock.terracotta_yellow"],
+        "limestone": ["rock.terracotta_white", "rock.terracotta_yellow"],
+        "redbeds": ["rock.terracotta_red", "rock.terracotta_orange", "rock.red_sandstone"],
+        "dolostone": ["rock.terracotta_yellow", "rock.terracotta"],
+        "evaporite": ["rock.terracotta_white"],
+        "basalt": ["rock.terracotta_black", "rock.terracotta_gray"]
       }
     }
   },

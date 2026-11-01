@@ -57,7 +57,7 @@ public final class BlockUnstableStone extends BlockFalling {
 
     BlockUnstableStone(JsonObject behaviour, JsonObject host) {
         super(Material.ROCK);
-        terrain = TerrainBlock.valueOf(host.get("terrain").getAsString());
+        terrain = TerrainBlock.of(host.get("terrain").getAsString());
         hostId = host.get("block").getAsString();
         hostMeta = host.get("meta").getAsInt();
         dust = 0xff000000 | Integer.parseInt(host.get("dust").getAsString().substring(1), 16);

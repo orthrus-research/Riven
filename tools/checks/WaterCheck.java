@@ -105,7 +105,7 @@ public final class WaterCheck {
                         c = lake ? LAKE_WATER : CAVE_WATER;
                     else c = SOLID;
                     cat[i * span + y - y0] = c;
-                    st.digest = st.digest * 31 + t.ordinal();
+                    st.digest = st.digest * 31 + t.id.hashCode();
                     if (c == CAVE_WATER) st.caveWater++;
                     else if (c == LAKE_WATER) st.lakeWater++;
                     else if (c == AIR) {

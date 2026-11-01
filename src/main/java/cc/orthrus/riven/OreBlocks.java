@@ -44,25 +44,20 @@ final class OreBlocks {
         if (mineral < 0) return rock;
         IBlockState[][] t = table;
         if (t == null) t = build();
-        IBlockState ore = t[mineral][block.ordinal()];
+        IBlockState ore = t[mineral][block.index()];
         return ore != null ? ore : rock;
     }
 
     private static boolean host(TerrainBlock block) {
-        if (block.stoneId() != null) return true;
-        switch (block) {
-            case STONE:
-            case GRANITE:
-            case DIORITE:
-            case ANDESITE:
-            case SANDSTONE:
-            case RED_SANDSTONE:
-            case SAND:
-            case GRAVEL:
-                return true;
-            default:
-                return false;
-        }
+        return block.stoneId() != null
+                || block == TerrainBlock.STONE
+                || block == TerrainBlock.GRANITE
+                || block == TerrainBlock.DIORITE
+                || block == TerrainBlock.ANDESITE
+                || block == TerrainBlock.SANDSTONE
+                || block == TerrainBlock.RED_SANDSTONE
+                || block == TerrainBlock.SAND
+                || block == TerrainBlock.GRAVEL;
     }
 
     private static synchronized IBlockState[][] build() {
@@ -78,7 +73,7 @@ final class OreBlocks {
                 if (body == Blocks.AIR)
                     throw new IllegalStateException("Missing " + OreMap.BLOCK[m]);
                 for (TerrainBlock b : blocks)
-                    if (host(b)) result[m][b.ordinal()] = body.getDefaultState();
+                    if (host(b)) result[m][b.index()] = body.getDefaultState();
                 continue;
             }
             Map<String, IBlockState> byStone =
@@ -97,7 +92,7 @@ final class OreBlocks {
                     ore = byStone.get(stoneType(b));
                     if (ore == null) ore = byStone.get("stone");
                 }
-                result[m][b.ordinal()] = ore != null ? ore : vanilla;
+                result[m][b.index()] = ore != null ? ore : vanilla;
             }
         }
         LOG.info(
@@ -111,20 +106,12 @@ final class OreBlocks {
 
     /** GTCEu's stone type name for a host block; stone where GTCEu has none. */
     private static String stoneType(TerrainBlock block) {
-        switch (block) {
-            case GRANITE:
-                return "granite";
-            case DIORITE:
-                return "diorite";
-            case ANDESITE:
-                return "andesite";
-            case SAND:
-                return "sand";
-            case GRAVEL:
-                return "gravel";
-            default:
-                return "stone";
-        }
+        if (block == TerrainBlock.GRANITE) return "granite";
+        if (block == TerrainBlock.DIORITE) return "diorite";
+        if (block == TerrainBlock.ANDESITE) return "andesite";
+        if (block == TerrainBlock.SAND) return "sand";
+        if (block == TerrainBlock.GRAVEL) return "gravel";
+        return "stone";
     }
 
     private static IBlockState vanilla(String name) {

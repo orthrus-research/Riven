@@ -1,6 +1,6 @@
 package cc.orthrus.riven.worldgen;
 
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -25,11 +25,11 @@ public final class RealmCheck {
         RealmMap map = new RealmMap(seed, h);
         List<RealmMap.Realm> realms = RealmMap.realms();
         double[] tops = new double[realms.size()];
-        TerrainBlock crust = TerrainBlock.GABBRO;
-        Map<Integer, EnumMap<TerrainBlock, Integer>> profile = new TreeMap<>();
+        TerrainBlock crust = TerrainBlock.of("rock.gabbro");
+        Map<Integer, Map<TerrainBlock, Integer>> profile = new TreeMap<>();
         // Each realm's blocks below its transition band, whose shares its geology sets.
-        List<EnumMap<TerrainBlock, Integer>> interior = new java.util.ArrayList<>();
-        for (int k = 0; k < realms.size(); k++) interior.add(new EnumMap<>(TerrainBlock.class));
+        List<Map<TerrainBlock, Integer>> interior = new java.util.ArrayList<>();
+        for (int k = 0; k < realms.size(); k++) interior.add(byIndex());
         long checksum = 0;
         int columns = 0;
         for (int z = LO; z <= HI; z += STEP)
@@ -42,7 +42,7 @@ public final class RealmCheck {
                         throw new IllegalStateException("Air at " + x + "," + y + "," + z);
                     if ((b == TerrainBlock.BEDROCK) != (y == h.worldMinimumY))
                         throw new IllegalStateException("Bedrock off the world floor at Y " + y);
-                    checksum = checksum * 31 + b.ordinal();
+                    checksum = checksum * 31 + b.index();
                     int realm = RealmMap.realm(y, tops);
                     if (y > h.worldMinimumY && tops[realm] - y > map.band())
                         interior.get(realm).merge(b, 1, Integer::sum);
@@ -51,8 +51,7 @@ public final class RealmCheck {
                     for (int k = 0; k < realms.size(); k++) {
                         int d = (int) Math.floor((tops[k] - y) / 8);
                         if (d >= -2 && d < 8)
-                            profile.computeIfAbsent(
-                                            k * 100 + d, key -> new EnumMap<>(TerrainBlock.class))
+                            profile.computeIfAbsent(k * 100 + d, key -> byIndex())
                                     .merge(b, 1, Integer::sum);
                     }
                 }
@@ -63,7 +62,7 @@ public final class RealmCheck {
             for (int x = LO; x <= HI; x += STEP) {
                 map.tops(x, z, tops);
                 for (int y = h.worldMinimumY; y < h.minimumY; y++)
-                    reverse = reverse * 31 + map.block(x, y, z, tops, crust).ordinal();
+                    reverse = reverse * 31 + map.block(x, y, z, tops, crust).index();
             }
         RealmMap other = new RealmMap(seed, h);
         long rebuilt = 0;
@@ -72,7 +71,7 @@ public final class RealmCheck {
                 other.tops(x, z, tops);
                 for (int y = h.minimumY - 1; y >= h.worldMinimumY; y--)
                     rebuilt +=
-                            (long) other.block(x, y, z, tops, crust).ordinal()
+                            (long) other.block(x, y, z, tops, crust).index()
                                     * (x * 31L + y * 17L + z);
             }
         long forward = 0;
@@ -81,7 +80,7 @@ public final class RealmCheck {
                 map.tops(x, z, tops);
                 for (int y = h.worldMinimumY; y < h.minimumY; y++)
                     forward +=
-                            (long) map.block(x, y, z, tops, crust).ordinal()
+                            (long) map.block(x, y, z, tops, crust).index()
                                     * (x * 31L + y * 17L + z);
             }
         if (checksum != reverse || forward != rebuilt)
@@ -89,7 +88,7 @@ public final class RealmCheck {
         System.out.printf(
                 "%d columns from Y%d to Y%d, order-independent%n",
                 columns, h.worldMinimumY, h.minimumY - 1);
-        for (Map.Entry<Integer, EnumMap<TerrainBlock, Integer>> e : profile.entrySet()) {
+        for (Map.Entry<Integer, Map<TerrainBlock, Integer>> e : profile.entrySet()) {
             int k = e.getKey() < 50 ? 0 : (e.getKey() + 50) / 100, d = e.getKey() - k * 100;
             int total = 0;
             for (int n : e.getValue().values()) total += n;
@@ -112,23 +111,28 @@ public final class RealmCheck {
         }
     }
 
-    private static final Map<TerrainBlock, Integer> COLOURS = new EnumMap<>(TerrainBlock.class);
+    /** A block count map that iterates in catalogue order. */
+    private static Map<TerrainBlock, Integer> byIndex() {
+        return new TreeMap<>(java.util.Comparator.comparingInt(TerrainBlock::index));
+    }
+
+    private static final Map<TerrainBlock, Integer> COLOURS = new HashMap<>();
 
     /** A block's section colour: a realm rock's main face averaged, else a fixed colour. */
     private static int colour(TerrainBlock b) {
         return COLOURS.computeIfAbsent(
                 b,
                 block -> {
-                    switch (block) {
-                        case GABBRO:
+                    switch (block.id) {
+                        case "rock.gabbro":
                             return 0x3b3f45;
-                        case LEUCOBASALT:
+                        case "rock.leucobasalt":
                             return 0x9aa3ad;
-                        case NETHERRACK:
+                        case "rock.netherrack":
                             return 0x8a2f2a;
-                        case BEDROCK:
+                        case "rock.bedrock":
                             return 0x111111;
-                        case AIR:
+                        case "air":
                             return 0x000000; // below the world floor
                         default:
                     }
@@ -176,7 +180,7 @@ public final class RealmCheck {
                 int rgb =
                         y >= h.minimumY
                                 ? 0x6f6a5f // the crust above its floor
-                                : colour(map.block(x, y, 0, tops, TerrainBlock.GABBRO));
+                                : colour(map.block(x, y, 0, tops, TerrainBlock.of("rock.gabbro")));
                 image.setRGB(x, top - 1 - y, rgb);
             }
         }

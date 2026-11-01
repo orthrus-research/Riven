@@ -63,7 +63,7 @@ public final class DefinitionsCheck {
         for (Rules rules : Definitions.loadAll()) if (rules.revision() != null) revised++;
         // Loading the catalogue checks its kinds, tags, block states and one entry per
         // TerrainBlock.
-        int entries = Catalogue.entries().size();
+        int entries = TerrainBlock.values().length;
         System.out.println(
                 "definitions catalogued and loaded: "
                         + catalogued.size()

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 3,
+  "revision": 4,
   "about": "The descent (user decisions 2026-10-25 and 2026-10-26). The crust, from the surface to the crust floor (height reference allocation minY), holds four realms by rock and depth, as riven-caves.json defines them: the weathered skin near the surface, the layered deep in sedimentary rock, the broken basement in crystalline rock and the molten root below the deep surface. Each crust realm reports depth biomes chosen by the rules under crust. Below the crust floor, horizontal realms continue to the world floor (allocation worldMinY), each with its own riven: biome and rock. Biomes report per 4x4x4 cell, so World.getBiome follows depth. Boundaries are open: below each deep realm's top, the rock above thins out over a dithered band, and every top below the crust floor undulates. Each deep realm is built of its own rocks (riven-content.json rocks, Art Requisition 05): the Beneath of granulite and migmatite over blueschist and eclogite over peridotite and serpentinite, lit by moonstone seams; the Infernal Deep of infernal rock, cinder rock and ash shale over slag and jasper with brimstone pods, lit by molten seams and soul ash. Its boundary rock rims the band below its top. The deep realms' caves and life are not designed yet.",
   "seed": "0x5265616c6d73",
   "transition": {
@@ -14,8 +14,8 @@
       "id": "beneath",
       "biome": "beneath",
       "top": -512,
-      "rock": "GRANULITE",
-      "transition": "CRUST_FLOOR_TRANSITION",
+      "rock": "rock.granulite",
+      "transition": "rock.crust_floor_transition",
       "geology": {
         "zoneWarpBlocks": 40,
         "zoneWavelengthBlocks": 160,
@@ -23,17 +23,17 @@
         "bodyStretchY": 0.45,
         "bodyWarpBlocks": 20,
         "zones": [
-          {"toDepth": 170, "rocks": {"GRANULITE": 3, "MIGMATITE": 2}},
-          {"toDepth": 360, "rocks": {"BLUESCHIST": 2, "ECLOGITE": 2, "GRANULITE": 1}},
-          {"rocks": {"PERIDOTITE": 4, "SERPENTINITE": 2, "ECLOGITE": 1}}
+          {"toDepth": 170, "rocks": {"rock.granulite": 3, "rock.migmatite": 2}},
+          {"toDepth": 360, "rocks": {"rock.blueschist": 2, "rock.eclogite": 2, "rock.granulite": 1}},
+          {"rocks": {"rock.peridotite": 4, "rock.serpentinite": 2, "rock.eclogite": 1}}
         ],
         "inclusions": [
-          {"host": "PERIDOTITE", "rock": "CHROMITE_PERIDOTITE", "form": "pods", "share": 0.06, "scaleBlocks": 7},
-          {"host": "ECLOGITE", "rock": "GARNET_ROCK", "form": "pods", "share": 0.12, "scaleBlocks": 5},
-          {"host": "SERPENTINITE", "rock": "JADEITE_SERPENTINITE", "form": "veins", "width": 0.03, "scaleBlocks": 18}
+          {"host": "rock.peridotite", "rock": "rock.chromite_peridotite", "form": "pods", "share": 0.06, "scaleBlocks": 7},
+          {"host": "rock.eclogite", "rock": "rock.garnet_rock", "form": "pods", "share": 0.12, "scaleBlocks": 5},
+          {"host": "rock.serpentinite", "rock": "rock.jadeite_serpentinite", "form": "veins", "width": 0.03, "scaleBlocks": 18}
         ],
         "seams": [
-          {"rock": "MOONSTONE_FAINT", "core": "MOONSTONE_BRIGHT", "scaleBlocks": 56, "width": 0.016, "presence": 0.25, "presenceBlocks": 120}
+          {"rock": "rock.moonstone_faint", "core": "rock.moonstone_bright", "scaleBlocks": 56, "width": 0.016, "presence": 0.25, "presenceBlocks": 120}
         ]
       }
     },
@@ -41,8 +41,8 @@
       "id": "nether",
       "biome": "nether",
       "top": -1088,
-      "rock": "INFERNAL_ROCK",
-      "transition": "BENEATH_INFERNAL_TRANSITION",
+      "rock": "rock.infernal_rock",
+      "transition": "rock.beneath_infernal_transition",
       "geology": {
         "zoneWarpBlocks": 48,
         "zoneWavelengthBlocks": 192,
@@ -50,16 +50,16 @@
         "bodyStretchY": 0.45,
         "bodyWarpBlocks": 18,
         "zones": [
-          {"toDepth": 200, "rocks": {"INFERNAL_ROCK": 3, "CINDER_ROCK": 2, "ASH_SHALE": 2}},
-          {"toDepth": 420, "rocks": {"INFERNAL_ROCK": 3, "SLAG_STONE": 2, "JASPER_BANDS": 1}},
-          {"rocks": {"SLAG_STONE": 3, "INFERNAL_ROCK": 2, "JASPER_BANDS": 1}}
+          {"toDepth": 200, "rocks": {"rock.infernal_rock": 3, "rock.cinder_rock": 2, "rock.ash_shale": 2}},
+          {"toDepth": 420, "rocks": {"rock.infernal_rock": 3, "rock.slag_stone": 2, "rock.jasper_bands": 1}},
+          {"rocks": {"rock.slag_stone": 3, "rock.infernal_rock": 2, "rock.jasper_bands": 1}}
         ],
         "inclusions": [
-          {"host": "CINDER_ROCK", "rock": "SOUL_ASH", "form": "pods", "share": 0.15, "scaleBlocks": 6},
-          {"host": "SLAG_STONE", "rock": "BRIMSTONE", "form": "pods", "share": 0.12, "scaleBlocks": 9}
+          {"host": "rock.cinder_rock", "rock": "rock.soul_ash", "form": "pods", "share": 0.15, "scaleBlocks": 6},
+          {"host": "rock.slag_stone", "rock": "rock.brimstone", "form": "pods", "share": 0.12, "scaleBlocks": 9}
         ],
         "seams": [
-          {"rock": "MOLTEN_SEAMS", "scaleBlocks": 50, "width": 0.015, "presence": 0.3, "presenceBlocks": 96}
+          {"rock": "rock.molten_seams", "scaleBlocks": 50, "width": 0.015, "presence": 0.3, "presenceBlocks": 96}
         ]
       }
     }

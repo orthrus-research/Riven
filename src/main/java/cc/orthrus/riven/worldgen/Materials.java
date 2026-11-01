@@ -31,7 +31,7 @@ final class Materials {
             String name = e.getKey();
             JsonArray a = e.getValue().getAsJsonArray();
             TerrainBlock[] p = new TerrainBlock[a.size()];
-            for (int i = 0; i < p.length; i++) p[i] = TerrainBlock.valueOf(a.get(i).getAsString());
+            for (int i = 0; i < p.length; i++) p[i] = TerrainBlock.of(a.get(i).getAsString());
             if (p.length == 0) throw new IllegalStateException("Empty strata palette " + name);
             named.put(name, p);
         }

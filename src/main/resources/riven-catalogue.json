@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "revision": 1,
-  "about": "Riven's catalogue (catalogue-v1): every block the generator places, one entry each, with one id every definition can name. An id is its kind, or the kind, a dot and a name (rock.gabbro). block lists candidate block states (modid:block or modid:block[property=value,...]); the first that resolves wins, so later candidates are the stand-ins. terrain names the generator's TerrainBlock the entry stands for while the generator still uses that enum.",
+  "revision": 2,
+  "about": "Riven's catalogue (catalogue-v1): every block the generator places, one entry each, with one id every definition can name. An id is its kind, or the kind, a dot and a name (rock.gabbro). block lists candidate block states (modid:block or modid:block[property=value,...]); the first that resolves wins, so later candidates are the stand-ins.",
   "kinds": {
     "air": "empty space",
     "fluid": "water and lava",
@@ -31,21 +31,18 @@
   "entries": {
     "air": {
       "kind": "air",
-      "terrain": "AIR",
       "block": [
         "minecraft:air"
       ]
     },
     "fluid.water": {
       "kind": "fluid",
-      "terrain": "WATER",
       "block": [
         "minecraft:water"
       ]
     },
     "fluid.lava": {
       "kind": "fluid",
-      "terrain": "LAVA",
       "tags": [
         "volcanic",
         "luminous"
@@ -56,28 +53,24 @@
     },
     "soil.dirt": {
       "kind": "soil",
-      "terrain": "DIRT",
       "block": [
         "minecraft:dirt"
       ]
     },
     "soil.grass": {
       "kind": "soil",
-      "terrain": "GRASS",
       "block": [
         "minecraft:grass"
       ]
     },
     "soil.coarse_dirt": {
       "kind": "soil",
-      "terrain": "COARSE_DIRT",
       "block": [
         "minecraft:dirt[variant=coarse_dirt]"
       ]
     },
     "soil.mud": {
       "kind": "soil",
-      "terrain": "MUD",
       "tags": [
         "provider"
       ],
@@ -88,28 +81,24 @@
     },
     "sediment.sand": {
       "kind": "sediment",
-      "terrain": "SAND",
       "block": [
         "minecraft:sand"
       ]
     },
     "sediment.gravel": {
       "kind": "sediment",
-      "terrain": "GRAVEL",
       "block": [
         "minecraft:gravel"
       ]
     },
     "sediment.clay": {
       "kind": "sediment",
-      "terrain": "CLAY",
       "block": [
         "minecraft:clay"
       ]
     },
     "sediment.white_sand": {
       "kind": "sediment",
-      "terrain": "WHITE_SAND",
       "tags": [
         "provider",
         "evaporite"
@@ -121,7 +110,6 @@
     },
     "sediment.ash": {
       "kind": "sediment",
-      "terrain": "ASH",
       "tags": [
         "provider",
         "volcanic"
@@ -133,7 +121,6 @@
     },
     "ice.snow": {
       "kind": "ice",
-      "terrain": "SNOW",
       "tags": [
         "frozen"
       ],
@@ -143,7 +130,6 @@
     },
     "ice.ice": {
       "kind": "ice",
-      "terrain": "ICE",
       "tags": [
         "frozen"
       ],
@@ -153,7 +139,6 @@
     },
     "ice.packed_ice": {
       "kind": "ice",
-      "terrain": "PACKED_ICE",
       "tags": [
         "frozen"
       ],
@@ -163,56 +148,48 @@
     },
     "rock.bedrock": {
       "kind": "rock",
-      "terrain": "BEDROCK",
       "block": [
         "minecraft:bedrock"
       ]
     },
     "rock.stone": {
       "kind": "rock",
-      "terrain": "STONE",
       "block": [
         "minecraft:stone"
       ]
     },
     "rock.granite": {
       "kind": "rock",
-      "terrain": "GRANITE",
       "block": [
         "minecraft:stone[variant=granite]"
       ]
     },
     "rock.diorite": {
       "kind": "rock",
-      "terrain": "DIORITE",
       "block": [
         "minecraft:stone[variant=diorite]"
       ]
     },
     "rock.andesite": {
       "kind": "rock",
-      "terrain": "ANDESITE",
       "block": [
         "minecraft:stone[variant=andesite]"
       ]
     },
     "rock.sandstone": {
       "kind": "rock",
-      "terrain": "SANDSTONE",
       "block": [
         "minecraft:sandstone"
       ]
     },
     "rock.red_sandstone": {
       "kind": "rock",
-      "terrain": "RED_SANDSTONE",
       "block": [
         "minecraft:red_sandstone"
       ]
     },
     "rock.terracotta": {
       "kind": "rock",
-      "terrain": "TERRACOTTA",
       "tags": [
         "terracotta"
       ],
@@ -222,7 +199,6 @@
     },
     "rock.terracotta_orange": {
       "kind": "rock",
-      "terrain": "TERRACOTTA_ORANGE",
       "tags": [
         "terracotta"
       ],
@@ -232,7 +208,6 @@
     },
     "rock.terracotta_yellow": {
       "kind": "rock",
-      "terrain": "TERRACOTTA_YELLOW",
       "tags": [
         "terracotta"
       ],
@@ -242,7 +217,6 @@
     },
     "rock.terracotta_brown": {
       "kind": "rock",
-      "terrain": "TERRACOTTA_BROWN",
       "tags": [
         "terracotta"
       ],
@@ -252,7 +226,6 @@
     },
     "rock.terracotta_red": {
       "kind": "rock",
-      "terrain": "TERRACOTTA_RED",
       "tags": [
         "terracotta"
       ],
@@ -262,7 +235,6 @@
     },
     "rock.terracotta_white": {
       "kind": "rock",
-      "terrain": "TERRACOTTA_WHITE",
       "tags": [
         "terracotta"
       ],
@@ -272,7 +244,6 @@
     },
     "rock.terracotta_gray": {
       "kind": "rock",
-      "terrain": "TERRACOTTA_GRAY",
       "tags": [
         "terracotta"
       ],
@@ -282,7 +253,6 @@
     },
     "rock.terracotta_black": {
       "kind": "rock",
-      "terrain": "TERRACOTTA_BLACK",
       "tags": [
         "terracotta"
       ],
@@ -292,7 +262,6 @@
     },
     "rock.magma": {
       "kind": "rock",
-      "terrain": "MAGMA",
       "tags": [
         "volcanic",
         "luminous"
@@ -303,14 +272,12 @@
     },
     "rock.netherrack": {
       "kind": "rock",
-      "terrain": "NETHERRACK",
       "block": [
         "minecraft:netherrack"
       ]
     },
     "rock.dripstone_block": {
       "kind": "rock",
-      "terrain": "DRIPSTONE_BLOCK",
       "tags": [
         "karst"
       ],
@@ -321,7 +288,6 @@
     },
     "rock.gabbro": {
       "kind": "rock",
-      "terrain": "GABBRO",
       "tags": [
         "host-stone"
       ],
@@ -332,7 +298,6 @@
     },
     "rock.gneiss": {
       "kind": "rock",
-      "terrain": "GNEISS",
       "tags": [
         "host-stone"
       ],
@@ -343,7 +308,6 @@
     },
     "rock.graphite_schist": {
       "kind": "rock",
-      "terrain": "GRAPHITE_SCHIST",
       "tags": [
         "host-stone"
       ],
@@ -354,7 +318,6 @@
     },
     "rock.limestone": {
       "kind": "rock",
-      "terrain": "LIMESTONE",
       "tags": [
         "host-stone"
       ],
@@ -365,7 +328,6 @@
     },
     "rock.mica_schist": {
       "kind": "rock",
-      "terrain": "MICA_SCHIST",
       "tags": [
         "host-stone"
       ],
@@ -376,7 +338,6 @@
     },
     "rock.phyllite": {
       "kind": "rock",
-      "terrain": "PHYLLITE",
       "tags": [
         "host-stone"
       ],
@@ -387,7 +348,6 @@
     },
     "rock.quartzite": {
       "kind": "rock",
-      "terrain": "QUARTZITE",
       "tags": [
         "host-stone"
       ],
@@ -398,7 +358,6 @@
     },
     "rock.shale": {
       "kind": "rock",
-      "terrain": "SHALE",
       "tags": [
         "host-stone"
       ],
@@ -409,7 +368,6 @@
     },
     "rock.slate": {
       "kind": "rock",
-      "terrain": "SLATE",
       "tags": [
         "host-stone"
       ],
@@ -420,7 +378,6 @@
     },
     "rock.soapstone": {
       "kind": "rock",
-      "terrain": "SOAPSTONE",
       "tags": [
         "host-stone"
       ],
@@ -431,7 +388,6 @@
     },
     "rock.kimberlite": {
       "kind": "rock",
-      "terrain": "KIMBERLITE",
       "tags": [
         "host-stone"
       ],
@@ -442,7 +398,6 @@
     },
     "rock.anorthosite": {
       "kind": "rock",
-      "terrain": "ANORTHOSITE",
       "tags": [
         "host-stone"
       ],
@@ -453,7 +408,6 @@
     },
     "rock.leucobasalt": {
       "kind": "rock",
-      "terrain": "LEUCOBASALT",
       "tags": [
         "host-stone"
       ],
@@ -464,7 +418,6 @@
     },
     "rock.granulite": {
       "kind": "rock",
-      "terrain": "GRANULITE",
       "tags": [
         "realm",
         "beneath"
@@ -476,7 +429,6 @@
     },
     "rock.migmatite": {
       "kind": "rock",
-      "terrain": "MIGMATITE",
       "tags": [
         "realm",
         "beneath"
@@ -488,7 +440,6 @@
     },
     "rock.eclogite": {
       "kind": "rock",
-      "terrain": "ECLOGITE",
       "tags": [
         "realm",
         "beneath"
@@ -500,7 +451,6 @@
     },
     "rock.peridotite": {
       "kind": "rock",
-      "terrain": "PERIDOTITE",
       "tags": [
         "realm",
         "beneath"
@@ -512,7 +462,6 @@
     },
     "rock.serpentinite": {
       "kind": "rock",
-      "terrain": "SERPENTINITE",
       "tags": [
         "realm",
         "beneath"
@@ -524,7 +473,6 @@
     },
     "rock.blueschist": {
       "kind": "rock",
-      "terrain": "BLUESCHIST",
       "tags": [
         "realm",
         "beneath"
@@ -536,7 +484,6 @@
     },
     "rock.garnet_rock": {
       "kind": "rock",
-      "terrain": "GARNET_ROCK",
       "tags": [
         "realm",
         "beneath"
@@ -548,7 +495,6 @@
     },
     "rock.chromite_peridotite": {
       "kind": "rock",
-      "terrain": "CHROMITE_PERIDOTITE",
       "tags": [
         "realm",
         "beneath"
@@ -560,7 +506,6 @@
     },
     "rock.jadeite_serpentinite": {
       "kind": "rock",
-      "terrain": "JADEITE_SERPENTINITE",
       "tags": [
         "realm",
         "beneath"
@@ -572,7 +517,6 @@
     },
     "rock.moonstone_faint": {
       "kind": "rock",
-      "terrain": "MOONSTONE_FAINT",
       "tags": [
         "realm",
         "beneath",
@@ -585,7 +529,6 @@
     },
     "rock.moonstone_bright": {
       "kind": "rock",
-      "terrain": "MOONSTONE_BRIGHT",
       "tags": [
         "realm",
         "beneath",
@@ -598,7 +541,6 @@
     },
     "rock.infernal_rock": {
       "kind": "rock",
-      "terrain": "INFERNAL_ROCK",
       "tags": [
         "realm",
         "infernal"
@@ -610,7 +552,6 @@
     },
     "rock.slag_stone": {
       "kind": "rock",
-      "terrain": "SLAG_STONE",
       "tags": [
         "realm",
         "infernal"
@@ -622,7 +563,6 @@
     },
     "rock.brimstone": {
       "kind": "rock",
-      "terrain": "BRIMSTONE",
       "tags": [
         "realm",
         "infernal"
@@ -634,7 +574,6 @@
     },
     "rock.cinder_rock": {
       "kind": "rock",
-      "terrain": "CINDER_ROCK",
       "tags": [
         "realm",
         "infernal"
@@ -646,7 +585,6 @@
     },
     "rock.ash_shale": {
       "kind": "rock",
-      "terrain": "ASH_SHALE",
       "tags": [
         "realm",
         "infernal"
@@ -658,7 +596,6 @@
     },
     "rock.jasper_bands": {
       "kind": "rock",
-      "terrain": "JASPER_BANDS",
       "tags": [
         "realm",
         "infernal"
@@ -670,7 +607,6 @@
     },
     "rock.molten_seams": {
       "kind": "rock",
-      "terrain": "MOLTEN_SEAMS",
       "tags": [
         "realm",
         "infernal",
@@ -683,7 +619,6 @@
     },
     "rock.soul_ash": {
       "kind": "rock",
-      "terrain": "SOUL_ASH",
       "tags": [
         "realm",
         "infernal",
@@ -696,7 +631,6 @@
     },
     "rock.crust_floor_transition": {
       "kind": "rock",
-      "terrain": "CRUST_FLOOR_TRANSITION",
       "tags": [
         "realm",
         "beneath",
@@ -709,7 +643,6 @@
     },
     "rock.beneath_infernal_transition": {
       "kind": "rock",
-      "terrain": "BENEATH_INFERNAL_TRANSITION",
       "tags": [
         "realm",
         "infernal",
@@ -723,7 +656,6 @@
     },
     "formation.dripstone_up": {
       "kind": "formation",
-      "terrain": "DRIPSTONE_UP",
       "tags": [
         "karst"
       ],
@@ -734,7 +666,6 @@
     },
     "formation.dripstone_down": {
       "kind": "formation",
-      "terrain": "DRIPSTONE_DOWN",
       "tags": [
         "karst"
       ],
@@ -745,7 +676,6 @@
     },
     "formation.ice_up": {
       "kind": "formation",
-      "terrain": "ICE_UP",
       "tags": [
         "frozen"
       ],
@@ -756,7 +686,6 @@
     },
     "formation.ice_down": {
       "kind": "formation",
-      "terrain": "ICE_DOWN",
       "tags": [
         "frozen"
       ],
@@ -767,7 +696,6 @@
     },
     "formation.salt_up": {
       "kind": "formation",
-      "terrain": "SALT_UP",
       "tags": [
         "evaporite"
       ],
@@ -778,7 +706,6 @@
     },
     "formation.salt_down": {
       "kind": "formation",
-      "terrain": "SALT_DOWN",
       "tags": [
         "evaporite"
       ],
@@ -789,7 +716,6 @@
     },
     "formation.basalt_up": {
       "kind": "formation",
-      "terrain": "BASALT_UP",
       "tags": [
         "volcanic"
       ],
@@ -800,7 +726,6 @@
     },
     "formation.basalt_down": {
       "kind": "formation",
-      "terrain": "BASALT_DOWN",
       "tags": [
         "volcanic"
       ],
@@ -811,7 +736,6 @@
     },
     "plant.root": {
       "kind": "plant",
-      "terrain": "ROOT",
       "tags": [
         "provider"
       ],
@@ -822,7 +746,6 @@
     },
     "plant.toadstool": {
       "kind": "plant",
-      "terrain": "TOADSTOOL",
       "tags": [
         "provider",
         "fungus"
@@ -834,7 +757,6 @@
     },
     "plant.portobello": {
       "kind": "plant",
-      "terrain": "PORTOBELLO",
       "tags": [
         "provider",
         "fungus"
@@ -846,7 +768,6 @@
     },
     "plant.brown_mushroom": {
       "kind": "plant",
-      "terrain": "BROWN_MUSHROOM",
       "tags": [
         "fungus"
       ],
@@ -856,7 +777,6 @@
     },
     "plant.red_mushroom": {
       "kind": "plant",
-      "terrain": "RED_MUSHROOM",
       "tags": [
         "fungus"
       ],
@@ -866,7 +786,6 @@
     },
     "plant.miners_delight": {
       "kind": "plant",
-      "terrain": "MINERS_DELIGHT",
       "tags": [
         "provider"
       ],
@@ -877,7 +796,6 @@
     },
     "plant.glowshroom": {
       "kind": "plant",
-      "terrain": "GLOWSHROOM",
       "tags": [
         "provider",
         "fungus",
@@ -890,7 +808,6 @@
     },
     "plant.algae": {
       "kind": "plant",
-      "terrain": "ALGAE",
       "tags": [
         "provider"
       ],
@@ -901,13 +818,12 @@
     },
     "decor.cobweb": {
       "kind": "decor",
-      "terrain": "COBWEB",
       "block": [
         "minecraft:web"
       ]
     }
   },
   "contract": [
-    "The catalogue is the generator's vocabulary: definitions are to name entries by id, never block names. An id's prefix is its kind; every tag is declared in tags. Each entry resolves to its first candidate whose block is registered and whose properties fit it. Every TerrainBlock has exactly one entry."
+    "The catalogue is the generator's vocabulary: definitions are to name entries by id, never block names. An id's prefix is its kind; every tag is declared in tags. Each entry resolves to its first candidate whose block is registered and whose properties fit it."
   ]
 }

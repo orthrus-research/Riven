@@ -7,7 +7,8 @@ import java.security.MessageDigest;
  * the allocation top, over chunks along land and coast diagonals and a block on the land route.
  * Caves, flood water, ores and terrain all take part, so equal digests before and after a change
  * prove it left native blocks unchanged where the atlas digests do not look (they sample no
- * caves). Usage: NativeDigestCheck [seed ...].
+ * caves). Blocks enter by their catalogue id, so the digest does not depend on catalogue order.
+ * Usage: NativeDigestCheck [seed ...].
  */
 public final class NativeDigestCheck {
     public static void main(String[] args) throws Exception {
@@ -34,7 +35,9 @@ public final class NativeDigestCheck {
                         column.cube(index, bottom, line);
                         for (int y = 0; y < 16; y++) {
                             int wy = bottom + y;
-                            digest.update((byte) line[y].ordinal());
+                            int id = line[y].id.hashCode();
+                            for (int shift = 24; shift >= 0; shift -= 8)
+                                digest.update((byte) (id >>> shift));
                             digest.update((byte) column.ore(index, x, wy, z));
                             digest.update((byte) (column.unstable(index, wy) ? 1 : 0));
                         }

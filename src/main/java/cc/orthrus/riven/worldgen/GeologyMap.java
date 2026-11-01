@@ -39,7 +39,7 @@ public final class GeologyMap {
             if (index >= 64) throw new IllegalStateException("At most 64 rock units");
             this.name = name;
             this.index = index;
-            block = TerrainBlock.valueOf(j.get("block").getAsString());
+            block = TerrainBlock.of(j.get("block").getAsString());
             color = Integer.parseInt(j.get("color").getAsString().substring(1), 16);
             solubility = Rules.number(j, "solubility", 0, 1);
             permeability = Rules.number(j, "permeability", 0, 1);
@@ -292,7 +292,7 @@ public final class GeologyMap {
                 JsonArray a = p.getValue().getAsJsonArray();
                 TerrainBlock[] blocks = new TerrainBlock[a.size()];
                 for (int i = 0; i < blocks.length; i++)
-                    blocks[i] = TerrainBlock.valueOf(a.get(i).getAsString());
+                    blocks[i] = TerrainBlock.of(a.get(i).getAsString());
                 if (blocks.length == 0) throw new IllegalStateException("Empty tint " + p.getKey());
                 byUnit.put(unit(p.getKey()), blocks);
             }

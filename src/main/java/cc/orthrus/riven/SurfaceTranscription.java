@@ -179,20 +179,14 @@ final class SurfaceTranscription {
     }
 
     private static IBlockState scratch(TerrainBlock block) {
-        switch (block) {
-            case GRASS:
-            case DIRT:
-                return STONE;
-            case STONE:
-            case BEDROCK:
-            case GRANITE:
-            case DIORITE:
-            case ANDESITE:
-                // Stone variants are the stone block too, which routines would convert.
-                return HELD;
-            default:
-                return TerrainColumn.state(block);
-        }
+        if (block == TerrainBlock.GRASS || block == TerrainBlock.DIRT) return STONE;
+        // Stone variants are the stone block too, which routines would convert.
+        if (block == TerrainBlock.STONE
+                || block == TerrainBlock.BEDROCK
+                || block == TerrainBlock.GRANITE
+                || block == TerrainBlock.DIORITE
+                || block == TerrainBlock.ANDESITE) return HELD;
+        return TerrainColumn.state(block);
     }
 
     /** One above the highest solid block of a column (water and air above it excluded). */

@@ -1,7 +1,6 @@
 package cc.orthrus.riven;
 
 import cc.orthrus.riven.worldgen.Boulders;
-import cc.orthrus.riven.worldgen.Catalogue;
 import cc.orthrus.riven.worldgen.ColumnBlocks;
 import cc.orthrus.riven.worldgen.RealmMap;
 import cc.orthrus.riven.worldgen.SurfaceRules;
@@ -35,25 +34,24 @@ final class TerrainColumn {
     private static final IBlockState[] STATES = catalogued();
 
     /**
-     * Each terrain block's state from its catalogue entry (riven-catalogue.json), the first
-     * candidate that resolves. Until the generator leaves TerrainBlock, the legacy table is built
+     * Each catalogue entry's state (riven-catalogue.json), its first candidate that resolves.
+     * Until the remaining Java block rules move into the catalogue, the legacy table is built
      * beside it and any difference fails startup.
      */
     private static IBlockState[] catalogued() {
         IBlockState[] legacy = states(), result = new IBlockState[legacy.length];
         List<String> differ = new ArrayList<>();
         for (TerrainBlock b : TerrainBlock.values()) {
-            Catalogue.Entry entry = Catalogue.entry(b);
             IBlockState state = null;
-            for (int i = 0; i < entry.candidates.size() && state == null; i++) {
-                state = Mappings.parse(entry.candidates.get(i));
-                if (state != null && i > 0) STAND_INS.add(entry.id);
+            for (int i = 0; i < b.candidates.size() && state == null; i++) {
+                state = Mappings.parse(b.candidates.get(i));
+                if (state != null && i > 0) STAND_INS.add(b.id);
             }
             if (state == null)
-                throw new IllegalStateException(entry.id + ": no candidate block is registered");
-            result[b.ordinal()] = state;
-            if (!state.equals(legacy[b.ordinal()]))
-                differ.add(entry.id + " " + state + " (legacy " + legacy[b.ordinal()] + ")");
+                throw new IllegalStateException(b.id + ": no candidate block is registered");
+            result[b.index()] = state;
+            if (!state.equals(legacy[b.index()]))
+                differ.add(b.id + " " + state + " (legacy " + legacy[b.index()] + ")");
         }
         if (!differ.isEmpty())
             throw new IllegalStateException(
@@ -71,114 +69,114 @@ final class TerrainColumn {
 
     private static IBlockState[] states() {
         IBlockState[] result = new IBlockState[TerrainBlock.values().length];
-        result[TerrainBlock.AIR.ordinal()] = Blocks.AIR.getDefaultState();
-        result[TerrainBlock.BEDROCK.ordinal()] = Blocks.BEDROCK.getDefaultState();
-        result[TerrainBlock.STONE.ordinal()] = Blocks.STONE.getDefaultState();
-        result[TerrainBlock.WATER.ordinal()] = Blocks.WATER.getDefaultState();
-        result[TerrainBlock.SAND.ordinal()] = Blocks.SAND.getDefaultState();
-        result[TerrainBlock.GRAVEL.ordinal()] = Blocks.GRAVEL.getDefaultState();
-        result[TerrainBlock.DIRT.ordinal()] = Blocks.DIRT.getDefaultState();
-        result[TerrainBlock.GRASS.ordinal()] = Blocks.GRASS.getDefaultState();
-        result[TerrainBlock.SNOW.ordinal()] = Blocks.SNOW.getDefaultState();
-        result[TerrainBlock.GRANITE.ordinal()] =
+        result[at("air")] = Blocks.AIR.getDefaultState();
+        result[at("rock.bedrock")] = Blocks.BEDROCK.getDefaultState();
+        result[at("rock.stone")] = Blocks.STONE.getDefaultState();
+        result[at("fluid.water")] = Blocks.WATER.getDefaultState();
+        result[at("sediment.sand")] = Blocks.SAND.getDefaultState();
+        result[at("sediment.gravel")] = Blocks.GRAVEL.getDefaultState();
+        result[at("soil.dirt")] = Blocks.DIRT.getDefaultState();
+        result[at("soil.grass")] = Blocks.GRASS.getDefaultState();
+        result[at("ice.snow")] = Blocks.SNOW.getDefaultState();
+        result[at("rock.granite")] =
                 Blocks.STONE
                         .getDefaultState()
                         .withProperty(BlockStone.VARIANT, BlockStone.EnumType.GRANITE);
-        result[TerrainBlock.DIORITE.ordinal()] =
+        result[at("rock.diorite")] =
                 Blocks.STONE
                         .getDefaultState()
                         .withProperty(BlockStone.VARIANT, BlockStone.EnumType.DIORITE);
-        result[TerrainBlock.ANDESITE.ordinal()] =
+        result[at("rock.andesite")] =
                 Blocks.STONE
                         .getDefaultState()
                         .withProperty(BlockStone.VARIANT, BlockStone.EnumType.ANDESITE);
-        result[TerrainBlock.SANDSTONE.ordinal()] = Blocks.SANDSTONE.getDefaultState();
-        result[TerrainBlock.RED_SANDSTONE.ordinal()] = Blocks.RED_SANDSTONE.getDefaultState();
-        result[TerrainBlock.COARSE_DIRT.ordinal()] =
+        result[at("rock.sandstone")] = Blocks.SANDSTONE.getDefaultState();
+        result[at("rock.red_sandstone")] = Blocks.RED_SANDSTONE.getDefaultState();
+        result[at("soil.coarse_dirt")] =
                 Blocks.DIRT
                         .getDefaultState()
                         .withProperty(BlockDirt.VARIANT, BlockDirt.DirtType.COARSE_DIRT);
-        result[TerrainBlock.CLAY.ordinal()] = Blocks.CLAY.getDefaultState();
-        result[TerrainBlock.TERRACOTTA.ordinal()] = Blocks.HARDENED_CLAY.getDefaultState();
-        result[TerrainBlock.TERRACOTTA_ORANGE.ordinal()] = terracotta(EnumDyeColor.ORANGE);
-        result[TerrainBlock.TERRACOTTA_YELLOW.ordinal()] = terracotta(EnumDyeColor.YELLOW);
-        result[TerrainBlock.TERRACOTTA_BROWN.ordinal()] = terracotta(EnumDyeColor.BROWN);
-        result[TerrainBlock.TERRACOTTA_RED.ordinal()] = terracotta(EnumDyeColor.RED);
-        result[TerrainBlock.TERRACOTTA_WHITE.ordinal()] = terracotta(EnumDyeColor.WHITE);
-        result[TerrainBlock.TERRACOTTA_GRAY.ordinal()] = terracotta(EnumDyeColor.GRAY);
-        result[TerrainBlock.TERRACOTTA_BLACK.ordinal()] = terracotta(EnumDyeColor.BLACK);
-        result[TerrainBlock.LAVA.ordinal()] = Blocks.LAVA.getDefaultState();
+        result[at("sediment.clay")] = Blocks.CLAY.getDefaultState();
+        result[at("rock.terracotta")] = Blocks.HARDENED_CLAY.getDefaultState();
+        result[at("rock.terracotta_orange")] = terracotta(EnumDyeColor.ORANGE);
+        result[at("rock.terracotta_yellow")] = terracotta(EnumDyeColor.YELLOW);
+        result[at("rock.terracotta_brown")] = terracotta(EnumDyeColor.BROWN);
+        result[at("rock.terracotta_red")] = terracotta(EnumDyeColor.RED);
+        result[at("rock.terracotta_white")] = terracotta(EnumDyeColor.WHITE);
+        result[at("rock.terracotta_gray")] = terracotta(EnumDyeColor.GRAY);
+        result[at("rock.terracotta_black")] = terracotta(EnumDyeColor.BLACK);
+        result[at("fluid.lava")] = Blocks.LAVA.getDefaultState();
         // Cave decoration: Riven's own blocks, Biomes O' Plenty's where it is loaded, vanilla
         // stand-ins otherwise (riven-cave-decor.json lists them).
         IBlockState clay = Blocks.CLAY.getDefaultState(), air = Blocks.AIR.getDefaultState();
         IBlockState brown = Blocks.BROWN_MUSHROOM.getDefaultState();
-        result[TerrainBlock.MUD.ordinal()] = named("biomesoplenty:mud", "variant", "mud", clay);
-        result[TerrainBlock.WHITE_SAND.ordinal()] =
+        result[at("soil.mud")] = named("biomesoplenty:mud", "variant", "mud", clay);
+        result[at("sediment.white_sand")] =
                 named("biomesoplenty:white_sand", null, null, Blocks.SAND.getDefaultState());
-        result[TerrainBlock.ASH.ordinal()] =
+        result[at("sediment.ash")] =
                 named("biomesoplenty:ash_block", null, null, Blocks.GRAVEL.getDefaultState());
-        result[TerrainBlock.MAGMA.ordinal()] = Blocks.MAGMA.getDefaultState();
-        result[TerrainBlock.NETHERRACK.ordinal()] = Blocks.NETHERRACK.getDefaultState();
-        result[TerrainBlock.ICE.ordinal()] = Blocks.ICE.getDefaultState();
-        result[TerrainBlock.PACKED_ICE.ordinal()] = Blocks.PACKED_ICE.getDefaultState();
-        result[TerrainBlock.COBWEB.ordinal()] = Blocks.WEB.getDefaultState();
-        result[TerrainBlock.DRIPSTONE_BLOCK.ordinal()] =
+        result[at("rock.magma")] = Blocks.MAGMA.getDefaultState();
+        result[at("rock.netherrack")] = Blocks.NETHERRACK.getDefaultState();
+        result[at("ice.ice")] = Blocks.ICE.getDefaultState();
+        result[at("ice.packed_ice")] = Blocks.PACKED_ICE.getDefaultState();
+        result[at("decor.cobweb")] = Blocks.WEB.getDefaultState();
+        result[at("rock.dripstone_block")] =
                 named("riven:dripstone_block", null, null, Blocks.STONE.getDefaultState());
-        result[TerrainBlock.DRIPSTONE_UP.ordinal()] =
+        result[at("formation.dripstone_up")] =
                 named("riven:pointed_dripstone", "direction", "up", air);
-        result[TerrainBlock.DRIPSTONE_DOWN.ordinal()] =
+        result[at("formation.dripstone_down")] =
                 named("riven:pointed_dripstone", "direction", "down", air);
-        result[TerrainBlock.ICE_UP.ordinal()] = named("riven:pointed_ice", "direction", "up", air);
-        result[TerrainBlock.ICE_DOWN.ordinal()] =
-                named("riven:pointed_ice", "direction", "down", air);
-        result[TerrainBlock.SALT_UP.ordinal()] =
-                named("riven:pointed_salt", "direction", "up", air);
-        result[TerrainBlock.SALT_DOWN.ordinal()] =
-                named("riven:pointed_salt", "direction", "down", air);
-        result[TerrainBlock.BASALT_UP.ordinal()] =
-                named("riven:pointed_basalt", "direction", "up", air);
-        result[TerrainBlock.BASALT_DOWN.ordinal()] =
+        result[at("formation.ice_up")] = named("riven:pointed_ice", "direction", "up", air);
+        result[at("formation.ice_down")] = named("riven:pointed_ice", "direction", "down", air);
+        result[at("formation.salt_up")] = named("riven:pointed_salt", "direction", "up", air);
+        result[at("formation.salt_down")] = named("riven:pointed_salt", "direction", "down", air);
+        result[at("formation.basalt_up")] = named("riven:pointed_basalt", "direction", "up", air);
+        result[at("formation.basalt_down")] =
                 named("riven:pointed_basalt", "direction", "down", air);
-        result[TerrainBlock.ROOT.ordinal()] =
-                named("biomesoplenty:plant_1", "variant", "root", air);
-        result[TerrainBlock.TOADSTOOL.ordinal()] =
+        result[at("plant.root")] = named("biomesoplenty:plant_1", "variant", "root", air);
+        result[at("plant.toadstool")] =
                 named(
                         "biomesoplenty:mushroom",
                         "variant",
                         "toadstool",
                         Blocks.RED_MUSHROOM.getDefaultState());
-        result[TerrainBlock.PORTOBELLO.ordinal()] =
+        result[at("plant.portobello")] =
                 named("biomesoplenty:mushroom", "variant", "portobello", brown);
-        result[TerrainBlock.BROWN_MUSHROOM.ordinal()] = brown;
-        result[TerrainBlock.RED_MUSHROOM.ordinal()] = Blocks.RED_MUSHROOM.getDefaultState();
-        result[TerrainBlock.MINERS_DELIGHT.ordinal()] =
+        result[at("plant.brown_mushroom")] = brown;
+        result[at("plant.red_mushroom")] = Blocks.RED_MUSHROOM.getDefaultState();
+        result[at("plant.miners_delight")] =
                 named("biomesoplenty:flower_1", "variant", "miners_delight", air);
-        result[TerrainBlock.GLOWSHROOM.ordinal()] =
+        result[at("plant.glowshroom")] =
                 named("biomesoplenty:mushroom", "variant", "glowshroom", brown);
-        result[TerrainBlock.ALGAE.ordinal()] =
+        result[at("plant.algae")] =
                 named("biomesoplenty:coral", "variant", "algae", Blocks.WATER.getDefaultState());
         // Riven host stones, with vanilla stand-ins should a block be missing.
         IBlockState stone = Blocks.STONE.getDefaultState();
         for (TerrainBlock b : TerrainBlock.values())
             if (b.stoneId() != null) {
                 IBlockState fallback =
-                        b == TerrainBlock.LIMESTONE || b == TerrainBlock.ANORTHOSITE
-                                ? result[TerrainBlock.DIORITE.ordinal()]
-                                : b == TerrainBlock.GNEISS
-                                                || b == TerrainBlock.QUARTZITE
-                                                || b == TerrainBlock.SOAPSTONE
-                                                || b == TerrainBlock.KIMBERLITE
+                        b.id.equals("rock.limestone") || b.id.equals("rock.anorthosite")
+                                ? result[at("rock.diorite")]
+                                : b.id.equals("rock.gneiss")
+                                                || b.id.equals("rock.quartzite")
+                                                || b.id.equals("rock.soapstone")
+                                                || b.id.equals("rock.kimberlite")
                                         ? stone
-                                        : result[TerrainBlock.ANDESITE.ordinal()];
-                result[b.ordinal()] = named("riven:" + b.stoneId(), null, null, fallback);
+                                        : result[at("rock.andesite")];
+                result[b.index()] = named("riven:" + b.stoneId(), null, null, fallback);
             }
         // Deep-realm and boundary rocks.
         for (TerrainBlock b : TerrainBlock.values())
             if (b.rockId() != null)
-                result[b.ordinal()] = named("riven:" + b.rockId(), null, null, stone);
+                result[b.index()] = named("riven:" + b.rockId(), null, null, stone);
         for (IBlockState state : result)
             if (state == null) throw new IllegalStateException("Unmapped terrain block");
         return result;
+    }
+
+    /** A legacy table slot by catalogue id. */
+    private static int at(String id) {
+        return TerrainBlock.of(id).index();
     }
 
     /**
@@ -212,7 +210,7 @@ final class TerrainColumn {
     private TerrainColumn() {}
 
     static IBlockState state(TerrainBlock block) {
-        return STATES[block.ordinal()];
+        return STATES[block.index()];
     }
 
     /**
@@ -230,7 +228,7 @@ final class TerrainColumn {
             IBlockState own = block == TerrainBlock.GRASS ? soil[0] : soil[1];
             if (own != null && own.isFullCube() && own.getMaterial().isSolid()) return own;
         }
-        return STATES[block.ordinal()];
+        return STATES[block.index()];
     }
 
     static IBlockState blockAt(

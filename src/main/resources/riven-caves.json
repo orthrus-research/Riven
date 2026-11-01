@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 3,
+  "revision": 4,
   "variationSeed": "0x4341564553524931",
   "roofBlocks": 8,
   "wetRoofBlocks": 16,
@@ -95,7 +95,7 @@
     "centreY": [-500, -160],
     "liningBlocks": 2,
     "hosts": ["gabbro", "anorthosite", "basalt", "dolerite"],
-    "linings": ["DIORITE", "GRANITE", "RED_SANDSTONE"]
+    "linings": ["rock.diorite", "rock.granite", "rock.red_sandstone"]
   },
   "chambers": {"airShare": 0.35},
   "fill": {"cellBlocks": 96, "jitter": 0.7, "edgeWarpBlocks": 10, "edgeWarpWavelengthBlocks": 72, "floodBandBlocks": 40, "minimumPermeability": 0.45, "sealBlocks": 2, "floorWobbleBlocks": 3, "floorWobbleWavelengthBlocks": 48, "damHalfWidthBlocks": 1.0, "damSlope": 0.5, "damMaximumHalfWidthBlocks": 4},

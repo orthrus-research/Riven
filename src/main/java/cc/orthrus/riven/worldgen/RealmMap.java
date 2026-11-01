@@ -259,11 +259,9 @@ public final class RealmMap {
             id = j.get("id").getAsString();
             biome = j.get("biome").getAsString();
             top = j.get("top").getAsInt();
-            rock = TerrainBlock.valueOf(j.get("rock").getAsString());
+            rock = TerrainBlock.of(j.get("rock").getAsString());
             transition =
-                    j.has("transition")
-                            ? TerrainBlock.valueOf(j.get("transition").getAsString())
-                            : null;
+                    j.has("transition") ? TerrainBlock.of(j.get("transition").getAsString()) : null;
             geology = j.has("geology") ? new Geology(j.getAsJsonObject("geology")) : null;
         }
     }
@@ -308,7 +306,7 @@ public final class RealmMap {
                 weights[i] = new double[rs.size()];
                 int n = 0;
                 for (Map.Entry<String, JsonElement> e : rs.entrySet()) {
-                    rocks[i][n] = TerrainBlock.valueOf(e.getKey());
+                    rocks[i][n] = TerrainBlock.of(e.getKey());
                     weights[i][n++] = e.getValue().getAsDouble();
                 }
             }
@@ -323,8 +321,8 @@ public final class RealmMap {
             inclusionScale = new double[inc.size()];
             for (int i = 0; i < inc.size(); i++) {
                 JsonObject o = inc.get(i).getAsJsonObject();
-                inclusionHost[i] = TerrainBlock.valueOf(o.get("host").getAsString());
-                inclusionRock[i] = TerrainBlock.valueOf(o.get("rock").getAsString());
+                inclusionHost[i] = TerrainBlock.of(o.get("host").getAsString());
+                inclusionRock[i] = TerrainBlock.of(o.get("rock").getAsString());
                 String form = o.get("form").getAsString();
                 if (!form.equals("pods") && !form.equals("veins"))
                     throw new IllegalStateException("Unknown inclusion form: " + form);
@@ -346,9 +344,8 @@ public final class RealmMap {
             seamPresenceScale = new double[se.size()];
             for (int i = 0; i < se.size(); i++) {
                 JsonObject o = se.get(i).getAsJsonObject();
-                seamRock[i] = TerrainBlock.valueOf(o.get("rock").getAsString());
-                seamCore[i] =
-                        o.has("core") ? TerrainBlock.valueOf(o.get("core").getAsString()) : null;
+                seamRock[i] = TerrainBlock.of(o.get("rock").getAsString());
+                seamCore[i] = o.has("core") ? TerrainBlock.of(o.get("core").getAsString()) : null;
                 seamScale[i] = Rules.number(o, "scaleBlocks", 4, 4096);
                 seamWidth[i] = Rules.number(o, "width", 0, 0.5);
                 seamPresence[i] = Rules.number(o, "presence", 0, 1);
