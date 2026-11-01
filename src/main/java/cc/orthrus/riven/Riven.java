@@ -75,6 +75,9 @@ public final class Riven {
     public void postInit(net.minecraftforge.fml.common.event.FMLPostInitializationEvent event) {
         if (withholdProviderBiomes && BiomeProvision.active())
             BopLooks.hideWorldType(org.apache.logging.log4j.LogManager.getLogger("riven"));
+        if (net.minecraftforge.fml.common.Loader.isModLoaded("gregtech"))
+            org.apache.logging.log4j.LogManager.getLogger("riven")
+                    .info(GregTechOres.unification(cc.orthrus.riven.content.RivenContent.blocks()));
     }
 
     @Mod.EventHandler

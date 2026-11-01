@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 3,
+  "revision": 4,
   "lang": {
     "generator.riven": "Riven"
   },
@@ -115,6 +115,9 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -136,6 +139,9 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -159,6 +165,10 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone",
+        "oreGraphite"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -182,6 +192,9 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -205,6 +218,9 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -228,6 +244,9 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -251,6 +270,10 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone",
+        "stoneQuartzite"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -274,6 +297,9 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -297,6 +323,9 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -320,6 +349,10 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone",
+        "stoneSoapstone"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -341,6 +374,9 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -362,6 +398,9 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -383,6 +422,10 @@
       "resistance": 6.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "stone",
+        "stoneBasalt"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -404,6 +447,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreCoal"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -427,6 +473,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreLignite"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -450,6 +499,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreAnthracite"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -473,6 +525,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreSalt"
+      ],
       "textures": {
         "source": "riven-resources/requisition-05",
         "faces": [
@@ -496,6 +551,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreGypsum"
+      ],
       "textures": {
         "source": "riven-resources/requisition-05",
         "faces": [
@@ -517,6 +575,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreCalcite"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -540,6 +601,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreTrona"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -563,6 +627,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreRockSalt"
+      ],
       "textures": {
         "source": "riven-resources/requisition-05",
         "faces": [
@@ -584,6 +651,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreBauxite"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -605,6 +675,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreCalcite"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -626,6 +699,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreTricalciumPhosphate"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -647,6 +723,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreSulfur"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -668,6 +747,9 @@
       "resistance": 3.0,
       "tool": "pickaxe",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreCopper"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -689,6 +771,9 @@
       "resistance": 3.0,
       "tool": "shovel",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "orePlatinum"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -710,6 +795,9 @@
       "resistance": 3.0,
       "tool": "shovel",
       "harvestLevel": 0,
+      "oreDictionary": [
+        "oreGold"
+      ],
       "textures": {
         "source": "riven-resources/requisition-06",
         "faces": [
@@ -848,7 +936,8 @@
     "textures: each named texture comes from a painter in tools/content/painters.py (with fixed args, or expanded over 'for' values) or a committed file under tools/content/; a name with {placeholders} expands over its 'for' values. tools/content/build_content.py writes blockstates, models, item models, textures and the lang file under assets/riven from this file, and --check proves the committed assets match.",
     "kinds. stone: a full rock block, either one texture by name (all) or Riven Resources face sets (textures.source, a folder under tools/content/, and faces: all, or side and top with the top also below; the main set first), one set by position so wide walls do not repeat. pointed_dripstone: a stalactite (direction down) or stalagmite (direction up) whose thickness (tip_merge, tip, frustum, middle, base) follows its neighbours along its direction. A stalactite that loses the block it hangs from falls; a falling piece hurts what it lands on with fallDamagePerBlock per block fallen, at most fallDamageMax, and breaks on landing. A stalagmite that loses its base breaks. Landing on a stalagmite tip deals fall damage for the distance plus stalagmiteExtraFallBlocks, times stalagmiteDamageMultiplier. A stalactite tip drips water or lava (dripChance per display tick) when that fluid sits on top of the block its column hangs from, and a water drip fills a cauldron up to cauldronReachBlocks below (cauldronFillChance per random tick). The same kind serves every pointed formation material (pointed_ice, pointed_salt, pointed_basalt): a piece's thickness follows only neighbours of its own block, so two materials never merge into one column.",
     "ores: one block riven:ore_<mineral> per mineral, its host property indexing hosts (Riven's host stones); each state draws its host stone's face sets, one by position as the host shows them, under an overlay (ore_overlay_<shine>) tinted with the mineral's color. With GTCEu, a mineral naming a gregtech material drops that material's GTCEu ore, so GTCEu processing applies; otherwise the block drops itself. Minerals with gregtech null are Supersymmetry minerals GTCEu lacks.",
-    "unstable: one block riven:unstable_<host> per host rock, named Unstable <host>: the host's own faces under an untinted crack overlay (overlay, a texture). block and meta name the host's registered state (what it drops and how it maps), terrain the generator's rock (TerrainBlock) it replaces where a cave floor is unstable (riven-cave-decor.json unstable), and dust the colour of the dust it sheds into open space below (dustChance per display tick). A Riven host takes its block's face sets and name; another names its textures (all, or top, bottom and side). A player who steps or lands on it without sneaking sets it off: it creaks and, after triggerDelayTicks, the unstable stone joined to it within spreadRadiusBlocks (at most maximumBlocks, any host) falls ring by ring outward, spreadTicksPerBlock apart, each column from the bottom up. A falling piece hurts what it lands on (fallDamagePerBlock per block fallen, at most fallDamageMax) and shatters, dropping its host's drops at debrisDropChance. Mined it drops its host's drops; silk touch keeps it, and placed again it behaves the same. Unstable stone holds otherwise: no neighbour change or missing support sets it off."
+    "unstable: one block riven:unstable_<host> per host rock, named Unstable <host>: the host's own faces under an untinted crack overlay (overlay, a texture). block and meta name the host's registered state (what it drops and how it maps), terrain the generator's rock (TerrainBlock) it replaces where a cave floor is unstable (riven-cave-decor.json unstable), and dust the colour of the dust it sheds into open space below (dustChance per display tick). A Riven host takes its block's face sets and name; another names its textures (all, or top, bottom and side). A player who steps or lands on it without sneaking sets it off: it creaks and, after triggerDelayTicks, the unstable stone joined to it within spreadRadiusBlocks (at most maximumBlocks, any host) falls ring by ring outward, spreadTicksPerBlock apart, each column from the bottom up. A falling piece hurts what it lands on (fallDamagePerBlock per block fallen, at most fallDamageMax) and shatters, dropping its host's drops at debrisDropChance. Mined it drops its host's drops; silk touch keeps it, and placed again it behaves the same. Unstable stone holds otherwise: no neighbour change or missing support sets it off.",
+    "oreDictionary: Forge ore dictionary names, registered with the items, so recipes, GroovyScript and GTCEu: Reloaded (first-class support) see Riven's blocks. A stone block lists its names (oreDictionary). Every ore block registers, on each host state, ores.oreDictionary followed by its mineral's gregtech material id in upper camel case without its namespace (oreCopper, oreAnglesite), as GTCEu names its ores. A gregtech id is a GTCEu material: bare for GTCEu's own materials, riven: for materials that are Riven's (Riven's GTCEu material registry). Woods list names per part (log, planks, leaves, sapling)."
   ],
   "ores": {
     "hosts": [
@@ -869,6 +958,7 @@
     "hardness": 3.0,
     "resistance": 5.0,
     "harvestLevel": 1,
+    "oreDictionary": "ore",
     "minerals": {
       "coal": {
         "name": "Coal",
@@ -1300,91 +1390,91 @@
         "name": "Anglesite",
         "color": "#e0ded5",
         "shine": "dull",
-        "gregtech": null
+        "gregtech": "riven:anglesite"
       },
       "cerussite": {
         "name": "Cerussite",
         "color": "#e0d9ba",
         "shine": "dull",
-        "gregtech": null
+        "gregtech": "riven:cerussite"
       },
       "chlorapatite": {
         "name": "Chlorapatite",
         "color": "#c7af85",
         "shine": "shiny",
-        "gregtech": null
+        "gregtech": "riven:chlorapatite"
       },
       "fluorapatite": {
         "name": "Fluorapatite",
         "color": "#cc9681",
         "shine": "shiny",
-        "gregtech": null
+        "gregtech": "riven:fluorapatite"
       },
       "hydroxyapatite": {
         "name": "Hydroxyapatite",
         "color": "#c7afaa",
         "shine": "shiny",
-        "gregtech": null
+        "gregtech": "riven:hydroxyapatite"
       },
       "arsenopyrite": {
         "name": "Arsenopyrite",
         "color": "#7d7269",
         "shine": "shiny",
-        "gregtech": null
+        "gregtech": "riven:arsenopyrite"
       },
       "raw_electrum": {
         "name": "Electrum",
         "color": "#fcf403",
         "shine": "dull",
-        "gregtech": null
+        "gregtech": "riven:raw_electrum"
       },
       "fluorite": {
         "name": "Fluorite",
         "color": "#9c7ad6",
         "shine": "shiny",
-        "gregtech": null
+        "gregtech": "riven:fluorite"
       },
       "proustite": {
         "name": "Proustite",
         "color": "#73142d",
         "shine": "shiny",
-        "gregtech": null
+        "gregtech": "riven:proustite"
       },
       "pyrargyrite": {
         "name": "Pyrargyrite",
         "color": "#362a2a",
         "shine": "shiny",
-        "gregtech": null
+        "gregtech": "riven:pyrargyrite"
       },
       "acanthite": {
         "name": "Acanthite",
         "color": "#2c332d",
         "shine": "shiny",
-        "gregtech": null
+        "gregtech": "riven:acanthite"
       },
       "sperrylite": {
         "name": "Sperrylite",
         "color": "#b3af86",
         "shine": "shiny",
-        "gregtech": null
+        "gregtech": "riven:sperrylite"
       },
       "braggite": {
         "name": "Braggite",
         "color": "#686b5f",
         "shine": "dull",
-        "gregtech": null
+        "gregtech": "riven:braggite"
       },
       "smithsonite": {
         "name": "Smithsonite",
         "color": "#6aadab",
         "shine": "dull",
-        "gregtech": null
+        "gregtech": "riven:smithsonite"
       },
       "vanadinite": {
         "name": "Vanadinite",
         "color": "#bf5915",
         "shine": "shiny",
-        "gregtech": null
+        "gregtech": "riven:vanadinite"
       }
     }
   },
@@ -1568,6 +1658,20 @@
     "planks": {
       "hardness": 2.0,
       "resistance": 5.0
+    },
+    "oreDictionary": {
+      "log": [
+        "logWood"
+      ],
+      "planks": [
+        "plankWood"
+      ],
+      "leaves": [
+        "treeLeaves"
+      ],
+      "sapling": [
+        "treeSapling"
+      ]
     },
     "species": {
       "oak": {

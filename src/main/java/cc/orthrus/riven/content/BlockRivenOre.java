@@ -29,7 +29,9 @@ public final class BlockRivenOre extends Block {
 
     public final String mineral;
     public final int color, hosts;
-    private final String gregtech;
+
+    /** The GTCEu material id the mineral names (riven-content.json): bare, or riven: for Riven's. */
+    public final String gregtech;
 
     BlockRivenOre(String mineral, int color, String gregtech, int hosts) {
         super(Material.ROCK);

@@ -78,8 +78,8 @@ public final class RivenContent {
         for (java.util.Map.Entry<String, JsonElement> e :
                 ores.getAsJsonObject("minerals").entrySet()) {
             JsonObject m = e.getValue().getAsJsonObject();
-            String gregtech =
-                    m.get("gregtech").isJsonNull() ? null : m.get("gregtech").getAsString();
+            // Every mineral names its GTCEu material id, which also names its ore dictionary entry.
+            String gregtech = m.get("gregtech").getAsString();
             BlockRivenOre ore =
                     new BlockRivenOre(
                             e.getKey(),
@@ -193,9 +193,8 @@ public final class RivenContent {
     }
 
     /**
-     * Wood recipes: a log crafts into four of its species' planks and smelts to charcoal. Ore
-     * dictionary names and flammability follow vanilla wood, so recipes that take any planks or
-     * logs take Riven's.
+     * Wood recipes: a log crafts into four of its species' planks and smelts to charcoal.
+     * Flammability follows vanilla wood.
      */
     @SubscribeEvent
     public static void registerRecipes(RegistryEvent.Register<IRecipe> event) {
@@ -218,16 +217,11 @@ public final class RivenContent {
                                         .setRegistryName("riven", "planks_from_log_" + id));
                 FurnaceRecipes.instance()
                         .addSmeltingRecipeForBlock(block, new ItemStack(Items.COAL, 1, 1), .15f);
-                OreDictionary.registerOre("logWood", item);
                 Blocks.FIRE.setFireInfo(block, 5, 5);
             } else if (block instanceof BlockRivenPlanks) {
-                OreDictionary.registerOre("plankWood", block);
                 Blocks.FIRE.setFireInfo(block, 5, 20);
             } else if (block instanceof BlockRivenLeaves) {
-                OreDictionary.registerOre("treeLeaves", block);
                 Blocks.FIRE.setFireInfo(block, 30, 60);
-            } else if (block instanceof BlockRivenSapling) {
-                OreDictionary.registerOre("treeSapling", block);
             } else if (block instanceof BlockRivenDecal) {
                 if (((BlockRivenDecal) block).flammable) Blocks.FIRE.setFireInfo(block, 60, 100);
             } else if (block instanceof BlockRivenPlant
@@ -269,6 +263,54 @@ public final class RivenContent {
                             : new ItemBlock(block);
             if (block instanceof BlockRivenOre) item.setHasSubtypes(true);
             event.getRegistry().register(item.setRegistryName(block.getRegistryName()));
+        }
+        registerOreDictionary();
+    }
+
+    /**
+     * Ore dictionary names (riven-content.json oreDictionary), registered with the items so they
+     * exist before any mod registers recipes: GTCEu: Reloaded reads some names while it loads its
+     * own recipes and generates processing for every ore and stone name that names its materials.
+     */
+    private static void registerOreDictionary() {
+        java.util.Map<String, JsonElement> stones = new java.util.HashMap<>();
+        for (JsonElement e : RULES.json.getAsJsonArray("blocks")) {
+            JsonObject j = e.getAsJsonObject();
+            if (j.has("oreDictionary"))
+                stones.put(j.get("id").getAsString(), j.get("oreDictionary"));
+        }
+        String ore = RULES.json.getAsJsonObject("ores").get("oreDictionary").getAsString();
+        JsonObject woods = RULES.json.getAsJsonObject("woods").getAsJsonObject("oreDictionary");
+        for (Block block : BLOCKS) {
+            if (block instanceof BlockRivenOre) {
+                BlockRivenOre o = (BlockRivenOre) block;
+                // As GTCEu names a material's ores, without its namespace: oreRawElectrum for
+                // riven:raw_electrum.
+                StringBuilder name = new StringBuilder(ore);
+                for (String part : o.gregtech.substring(o.gregtech.indexOf(':') + 1).split("_"))
+                    if (!part.isEmpty())
+                        name.append(Character.toUpperCase(part.charAt(0)))
+                                .append(part.substring(1));
+                for (int host = 0; host < o.hosts; host++)
+                    OreDictionary.registerOre(name.toString(), new ItemStack(block, 1, host));
+            } else if (block instanceof BlockRivenLog) {
+                for (JsonElement n : woods.getAsJsonArray("log"))
+                    OreDictionary.registerOre(n.getAsString(), Item.getItemFromBlock(block));
+            } else if (block instanceof BlockRivenPlanks) {
+                for (JsonElement n : woods.getAsJsonArray("planks"))
+                    OreDictionary.registerOre(n.getAsString(), block);
+            } else if (block instanceof BlockRivenLeaves) {
+                for (JsonElement n : woods.getAsJsonArray("leaves"))
+                    OreDictionary.registerOre(n.getAsString(), block);
+            } else if (block instanceof BlockRivenSapling) {
+                for (JsonElement n : woods.getAsJsonArray("sapling"))
+                    OreDictionary.registerOre(n.getAsString(), block);
+            } else {
+                JsonElement names = stones.get(block.getRegistryName().getPath());
+                if (names != null)
+                    for (JsonElement n : names.getAsJsonArray())
+                        OreDictionary.registerOre(n.getAsString(), block);
+            }
         }
     }
 

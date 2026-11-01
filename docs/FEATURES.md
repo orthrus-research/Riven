@@ -904,8 +904,23 @@ from cave decoration, ore blocks, and unstable stone on the floors cave decorati
   themselves.
 - **Ore blocks** (`ores`): one block per mineral (86, including 15 Supersymmetry minerals GTCEu
   lacks) over the 13 host stones, drawn as the stone's face, main or alternate as the stone shows
-  it, under a painted overlay tinted with the mineral's color. With GTCEu, a mineral GTCEu has drops its GTCEu ore so GTCEu processing applies;
-  otherwise the block drops itself.
+  it, under a painted overlay tinted with the mineral's color. Every mineral names a GTCEu
+  material id (`gregtech`): bare for GTCEu's own materials (71), `riven:` for the 15 that are
+  Riven's (`riven:anglesite`). With GTCEu, a mineral whose material is registered drops its GTCEu
+  ore so GTCEu processing applies; otherwise the block drops itself. Riven does not register its
+  `riven:` materials yet; until it does, those 15 drop themselves.
+- **Ore dictionary** (`oreDictionary`, registered with the items, before any recipe): GTCEu:
+  Reloaded is Riven's first-class integration, and GTCEu recognizes other mods' items by these
+  names. Each ore block registers `ore` plus its material id in upper camel case, without the
+  namespace as GTCEu names ores (`oreCopper`, `oreRawElectrum` for `riven:raw_electrum`), on
+  every host state, so GTCEu machines process it and its prospectors see it. Host stones register `stone`,
+  and `stoneSoapstone`, `stoneQuartzite` and `stoneBasalt` (leucobasalt) where GTCEu has the
+  material; graphite schist also `oreGraphite`. Deposits register the ore of what they hold:
+  `oreCoal`, `oreLignite`, `oreAnthracite`, `oreSalt` (halide), `oreGypsum` (sulfate),
+  `oreCalcite` (carbonate, caliche), `oreTrona` (non-marine), `oreRockSalt` (potash, sylvite),
+  `oreBauxite`, `oreTricalciumPhosphate` (phosphorite), `oreSulfur`, `oreCopper`, `orePlatinum`
+  and `oreGold`. Names GTCEu has no material for (`oreLignite`, `oreAnthracite`, a missing
+  Supersymmetry mineral) still serve recipes and scripts that ask for them.
 - **Pointed dripstone** (kind `pointed_dripstone`), backported from modern Minecraft: a stalactite
   or stalagmite whose thickness (tip, merged tip, frustum, middle, base) follows its neighbors.
   A stalactite that loses its anchor falls and shatters, hurting what it lands on (6 per block
@@ -930,7 +945,8 @@ from cave decoration, ore blocks, and unstable stone on the floors cave decorati
   palm saplings also take sand),
   leaf litter (a thin decal on any solid ground with no collision, which placed blocks replace) and
   planks. A log crafts into four of its planks and smelts to charcoal; logs, planks, leaves and
-  saplings carry the ore dictionary's wood names, so recipes that take any planks take Riven's.
+  saplings carry the ore dictionary's wood names (`woods.oreDictionary`), so recipes that take
+  any planks take Riven's.
   Art requests and deliveries are tracked in [ART-REQUISITIONS.md](ART-REQUISITIONS.md).
 - **Ground decorations** (`decorations`): 151 subjects from Riven Resources, their art imported
   unchanged: 109 from Decoration Library 01 (grasses, ferns, wildflowers, herbs, shrubs, fungi,
