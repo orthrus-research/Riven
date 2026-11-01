@@ -7,6 +7,7 @@ public final class GenerationMaps {
     public final ClimateStructureMap climateStructure;
     public final ClimateForcingMap climateForcing;
     public final PlateMap plates;
+    public final LandShare land;
     public final ContinentalOutlineMap outline;
     public final ContinentalMap continents;
     public final SubstrateMap substrate;
@@ -60,7 +61,8 @@ public final class GenerationMaps {
         if (tools) pool.use(BuildPool.tools());
         temperature = new TemperatureMap(seed, world);
         plates = new PlateMap(seed, world);
-        outline = new ContinentalOutlineMap(seed, heights, world);
+        land = LandShare.choose(seed, heights, world);
+        outline = land.outline;
         baseElevation = new BaseElevationMap(seed, plates, heights, outline);
         climateStructure = new ClimateStructureMap(outline, baseElevation, heights);
         climateForcing = new ClimateForcingMap(climateStructure, heights, world);

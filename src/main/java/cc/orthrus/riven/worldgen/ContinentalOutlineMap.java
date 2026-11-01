@@ -17,27 +17,49 @@ public final class ContinentalOutlineMap {
 
     public final double spacing, landBlend;
 
+    /** Which of the world's seeded draws this is (0 = the first). */
+    public final int attempt;
+
     public ContinentalOutlineMap(long worldSeed, TerrainHeightReference heights) {
         this(worldSeed, heights, WorldScale.DEFAULT);
     }
 
     public ContinentalOutlineMap(long worldSeed, TerrainHeightReference heights, WorldScale world) {
-        this(worldSeed, heights, RULES.json, world);
+        this(worldSeed, heights, world, 0);
+    }
+
+    /** One of the world's seeded draws ({@link LandShare}); attempt 0 is the first. */
+    public ContinentalOutlineMap(
+            long worldSeed, TerrainHeightReference heights, WorldScale world, int attempt) {
+        this(worldSeed, heights, RULES.json, world, attempt);
     }
 
     ContinentalOutlineMap(long worldSeed, TerrainHeightReference heights, JsonObject j) {
         this(worldSeed, heights, j, WorldScale.DEFAULT);
     }
 
-    /**
-     * The layout scale multiplies the lattice, radius, warp, bridges and bays (corridors follow in
-     * spacings); coast detail, corridor width and the coastal transition stay physical.
-     */
     ContinentalOutlineMap(
             long worldSeed, TerrainHeightReference heights, JsonObject j, WorldScale world) {
+        this(worldSeed, heights, j, world, 0);
+    }
+
+    /**
+     * The layout scale multiplies the lattice, radius, warp, bridges and bays (corridors follow in
+     * spacings); coast detail, corridor width and the coastal transition stay physical. An attempt
+     * above 0 salts only the outline's own seed, so a redraw changes nothing else in the world.
+     */
+    ContinentalOutlineMap(
+            long worldSeed,
+            TerrainHeightReference heights,
+            JsonObject j,
+            WorldScale world,
+            int attempt) {
         if (heights == null || j == null || world == null) throw new NullPointerException();
+        if (attempt < 0) throw new IllegalArgumentException("attempt " + attempt);
         double layout = world.layout;
         long seed = SeededNoise.mix(worldSeed ^ Rules.seed(j, "variationSeed"));
+        if (attempt > 0) seed = SeededNoise.mix(seed ^ attempt * 0x4c414e4444524157L);
+        this.attempt = attempt;
         ContinentalKernels.Reference reference =
                 new ContinentalKernels.Reference(
                         heights.seaLevel,

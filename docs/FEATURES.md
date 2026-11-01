@@ -19,9 +19,9 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
   by a coarse scan of its support, so they grow with the layout. Landforms, coastal plains,
   rivers, mountains, massif relief and sites keep their physical size (`TerrainScale.HORIZONTAL`), so a larger world has more of them. Scale 1 is
   bit-identical to v65. Unknown options fail rather than defaulting.
-  Measured (outline probe, 32 seeds, windows of 8 km times the scale): land 40.6 / 40.6 / 40.2 /
-  40.1% and largest landmass 38.0 / 38.2 / 39.1 / 37.5% of land at scale 0.5 / 1 / 4 / 8, with a
-  window-spanning mass in 2-4 of 32 seeds. At scale 4 (32 km), before drainage replaced them
+  Measured (`LandShareCheck`, 64 seeds, the world square of 8 km times the scale): land 50.3 /
+  50.3 / 49.7 / 49.6% and largest landmass 49.1 / 49.1 / 47.8 / 48.6% of land at scale 0.5 / 1 /
+  4 / 8, with a world-spanning mass in 16-19 of 64 seeds. At scale 4 (32 km), before drainage replaced them
   (v91): 94-154 trunk rivers per world on 4 seeds (21-39 at scale 1), mean 2.4-2.9 km long since
   v67 (0.7-1.0 at scale 1); crest weight above 0.3 on 3.5% of land (3.4%); no base or
   mountain-surface seams; dense 512 x 512 windows 1.3 s highland and 0.8 s lowland on 8 threads
@@ -120,7 +120,7 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
   distance is estimated. The major envelope (v50) caps volcanic, cold, plateau and mountain
   raises on the continental score instead, which is continuous everywhere: from Y68 at the coast
   to the highest planned surface (Y351) 1.5 coastal-plain widths inland, with the same soft knee.
-- **Land fraction** (v58, tuned for 8 km worlds): a 3,000-block lattice, radius 1,350 (0.45 spacing) times each continent's size, every cell occupied (`stratifiedOccupancy` 4). On 64 seeds (outline probe, 8 km windows) land is 40.6% (21-59% per seed) and the largest landmass holds 39% of land; it touches three window edges in 8 of 64 seeds. At v57 (one family per world, no variation) land was 41-46% by family, the largest landmass 34-46% and spanning masses 2-11 of 64; at radius 1,600 (v56) 54-60% land merged across the window in 4-12 of 16 seeds. Optional bays (900 blocks deep, 170 half-width) cut only their own continent; corridors every 12 cells stay outside a 32 km world.
+- **Land fraction** (v101, `LandShare`, `land` in `riven-continents.json`): a world's land share is the part of its square (8 km times the layout scale, centred on the origin) whose outline land weight is above zero, measured at world creation on 64 x 64 cell centres (under 0.2 s an attempt). A share outside the band (35-65%) redraws the outline from its next seeded attempt, which salts only the outline's own seed; the first attempt inside the band is kept, and after 8 the closest. The startup log reports it (seed 8675309: `Riven land: 40.0% (attempt 1 of 8)`). The mean comes from the draw: a 3,000-block lattice, radius 1,550 (0.52 spacing; 1,350 before v101) times each continent's size, every cell occupied (`stratifiedOccupancy` 4). On 64 seeds (`LandShareCheck`) 8 km worlds keep 50.3% land (35.7-62.7%; first draws 33.2-66.3%), 62 of 64 on the first attempt and none outside the band, 32 km worlds 49.7% (38.7-61.3%), 62 of 64 on the first; the largest landmass holds 49% of land and spans the world (touches three edges) in 19 of 64 seeds at 8 km, against 39% and 8 of 64 at radius 1,350. The 50% mean is a target the atlas measures, not a value the generator reads. Optional bays (900 blocks deep, 170 half-width) cut only their own continent; corridors every 12 cells stay outside a 32 km world.
 
 ## Inland base
 

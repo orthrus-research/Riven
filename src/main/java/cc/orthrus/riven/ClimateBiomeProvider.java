@@ -13,6 +13,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,6 +38,8 @@ final class ClimateBiomeProvider extends BiomeProvider {
         return Collections.unmodifiableMap(result);
     }
 
+    private static final Logger LOG = LogManager.getLogger("riven");
+
     final GenerationMaps maps;
     final WorldGenerationContext context;
     final BiomeProvision provision;
@@ -43,6 +48,7 @@ final class ClimateBiomeProvider extends BiomeProvider {
     ClimateBiomeProvider(long seed, WorldScale scale) {
         context = new WorldGenerationContext(seed, scale);
         maps = context.maps;
+        LOG.info("Riven land: {}", maps.land);
         provision = new BiomeProvision(seed);
         // Spawn search stays on land: the biomes inland habitat keys report.
         spawn = RivenBiomes.inland();

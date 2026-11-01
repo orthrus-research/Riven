@@ -18,6 +18,9 @@ public final class WorldScale {
     public static final double MINIMUM = .5, MAXIMUM = 8;
     public static final WorldScale DEFAULT = new WorldScale(1);
 
+    /** The side in blocks of the world square the definitions are tuned for (8 km). */
+    public static final double TUNED_SIDE = 8192;
+
     public final double layout;
 
     public WorldScale(double layout) {
@@ -25,6 +28,11 @@ public final class WorldScale {
             throw new IllegalArgumentException(
                     "Riven layout scale " + layout + " outside " + MINIMUM + "-" + MAXIMUM);
         this.layout = layout;
+    }
+
+    /** The side in blocks of this world's square, centred on the origin. */
+    public double side() {
+        return TUNED_SIDE * layout;
     }
 
     /**

@@ -222,12 +222,12 @@ rejects it when the footprint fails, without rerolling. Mountains left the lanes
 
 Terrain-v39, 64 km windows on seeds 8675309, 101, 1, 42, 7 and -991 (atlas and `intent` probes):
 
-- Land (terrain-v58, outline probe on 64 seeds): 40.6% in 8 km worlds with per-continent variation
-  (41-46% by family at v57, radius 1,350). Before that
-  (terrain-v48, `LandSpread` probe on 64 seeds): 43-70% in 8 km worlds (mean 58%, sd 6,
-  each family within 4 points), 54-62% in 32 km worlds. Continents use a 3,000-block lattice with
-  radius 0.53 spacing and every cell occupied, so neighboring supports overlap and merge;
-  landmasses reach about 8 km in an 8 km world and 25 km in a 32 km one. Bays cut only their own
+- Land (terrain-v101, `LandShareCheck` on 64 seeds): every world's outline land share is held
+  in a 35-65% band by redrawing the outline (`LandShare`, at most 8 attempts); 8 km worlds keep a
+  50.3% mean (35.7-62.7%) and 32 km worlds 49.7%, 62 of 64 seeds on their first draw. Continents
+  use a 3,000-block lattice with radius 1,550 (0.52 spacing) and every cell occupied, so
+  neighboring supports overlap and merge: the largest landmass holds 49% of land and spans an
+  8 km world in 19 of 64 seeds. Before (v58-v100, radius 1,350) land was 40.6% (21-59% per seed). Bays cut only their own
   continent and never deepen sea. Ocean corridors run every 12 cells (36 km), shifted 6, so the
   nearest lines fall 18 km from the origin, outside a 32 km world.
 - Every marine column holds water to Y62; enclosed marine areas are inland seas.
