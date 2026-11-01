@@ -3,9 +3,10 @@
 Art Riven needs and does not paint itself comes from Riven Resources, a separate art project
 (16 × 16 native textures, `riven` namespace, the library's review standard), fabricated by its
 Asset Factory. From Requisition 08 on, every set is drawn in Survey Plate (Riven Resources'
-`docs/ART-DIRECTION.md`) and passes its acceptance tests. Riven imports finished sets unchanged
-(`tools/content/`), registers the blocks and places them. Each request names what a set holds and
-what it is for; open requests stay here until a set arrives.
+`docs/ART-DIRECTION.md`) and passes its acceptance tests. Riven registers the blocks and places
+them; the sets imported so far sit under `tools/content/riven-resources`, and later sets arrive
+by Riven's art pack, not this repository (DECISIONS.md, 2026-11-01). Each request names what a
+set holds and what it is for; open requests stay here until a set arrives.
 
 ## Received
 

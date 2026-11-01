@@ -40,6 +40,21 @@ superseded instead of deleting it.
   anchor, and the cone fades toward cooler columns like cold forms do (terrain-v55), replacing the
   terrain-v37 rule that every support column be HOT.
 
+## Adopted 2026-11-01
+
+- **Art lives outside the repositories.** Commissioned art is fabricated by Asset Factory
+  (`orthrus-research/AssetFactory`), organized and catalogued by Riven Resources
+  (`orthrus-research/RivenResources`), and kept in the art store; none of the three repositories
+  takes new commissioned textures. The sets already imported (Decoration Library 01, Requisitions
+  02, 03, 05 and 06: 954 files under `tools/content/riven-resources` and their copies in
+  `assets/riven`) stay at the tip until the art pack exists; history is not rewritten. Riven will
+  ship its art as a resource pack: generation needs none of it (no Riven code reads assets, and
+  1.12 servers never load resource packs), so the JAR keeps registration, definitions,
+  blockstates, models, lang and Riven's own painted textures as placeholders, and the pack
+  carries the commissioned textures under their `riven:` paths with Survey Plate's vanilla
+  redraws. The commit that makes the build take textures from the pack removes the commissioned
+  textures from the tip. Requisitions 04 and 07 and the Survey Plate rework arrive by the pack.
+
 ## Adopted 2026-10-30
 
 - **8-core baseline that scales up.** Designs and default configuration assume the median player
