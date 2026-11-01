@@ -193,6 +193,11 @@ def main(argv=None):
         action="store_true",
         help="DH on the client only, fed by native cubes; no distant generation (native floor)",
     )
+    parser.add_argument(
+        "--dh-lod-only",
+        action="store_true",
+        help="The client draws only DH LODs (DH lodOnlyMode); a rendering diagnostic",
+    )
     args = parser.parse_args(argv)
     if args.dh_visited_only and args.lod_trace:
         parser.error("--lod-trace observes server-side DH; a visited-only server has none")
@@ -234,6 +239,7 @@ def main(argv=None):
             dh_native_feed=args.dh_native_feed,
             preview_threads=args.preview_threads,
             arrival_plan=not args.no_arrival_plan,
+            dh_lod_only=args.dh_lod_only,
             # The config file selects the delivery mode; Cubature reads it as the server starts.
             cubature_delivery=args.delivery_experiment,
         )

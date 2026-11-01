@@ -150,6 +150,7 @@ def prepare(
     lod_observer=None,
     preview_threads=None,
     arrival_plan=True,
+    dh_lod_only=False,
 ):
     if lod_observer is not None:
         lod_observer = Path(lod_observer).resolve()
@@ -300,6 +301,12 @@ def prepare(
                 + "\n"
                 "[client.advanced.graphics.genericRendering]\nenableCloudRendering = false\n"
                 '[client.advanced.graphics.fog]\nfarFogStart = "0.75"\nfarFogEnd = "1.0"\nfarFogFalloff = "LINEAR"\n'
+                # A rendering diagnostic: DH draws only LODs, with its near clip at half a block.
+                + (
+                    "[client.advanced.debugging]\nlodOnlyMode = true\n"
+                    if dh_lod_only and side == "client"
+                    else ""
+                )
                 # DH negotiates the lower client/server limits, so set both sides.
                 + (
                     "[server]\nmaxGenerationRequestDistance = 256\n"
@@ -391,6 +398,7 @@ def prepare(
             **({"cubatureNativeFeed": "EDITS"} if dh_native_feed == "edits" else {}),
             **({"cubaturePreviewThreads": preview_threads} if preview_threads is not None else {}),
             **({} if arrival_plan else {"cubatureArrivalPlan": False}),
+            **({"lodOnlyMode": True} if dh_lod_only else {}),
             "qualification": "Explicit candidate CC; see native receipt"
             if cubic_artifact
             else "Pinned unmodified upstream DH; see dev/dh.lock.json and the instance native receipt",
@@ -873,6 +881,11 @@ def main():
         help="Cubature: keep DH's nearest-first request order (distantHorizonsArrivalPlan=false)",
     )
     p.add_argument(
+        "--dh-lod-only",
+        action="store_true",
+        help="Fresh instance whose client draws only DH LODs (DH lodOnlyMode; rendering diagnostic)",
+    )
+    p.add_argument(
         "--lod-trace",
         nargs="?",
         type=Path,
@@ -920,6 +933,7 @@ def main():
             lod_observer=a.lod_trace,
             preview_threads=a.preview_threads,
             arrival_plan=not a.no_arrival_plan,
+            dh_lod_only=a.dh_lod_only,
         )
     elif a.command == "play":
         if a.shader_pack and len(a.shader_pack) != 1:

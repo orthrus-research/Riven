@@ -95,6 +95,11 @@ def main(argv=None):
         action="store_true",
         help="DH on the client only, fed by native cubes; no distant generation (native floor)",
     )
+    capture.add_argument(
+        "--dh-lod-only",
+        action="store_true",
+        help="The client draws only DH LODs (DH lodOnlyMode); a rendering diagnostic",
+    )
     for name, description in [
         ("inspect", "Reconcile raw samples, inputs, failures and native captures"),
         ("trace", "Attribute bounded JFR windows and export a timeline"),
@@ -193,6 +198,8 @@ def main(argv=None):
             options.append("--lod-trace")
         if args.dh_visited_only:
             options.append("--dh-visited-only")
+        if args.dh_lod_only:
+            options.append("--dh-lod-only")
         try:
             return measure_pipeline.main(options)
         finally:
