@@ -49,7 +49,8 @@ public final class SurfaceRules {
     private CoverReason earlierReason(TerrainMap.Sample sample, int surfaceY) {
         if (sample.ocean.marine) return CoverReason.MARINE;
         if (sample.shore.rocky() && rockFace(sample)) return CoverReason.ROCKY_SHORE;
-        int treeline = treeline(sample.climate.celsius);
+        // The treeline has its own height rule, so it reads the climate before the lapse rate.
+        int treeline = treeline(sample.climate.celsius + sample.climate.lapseCelsius);
         if (surfaceY >= treeline) return CoverReason.HIGH_ALTITUDE;
         double mountain =
                 "mountains".equals(sample.firstLandform)

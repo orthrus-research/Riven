@@ -38,6 +38,13 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
   (11-16%) and 19% (13-28%) after them (terrain-v106). A 32 km world (layout scale 4)
   stretches every climate length with the world, so it keeps the same bands and shares, 4 times
   larger.
+- **Lapse rate** (climate-v5, terrain-v108): at intent, after the province offsets, a land column
+  cools 0.2 C for every block its coarse base height (before landforms and fine detail) stands more
+  than 70 blocks above the sea: 6 C at +100, 18 C at +160. Most land lies below +70, so lowland
+  climate keeps its tuning while high ground turns cold, snowy and cold-forested inside warm bands.
+  Over six seeds frozen land rose from 14.3% to 19.7%, and north-south position's correlation with
+  land temperature fell from 0.978 to 0.927 (height now explains about 14% of it, 4% before); hot
+  desert went from 7.5% to 6.6% and rainforest from 6.6% to 5.6%, as some hot highlands cooled.
 - **Moisture** (`ClimateMap`, climate-v3, terrain-v96): independent noise at 2,000 and 800 blocks
   (weights 1 and 0.35) plus an east-west belt (amplitude 0.15, 16,000-block period, wet in the west,
   dry in the east: half a cycle per 8 km world) across the temperature belt, normalized to 0..1;
@@ -349,7 +356,10 @@ Shared rules for the land stages:
   only within 20 blocks of the water (40 on a full cape) and on cliff faces within 40 blocks;
   inland of that it carries soil like any other ground (before, rock reached about 250 blocks
   inland and covered a fifth of all land). High ground shows rock above a treeline: Y 176 at
-  5 C, 4 blocks higher per degree warmer and lower per degree colder, between Y 156 and Y 272;
+  5 C, 4 blocks higher per degree warmer and lower per degree colder, between Y 156 and Y 272,
+  read from the climate before the lapse rate (terrain-v108), since the treeline has its own height
+  rule. Two rates remain (this one is 0.25 C per block, the climate's 0.2 from 70 blocks above the
+  sea); unifying them, as D34 intends, is open;
   mountain landforms (intent 0.5 or more) show rock within 12 blocks below it. A cut shows rock
   when deeper than the three-block soil where nothing grows back, and only when deeper than 48
   blocks (a gorge) where plants return: plants need moisture above 0.18 plus 0.012 per degree

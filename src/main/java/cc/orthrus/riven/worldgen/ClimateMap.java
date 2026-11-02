@@ -20,6 +20,10 @@ public final class ClimateMap {
                     MOISTURE.has("beltOffsetBlocks")
                             ? Rules.number(MOISTURE, "beltOffsetBlocks", 0, 4194304)
                             : 0;
+    private static final com.google.gson.JsonObject LAPSE =
+            Rules.load("riven-climate.json", 1).json.getAsJsonObject("lapse");
+    private static final double LAPSE_RATE = Rules.number(LAPSE, "celsiusPerBlock", 0, 1),
+            LAPSE_START = Rules.number(LAPSE, "startAboveSeaBlocks", -64, 512);
 
     /**
      * Moisture by temperature: {celsius, shift, contrast} stops, ascending, held beyond the ends.
@@ -86,6 +90,22 @@ public final class ClimateMap {
         public TemperatureBand temperatureBand;
         public MoistureBand moistureBand;
         public ClimateRegion region;
+
+        /** How much the lapse rate cooled this column (0 at sea and on low ground). */
+        public double lapseCelsius;
+    }
+
+    /**
+     * Cools a land column by the lapse rate on its smooth height above the sea, from the start
+     * height up, and reclassifies it. Called once at intent, after the province offsets.
+     */
+    public static void lapse(Sample out, double heightAboveSea) {
+        double cooling = LAPSE_RATE * Math.max(0, heightAboveSea - LAPSE_START);
+        out.lapseCelsius = cooling;
+        if (cooling == 0) return;
+        out.celsius -= cooling;
+        out.temperatureBand = TemperatureBand.at(out.celsius);
+        out.region = ClimateRegion.at(out.temperatureBand, out.moistureBand);
     }
 
     public void sample(int x, int z, Sample out) {
@@ -134,5 +154,6 @@ public final class ClimateMap {
         out.temperatureBand = t;
         out.moistureBand = m;
         out.region = ClimateRegion.at(t, m);
+        out.lapseCelsius = 0;
     }
 }

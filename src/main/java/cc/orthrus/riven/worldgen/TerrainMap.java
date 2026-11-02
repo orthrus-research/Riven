@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 107;
+    public static final int VERSION = 108;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -563,7 +563,11 @@ public final class TerrainMap {
             baseTerrain.clear(out.base);
             out.firstLandform = out.ocean.deepOcean ? "deep_ocean" : "continental_shelf";
             out.secondLandform = out.firstLandform;
-        } else sampleInland(x, z, out);
+        } else {
+            sampleInland(x, z, out);
+            // High ground is colder: the lapse rate reads the smooth height before landforms.
+            ClimateMap.lapse(out.climate, out.base.coarseHeight() - heights.seaLevel);
+        }
         types.classify(x, z, out, out.land);
     }
 
