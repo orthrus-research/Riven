@@ -95,6 +95,12 @@ public final class ClimateMap {
         public double lapseCelsius;
     }
 
+    /** The column's temperature at another height above the sea, by the same lapse rate. */
+    public static double celsiusAt(Sample climate, double heightAboveSea) {
+        double sea = climate.celsius + climate.lapseCelsius;
+        return sea - LAPSE_RATE * Math.max(0, heightAboveSea - LAPSE_START);
+    }
+
     /**
      * Cools a land column by the lapse rate on its smooth height above the sea, from the start
      * height up, and reclassifies it. Called once at intent, after the province offsets.

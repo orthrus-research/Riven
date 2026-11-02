@@ -359,7 +359,11 @@ Shared rules for the land stages:
   5 C, 4 blocks higher per degree warmer and lower per degree colder, between Y 156 and Y 272,
   read from the climate before the lapse rate (terrain-v108), since the treeline has its own height
   rule. Two rates remain (this one is 0.25 C per block, the climate's 0.2 from 70 blocks above the
-  sea); unifying them, as D34 intends, is open;
+  sea); unifying them, as D34 intends, is open. Above a snowline (terrain-v109) snow covers the
+  rock: a dry floor whose temperature at its own height, by the climate's lapse rate, is below
+  -5 C takes snow: snow over stone (the crust's snowcap, which precedes bare stone) where the rock
+  would show, snow over soil elsewhere. That puts the
+  snowline near Y 158 in cool climates, Y 208 in mild, Y 258 in warm and Y 298 in hot ones;
   mountain landforms (intent 0.5 or more) show rock within 12 blocks below it. A cut shows rock
   when deeper than the three-block soil where nothing grows back, and only when deeper than 48
   blocks (a gorge) where plants return: plants need moisture above 0.18 plus 0.012 per degree

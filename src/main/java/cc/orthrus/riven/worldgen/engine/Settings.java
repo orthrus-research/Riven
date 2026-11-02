@@ -29,7 +29,8 @@ public final class Settings {
         "snow",
         "steep",
         "rough",
-        "default"
+        "default",
+        "snowcap"
     };
 
     public static final int SEDIMENT = 0,
@@ -54,7 +55,8 @@ public final class Settings {
             SNOW = 19,
             STEEP = 20,
             ROUGH = 21,
-            DEFAULT = 22;
+            DEFAULT = 22,
+            SNOWCAP = 23;
 
     static {
         if (NAMES.length > 64) throw new IllegalStateException("Setting masks hold 64 settings");

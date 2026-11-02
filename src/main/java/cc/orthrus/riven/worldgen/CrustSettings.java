@@ -11,7 +11,7 @@ import com.google.gson.JsonObject;
  */
 final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
     private final SurfaceRules rules;
-    private final double shallowFrom, bar, green, reflective, cover, rough, steep;
+    private final double shallowFrom, bar, green, reflective, cover, rough, steep, snowline, sea;
     private final double clayWavelength, clayThreshold;
     private final SeededNoise clay;
 
@@ -28,6 +28,8 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
         cover = Rules.number(t, "drylandCoverFrom", .001, 1);
         rough = Rules.number(t, "roughAboveSlope", 0, 16);
         steep = Rules.number(t, "steepAboveSlope", 0, 16);
+        snowline = Rules.number(t, "snowlineCelsius", -60, 60);
+        sea = heights.seaLevel;
         JsonObject patch = t.getAsJsonObject("clayPatch");
         clay = new SeededNoise(SeededNoise.mix(Rules.seed(patch, "variationSeed") ^ 0x434c4159L));
         clayWavelength = Rules.number(patch, "wavelengthBlocks", 4, 4096);
@@ -61,8 +63,16 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
         if ((w.kind == Hydro.Kind.OASIS || w.kind == Hydro.Kind.WETLAND) && w.weight > green)
             h |= Settings.bit(Settings.GREEN);
         // A volume's floor is the ground before it, with that ground's own cover policy.
-        if (volume ? rules.bareStoneBeforeRocky(s) : !s.ocean.marine && rules.bareStone(s))
-            h |= Settings.bit(Settings.BARE_STONE);
+        boolean bare =
+                volume ? rules.bareStoneBeforeRocky(s) : !s.ocean.marine && rules.bareStone(s);
+        if (bare) h |= Settings.bit(Settings.BARE_STONE);
+        // Above the snowline, the climate cooled to the floor's own height: snow over rock where
+        // the ground is bare, and snow over soil elsewhere.
+        boolean snowline =
+                !s.ocean.marine
+                        && s.waterY() <= floor
+                        && ClimateMap.celsiusAt(s.climate, floor - sea) < this.snowline;
+        if (snowline && bare) h |= Settings.bit(Settings.SNOWCAP);
         if (s.shore.sandy)
             h |=
                     Settings.bit(
@@ -75,7 +85,7 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
         ClimateRegion region = s.climate.region;
         if (region != null && region.surface == ClimateRegion.Surface.SAND)
             h |= Settings.bit(Settings.CLIMATE_SAND);
-        if (region != null && region.surface == ClimateRegion.Surface.SNOW)
+        if (snowline || region != null && region.surface == ClimateRegion.Surface.SNOW)
             h |= Settings.bit(Settings.SNOW);
         double slope = Math.hypot(s.broadDx, s.broadDz);
         if (slope > steep) h |= Settings.bit(Settings.STEEP);
