@@ -34,6 +34,10 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
   offset so the origin sits on the 10 C mean) plus +/-7 C warped noise at 2,500 blocks; five bands
   (below -5, -5 to 5, 5 to 15, 15 to 25, 25 C and up). Tuned for 8 km worlds: about 20% FROZEN,
   60% COOL to WARM, 20% HOT in 8 km and 32 km windows, with no two-band jump within 512 blocks.
+  Measured on land over six 8 km seeds: 17% frozen and 20% hot before province offsets, 14%
+  (11-16%) and 19% (13-28%) after them (terrain-v106). A 32 km world (layout scale 4)
+  stretches every climate length with the world, so it keeps the same bands and shares, 4 times
+  larger.
 - **Moisture** (`ClimateMap`, climate-v3, terrain-v96): independent noise at 2,000 and 800 blocks
   (weights 1 and 0.35) plus an east-west belt (amplitude 0.15, 16,000-block period, wet in the west,
   dry in the east: half a cycle per 8 km world) across the temperature belt, normalized to 0..1;
@@ -96,8 +100,10 @@ its neighbour, its intensity and both climates.
 both faces, so climate doesn't jump at the coast.
 - An interior weight rises smoothly from 0 at the coast to 1 at 600 blocks.
 - Continentality dries the interior by up to 0.08 moisture.
-- The sea wets the coast by up to 0.05 and pulls its temperature a quarter of the way toward
-  14 °C, within ±4 °C.
+- The sea wets the coast by up to 0.02 and pulls its temperature 5% of the way toward 14 °C,
+  within ±4 °C. Most provinces on coast-rich worlds count as coastal, so these stay gentle: until
+  terrain-v106 a pull of a quarter and wetting of 0.05 took frozen land from 17% to 7% and hot
+  from 20% to 12% over six seeds.
 - Rain shadows are already in the base climate (climate forcing).
 
 Offsets blend between provinces within the edge width, so they change by at most 0.03 °C and

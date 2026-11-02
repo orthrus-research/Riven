@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 1,
+  "revision": 2,
   "variationSeed": "0x50524f56494e4331",
   "cells": {"sizeBlocks": 1400, "jitter": 0.85, "warpBlocks": 220, "warpWavelengthBlocks": 1800, "edgeBlocks": 350},
   "types": [
@@ -16,7 +16,7 @@
   "stable": {"low": {"coastal": "plain", "interior": "basin"}, "high": {"rest": "upland", "top": "tableland"}, "levelWavelengthCells": 3.0},
   "foreland": {"type": "foreland", "beside": "range", "reachCells": 1.25},
   "oceans": {"warmCelsius": 14, "frozenCelsius": -4},
-  "climate": {"interiorBlocks": 600, "continentalityMoisture": 0.08, "maritimeMoisture": 0.05, "maritimePull": 0.25, "mildCelsius": 14, "maximumCelsius": 4, "maximumMoisture": 0.1},
+  "climate": {"interiorBlocks": 600, "continentalityMoisture": 0.08, "maritimeMoisture": 0.02, "maritimePull": 0.05, "mildCelsius": 14, "maximumCelsius": 4, "maximumMoisture": 0.1},
   "budget": {"measureSide": 64},
   "contract": [
     "Provinces (S2 of the engine design): a seeded regional map that is the parent of biomes. Space splits into cells of about sizeBlocks (times the world's layout scale) on a jittered grid, read at coordinates warped by up to warpBlocks over warpWavelengthBlocks so edges wander; each column belongs to its nearest cell. Intensity runs from 0 at a province's edge to 1 once the second-nearest cell is edgeBlocks farther than the nearest.",
@@ -25,6 +25,6 @@
     "stable: every other land cell (after the tectonic types and foreland) takes a level from a seeded field (wavelength levelWavelengthCells cells, so neighbouring provinces share a level). The lowest cells, up to the low types' shares, are low: the most interior of them (farthest from the coast) take interior's type up to its share, the rest coastal's. The others are high: the highest take top's type up to its share, the rest rest's. Each stable type's share is the middle of its range, scaled so the stable types fill the land the tectonic types left, then held inside its range.",
     "foreland: next, a cell whose seed point lies within reachCells cell sizes of a beside-type province's may be type's, the nearest first while its share stays under its maximum, so mountains step down through foothills; a minimum the ranges cannot meet is logged. enabled false (or a maximum of 0) removes a type; a pack can widen or narrow any share.",
     "A province's ocean face is a class: shelf or deep by the seed point's sea floor, warm from warmCelsius, cold below, frozen at or below frozenCelsius. Provinces outside the world square, or holding no measured land, take their tectonic type where it applies, else foreland beside a range, else their level's type by the world's cuts, without the budget.",
-    "climate: each province offsets climate by physical effects (one offset for both faces, so climate does not jump at the coast), never height (biomes cool with elevation through their own lapse rate): its interior weight rises smoothly from 0 at the coast to 1 at interiorBlocks (times the layout); continentality dries by up to continentalityMoisture times that weight; the sea wets by up to maritimeMoisture times the rest and pulls temperature maritimePull of the way toward mildCelsius. Rain shadows are already in the base climate (riven-climate-forcing.json). Offsets stay within maximumCelsius and maximumMoisture and blend between neighbouring cells within edgeBlocks, so they change smoothly across province edges; the effective climate is published once, at intent, for every reader."
+    "climate: each province offsets climate by physical effects (one offset for both faces, so climate does not jump at the coast), never height (biomes cool with elevation through their own lapse rate): its interior weight rises smoothly from 0 at the coast to 1 at interiorBlocks (times the layout); continentality dries by up to continentalityMoisture times that weight; the sea wets by up to maritimeMoisture times the rest and pulls temperature maritimePull of the way toward mildCelsius. Rain shadows are already in the base climate (riven-climate-forcing.json). Offsets stay within maximumCelsius and maximumMoisture and blend between neighbouring cells within edgeBlocks, so they change smoothly across province edges; the effective climate is published once, at intent, for every reader. Revision 2 tempers coasts gently: most provinces on coast-rich worlds count as coastal, and a pull of 0.25 and wetting of 0.05 took frozen land from 17% to 7% and hot from 20% to 12% (six seeds), with less dry land."
   ]
 }
