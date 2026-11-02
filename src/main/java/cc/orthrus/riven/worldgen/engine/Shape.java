@@ -4,7 +4,7 @@ import cc.orthrus.riven.worldgen.TerrainBlock;
 
 /**
  * The interval builder a zone's shape operator writes one column with. Operations run in a fixed
- * order (raise, lay, build, carve, pocket, then the temporary cave carve), each writing half-open
+ * order (raise, lay, build, carve, pocket, then the caves), each writing half-open
  * [bottom, top) intervals by splitting runs, so cost follows the column's transitions. What each
  * pass may write over is the engine's rule ({@link Pass}), not the operator's: a write simply
  * leaves alone what its pass may not touch.
@@ -23,8 +23,8 @@ public final class Shape {
         /** A sealed pocket with its own level, inside raised and laid ground. */
         POCKET(passes(0, 1), Role.AIR, Role.FLUID),
         /**
-         * Today's caves (CaveMap voids, their fill, linings and decorations), cut into raised,
-         * laid and pocketed space; B2 replaces this with carve families and dressing.
+         * Carved caves (the zone's carve forms), their linings and decorations, cut into raised,
+         * laid and pocketed space.
          */
         CAVES(passes(0, 1, 4, 5), Role.AIR, Role.FLUID, Role.LINING, Role.DECOR),
         /** A cavity floor's setting layers, over raised rock only. */
@@ -176,25 +176,13 @@ public final class Shape {
         column.addPool(bottom, top, frozen);
     }
 
-    /** The temporary cave carve: open space over [bottom, top) holding its fill (air or fluid). */
-    public void caveVoid(int bottom, int top, TerrainBlock fill) {
-        column.write(
-                bottom,
-                top,
-                (short) fill.index(),
-                fill == TerrainBlock.AIR ? Role.AIR : Role.FLUID,
-                Pass.CAVES,
-                0,
-                ANY);
-    }
-
-    /** The temporary cave carve: a lining beside a void. */
-    public void caveLining(int bottom, int top, TerrainBlock block) {
+    /** A lining beside a cave: rock dressed against carved space. */
+    public void lining(int bottom, int top, TerrainBlock block) {
         column.write(bottom, top, (short) block.index(), Role.LINING, Pass.CAVES, 0, ANY);
     }
 
-    /** The temporary cave carve: a decoration, over voids and linings too. */
-    public void caveDecor(int bottom, int top, TerrainBlock block) {
+    /** A cave's decoration, over carved space and linings too. */
+    public void decor(int bottom, int top, TerrainBlock block) {
         column.write(bottom, top, (short) block.index(), Role.DECOR, Pass.CAVES, 0, ANY);
     }
 

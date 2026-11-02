@@ -636,11 +636,18 @@ from the middle layers (each realm also reports depth biomes; see Realms and dep
   blocks and lakes 73,019; on seed 101, 325,184 and 121,654. Over 12 km seed 8675309 has six lakes
   (two before), at Y-86 to Y-19.
 - Entrances: sinkholes in soluble rock and rift chasm openings, the only places caves reach the
-  sky. They are part of every column sample, so the distant preview shows them.
+  sky. They are part of every column sample, so the distant preview shows them. Since terrain-v102
+  an entrance never opens beside surface water (none of its four neighbours may hold water over
+  its ground or be reserved for water); before, a few dozen columns per seed opened into a bank
+  with the water standing against them.
 
-The 3D caves are carved only into native chunk columns, from rotated value noise on a 4-block
-lattice cached per chunk; they reach native columns through the column engine's temporary
-carve (`AssembledColumnCheck` compares carved native columns with the assembled ones). On seed
+Each kind of cave is a carve form (`CaveMap.FORMS`), and `riven-zones.json` names the forms each
+crust sub-zone allows: the root takes chamber rooms, fissures, lava tubes, geodes, lava rivers,
+pillar halls and its tunnels; the skin and the body take the basement's and the layered rock's
+forms, the skin without joint mazes or bedding planes. The 3D caves are carved only into native
+chunk columns, from rotated value noise on a 4-block lattice cached per chunk, each block taking
+the first form its sub-zone allows that opens it; the column engine keeps them under the sky's
+roof band and fills them by its fixed precedence (see ARCHITECTURE, the column engine). On seed
 8675309 (terrain-v88), caves fill 2.6% of the skin, 10.2% of the
 layered deep, 6.1% of the basement and 14.3% of the root. By volume, pillar halls are 49%,
 caverns 13%, joint mazes 14%, tunnels 10% and bedding planes 6%, and each remaining family is

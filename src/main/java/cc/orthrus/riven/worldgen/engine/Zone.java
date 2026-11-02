@@ -35,6 +35,11 @@ public final class Zone {
             } else throw new IllegalStateException(where + ": unknown boundary " + json);
         }
 
+        /** The depth a depth boundary lies at, or -1 for another kind. */
+        public int depth() {
+            return kind == DEPTH ? value : -1;
+        }
+
         /**
          * The boundary's Y in a column, or {@link Horizons#ABSENT}: a boundary at depth n is the
          * lowest Y whose depth below the ground is under n, so n blocks from the ground down lie
@@ -126,6 +131,11 @@ public final class Zone {
             for (int i = 0; i < forms.length; i++) forms[i] = c.get(i).getAsString();
         }
 
+        /** The depth its bottom lies at, where its bottom is a depth boundary, or -1. */
+        public int bottomDepth() {
+            return bottom == null ? -1 : bottom.depth();
+        }
+
         /** The carve forms this sub-zone allows, as its definition names them. */
         public String[] forms() {
             return forms.clone();
@@ -138,10 +148,8 @@ public final class Zone {
         }
     }
 
-    /** Carve families a zone may name; the temporary carve wraps today's caves (until B2's switch). */
-    private static final String[] FAMILIES = {
-        "caves", "field", "sphere", "segment", "line", "entrance"
-    };
+    /** Carve families a zone may name. */
+    private static final String[] FAMILIES = {"field", "sphere", "segment", "line", "entrance"};
 
     public final String id;
     public final int index;

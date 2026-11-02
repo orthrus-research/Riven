@@ -318,18 +318,30 @@ public final class AssembledColumn {
                 next = after(next, y, floodFloor + 1);
                 next = after(next, y, floodLevel + 1);
             }
-            short entry = air;
-            if (lava != Horizons.ABSENT && y <= lava) entry = z.lava;
-            else if (pocket && y >= pocketFloor && y < pocketRoof) {
-                if (y <= pocketLevel) entry = z.fluid;
-            } else {
-                int pool = -1;
-                for (int k = 0; k < pools && pool < 0; k++)
-                    if (y >= poolLo[k] && y < poolHi[k]) pool = k;
-                if (pool >= 0) entry = poolFrozen[pool] ? z.frozen : z.fluid;
-                else if (flood && y > floodFloor && y <= floodLevel)
-                    entry = frozen ? z.frozen : z.fluid;
-            }
+            int fill =
+                    CaveFills.fill(
+                            y,
+                            lava,
+                            pocketFloor,
+                            pocketRoof,
+                            pocketLevel,
+                            poolLo,
+                            poolHi,
+                            pools,
+                            floodFloor,
+                            floodLevel);
+            short entry =
+                    fill == CaveFills.AIR
+                            ? air
+                            : fill == CaveFills.LAVA
+                                    ? z.lava
+                                    : fill == CaveFills.POCKET
+                                            ? z.fluid
+                                            : fill == CaveFills.FLOOD
+                                                    ? frozen ? z.frozen : z.fluid
+                                                    : poolFrozen[fill - CaveFills.POOL]
+                                                            ? z.frozen
+                                                            : z.fluid;
             emit(y, entry, entry == air ? open : wet, pass);
             y = next;
         }

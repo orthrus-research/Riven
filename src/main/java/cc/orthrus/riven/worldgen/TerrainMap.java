@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 101;
+    public static final int VERSION = 102;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -129,7 +129,7 @@ public final class TerrainMap {
         wonders = new WonderTerrain(seed, heights, types.sites, majorFeatureParent, hydro);
         geology = new GeologyMap(seed, plates);
         floods = new FloodMap(seed, world, this::sampleGeology);
-        caves = new CaveMap(seed, heights, this::sample);
+        caves = new CaveMap(seed, heights, this::sample, this::sampleWater);
         ores = new OreMap(seed, heights);
         rocky =
                 new RockyTerrain(
@@ -334,6 +334,18 @@ public final class TerrainMap {
         geology.column(x, z, out, out.geology);
         floods.column(x, z, out.flood);
         caves.entrances(x, z, out);
+    }
+
+    /**
+     * A column's sample up to the water over its finished surface (as {@link #sample} at full
+     * octaves, before the rock beneath): what a cave entrance asks of its neighbours.
+     */
+    private void sampleWater(double x, double z, Sample out) {
+        out.x = x;
+        out.z = z;
+        sampleBeforeSediment(x, z, ErosionFilter.OCTAVES, out);
+        sediment.apply(x, z, out);
+        seal(out);
     }
 
     /** A flood cell centre's sample: up to its geology column, without flood cells or caves. */

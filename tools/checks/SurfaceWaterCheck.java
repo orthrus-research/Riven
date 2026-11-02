@@ -10,9 +10,9 @@ import java.util.concurrent.atomic.AtomicLongArray;
  * water, builds 33 x 33 column windows around up to 1500 of those points, and counts spills by the
  * dry column's state: beside a drainage channel's bank or valley, a network lake's or route's
  * bank, or neither. Requires fewer than one spill per 10,000 wet columns (a few remain where
- * network rivers meet unbanked ground or a drainage valley). Spills into a cave entrance (the dry
- * column's ground would hold the water, but a cave opening cuts it) are counted apart and not
- * required: entrances are cave rules (carve families, B2). args: [seed...]
+ * network rivers meet unbanked ground or a drainage valley). No water may spill into a cave
+ * entrance (the dry column's ground would hold the water, but a cave opening cuts it): an entrance
+ * never opens beside surface water. args: [seed...]
  */
 public final class SurfaceWaterCheck {
     private static final int HALF = 4096, SCAN = 16, WINDOWS = 1500, R = 16;
@@ -52,6 +52,9 @@ public final class SurfaceWaterCheck {
             examples.forEach(e -> System.out.println("  " + e));
             if (spills > TOLERANCE * count.get(0))
                 throw new AssertionError("Surface water spills on seed " + seed);
+            if (count.get(4) > 0)
+                throw new AssertionError(
+                        "Surface water spills into a cave entrance on seed " + seed);
         }
         System.out.println("SurfaceWaterCheck passed");
     }

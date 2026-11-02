@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 2,
+  "revision": 3,
   "zones": [
     {
       "id": "crust",
@@ -10,7 +10,7 @@
       "fluid": "fluid.water",
       "frozen": "ice.ice",
       "lava": "fluid.lava",
-      "carve": ["caves", "field", "sphere", "segment", "line", "entrance"],
+      "carve": ["field", "sphere", "segment", "line", "entrance"],
       "cavities": [
         {"id": "sky", "floor": {"horizon": "ground"}, "fluid": {"level": {"horizon": "water"}}, "settings": "crust", "biome": "column", "roof": {"dry": 8, "wet": 16}}
       ],
@@ -27,6 +27,6 @@
     "A zone names its bed source (geology: the crust's strata), the fluid that fills its open space, that fluid's frozen form, the lava below the lava horizon, the carve families that may cut it, its cavities and its sub-zones. A cavity is open space with ground: its floor horizon is where its setting table's layers count down from, its fluid fills to its level horizon, and every carve but an entrance keeps its roof band of solid under the floor (dry, or wet where the column lies under the sea or surface water).",
     "Carved cave space takes its fill by the engine's fixed precedence: lava up to the lava horizon, then an aquifer's pocket (water to its level), then a cave pool, then a flood cell's band, then air.",
     "A sub-zone is a band of its zone between its own boundaries (the zone's where it names none); where sub-zones overlap the first that holds wins. Each names the carve forms that may cut it, from the crust's fixed list (CaveMap.FORMS); a form it does not name never cuts it. The crust's sub-zones are the root at and below geology's deep surface, the surface band (the 8 blocks from the ground down), the skin to 40 blocks down (sparser caverns, narrower tunnels, no joint mazes or bedding planes) and the body between.",
-    "The crust runs from the reference top to the crust floor (the realms below keep their own cube path until they become zones). Its one cavity is the sky: its floor is the ground, water fills it to the water horizon, and riven-surface.json's crust table chooses its ground's layers. Until B2's switch the native world takes its caves through the temporary carve named caves."
+    "The crust runs from the reference top to the crust floor (the realms below keep their own cube path until they become zones). Its one cavity is the sky: its floor is the ground, water fills it to the water horizon, and riven-surface.json's crust table chooses its ground's layers."
   ]
 }

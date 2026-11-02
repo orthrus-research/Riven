@@ -2,9 +2,13 @@ package cc.orthrus.riven.worldgen;
 
 import cc.orthrus.riven.worldgen.engine.AssembledColumn;
 import cc.orthrus.riven.worldgen.engine.Assembler;
+import cc.orthrus.riven.worldgen.engine.Flags;
+import cc.orthrus.riven.worldgen.engine.Horizons;
 import cc.orthrus.riven.worldgen.engine.Role;
 import cc.orthrus.riven.worldgen.engine.SettingTable;
 import cc.orthrus.riven.worldgen.engine.Settings;
+import cc.orthrus.riven.worldgen.engine.Shape;
+import cc.orthrus.riven.worldgen.engine.Zone;
 
 import java.util.Arrays;
 import java.util.TreeMap;
@@ -17,13 +21,107 @@ import java.util.TreeMap;
  * role(y) equal the runs at every boundary; a column assembled cold, from the reused buffer and
  * in reverse order is the same column; soil roles lie only in their layer under the sky's floor;
  * every run's role is one its pass writes; nothing above the highest surface but air, and no soil
- * or deposit below the lowest soil. Native chunk columns store exactly the assembled columns
- * (every cube, block and role), and a cache filled in reverse order returns identical columns,
- * ores and unstable floors included.
+ * or deposit below the lowest soil. In carved chunk columns: every carved block's family comes from
+ * a carve form its sub-zone allows (riven-zones.json); nothing but an entrance cuts the sky's roof
+ * band; carved space holds lava only at or below the lava horizon and water or ice only in an
+ * aquifer's band under its level, a cave pool or a flood cell's band. Native chunk columns store
+ * exactly the assembled columns (every cube, block and role), and a cache filled in reverse order
+ * returns identical columns, ores and unstable floors included.
  */
 public final class AssembledColumnCheck {
     private static void require(boolean value, String message) {
         if (!value) throw new AssertionError(message);
+    }
+
+    /** The carve forms that open each family (by CaveMap.FAMILIES index). */
+    private static final String[][] FORMS_OF = {
+        {},
+        {"basement-cavern", "cavern"},
+        {"pillar-hall"},
+        {"root-tunnel", "basement-tunnel", "tunnel"},
+        {"karst"},
+        {"karst"},
+        {"fissure"},
+        {"dome"},
+        {"salt-hall"},
+        {"lava-tube"},
+        {"chamber-room"},
+        {"bedding-plane"},
+        {"joint-maze"},
+        {"vein-gallery"},
+        {"lava-river"},
+        {"geode"}
+    };
+
+    /** Carved blocks per sub-zone over every carved chunk column. */
+    private static final TreeMap<String, Long> CARVED = new TreeMap<>();
+
+    /**
+     * B2's cave rules in a carved column: families from the forms their sub-zone allows, the roof
+     * band held but at an entrance, and fills by the engine's precedence.
+     */
+    private static void caves(
+            AssembledColumn c,
+            TerrainMap.Sample s,
+            byte[] families,
+            Assembler<TerrainMap.Sample> crust,
+            TerrainHeightReference h,
+            String where) {
+        Zone zone = crust.zone;
+        CaveMap.Voids v = s.caves;
+        for (int y = h.minimumY; y < h.maximumYExclusive; y++) {
+            int f = families[y - h.minimumY];
+            if (f == 0) continue;
+            String sub = crust.assembly.zones.name(c.runZone(c.run(y)));
+            CARVED.merge(sub, 1L, Long::sum);
+            boolean allowed = false;
+            for (int k = 0; k < zone.subs(); k++)
+                if (zone.sub(k).id.equals(sub))
+                    for (String form : FORMS_OF[f]) allowed |= zone.sub(k).allows(form);
+            require(
+                    allowed,
+                    CaveMap.FAMILIES[f] + " in sub-zone " + sub + " at " + where + " y " + y);
+        }
+        int ground = c.horizon(Horizons.GROUND),
+                band = zone.cavity(0).roof(c.flag(Flags.WET) ? 1 << Flags.WET : 0),
+                lava = c.horizon(Horizons.LAVA),
+                pocketFloor = c.horizon(Horizons.POCKET_FLOOR),
+                pocketRoof = c.horizon(Horizons.POCKET_ROOF),
+                pocketLevel = c.horizon(Horizons.POCKET_LEVEL),
+                floodFloor = c.horizon(Horizons.FLOOD_FLOOR),
+                floodLevel = c.horizon(Horizons.FLOOD_LEVEL);
+        for (int i = 0; i < c.count(); i++) {
+            if (c.runPass(i) != Shape.Pass.CAVES || !c.runRole(i).open()) continue;
+            TerrainBlock block = c.runBlock(i);
+            // A run reaching the sky's floor merges with the sky's air above, which is not a cave.
+            for (int y = c.bottom(i); y < Math.min(c.top(i), ground + 1); y++) {
+                if (y > ground - band)
+                    require(
+                            v.entrances > 0 && y >= v.entranceLo[0] && y < v.entranceHi[0],
+                            "Cave cuts the roof band at " + where + " y " + y);
+                boolean underLava = lava != Horizons.ABSENT && y <= lava;
+                boolean pocket =
+                        pocketFloor != Horizons.ABSENT
+                                && y >= pocketFloor
+                                && y < pocketRoof
+                                && y <= pocketLevel;
+                boolean pool = false;
+                for (int k = 0; k < v.pools; k++) pool |= y >= v.poolLo[k] && y < v.poolHi[k];
+                boolean flood = floodFloor != Horizons.ABSENT && y > floodFloor && y <= floodLevel;
+                if (block == TerrainBlock.LAVA)
+                    require(underLava, "Lava above the lava horizon at " + where + " y " + y);
+                else if (block == TerrainBlock.AIR)
+                    require(!underLava, "Air below the lava horizon at " + where + " y " + y);
+                else
+                    require(
+                            !underLava && (pocket || pool || flood),
+                            block
+                                    + " outside a pocket, pool or flood band at "
+                                    + where
+                                    + " y "
+                                    + y);
+            }
+        }
     }
 
     /** A column's runs as one comparable array. */
@@ -152,10 +250,13 @@ public final class AssembledColumnCheck {
             chunkColumns += chunks(maps, h, seed, table);
         }
         System.out.println(
-                "PASS native chunk columns: carved columns well formed, stored cubes, blocks and"
-                        + " roles = assembled, cold = reused = reverse order (ores and unstable"
-                        + " floors too); chunkColumns="
-                        + chunkColumns);
+                "PASS native chunk columns: carved columns well formed, families from their"
+                        + " sub-zone's forms, roof band held but at entrances, fills by"
+                        + " precedence; stored cubes, blocks and roles = assembled, cold = reused ="
+                        + " reverse order (ores and unstable floors too); chunkColumns="
+                        + chunkColumns
+                        + " carved by sub-zone="
+                        + CARVED);
         System.out.println(
                 "PASS assembled columns: cover the crust, at = runs, roles legal per pass, soil"
                         + " only in its layer; materialDepth="
@@ -229,15 +330,18 @@ public final class AssembledColumnCheck {
         TerrainMap.Sample s = new TerrainMap.Sample();
         NativeColumns.Column[] forward = new NativeColumns.Column[chunks.length];
         int[][][] assembled = new int[chunks.length][256][];
+        byte[] families = new byte[h.maximumYExclusive - h.minimumY];
         for (int i = 0; i < chunks.length; i++) {
             forward[i] = maps.columns.column(chunks[i][0], chunks[i][1]);
             for (int index = 0; index < 256; index++) {
                 int x = chunks[i][0] * 16 + (index & 15), z = chunks[i][1] * 16 + (index >> 4);
                 maps.terrain.sample(x, z, s);
-                maps.terrain.caves.carve(x, z, s);
+                Arrays.fill(families, (byte) 0);
+                maps.terrain.caves.carve(x, z, s, families);
                 AssembledColumn c = crust.assemble(s, reused);
                 String where = x + "," + z + " seed " + seed + " carved";
                 wellFormed(c, h, table, where);
+                caves(c, s, families, crust, h, where);
                 stored(forward[i], index, c, h, index % 16 == 0, where);
                 assembled[i][index] = snapshot(c);
             }

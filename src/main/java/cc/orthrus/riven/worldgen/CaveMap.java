@@ -1,6 +1,7 @@
 package cc.orthrus.riven.worldgen;
 
 import cc.orthrus.riven.worldgen.engine.Assembly;
+import cc.orthrus.riven.worldgen.engine.CaveFills;
 import cc.orthrus.riven.worldgen.engine.Flags;
 import cc.orthrus.riven.worldgen.engine.Horizons;
 import cc.orthrus.riven.worldgen.engine.Zone;
@@ -17,11 +18,13 @@ import java.util.Arrays;
  * In the broken basement: sparse caverns, narrow tunnels, joint mazes and vein galleries where dikes
  * weathered out. In the molten root: pillar halls, lava rivers, lined geodes and air rooms over magma
  * chambers. Everywhere: fault fissures, rift chasms and lava tubes; the skin near the surface stays
- * sparse. Voids below the lava level hold lava; flood cells (FloodMap) fill their band with water up
- * to one flat level behind rock seals, and underground lakes (Lens) take their own chamber.
- * Entrances (sinkholes, rift chasm openings) are
- * part of every column sample; the 3D caves are carved only into native chunk columns from noise on
- * a lattice cached per chunk. Every void is a pure function of seed, definitions and coordinates.
+ * sparse. Each is a carve form ({@link #FORMS}) that riven-zones.json allows in the crust's
+ * sub-zones; the engine keeps them under the sky's roof band and fills them by its fixed
+ * precedence (CaveFills): lava below the lava level, an underground lake's water, a cave pool, a
+ * flood cell's band (FloodMap: water up to one flat level behind rock seals), else air. Entrances
+ * (sinkholes, rift chasm openings) are part of every column sample, and never open beside surface
+ * water; the 3D caves are carved only into native chunk columns from noise on a lattice cached per
+ * chunk. Every void is a pure function of seed, definitions and coordinates.
  */
 public final class CaveMap {
     static final Rules RULES = Rules.load("riven-caves.json", 1);
@@ -137,7 +140,7 @@ public final class CaveMap {
             VEIN = 13,
             LAVA_RIVER = 14,
             GEODE = 15;
-    private static final int ROOF, WET_ROOF, FLOOR_MARGIN, CAP, LINING_CAP, H, V, CHUNK_CACHE;
+    private static final int FLOOR_MARGIN, CAP, LINING_CAP, H, V, CHUNK_CACHE;
     private static final double SKIN_DEPTH, SKIN_PENALTY, SKIN_NARROWING;
     private static final UnitSet BASEMENT = new UnitSet();
     private static final double CAVERN_WAVELENGTH,
@@ -219,8 +222,6 @@ public final class CaveMap {
 
     static {
         JsonObject j = RULES.json;
-        ROOF = integer(j, "roofBlocks", 1, 64);
-        WET_ROOF = integer(j, "wetRoofBlocks", ROOF, 128);
         FLOOR_MARGIN = integer(j, "floorMarginBlocks", 1, 64);
         CAP = integer(j, "maximumIntervals", 4, 256);
         LINING_CAP = integer(j, "maximumLinings", 1, 128);
@@ -230,7 +231,10 @@ public final class CaveMap {
         CHUNK_CACHE = integer(lattice, "chunkCache", 16, 4096);
         if (16 % H != 0) throw new IllegalStateException("Cave lattice must divide a chunk");
         JsonObject realms = j.getAsJsonObject("realms");
-        SKIN_DEPTH = Rules.number(realms, "skinDepthBlocks", 0, 256);
+        // The skin is riven-zones.json's skin sub-zone: its depth, read once here.
+        SKIN_DEPTH = CRUST.sub("skin").bottomDepth();
+        if (SKIN_DEPTH < 1)
+            throw new IllegalStateException("The crust's skin needs a depth bottom");
         SKIN_PENALTY = Rules.number(realms, "skinCavernPenalty", 0, 1);
         SKIN_NARROWING = Rules.number(realms, "skinTunnelNarrowing", 0, 1);
         for (com.google.gson.JsonElement e : realms.getAsJsonArray("basementUnits"))
@@ -364,11 +368,6 @@ public final class CaveMap {
         double lo = a.get(0).getAsDouble(), hi = a.get(1).getAsDouble();
         if (!(lo >= min && hi >= lo && hi <= max)) throw new IllegalStateException("Range: " + key);
         return new double[] {lo, hi};
-    }
-
-    /** Upper bound on the run boundaries a column's voids and linings contribute. */
-    public static int maximumBoundaries() {
-        return 2 * CAP + 2 * LINING_CAP + 2 * CaveDecor.CAP + 2 * POOL_CAP + 4;
     }
 
     /** Pools a column can lie in (CavePools): at most one per void, few voids at pool height. */
@@ -524,54 +523,39 @@ public final class CaveMap {
             liningBlock[linings++] = block;
         }
 
-        /** The block a void holds at Y: lava, water, ice or air. */
+        /**
+         * The block a void holds at Y by the engine's fill precedence (CaveFills): lava, water, ice
+         * or air. A cave pool (CavePools) is still water held by rock and its rim; a flood cell's
+         * band holds water up to its one flat level, rock sealing it below and along its edges, so
+         * water never hangs over air or stands beside it. Water in a frozen depth biome
+         * (permafrost) is ice: a pool's at its floor, a flood's at its void's lowest block.
+         */
         public TerrainBlock fill(long y, TerrainMap.Sample s) {
-            if (y <= s.geology.lavaY) return TerrainBlock.LAVA;
             Hydro.Sample w = s.water;
-            if (y >= w.aquiferMin && y <= w.aquiferMax)
-                return y <= w.aquiferLevel ? TerrainBlock.WATER : TerrainBlock.AIR;
-            // A cave pool (CavePools): still water held by rock and its rim, ice where frozen.
-            for (int i = 0; i < pools; i++)
-                if (y >= poolLo[i] && y < poolHi[i])
-                    return RealmMap.cell(poolLo[i], s).frozen
-                            ? TerrainBlock.ICE
-                            : TerrainBlock.WATER;
-            // A flood cell's band holds water up to its one flat level; rock seals it below and
-            // along its edges, so water never hangs over air or stands beside it. Water that lies
-            // in a frozen depth biome (permafrost) is ice.
-            if (!s.flood.holds(y)) return TerrainBlock.AIR;
-            for (int i = 0; i < count; i++)
-                if (y >= lo[i] && y < hi[i])
-                    return RealmMap.cell(lo[i], s).frozen ? TerrainBlock.ICE : TerrainBlock.WATER;
-            return TerrainBlock.AIR;
-        }
-
-        /** Writes the voids' and linings' edges and the fill levels as run boundaries. */
-        public int boundaries(TerrainMap.Sample s, int[] out, int n) {
-            for (int i = 0; i < decorations; i++) {
-                out[n++] = decorLo[i];
-                out[n++] = decorHi[i];
-            }
-            for (int i = 0; i < linings; i++) {
-                out[n++] = liningLo[i];
-                out[n++] = liningHi[i];
-            }
-            if (count == 0) return n;
-            for (int i = 0; i < count; i++) {
-                out[n++] = lo[i];
-                out[n++] = hi[i];
-            }
-            out[n++] = (int) Math.floor(s.geology.lavaY) + 1;
-            if (s.flood.flooded) {
-                out[n++] = s.flood.level + 1;
-                out[n++] = s.flood.floor + 1;
-            }
-            if (s.water.aquiferMin <= s.water.aquiferMax) out[n++] = s.water.aquiferLevel + 1;
-            for (int i = 0; i < pools; i++) {
-                out[n++] = poolLo[i];
-                out[n++] = poolHi[i];
-            }
-            return n;
+            FloodMap.Column f = s.flood;
+            double lava = s.geology.lavaY;
+            int fill =
+                    CaveFills.fill(
+                            (int) y,
+                            Double.isInfinite(lava) ? Horizons.ABSENT : (int) Math.floor(lava),
+                            w.aquiferMin <= w.aquiferMax ? w.aquiferMin : Horizons.ABSENT,
+                            w.aquiferMax + 1,
+                            w.aquiferLevel,
+                            poolLo,
+                            poolHi,
+                            pools,
+                            f.flooded ? f.floor : Horizons.ABSENT,
+                            f.level);
+            if (fill == CaveFills.AIR) return TerrainBlock.AIR;
+            if (fill == CaveFills.LAVA) return TerrainBlock.LAVA;
+            if (fill == CaveFills.POCKET) return TerrainBlock.WATER;
+            int floor = Integer.MIN_VALUE;
+            if (fill >= CaveFills.POOL) floor = poolLo[fill - CaveFills.POOL];
+            else
+                for (int i = 0; i < count && floor == Integer.MIN_VALUE; i++)
+                    if (y >= lo[i] && y < hi[i]) floor = lo[i];
+            if (floor == Integer.MIN_VALUE) return TerrainBlock.AIR;
+            return RealmMap.cell(floor, s).frozen ? TerrainBlock.ICE : TerrainBlock.WATER;
         }
     }
 
@@ -621,13 +605,24 @@ public final class CaveMap {
     private final CavePools pools;
     private final CaveSeeps seeps;
 
-    /** A column's sample up to its cave entrances (TerrainMap.sample). */
+    /** A column's sample (TerrainMap.sample), or part of one. */
     @FunctionalInterface
     interface Sampler {
         void sample(double x, double z, TerrainMap.Sample out);
     }
 
-    CaveMap(long worldSeed, TerrainHeightReference heights, Sampler sampler) {
+    /** Samples up to a column's water over its finished surface, for an entrance's neighbours. */
+    private final Sampler waters;
+
+    private final ThreadLocal<TerrainMap.Sample> neighbour =
+            ThreadLocal.withInitial(TerrainMap.Sample::new);
+
+    /**
+     * Caves over a world seed: sampler gives whole samples (pools and seeps read their
+     * neighbours), waters samples up to the water over a column's finished surface.
+     */
+    CaveMap(long worldSeed, TerrainHeightReference heights, Sampler sampler, Sampler waters) {
+        this.waters = waters;
         seed = SeededNoise.mix(worldSeed ^ Rules.seed(RULES.json, "variationSeed"));
         cavern = new Rotation(seed ^ 0x43415645524e3131L);
         detail = new Rotation(seed ^ 0x44455441494c3131L);
@@ -884,6 +879,7 @@ public final class CaveMap {
                 && chasmMask.sample(x / CHASM_MASK_WAVELENGTH, z / CHASM_MASK_WAVELENGTH)
                         > CHASM_MASK_THRESHOLD
                 && g.faultDistance < chasmWidth(x, z) / 2) {
+            if (besideWater(x, z)) return;
             double d = (chasmWidth.sample(x / 97.0, z / 97.0) + 1) / 2;
             out.addEntrance(shaftFloor(surface - (int) lerp(CHASM_DEPTH, d), s), surface + 1);
             return;
@@ -898,10 +894,28 @@ public final class CaveMap {
                 double theta = StrictMath.atan2(oz, ox);
                 double radius = h[2] * (1 + 0.18 * StrictMath.sin(3 * theta + h[3]));
                 if (ox * ox + oz * oz < radius * radius) {
+                    if (besideWater(x, z)) return;
                     out.addEntrance(shaftFloor(surface - (int) h[3], s), surface + 1);
                     return;
                 }
             }
+    }
+
+    /**
+     * Whether a column has surface water beside it: a face neighbour reserved for water or holding
+     * water over its ground. An entrance never opens there, or the water would stand against the
+     * entrance's open side.
+     */
+    private boolean besideWater(double x, double z) {
+        TerrainMap.Sample n = neighbour.get();
+        for (int side = 0; side < 4; side++) {
+            waters.sample(
+                    x + (side == 0 ? 1 : side == 1 ? -1 : 0),
+                    z + (side == 2 ? 1 : side == 3 ? -1 : 0),
+                    n);
+            if (n.waterReserved() || n.waterOverSurface()) return true;
+        }
+        return false;
     }
 
     /**
@@ -976,80 +990,11 @@ public final class CaveMap {
 
     /**
      * Adds the column's 3D cave voids within [from, to] (and its lake chamber) to its sample,
-     * without pools or decoration; false where the column has no room for caves.
+     * without pools or decoration: Y by Y bottom-up, each block takes the first of the forms its
+     * sub-zone allows that opens it; false where the column has no room for caves.
      */
     private boolean carveVoids(
             int x, int z, TerrainMap.Sample s, byte[] families, int from, int to) {
-        Voids out = s.caves;
-        int surface = s.blockY();
-        int top = surface - (wet(s) ? WET_ROOF : ROOF), bottom = minimumY + FLOOR_MARGIN;
-        if (top <= bottom) return false;
-        bottom = Math.max(bottom, from);
-        top = Math.min(top, to);
-        if (top < bottom) return true;
-        GeologyMap.Column g = s.geology;
-        // A carve over a few heights builds only the lattice levels it reads.
-        Lattice l =
-                from == Integer.MIN_VALUE && to == Integer.MAX_VALUE
-                        ? lattice(Math.floorDiv(x, 16), Math.floorDiv(z, 16))
-                        : rangedLattice(
-                                Math.floorDiv(x, 16),
-                                Math.floorDiv(z, 16),
-                                Math.max(0, (bottom - minimumY) / V),
-                                Math.min(levels, (top - minimumY) / V + 2)
-                                        - Math.max(0, (bottom - minimumY) / V));
-        Plan p = plan(x, z, s, g, l);
-
-        int[] planes = new int[GeologyMap.MAXIMUM_BOUNDARIES + 2];
-        int planeCount = g.boundaries(bottom - 1, Math.max(bottom, top), planes, 0);
-        Arrays.sort(planes, 0, planeCount);
-        int next = 0;
-        GeologyMap.Unit unit = g.unit(bottom);
-        while (next < planeCount && planes[next] <= bottom) next++;
-        int start = Integer.MIN_VALUE, liningStart = Integer.MIN_VALUE;
-        TerrainBlock lining = null;
-        FloodMap.Column flood = s.flood;
-        Hydro.Sample w = s.water;
-        // An underground lake is a chamber of its own, which caves may join above its waterline;
-        // it comes first, so the column's void cap never drops it.
-        if (w.aquiferMin <= w.aquiferMax)
-            out.add(Math.max(w.aquiferMin, bottom), Math.min(w.aquiferMax, top) + 1);
-        for (int y = bottom; y <= top; y++) {
-            while (next < planeCount && planes[next] <= y) {
-                next++;
-                unit = g.unit(y);
-            }
-            // Flood seals and a lake's shell stay rock: they hold the water.
-            int family =
-                    flood.sealed(y) || (y >= w.aquiferShellLo && y <= w.aquiferShellHi)
-                            ? 0
-                            : family(y, unit, g, l, p);
-            if (families != null) families[y - minimumY] = (byte) family;
-            boolean carved = family != 0;
-            if (carved && start == Integer.MIN_VALUE) start = y;
-            else if (!carved && start != Integer.MIN_VALUE) {
-                out.add(start, y);
-                start = Integer.MIN_VALUE;
-            }
-            // Geode shells line the rock around their cavities.
-            TerrainBlock shell = carved ? null : shellAt(y, unit, p);
-            if (shell != lining) {
-                if (lining != null) out.addLining(liningStart, y, lining);
-                lining = shell;
-                liningStart = y;
-            }
-        }
-        if (start != Integer.MIN_VALUE) out.add(start, top + 1);
-        if (lining != null) out.addLining(liningStart, top + 1, lining);
-        return true;
-    }
-
-    /**
-     * For checks until the switch: the column's 3D cave voids within [from, to] as the forms walk
-     * carves them (the same voids, linings and families {@link #carveVoids} gives), into its
-     * sample's voids after its entrances; false where the column has no room for caves.
-     */
-    boolean carveForms(int x, int z, TerrainMap.Sample s, byte[] families, int from, int to) {
         Voids out = s.caves;
         int surface = s.blockY();
         int roof = CRUST.cavity(0).roof(wet(s) ? 1 << Flags.WET : 0);
@@ -1208,11 +1153,6 @@ public final class CaveMap {
                 if (y >= p.domeLo[i] && y <= p.domeHi[i]) return DOME;
         if (allows(forms, F_SALT) && unit == EVAPORITE && p.salt > SALT_THRESHOLD) return SALT_HALL;
         return 0;
-    }
-
-    /** For checks until the switch: the cascade's carve of the same column (no pools or decor). */
-    boolean carveCascade(int x, int z, TerrainMap.Sample s, byte[] families) {
-        return carveVoids(x, z, s, families, Integer.MIN_VALUE, Integer.MAX_VALUE);
     }
 
     /** For checks: pool cell (i, j)'s pool as {x, z, level}, or null (CavePools). */
@@ -1587,77 +1527,6 @@ public final class CaveMap {
             }
         }
         return false;
-    }
-
-    /** The family that carves block Y, or 0 where the rock stands. */
-    private int family(int y, GeologyMap.Unit unit, GeologyMap.Column g, Lattice l, Plan p) {
-        if (unit == MAGMA) return y > p.chamberAir ? CHAMBER : 0;
-        double t = (y - minimumY) / (double) V;
-        int k = (int) t;
-        double f = t - k;
-        double strength = unit.strength, soluble = unit.solubility;
-        boolean skin = p.surface - y < SKIN_DEPTH;
-        double ta = at(l.tunnelA, k, f, p), tb = at(l.tunnelB, k, f, p);
-        // Everywhere: fault fissures and rift chasms, lava tubes in basalt.
-        if (p.nearFault
-                && y >= FISSURE_BOTTOM
-                && g.faultDistance < p.fissure * (0.75 + 0.5 * Math.abs(ta))) return FISSURE;
-        if (unit == BASALT
-                && p.tube < LAVA_TUBE_WIDTH
-                && g.unit(y + TUBE_CLEARANCE) == BASALT
-                && g.unit(y - TUBE_CLEARANCE) == BASALT) return LAVA_TUBE;
-
-        if (y <= g.deepY) {
-            // The molten root: pillar halls, lava rivers and geodes.
-            for (int i = 0; i < p.geodeCount; i++)
-                if (y >= p.geodeLo[i] && y <= p.geodeHi[i] && GEODE_HOSTS.contains(unit))
-                    return GEODE;
-            // The 3D tunnel noise swells and pinches the channel and lifts its roof unevenly.
-            if (p.river < RIVER_WIDTH * (1 + RIVER_WIDTH_VARIATION * tb)
-                    && y >= g.lavaY - RIVER_BELOW
-                    && y <= g.lavaY + RIVER_ABOVE * (1 + RIVER_CEILING_VARIATION * ta))
-                return LAVA_RIVER;
-            if (!p.pillar && at(l.hall, k, f, p) > HALL_THRESHOLD_DEEP) return PILLAR_HALL;
-            double width = TUNNEL_WIDTH * BASEMENT_NARROWING;
-            return ta * ta + tb * tb < width * width ? TUNNEL : 0;
-        }
-        double cavern = at(l.cavern, k, f, p);
-        if (BASEMENT.contains(unit)) {
-            // The broken basement: sparse caverns, joint mazes, vein galleries, narrow tunnels.
-            double threshold =
-                    BASEMENT_THRESHOLD
-                            + STRONG_PENALTY * Math.max(0, strength - 0.7) / 0.3
-                            + (skin ? SKIN_PENALTY : 0);
-            if (cavern > threshold) return CAVERN;
-            if (!skin && jointOpen(y, p, ta)) return JOINT;
-            if (unit == DOLERITE && tb > VEIN_MASK) return VEIN;
-            double width = TUNNEL_WIDTH * BASEMENT_NARROWING * (skin ? SKIN_NARROWING : 1);
-            return ta * ta + tb * tb < width * width ? TUNNEL : 0;
-        }
-        // The layered deep: caverns, tunnels, karst, bedding planes, domes, salt halls.
-        double threshold =
-                LAYERED_THRESHOLD
-                        - SOLUBLE_BONUS * soluble
-                        - (strength < 0.5 ? WEAK_BONUS : 0)
-                        + (skin ? SKIN_PENALTY : 0);
-        if (cavern > threshold) return CAVERN;
-        double width =
-                TUNNEL_WIDTH * (1 + WEAK_WIDENING * (1 - strength)) * (skin ? SKIN_NARROWING : 1);
-        if (ta * ta + tb * tb < width * width) return TUNNEL;
-        if (soluble >= KARST_SOLUBILITY)
-            for (int i = 0; i < p.karstLo.length; i++)
-                if (y >= p.karstLo[i]) {
-                    if (y <= p.karstHi[i]) return KARST;
-                    if (y <= p.canyonHi[i]) return CANYON;
-                }
-        if (!skin)
-            for (int i = 0; i < p.beddings; i++)
-                if (y >= p.beddingLo[i] && y <= p.beddingHi[i]) return BEDDING;
-        if (strength <= DOME_STRENGTH)
-            for (int i = 0; i < p.domeCount; i++)
-                if (y >= p.domeLo[i] && y <= p.domeHi[i]) return DOME;
-        if (unit == EVAPORITE && p.salt > SALT_THRESHOLD) return SALT_HALL;
-        return 0;
     }
 
     /** A geode's lining block at Y in its host rock, or null. */

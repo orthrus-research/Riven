@@ -13,8 +13,7 @@ import cc.orthrus.riven.worldgen.engine.Shape;
  * rocky volume's solid is built and its tunnel carved (the volume is an overhang over the ground
  * as it was before it, which is the sky's floor); a wonder's void is carved; an aquifer is a
  * pocket; and the column's caves are carved, entrances apart, under the sky's roof band, their
- * fill left to the engine's precedence. Until B2's switch the native world still takes its caves
- * through the temporary carve (voids with their own fill), and checks compare the two.
+ * fill left to the engine's precedence.
  */
 final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
     /** Where the crust's horizons go: a shape, or an array for the cave walk. */
@@ -22,21 +21,9 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
         void publish(int horizon, int y);
     }
 
-    private final boolean engineCaves;
-
-    private CrustShape(boolean engineCaves) {
-        this.engineCaves = engineCaves;
-    }
-
     /** The crust's assembler over packaged definitions, with these surface rules and heights. */
     static Assembler<TerrainMap.Sample> assembler(
             SurfaceRules rules, TerrainHeightReference heights) {
-        return assembler(rules, heights, false);
-    }
-
-    /** As {@link #assembler(SurfaceRules, TerrainHeightReference)}, carving caves as chosen. */
-    static Assembler<TerrainMap.Sample> assembler(
-            SurfaceRules rules, TerrainHeightReference heights, boolean engineCaves) {
         Assembly assembly = Assembly.packaged();
         return new Assembler<>(
                 assembly,
@@ -45,7 +32,7 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
                 heights.seaLevel,
                 heights.minimumY,
                 heights.worldMinimumY,
-                new CrustShape(engineCaves),
+                new CrustShape(),
                 new CrustSettings(assembly.thresholds("crust"), rules, heights),
                 new CrustStrata(heights));
     }
@@ -105,8 +92,7 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
         if (volume) volume(s, shape, surface);
         if (s.wonders.hasVoid()) shape.carve(s.wonders.voidBottom, s.wonders.voidTop);
         if (aquifer) shape.pocket(w.aquiferMin, w.aquiferMax + 1);
-        if (engineCaves) engineCaves(s, shape);
-        else caves(s, shape);
+        caves(s, shape);
     }
 
     /**
@@ -115,10 +101,10 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
      * block's depth biome is frozen, a pool's where its own is), then decorations over both, an
      * earlier decoration over a later one.
      */
-    private static void engineCaves(TerrainMap.Sample s, Shape shape) {
+    private static void caves(TerrainMap.Sample s, Shape shape) {
         CaveMap.Voids v = s.caves;
         for (int i = 0; i < v.linings; i++)
-            shape.caveLining(v.liningLo[i], v.liningHi[i], v.liningBlock[i]);
+            shape.lining(v.liningLo[i], v.liningHi[i], v.liningBlock[i]);
         FloodMap.Column f = s.flood;
         for (int i = 0; i < v.count; i++) {
             // Only flood water reads a void's frost, so only a void reaching the band asks.
@@ -135,7 +121,7 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
         for (int i = 0; i < v.pools; i++)
             shape.pool(v.poolLo[i], v.poolHi[i], RealmMap.cell(v.poolLo[i], s).frozen);
         for (int i = v.decorations - 1; i >= 0; i--)
-            shape.caveDecor(v.decorLo[i], v.decorHi[i], v.decorBlock[i]);
+            shape.decor(v.decorLo[i], v.decorHi[i], v.decorBlock[i]);
     }
 
     private static int floor(double y) {
@@ -159,50 +145,5 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
             if (edit == Edit.SOLID) shape.build(at[i], at[i + 1], surface);
             else if (edit == Edit.VOID) shape.carve(at[i], at[i + 1]);
         }
-    }
-
-    /**
-     * The temporary carve: today's cave voids hold their own fill, split where it changes;
-     * linings line them and decorations stand over both, an earlier decoration over a later one.
-     */
-    private static void caves(TerrainMap.Sample s, Shape shape) {
-        CaveMap.Voids v = s.caves;
-        for (int i = 0; i < v.linings; i++)
-            shape.caveLining(v.liningLo[i], v.liningHi[i], v.liningBlock[i]);
-        for (int i = 0; i < v.count; i++) {
-            int y = v.lo[i], hi = v.hi[i];
-            while (y < hi) {
-                int next = fillChange(s, v, y, hi);
-                shape.caveVoid(y, next, v.fill(y, s));
-                y = next;
-            }
-        }
-        for (int i = v.decorations - 1; i >= 0; i--)
-            shape.caveDecor(v.decorLo[i], v.decorHi[i], v.decorBlock[i]);
-    }
-
-    /** The lowest Y in (y, hi) where a void's fill can change, or hi. */
-    private static int fillChange(TerrainMap.Sample s, CaveMap.Voids v, int y, int hi) {
-        int next = hi;
-        next = below(next, y, (int) Math.floor(s.geology.lavaY) + 1);
-        if (s.flood.flooded) {
-            next = below(next, y, s.flood.level + 1);
-            next = below(next, y, s.flood.floor + 1);
-        }
-        Hydro.Sample w = s.water;
-        if (w.aquiferMin <= w.aquiferMax) {
-            next = below(next, y, w.aquiferMin);
-            next = below(next, y, w.aquiferMax + 1);
-            next = below(next, y, w.aquiferLevel + 1);
-        }
-        for (int i = 0; i < v.pools; i++) {
-            next = below(next, y, v.poolLo[i]);
-            next = below(next, y, v.poolHi[i]);
-        }
-        return next;
-    }
-
-    private static int below(int next, int y, int candidate) {
-        return candidate > y && candidate < next ? candidate : next;
     }
 }

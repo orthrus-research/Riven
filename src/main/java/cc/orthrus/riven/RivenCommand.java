@@ -454,8 +454,7 @@ final class RivenCommand extends CommandBase {
                                                     .assembler()
                                                     .assembly
                                                     .zones
-                                                    .zone(assembled.runZone(run))
-                                                    .id,
+                                                    .name(assembled.runZone(run)),
                                     preview == null ? null : preview.at(y),
                                     world.getBlockState(new BlockPos(x, y, z)))));
         }

@@ -1,0 +1,11 @@
+[
+  {"label": "entrance-chasm-rim", "x": 1024, "y": 125, "z": -1140, "yaw": 180, "pitch": 75, "commands": ["gamerule doDaylightCycle false", "weather clear 100000", "time set 6000", "effect {player} minecraft:night_vision 100000 0 true", "execute {player} ~ ~ ~ riven column 1024 -1156"]},
+  {"label": "entrance-chasm-inside", "x": 1024, "y": 40, "z": -1156, "yaw": 90, "pitch": 10},
+  {"label": "skin-upper-caves", "x": -1144, "y": 44, "z": -1064, "yaw": 0, "pitch": 0, "commands": ["execute {player} ~ ~ ~ riven column -1144 -1064"]},
+  {"label": "body-bedding-plane", "x": -352, "y": 82, "z": -1184, "yaw": 0, "pitch": 10},
+  {"label": "body-joint-maze", "x": 1056, "y": -150, "z": 1456, "yaw": 0, "pitch": -40, "commands": ["execute {player} ~ ~ ~ riven column 1056 1456"]},
+  {"label": "body-vein-gallery", "x": -784, "y": -250, "z": 1360, "yaw": 0, "pitch": 70},
+  {"label": "root-geode", "x": 1216, "y": -388, "z": 224, "yaw": 90, "pitch": 0},
+  {"label": "root-pillar-hall", "x": 688, "y": -450, "z": 224, "yaw": 45, "pitch": 15, "commands": ["execute {player} ~ ~ ~ riven column 688 224"]},
+  {"label": "root-lava-river", "x": -704, "y": -466, "z": -1536, "yaw": 0, "pitch": 35}
+]

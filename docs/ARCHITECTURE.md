@@ -169,9 +169,15 @@ applies the lens, network/lake/river, then basins; later bodies keep existing we
 `worldgen.engine` assembles each column's crust once, as runs of `bottom`, catalogue entry, role
 and zone (`AssembledColumn`), for native cubes, the distant preview, the one-column queries and
 `/riven` alike. It is Minecraft-free; `TerrainColumn` maps entries to states. Definitions are read
-once (`Assembly`): the zone tree in `riven-zones.json` (the crust, from the reference top to the
-crust floor, with one cavity, the sky) and the setting thresholds and tables in
-`riven-surface.json`.
+once (`Assembly`): the zone tree in `riven-zones.json` and the setting thresholds and tables in
+`riven-surface.json`. The crust runs from the reference top to the crust floor, with one cavity,
+the sky, whose roof band (8 blocks, 16 where the column is wet) no carve but an entrance cuts. Its
+sub-zones, the first that holds winning, are the root at and below geology's deep surface, the
+surface band (the 8 blocks from the ground down), the skin (to 40 blocks down) and the body
+between; runs split at their bands and carry the sub-zone as their zone. A zone's boundaries are
+fixed Ys, depths below the ground or horizons the shape publishes (the ground and the ground
+under deposits, the water, an aquifer's pocket, geology's deep surface, lava level and
+unconformity, a flood cell's band).
 
 An `Assembler` runs fixed passes, each writing half-open intervals by splitting runs, so cost
 follows a column's transitions:
@@ -179,7 +185,12 @@ follows a column's transitions:
 1. **Shape** (`CrustShape` over the terrain sample): raise the ground to the sky's floor (for a
    rocky volume, the ground before it); lay sediment and a rocky shore's build-up over it; build a
    rocky volume's solid and carve its arch; carve wonder voids; open the aquifer as a pocket; then
-   today's caves (`CaveMap.Voids` with its fill, linings and decorations) as a temporary carve.
+   the caves. `CaveMap` walks a native column bottom-up, each block taking the first of the carve
+   forms its sub-zone allows that opens it (`CaveMap.FORMS`: chamber rooms in magma alone,
+   fissures, lava tubes, the root's geodes, lava rivers, pillar halls and tunnels, the basement's
+   caverns, joint mazes, vein galleries and tunnels, the layered rock's caverns, tunnels, karst,
+   bedding planes, domes and salt halls). Its voids, linings, pools and decorations enter the shape
+   as caves under the roof band, entrances whole.
 2. **Materials:** the classifier (`CrustSettings`) says which settings hold at the floor, the
    cavity's table picks the first in its order, and its top, soil and subsoil layers are written
    over raised rock, counted down from the floor. A row without a subsoil takes the next holding
@@ -187,14 +198,19 @@ follows a column's transitions:
 3. **Bed:** bed runs take their rock from the zone's bed source (`CrustStrata`: geology, tint
    bands, wonder palettes).
 4. **Fills:** open space takes its cavity's fluid up to its level (water to the water horizon), a
-   pocket its own level, and air above.
+   pocket its own level, and air above. Carved caves take theirs by a fixed precedence
+   (`CaveFills`, D15): lava up to the lava horizon, then an aquifer's water to its level, then a
+   cave pool, then a flood cell's band, then air; water freezes where the void's (or pool's) depth
+   biome is frozen. Cave dressing (pools, seeps, decorations) reads the same precedence before
+   assembly.
 
 What a pass may write over is the engine's rule (`Shape.Pass`): built rock is never carved, caves
 never cut a rocky or wonder void, a pocket only opens raised or laid ground, and materials touch
 raised rock only. `tools/checks/AssembledColumnCheck` proves runs cover the crust, `at` and `role`
 agree with them, columns are equal cold, from reused buffers and in reverse order, soil roles lie
-only in their layer and every role is legal for its pass, and that native chunk columns store
-exactly the assembled runs. The native cube writer then swaps rock for content where the column
+only in their layer and every role is legal for its pass, that every carved block's family comes
+from a form its sub-zone allows, the roof band holds but at entrances and carved space is filled
+by the precedence, and that native chunk columns store exactly the assembled runs. The native cube writer then swaps rock for content where the column
 says so: an ore body's ore first (only below the top of the column's highest bed run), else the
 host rock's unstable stone on an unstable floor; the distant preview keeps the rock. Realms keep
 their own cube path below the crust floor.
