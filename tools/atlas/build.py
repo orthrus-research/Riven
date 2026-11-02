@@ -193,9 +193,13 @@ def run_sampler(source: Source, out: Path, options: dict, overrides_dir: Path):
     tree, classes = prepare(source)
     overrides = write_overrides(tree, source.sets, overrides_dir)
     classpath = [str(p) for p in (overrides, classes, gson()) if p is not None]
+    # The raster holds about 140 bytes per pixel and ZGC wants half again as headroom; large map
+    # windows need more than the 8 GB floor (an 8 km window at one block per pixel takes 18 GB).
+    pixels = int(options.get("width") or 512) * int(options.get("height") or 512)
+    heap = max(8, -(-pixels * 210 // 2**30) + 4)
     command = [
         str(java()),
-        "-Xmx8G",
+        f"-Xmx{heap}G",
         "-XX:+UseZGC",
         "-cp",
         os.pathsep.join(classpath),

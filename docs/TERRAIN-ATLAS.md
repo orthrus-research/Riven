@@ -44,6 +44,7 @@ Run with `.local/atlas-venv/Scripts/python tools/terrain_atlas.py <command>`:
 | `seeds --seeds 1 2 3` | One window per seed, with a contact sheet, `stats.csv` and means |
 | `sweep --param FILE:PATH --values a b c` | One definition value across settings, with a contact sheet |
 | `section --line X1 Z1 X2 Z2` | Height after every stage along a line, with the largest-change stage underneath |
+| `map [--deploy] [--note TEXT]`, `map --remove ID`, `map --redeploy` | One window cut into tiles for the map site, https://map.orthrus.cc; `--remove` drops a render, `--redeploy` publishes the site as it stands (below) |
 
 Window options: `--seed`, `--center X Z`, `--size` (blocks), `--step` (blocks/pixel), `--threads`
 (default half the logical cores, which sampled faster than all cores) and `--threshold` (blocks).
@@ -67,6 +68,29 @@ Outputs live under `.local/terrain-atlas/{renders,compare,seeds,sweeps,sections}
 
 To browse renders in a browser, serve the folder locally:
 `python -m http.server 8737 --bind 127.0.0.1 --directory .local/terrain-atlas`.
+
+## Map site
+
+`map` publishes renders to https://map.orthrus.cc, a pan-and-zoom map for phones and desktops.
+Its defaults are an 8 km window at one block per pixel, every column sampled: about five minutes
+(four sampling, one tiling) and 170 MiB of tiles. The site keeps every render it has published,
+listed newest first. The page is anyone-with-the-link
+and kept out of search indexes (`X-Robots-Tag`, `robots.txt`).
+
+- `tools/atlas/tiles.py` quantizes every sampled field to an integer and cuts the render into a
+  pyramid of 256-pixel tiles with a one-pixel apron. Each tile is two zlib files: the core fields
+  every projection reads, and each stage's change (in sixteenths of a block) and reason. Level L
+  takes every 2^L-th sample, so a coarser level is exactly what a coarser render samples there.
+- `tools/atlas/map/` is the page: the hamburger menu picks the render and the projection (relief,
+  hillshade, steepness, biomes, climate, temperature, moisture, rivers, water bodies, plates,
+  provinces, coast types, land level and character, selected features, and every stage's change
+  and reasons). Colours are computed in the browser from the fields, so switching projection
+  fetches nothing; tapping a column lists its sampled values. The URL keeps the render,
+  projection and view.
+- The site is built in `.local/map/site` and deployed as the assets-only Worker `orthrus-map`
+  (`tools/atlas/map/wrangler.jsonc`, through the wrangler login). Renders are content-addressed
+  (seed, version, window and digest) and tile URLs carry the tile format, so tiles are cached as
+  immutable; the catalogue and manifests revalidate.
 
 ## Findings (seed 8675309, terrain-v36, 2026-10-21)
 

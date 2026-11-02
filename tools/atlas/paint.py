@@ -12,7 +12,9 @@ from PIL import Image, ImageDraw
 BIOME_COLORS = {
     "ocean": (0, 0, 112),
     "deep_ocean": (0, 0, 48),
+    "frozen_ocean": (144, 144, 160),
     "river": (0, 0, 255),
+    "frozen_river": (160, 160, 255),
     "swampland": (7, 249, 178),
     "jungle_edge": (98, 139, 23),
     "beaches": (250, 222, 85),
@@ -85,6 +87,15 @@ LANE_STAGE = {
 
 Color = tuple[int, int, int]
 
+# Elevation tint by height above the water surface.
+ELEVATION_STOPS: list[tuple[int, Color]] = [
+    (0, (70, 140, 60)),
+    (30, (150, 175, 90)),
+    (80, (200, 175, 110)),
+    (160, (150, 120, 100)),
+    (260, (240, 240, 240)),
+]
+
 
 class Atlas:
     """Raw sampler output for one render."""
@@ -139,6 +150,16 @@ def family_color(stage: str, index: int, count: int) -> Color:
         light, sat = 0.38 + 0.3 * t, 0.9 - 0.25 * t
         hue = (hue + 0.04 * (t - 0.5)) % 1
     r, g, b = colorsys.hls_to_rgb(hue, light, sat)
+    return int(r * 255), int(g * 255), int(b * 255)
+
+
+def region_color(region: str) -> Color:
+    """Climate regions: hue by temperature band, lightness and saturation by moisture band."""
+    temps = {"FROZEN": 0.62, "COOL": 0.52, "MILD": 0.33, "WARM": 0.15, "HOT": 0.0}
+    moist = {"DRY": (0.72, 0.35), "MODERATE": (0.5, 0.6), "WET": (0.32, 0.85)}
+    t, m = region.split("_")
+    light, sat = moist[m]
+    r, g, b = colorsys.hls_to_rgb(temps[t], light, sat)
     return int(r * 255), int(g * 255), int(b * 255)
 
 
@@ -202,13 +223,7 @@ class Painter:
 
     def elevation(self, path):
         sea = self.atlas.meta["waterTopY"]
-        stops = [
-            (sea, (70, 140, 60)),
-            (sea + 30, (150, 175, 90)),
-            (sea + 80, (200, 175, 110)),
-            (sea + 160, (150, 120, 100)),
-            (sea + 260, (240, 240, 240)),
-        ]
+        stops = [(sea + rise, color) for rise, color in ELEVATION_STOPS]
         ys = np.array([s[0] for s in stops], np.float32)
         tint = np.stack(
             [np.interp(self.surface, ys, [s[1][c] for s in stops]) for c in range(3)], axis=-1
@@ -235,14 +250,7 @@ class Painter:
 
     def climate(self, path):
         region = self.atlas.layer("region.u8", np.uint8)
-        temps = {"FROZEN": 0.62, "COOL": 0.52, "MILD": 0.33, "WARM": 0.15, "HOT": 0.0}
-        moist = {"DRY": (0.72, 0.35), "MODERATE": (0.5, 0.6), "WET": (0.32, 0.85)}
-        colors: list[Color] = []
-        for n in self.atlas.meta["regions"]:
-            t, m = n.split("_")
-            light, sat = moist[m]
-            r, g, b = colorsys.hls_to_rgb(temps[t], light, sat)
-            colors.append((int(r * 255), int(g * 255), int(b * 255)))
+        colors = [region_color(n) for n in self.atlas.meta["regions"]]
         pal = np.array(colors, np.float32)
         save(np.where(self.wet[..., None], self.base, pal[region] * (0.6 + 0.5 * self.shade)), path)
         dry = ~self.wet

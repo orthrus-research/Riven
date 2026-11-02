@@ -1,0 +1,460 @@
+/* Riven atlas map: black ground, white rules, square corners (the Orthrus design language). */
+:root {
+  color-scheme: dark;
+  --ink: #fff;
+  --dim: #9a9a9a;
+  --ground: #000;
+  --panel: rgba(0, 0, 0, 0.86);
+  --rule: rgba(255, 255, 255, 0.55);
+  --hover: rgba(255, 255, 255, 0.12);
+  --gutter: max(12px, env(safe-area-inset-left));
+  --mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font: 14px/1.35 system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  border-radius: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ground);
+  color: var(--ink);
+}
+
+#map {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+  display: block;
+}
+
+#map.dragging {
+  cursor: grabbing;
+}
+
+button,
+select,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--hover);
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.dim {
+  color: var(--dim);
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.icon.small {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  border: none;
+  background: none;
+}
+
+button.text {
+  margin-left: auto;
+  padding: 2px 8px;
+  font: 11px var(--mono);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.burger {
+  display: grid;
+  gap: 4px;
+  width: 18px;
+}
+
+.burger i {
+  display: block;
+  height: 2px;
+  background: var(--ink);
+}
+
+/* Top bar: menu, projection and render, cursor readout. */
+.bar {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  left: var(--gutter);
+  right: var(--gutter);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.bar > * {
+  pointer-events: auto;
+}
+
+.bar__title {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  padding: 4px 10px;
+  min-height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.bar__title span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#render-name {
+  font: 12px var(--mono);
+}
+
+.bar__cursor {
+  margin-left: auto;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  padding: 4px 10px;
+  font: 12px/1.35 var(--mono);
+  white-space: pre;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.bar__cursor:empty {
+  display: none;
+}
+
+/* The atlas drawer. */
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(340px, 88vw);
+  background: rgba(0, 0, 0, 0.94);
+  border-right: 1px solid var(--rule);
+  overflow-y: auto;
+  padding: max(10px, env(safe-area-inset-top)) 14px 24px var(--gutter);
+  z-index: 10;
+}
+
+.drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.wordmark {
+  font: 600 13px var(--mono);
+  letter-spacing: 0.24em;
+}
+
+.drawer__section {
+  border-top: 1px solid var(--rule);
+  padding: 12px 0;
+}
+
+.caption {
+  display: block;
+  margin: 0 0 8px;
+  font: 600 11px var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+select {
+  width: 100%;
+  background: #000;
+  border: 1px solid var(--rule);
+  padding: 8px;
+}
+
+.facts {
+  margin: 8px 0 0;
+  font: 12px/1.5 var(--mono);
+  color: var(--dim);
+  white-space: pre-line;
+}
+
+.group {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.group:first-child {
+  margin-top: 0;
+}
+
+.choice {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  margin: 0 0 -1px;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: transparent;
+}
+
+.choice[aria-pressed='true'] {
+  background: var(--ink);
+  color: #000;
+}
+
+details {
+  margin: 6px 0 0;
+}
+
+summary {
+  cursor: pointer;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+details .choice {
+  font: 12px var(--mono);
+  padding: 5px 10px;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #fff;
+}
+
+/* Floating panels: legend (bottom left) and inspector (bottom right). */
+.panel {
+  position: fixed;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  max-height: 46vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  background: none;
+  padding: 6px 10px;
+  font: 600 11px var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.panel__body {
+  overflow-y: auto;
+  padding: 8px 10px;
+  margin: 0;
+}
+
+.legend {
+  left: var(--gutter);
+  width: min(300px, calc(100vw - 2 * var(--gutter)));
+}
+
+.legend.collapsed .panel__body {
+  display: none;
+}
+
+.legend.collapsed .panel__head {
+  border-bottom: none;
+}
+
+.legend ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.legend li {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  padding: 1px 0;
+}
+
+.legend li .pct {
+  font: 11px var(--mono);
+  color: var(--dim);
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.ramp {
+  height: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.ramp-labels {
+  display: flex;
+  justify-content: space-between;
+  font: 11px var(--mono);
+  color: var(--dim);
+  margin-top: 3px;
+}
+
+.note {
+  font-size: 12px;
+  color: var(--dim);
+  margin: 6px 0 0;
+}
+
+.inspector {
+  right: var(--gutter);
+  width: min(320px, calc(100vw - 2 * var(--gutter)));
+  z-index: 5;
+}
+
+.inspector dl,
+#inspector-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  font: 12px/1.4 var(--mono);
+}
+
+#inspector-body dt {
+  color: var(--dim);
+}
+
+#inspector-body dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+#inspector-body .rule {
+  grid-column: 1 / -1;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin: 4px 0;
+}
+
+/* Zoom buttons and scale bar. */
+.zoom {
+  position: fixed;
+  right: var(--gutter);
+  top: calc(max(10px, env(safe-area-inset-top)) + 54px);
+  display: grid;
+  gap: 0;
+}
+
+.zoom .icon + .icon {
+  border-top: none;
+}
+
+.scale {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: max(14px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font: 11px var(--mono);
+  pointer-events: none;
+  text-shadow: 0 0 3px #000;
+}
+
+.scale i {
+  display: block;
+  height: 6px;
+  border: 1px solid var(--ink);
+  border-top: none;
+}
+
+.status {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font: 13px var(--mono);
+  color: var(--dim);
+  pointer-events: none;
+}
+
+.status:empty {
+  display: none;
+}
+
+/* Phones: the scale bar rises above the legend and inspector, which take the full width. */
+@media (max-width: 640px) {
+  .scale {
+    bottom: auto;
+    top: calc(max(10px, env(safe-area-inset-top)) + 54px);
+    left: var(--gutter);
+    transform: none;
+    align-items: flex-start;
+  }
+
+  .bar__cursor {
+    display: none;
+  }
+
+  .inspector {
+    left: var(--gutter);
+    width: auto;
+    max-height: 52vh;
+  }
+}

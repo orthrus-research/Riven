@@ -8,6 +8,8 @@ dev/pins/*.jar
 dev/pins/shaderpacks/
 __pycache__/
 *.log
+# wrangler dev state from previewing the map site (tools/atlas/map)
+.wrangler/
 
 # Editors, operating systems and virtual environments
 .idea/

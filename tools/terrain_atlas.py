@@ -16,6 +16,7 @@ Commands (run with .local/atlas-venv/Scripts/python):
   seeds    the same window for several seeds, with a contact sheet and statistics
   sweep    one definition value across several settings, with a contact sheet
   section  heights after every stage along a line
+  map      one window cut into tiles for the map site, map.orthrus.cc (--deploy publishes it)
 
 Examples:
   tools/terrain_atlas.py render --seed 8675309 --verify
@@ -25,6 +26,7 @@ Examples:
   tools/terrain_atlas.py seeds --seeds 8675309 101 -991 7 42 --size 4096 --step 32
   tools/terrain_atlas.py sweep --param riven-continents.json:scale --values 0.5 1 2
   tools/terrain_atlas.py section --line -4000 -2000 4000 -2000
+  tools/terrain_atlas.py map --seed 101 --deploy
 """
 
 import argparse
@@ -32,6 +34,7 @@ import hashlib
 import json
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -40,7 +43,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from atlas.batch import compare, contact_sheet, plot_section  # noqa: E402
 from atlas.build import CACHE, Source, prepare, run_sampler  # noqa: E402
 from atlas.paint import Atlas, paint  # noqa: E402
+from atlas.tiles import publish, remove  # noqa: E402
 from atlas.viewer import write_viewer  # noqa: E402
+
+MAP_SOURCE = Path(__file__).resolve().parent / "atlas/map"
+MAP_SITE = CACHE.parent / "map/site"
+MAP_FILES = ("index.html", "map.js", "map.css", "_headers", "robots.txt")
+WRANGLER = "4.154.0"
 
 
 def window_options(args):
@@ -68,8 +77,8 @@ def render_dir(args, source: Source, seed=None):
     return CACHE / "renders" / name
 
 
-def render(args, source: Source, seed=None, out=None, viewer=True):
-    """Sample (unless reusable) and paint one window; returns the render directory."""
+def sample(args, source: Source, seed=None, out=None):
+    """Sample one window unless its raw layers are reusable; returns (directory, Atlas, options)."""
     seed = args.seed if seed is None else seed
     out = (out or render_dir(args, source, seed)).resolve()
     options = window_options(args) | {"seed": seed}
@@ -89,7 +98,13 @@ def render(args, source: Source, seed=None, out=None, viewer=True):
             shutil.rmtree(out)
         run_sampler(source, out / "raw", options, out / "overrides")
         spec_file.write_text(json.dumps(spec), encoding="utf-8")
-    atlas = Atlas(out / "raw")
+    return out, Atlas(out / "raw"), options
+
+
+def render(args, source: Source, seed=None, out=None, viewer=True):
+    """Sample (unless reusable) and paint one window; returns the render directory."""
+    out, atlas, options = sample(args, source, seed, out)
+    seed = atlas.meta["seed"]
     if getattr(args, "verify", False):
         verify(source, out, options, atlas.meta["digest"])
     summary = paint(atlas, out, args.threshold)
@@ -101,6 +116,27 @@ def render(args, source: Source, seed=None, out=None, viewer=True):
         f" sampling {summary['seconds']['sampling']}s -> {out / 'index.html'}"
     )
     return out
+
+
+def publish_map(args, source: Source):
+    """Tile one window into the map site (.local/map/site) and optionally deploy it."""
+    site = MAP_SITE
+    for name in MAP_FILES:
+        (site / name).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(MAP_SOURCE / name, site / name)
+    if args.remove:
+        remove(site, args.remove)
+        print(f"removed {args.remove}")
+    elif not args.redeploy:
+        out, atlas, _ = sample(args, source)
+        rid, files, size, seconds = publish(atlas, site, args.threshold, args.note)
+        print(f"{rid}: {files} files, {size / 2**20:.1f} MiB in {seconds}s -> {site}")
+    if args.deploy or args.redeploy:
+        npx = shutil.which("npx")
+        if npx is None:
+            sys.exit("npx not found: install Node.js to deploy the map site")
+        command = [npx, "--yes", f"wrangler@{WRANGLER}", "deploy", "--config"]
+        subprocess.run(command + [str(MAP_SOURCE / "wrangler.jsonc")], check=True)
 
 
 def paint_index_link(out):
@@ -193,6 +229,14 @@ def main():
     p.add_argument("--param", required=True, metavar="FILE:PATH")
     p.add_argument("--values", required=True, nargs="+", metavar="JSON")
 
+    p = sub.add_parser("map", help="tile one window into the map site (map.orthrus.cc)")
+    add_window(p, size=8192, step=1)
+    add_source(p)
+    p.add_argument("--note", help="a short label shown with the render on the site")
+    p.add_argument("--remove", metavar="ID", help="drop a published render instead")
+    p.add_argument("--deploy", action="store_true", help="deploy the site with wrangler")
+    p.add_argument("--redeploy", action="store_true", help="deploy the site without rendering")
+
     p = sub.add_parser("section", help="heights after every stage along a line")
     p.add_argument("--seed", type=int, default=8675309)
     p.add_argument("--line", type=float, nargs=4, required=True, metavar=("X1", "Z1", "X2", "Z2"))
@@ -220,6 +264,8 @@ def main():
         out = CACHE / "seeds" / f"{source.label}_{args.size}_s{args.step}_{len(args.seeds)}"
         contact_sheet(entries, out, f"Seeds over {args.size} blocks ({source.label})")
         print(out / "index.html")
+    elif args.command == "map":
+        publish_map(args, source_of(args))
     elif args.command == "sweep":
         base = source_of(args)
         entries = []

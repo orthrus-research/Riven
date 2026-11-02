@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -225,15 +226,50 @@ public final class TerrainAtlas {
         }
     }
 
+    /** Thread-safe codes for 64-bit identities (plates, province cells), renumbered ascending. */
+    private static final class LongCodes {
+        final ConcurrentHashMap<Long, Integer> codes = new ConcurrentHashMap<>();
+        final AtomicInteger next = new AtomicInteger(1);
+
+        int code(long value) {
+            Integer known = codes.get(value);
+            if (known != null) return known;
+            return codes.computeIfAbsent(
+                    value,
+                    v -> {
+                        int c = next.getAndIncrement();
+                        if (c > 65535) throw new IllegalStateException("over 65535 identities");
+                        return c;
+                    });
+        }
+
+        /** Ascending identities; code k + 1 names ids[k]. Returns old code -> new code. */
+        int[] renumber(List<Long> ids) {
+            ids.addAll(new TreeSet<>(codes.keySet()));
+            int[] map = new int[next.get()];
+            for (Map.Entry<Long, Integer> e : codes.entrySet())
+                map[e.getValue()] = Collections.binarySearch(ids, e.getKey()) + 1;
+            return map;
+        }
+
+        static void apply(short[] codes, int[] map) {
+            for (int i = 0; i < codes.length; i++) codes[i] = (short) map[codes[i] & 0xffff];
+        }
+    }
+
     /** Planar layers; index = row * width + column, row 0 at the minimum z. */
     private static final class Raster {
         final int width, height, footprint;
-        final short[] surface, water;
-        final byte[] habitat, region, level, character, waterKind, flags;
+        final short[] surface, water, plate, province, waterBody;
+        final byte[] habitat, region, level, character, waterKind, flags, provinceType, coast;
+        final byte[] river, mouth, channelBeyond;
         final float[] celsius, moisture, micros;
         final float[][] delta, footprintDelta;
         final byte[][] family, reason, footprintFamily;
         final Codes[] reasons = new Codes[STAGE_NAMES.length];
+        final Codes provinceTypes = new Codes(), coastTypes = new Codes();
+        final LongCodes plates = new LongCodes(), provinces = new LongCodes();
+        final LongCodes waterBodies = new LongCodes();
 
         Raster(int width, int height, int footprint) {
             this.width = width;
@@ -242,6 +278,14 @@ public final class TerrainAtlas {
             int n = width * height, k = STAGE_NAMES.length;
             surface = new short[n];
             water = new short[n];
+            plate = new short[n];
+            province = new short[n];
+            provinceType = new byte[n];
+            coast = new byte[n];
+            waterBody = new short[n];
+            river = new byte[n];
+            mouth = new byte[n];
+            channelBeyond = new byte[n];
             habitat = new byte[n];
             region = new byte[n];
             level = new byte[n];
@@ -341,6 +385,18 @@ public final class TerrainAtlas {
             for (int i = 0; i < codes.length; i++) codes[i] = (byte) map[codes[i] & 0xff];
             reasonNames.add(names);
         }
+        List<Long> plateIds = new ArrayList<>(), provinceCells = new ArrayList<>();
+        LongCodes.apply(r.plate, r.plates.renumber(plateIds));
+        LongCodes.apply(r.province, r.provinces.renumber(provinceCells));
+        // Not-wet columns hold 0, which LongCodes never assigns, so it maps to 0.
+        LongCodes.apply(r.waterBody, r.waterBodies.renumber(new ArrayList<>()));
+        List<String> provinceTypes = new ArrayList<>(), coastTypes = new ArrayList<>();
+        int[] typeMap = r.provinceTypes.renumber(provinceTypes);
+        int[] coastMap = r.coastTypes.renumber(coastTypes);
+        for (int i = 0; i < r.coast.length; i++) {
+            r.provinceType[i] = (byte) typeMap[r.provinceType[i] & 0xff];
+            r.coast[i] = (byte) coastMap[r.coast[i] & 0xff];
+        }
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         write(out, r, digest);
         if (a.containsKey("sites")) {
@@ -377,12 +433,28 @@ public final class TerrainAtlas {
         j.add("levels", array(Terrain.Level.values()));
         j.add("characters", array(Terrain.Character.values()));
         j.add("waterKinds", array(Hydro.Kind.values()));
+        // Index 0 is "none" in each list; plate ids and packed province cells are 64-bit, so text.
+        j.add("provinceTypes", array(provinceTypes));
+        j.add("coastTypes", array(coastTypes));
+        JsonArray plates = new JsonArray(), cells = new JsonArray();
+        plates.add("");
+        for (long id : plateIds) plates.add(Long.toString(id));
+        cells.add("");
+        for (long cell : provinceCells) cells.add(Long.toString(cell));
+        j.add("plates", plates);
+        j.add("provinceCells", cells);
         JsonObject flags = new JsonObject();
         flags.addProperty("marine", 1);
         flags.addProperty("supplied", 2);
         flags.addProperty("deepOcean", 4);
         flags.addProperty("wet", 8);
         j.add("flags", flags);
+        JsonObject river = new JsonObject();
+        river.addProperty("river", 1);
+        river.addProperty("stream", 2);
+        river.addProperty("channel", 4);
+        river.addProperty("bar", 8);
+        j.add("riverFlags", river);
         j.add("fingerprints", fingerprints());
         JsonArray stages = new JsonArray();
         for (int k = 0; k < STAGE_NAMES.length; k++) {
@@ -450,6 +522,23 @@ public final class TerrainAtlas {
                                 | (s.water.wet ? 8 : 0));
         r.celsius[i] = (float) s.climate.celsius;
         r.moisture[i] = (float) s.climate.moisture;
+        // Codes are provisional while threads sample; raster() renumbers them in sorted order.
+        r.plate[i] = (short) r.plates.code(maps.plates.sample(x, z).plateId);
+        r.province[i] = (short) r.provinces.code(s.province.cell);
+        r.provinceType[i] =
+                (byte) r.provinceTypes.code(s.province.type == null ? null : s.province.type.id);
+        r.coast[i] = (byte) r.coastTypes.code(s.shore.type == null ? null : s.shore.type.id);
+        Hydro.Sample w = s.water;
+        r.waterBody[i] = (short) (w.wet ? r.waterBodies.code(w.id) : 0);
+        r.river[i] =
+                (byte)
+                        ((w.wet && w.kind == Hydro.Kind.RIVER ? 1 : 0)
+                                | (w.stream ? 2 : 0)
+                                | (w.channel ? 4 : 0)
+                                | (w.bar != null ? 8 : 0));
+        r.mouth[i] = (byte) Math.round(Math.max(0, Math.min(1, w.mouth)) * 255);
+        // Blocks beyond the nearest channel's edge for dry columns it reaches (255: none, or far).
+        r.channelBeyond[i] = (byte) (w.channel ? Math.min(254, Math.round(w.channelBeyond)) : 255);
         for (int k = 0; k < STAGE_NAMES.length; k++) {
             r.delta[k][i] = (float) delta(s, k);
             Enum<?> f = family(s, k);
@@ -693,6 +782,14 @@ public final class TerrainAtlas {
         bytes(out, "flags.u8", r.flags, digest);
         floats(out, "celsius.f32", r.celsius, digest);
         floats(out, "moisture.f32", r.moisture, digest);
+        shorts(out, "plate.u16", r.plate, digest);
+        shorts(out, "province.u16", r.province, digest);
+        bytes(out, "province_type.u8", r.provinceType, digest);
+        bytes(out, "coast.u8", r.coast, digest);
+        shorts(out, "water_body.u16", r.waterBody, digest);
+        bytes(out, "river.u8", r.river, digest);
+        bytes(out, "mouth.u8", r.mouth, digest);
+        bytes(out, "channel_beyond.u8", r.channelBeyond, digest);
         for (int k = 0; k < STAGE_NAMES.length; k++) {
             String n = STAGE_NAMES[k];
             floats(out, "delta_" + n + ".f32", r.delta[k], digest);
