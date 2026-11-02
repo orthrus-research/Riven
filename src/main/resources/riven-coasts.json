@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "variationSeed": "0x434f415354303031",
+  "segments": {"cellBlocks": 500, "keepWithinCells": 0.5, "jitter": 0.9, "blendBlocks": 60, "choiceJitter": 0.25},
+  "facts": {"probeBlocks": 64, "rockSlope": [0.08, 0.24], "wetMoisture": 0.52, "warmCelsius": 5},
+  "envelope": {"kneeFraction": 0.5},
+  "types": [
+    {"id": "cliff", "kind": "cliff", "shape": "cliff", "band": [30, 60], "foot": [0, 4], "suitability": {"high": 1.0, "rugged": 0.4, "headland": 0.3, "bias": -0.2}},
+    {"id": "headland", "kind": "cliff", "shape": "cliff", "band": [60, 120], "foot": [0, 3], "suitability": {"cape": 1.2, "middle": 0.3, "high": 0.4, "bias": -0.3}},
+    {"id": "bluff", "kind": "rock", "shape": "bluff", "band": [80, 150], "foot": [2, 8], "suitability": {"middle": 0.8, "grade": 1.0, "high": 0.3, "bias": -0.2}},
+    {"id": "platform", "kind": "rock", "shape": "platform", "band": [60, 120], "foot": [0, 0], "suitability": {"middle": 0.6, "rocky": 0.6, "shoaling": -0.5, "bias": -0.1}},
+    {"id": "beach", "kind": "beach", "shape": "beach", "band": [60, 200], "foot": [0, 0], "suitability": {"low": 0.8, "middle": 0.3, "shoaling": 0.6, "bias": 0.1}},
+    {"id": "marsh", "kind": "marsh", "shape": "marsh", "band": [150, 350], "foot": [0, 0], "suitability": {"low": 0.9, "shelter": 0.8, "wet": 0.8, "warm": 0.4, "rugged": -0.8, "bias": -0.5}}
+  ],
+  "contract": [
+    "The coast plan (S3 of the engine design; replaces riven-shores.json). The coast comes in segments: coast sites sit on a jittered grid of cellBlocks (times the world's layout scale); a site within keepWithinCells cells of the coast is kept and moved onto the shore, the rest are dropped, and each column near the coast belongs to its nearest kept site, so segment edges cross the coast. A segment's type and band width are chosen once, at its site, from facts the land offers before any shore shaping, read probeBlocks inland of the site, each 0 to 1: low, middle, high and rugged (the land's level), cape, headland, shelter and shoaling (the outline's coast), grade (the broad slope across the shore between rockSlope's two values), rocky (grade or cape), wet (moisture above wetMoisture), warm (above warmCelsius) and bias (always 1). The type is the most suitable, each score shaken by up to choiceJitter so neighbouring segments vary; its band width and foot are drawn inside their ranges.",
+    "Each type shapes only its band, from the waterline inland: cliff and headland keep a foot of foot blocks at sea level, then rise to the inland ground within the first quarter of the band; bluff rises over the whole band from its foot; platform keeps a bench a block above the sea over 40% of the band, then rises over the next 20%; beach lays a berm two blocks above the sea over a quarter of the band, then rises gently; marsh stays a block above the sea over 70% of the band, then rises. Past the band the ground keeps its own height. Where two segments meet, their profiles blend over blendBlocks.",
+    "kind names what the type is to everything that reads the shore (cliff, rock, beach, marsh): a beach's berm is beach and the rest of its band coastal plain. The band's rise is the shore's land weight, which raising features read as their envelope: inside a band a feature may rise no higher than the sea plus the land weight times the highest surface (bent softly above kneeFraction of that room); past the band, without limit."
+  ]
+}

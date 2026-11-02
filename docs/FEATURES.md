@@ -167,19 +167,36 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
   the shelf by that reach, and never lowered. On 2 seeds, the share of coasts at most 5 blocks
   deep 32 blocks out went from 20% to 62%; before, most coasts passed the shoal floor within 16-24
   blocks, too steep for any spit, barrier or tombolo.
-- **Shore** (`Shore`, `riven-shores.json`): classifies ocean, inland, plain, beach, rock, cliff
-  and marsh from earlier facts and shapes the coastal transition (22-24% of land at v39). Its
-  coastal envelope (v40, `envelope` in `riven-shores.json`) bounds feature raises near the coast:
-  from the beach maximum (Y68) at the shoreline to the rolling-hills target (Y112) one
-  coastal-plain width inland, six times steeper on rocky and cliff shores, with a soft knee at half
-  the cap. Rock is steep shore grade or a cape on raised land (v68), and a rock shore is a bluff:
-  its land weight rises over three cliff widths (108 blocks, `bluffInCliffWidths`) instead of the
-  long continental ramp, as cliffs already did. Before, rocky features restored the pre-shore
-  relief inside their support while the ramp behind stayed low, a rampart standing on the coast.
-  The envelope never lowers the parent and is unbounded beyond the 768-block band where coast
-  distance is estimated. The major envelope (v50) caps volcanic, cold, plateau and mountain
-  raises on the continental score instead, which is continuous everywhere: from Y68 at the coast
-  to the highest planned surface (Y351) 1.5 coastal-plain widths inland, with the same soft knee.
+- **Coast plan** (`Shore`, `riven-coasts.json`, terrain-v105): the coast comes in segments.
+  Sites sit on a jittered 500-block grid (times the layout); a site within half a cell of the
+  coast is kept and moved onto the shore along the outline's normal, the rest are dropped, and
+  each column within 350 blocks of the coast belongs to its nearest kept site, so segment edges
+  cross the coast. A segment's type, band width and foot are chosen once at its site, from facts
+  read 64 blocks inland before any shore shaping (the land's level and ruggedness, the outline's
+  cape, headland, shelter and shoaling, the broad grade across the shore, moisture and warmth),
+  as the most suitable type with each score shaken by up to 0.25.
+  - **Types and profiles** (from the waterline inland, to the inland height H): cliff (band
+    30-60) and headland (60-120, on capes) keep a foot of up to 4 blocks at the sea and rise to H
+    within a quarter of the band; bluff (80-150) rises over the whole band from a foot of 2-8;
+    platform (60-120) keeps a bench a block above the sea over 40% of the band; beach (60-200)
+    lays a berm two blocks above the sea over a quarter of the band, then rises gently; marsh
+    (150-350) stays a block above the sea over 70% of it. Two segments blend their heights over
+    60 blocks at their edge. Past the band the ground keeps its own height exactly: the
+    proportional coastal scaling and the continental envelopes before v105 are gone.
+  - **Kinds and weights:** the type's kind (cliff, rock, beach, marsh) is the shore kind while
+    the column is near its shore; a beach's berm is beach and the rest of its band coastal plain.
+    Cliff and rock weights name the stretch of coast: whole across the band, fading over one more
+    band width, so the rocky coast stage still finds rock behind its witness strip (seed 101: 957
+    accepted atlas pixels, 1,040 at v104). The band's rise is the shore's land weight.
+  - **Envelopes** are band rules: inside a band a raising feature (hills and the major features)
+    may rise no higher than the sea plus the land weight times the highest surface, bent softly
+    above half that room; past the band it is free.
+  - Measured with `CoastCheck` (8 seeds, 512 x 512 per 8 km world): 39% of land lies inside a
+    band; of band columns, beach 61%, marsh 20%, bluff 12%, headland 3.9%, cliff 2.4%, platform
+    1.6% (by segments, beach about 45% and the rocky types about 38%). Land past its band keeps its height exactly, and the coast's height has no seam (no jump
+    of a block within 1/256 of a block). In the seed 101 atlas the land median rose from +35 to
+    +47 above the sea and p25 from +12 to +24; land within 5 blocks of the sea grew from 11% to
+    17% (berms, platforms and marsh flats). Land share is unchanged.
 - **Land fraction** (v101, `LandShare`, `land` in `riven-continents.json`): a world's land share is the part of its square (8 km times the layout scale, centred on the origin) whose outline land weight is above zero, measured at world creation on 64 x 64 cell centres (under 0.2 s an attempt). A share outside the band (35-65%) redraws the outline from its next seeded attempt, which salts only the outline's own seed; the first attempt inside the band is kept, and after 8 the closest. The startup log reports it (seed 8675309: `Riven land: 40.0% (attempt 1 of 8)`). The mean comes from the draw: a 3,000-block lattice, radius 1,550 (0.52 spacing; 1,350 before v101) times each continent's size, every cell occupied (`stratifiedOccupancy` 4). On 64 seeds (`LandShareCheck`) 8 km worlds keep 50.3% land (35.7-62.7%; first draws 33.2-66.3%), 62 of 64 on the first attempt and none outside the band, 32 km worlds 49.7% (38.7-61.3%), 62 of 64 on the first; the largest landmass holds 49% of land and spans the world (touches three edges) in 19 of 64 seeds at 8 km, against 39% and 8 of 64 at radius 1,350. The 50% mean is a target the atlas measures, not a value the generator reads. Optional bays (900 blocks deep, 170 half-width) cut only their own continent; corridors every 12 cells stay outside a 32 km world.
 
 ## Inland base
@@ -293,11 +310,11 @@ Shared rules for the land stages:
   finer spacing). Mountain-stage activity covers 12% of land in the 8 km atlas of seed 8675309
   (relief of at least one block anywhere on crest bands). Mountain surface steps over 3 per block
   that remain come from the shore stage's cliff classes near coasts.
-- Hills keep the coast with the coastal envelope (v40): their certificates accept coastal and
+- Hills keep the coast with the coast band's envelope: their certificates accept coastal and
   marine support columns, and `TerrainMap` caps each hill raise with `Shore.envelope`. Volcanic,
   cold, plateau and mountain stages (v50) drop their shore-zone exclusions and skirts; `TerrainMap`
-  caps each raise with `Shore.majorEnvelope`, and they keep water, marine-anchor and
-  marine-footprint exclusions. Since v65 carver and general-cut lowering eases to nothing within
+  caps each raise with `Shore.majorEnvelope`, the same band rule since v105, and they keep water,
+  marine-anchor and marine-footprint exclusions. Since v65 carver and general-cut lowering eases to nothing within
   48 blocks of surface water (`cutWaterSkirtBlocks` in `riven-terrain.json`); a cut beside a river
   left the river's bank, held up so it cannot spill, standing as a fin. Cuts, lowlands and
   drylands keep the shore reservation,

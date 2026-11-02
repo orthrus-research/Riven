@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 104;
+    public static final int VERSION = 105;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -67,7 +67,7 @@ public final class TerrainMap {
         this.continents = continents;
         this.climate = climate;
         types = new Terrain(seed, heights);
-        shores = new Shore(seed, heights);
+        shores = new Shore(seed, heights, world, this::intentBeforeShore);
         passes = new RegionalTerrainPasses(seed, heights);
         lowlands = new LowlandTerrain(seed, heights);
         drylands = new DrylandTerrain(seed, heights, substrate);
@@ -387,23 +387,23 @@ public final class TerrainMap {
     private void sampleBeforeRocky(double x, double z, int octaves, Sample out) {
         sampleBeforeMajorFeatures(x, z, octaves, out);
         if (out.ocean.marine) return;
-        // Major features keep the coast by composition: each raise is softly capped by the major
-        // envelope instead of excluding coastal columns.
-        double coast = out.ocean.coastCoordinate, parent = out.height;
+        // Major features keep the coast by composition: inside a coast's band each raise is softly
+        // capped by the band's envelope instead of excluding coastal columns.
+        double parent = out.height;
         volcanic.apply(x, z, out, parent, out.volcanic);
-        out.volcanic.height = shores.majorEnvelope(parent, out.volcanic.height, coast);
+        out.volcanic.height = shores.majorEnvelope(parent, out.volcanic.height, out.shore);
         out.volcanic.delta = out.volcanic.height - parent;
         parent = out.volcanic.height;
         cold.apply(x, z, out, parent, out.cold);
-        out.cold.height = shores.majorEnvelope(parent, out.cold.height, coast);
+        out.cold.height = shores.majorEnvelope(parent, out.cold.height, out.shore);
         out.cold.delta = out.cold.height - parent;
         parent = out.cold.height;
         plateaus.apply(x, z, out, parent, out.plateaus);
-        out.plateaus.height = shores.majorEnvelope(parent, out.plateaus.height, coast);
+        out.plateaus.height = shores.majorEnvelope(parent, out.plateaus.height, out.shore);
         out.plateaus.delta = out.plateaus.height - parent;
         parent = out.plateaus.height;
         mountains.apply(x, z, out, parent, out.mountains);
-        out.mountains.height = shores.majorEnvelope(parent, out.mountains.height, coast);
+        out.mountains.height = shores.majorEnvelope(parent, out.mountains.height, out.shore);
         out.mountains.delta = out.mountains.height - parent;
         hills.apply(x, z, out.mountains.height, out.hills);
         // Hills keep the coast by composition: their raise is softly capped by the envelope.
@@ -435,7 +435,7 @@ public final class TerrainMap {
         // Wonders come last on land, so they rise above whatever earlier stages shaped.
         double dry = out.drylands.height;
         wonders.apply(x, z, out, dry, out.wonders);
-        out.wonders.height = shores.majorEnvelope(dry, out.wonders.height, coast);
+        out.wonders.height = shores.majorEnvelope(dry, out.wonders.height, out.shore);
         out.wonders.delta = out.wonders.height - dry;
         out.rockyParentHeight = out.wonders.height;
         out.height = out.shore.shape(out.wonders.height);
@@ -532,6 +532,16 @@ public final class TerrainMap {
 
     /** Classification entry point for selectors and biome queries. Never executes shaping. */
     public void intent(double x, double z, BaseSample out) {
+        intentBeforeShore(x, z, out);
+        shores.classify(x, z, out, out.shore);
+        Biomes.lock(out);
+    }
+
+    /**
+     * Intent up to the land's classification, before the shore: what a coast segment's site reads
+     * to choose its type, so the coast never asks itself.
+     */
+    void intentBeforeShore(double x, double z, BaseSample out) {
         out.emergentSediment = out.emergentRock = false;
         out.water.clear();
         continents.sample(x, z, out.ocean);
@@ -555,8 +565,6 @@ public final class TerrainMap {
             out.secondLandform = out.firstLandform;
         } else sampleInland(x, z, out);
         types.classify(x, z, out, out.land);
-        shores.classify(x, z, out, out.shore);
-        Biomes.lock(out);
     }
 
     /** Copies observations from the earlier inland provider; this stage owns marine composition. */

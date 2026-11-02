@@ -1,8 +1,19 @@
 package cc.orthrus.riven.worldgen;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-/** One earlier coastal contract for selectors, hydrology, shaping and cover. No world or final-height reads. */
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * The coast plan (riven-coasts.json): one earlier coastal contract for selectors, hydrology,
+ * shaping and cover. The coast comes in segments, each with one type chosen once at its site from
+ * pre-shore facts; a type shapes only its band, by its own cross-profile from the waterline to the
+ * inland ground, and past the band the ground keeps its own height. No world or final-height reads.
+ */
 public final class Shore {
     public enum Kind {
         OCEAN,
@@ -14,101 +25,274 @@ public final class Shore {
         MARSH
     }
 
-    private static final Rules RULES = Rules.load("riven-shores.json", 1);
-    public static final String FINGERPRINT = RULES.fingerprint;
-    private final long seed;
-    private final SeededNoise variation;
-    private final double beachWidth,
-            plainWidth,
-            cliffWidth,
-            bluffWidth,
-            plainY,
-            beachY,
-            plainRelief,
-            beachRelief,
-            littoralWidth;
-    private final double cliffChance, rockStart, rockEnd, marshMoisture, marshTemperature;
-    private final double envelopeBase, envelopeSlope, envelopeSteep, envelopeKnee, majorSlope;
-    private final int sea, water;
+    /** A pre-shore intent sample at a segment's site: everything intent knows but the shore. */
+    @FunctionalInterface
+    interface SiteSampler {
+        void sample(double x, double z, TerrainMap.BaseSample out);
+    }
 
-    Shore(long worldSeed, TerrainHeightReference heights) {
+    private static final Rules RULES = Rules.load("riven-coasts.json", 1);
+    public static final String FINGERPRINT = RULES.fingerprint;
+
+    /** The facts a coast type's suitability weighs, each 0 to 1 at its segment's site. */
+    static final String[] FACTS = {
+        "low",
+        "middle",
+        "high",
+        "rugged",
+        "cape",
+        "headland",
+        "shelter",
+        "shoaling",
+        "grade",
+        "rocky",
+        "wet",
+        "warm",
+        "bias"
+    };
+
+    private static final int SHAPE_CLIFF = 0,
+            SHAPE_BLUFF = 1,
+            SHAPE_PLATFORM = 2,
+            SHAPE_BEACH = 3,
+            SHAPE_MARSH = 4;
+    private static final String[] SHAPES = {"cliff", "bluff", "platform", "beach", "marsh"};
+
+    /** A coast type: its kind, profile shape, band and foot ranges and suitability. */
+    public static final class Type {
+        public final String id;
+        final Kind kind;
+        final int shape;
+        final double bandMin, bandMax, footMin, footMax;
+        final double[] weights = new double[FACTS.length];
+
+        Type(JsonObject j) {
+            id = j.get("id").getAsString();
+            kind = Kind.valueOf(j.get("kind").getAsString().toUpperCase(java.util.Locale.ROOT));
+            if (kind != Kind.CLIFF && kind != Kind.ROCK && kind != Kind.BEACH && kind != Kind.MARSH)
+                throw new IllegalStateException("riven-coasts.json " + id + ": kind " + kind);
+            shape = java.util.Arrays.asList(SHAPES).indexOf(j.get("shape").getAsString());
+            if (shape < 0) throw new IllegalStateException("riven-coasts.json " + id + ": shape");
+            JsonArray band = j.getAsJsonArray("band"), foot = j.getAsJsonArray("foot");
+            bandMin = band.get(0).getAsDouble();
+            bandMax = band.get(1).getAsDouble();
+            footMin = foot.get(0).getAsDouble();
+            footMax = foot.get(1).getAsDouble();
+            if (!(bandMin >= 8
+                    && bandMin <= bandMax
+                    && bandMax <= 1024
+                    && footMin >= 0
+                    && footMin <= footMax
+                    && footMax < bandMin / 2))
+                throw new IllegalStateException("riven-coasts.json " + id + ": band or foot");
+            for (Map.Entry<String, JsonElement> w : j.getAsJsonObject("suitability").entrySet()) {
+                int f = java.util.Arrays.asList(FACTS).indexOf(w.getKey());
+                if (f < 0)
+                    throw new IllegalStateException(
+                            "riven-coasts.json " + id + ": unknown fact " + w.getKey());
+                weights[f] = w.getValue().getAsDouble();
+            }
+        }
+    }
+
+    static final Type[] TYPES;
+    private static final double CELL,
+            KEEP,
+            JITTER,
+            BLEND,
+            CHOICE,
+            PROBE,
+            ROCK_START,
+            ROCK_END,
+            WET,
+            WARM,
+            KNEE;
+    private static final long VARIATION;
+
+    static {
         JsonObject j = RULES.json;
-        seed = SeededNoise.mix(worldSeed ^ Rules.seed(j, "variationSeed"));
-        variation = new SeededNoise(seed);
-        TerrainHeightReference.Feature beach = heights.feature("beach"),
-                plain = heights.feature("coastal_plain");
-        beachWidth = beach.width.targetAverage * Rules.number(j, "beachWidthScale", .5, 2);
-        plainWidth = plain.width.targetAverage;
-        littoralWidth = beach.width.max;
-        cliffWidth =
-                heights.feature("scarp").width.targetAverage
-                        * Rules.number(j, "cliffWidthScale", .5, 3);
-        bluffWidth = cliffWidth * Rules.number(j, "bluffInCliffWidths", 1, 8);
+        VARIATION = Rules.seed(j, "variationSeed");
+        JsonObject s = j.getAsJsonObject("segments");
+        CELL = Rules.number(s, "cellBlocks", 64, 8192);
+        KEEP = Rules.number(s, "keepWithinCells", .1, 2);
+        JITTER = Rules.number(s, "jitter", 0, 1);
+        BLEND = Rules.number(s, "blendBlocks", 1, 1024);
+        CHOICE = Rules.number(s, "choiceJitter", 0, 2);
+        JsonObject f = j.getAsJsonObject("facts");
+        PROBE = Rules.number(f, "probeBlocks", 8, 512);
+        JsonArray rock = f.getAsJsonArray("rockSlope");
+        ROCK_START = rock.get(0).getAsDouble();
+        ROCK_END = rock.get(1).getAsDouble();
+        if (!(ROCK_END > ROCK_START))
+            throw new IllegalStateException("riven-coasts.json rockSlope");
+        WET = Rules.number(f, "wetMoisture", 0, 1);
+        WARM = Rules.number(f, "warmCelsius", -40, 60);
+        KNEE = Rules.number(j.getAsJsonObject("envelope"), "kneeFraction", .1, .9);
+        List<Type> types = new ArrayList<>();
+        for (JsonElement e : j.getAsJsonArray("types")) types.add(new Type(e.getAsJsonObject()));
+        if (types.isEmpty()) throw new IllegalStateException("riven-coasts.json: no types");
+        TYPES = types.toArray(new Type[0]);
+    }
+
+    /** The widest band any type may have: past it, no column is coastal. */
+    private static final double WIDEST;
+
+    static {
+        double w = 0;
+        for (Type t : TYPES) w = Math.max(w, t.bandMax);
+        WIDEST = w;
+    }
+
+    /**
+     * A coast cell's segment: its site on the shore, type, band width and foot. A cell whose site
+     * lies farther from the coast than keep has no segment (type null).
+     */
+    private static final class Segment {
+        final double x, z;
+        final Type type;
+        final double width, foot;
+
+        Segment(double x, double z, Type type, double width, double foot) {
+            this.x = x;
+            this.z = z;
+            this.type = type;
+            this.width = width;
+            this.foot = foot;
+        }
+    }
+
+    private final long seed;
+    private final double cell, keep, sea, highest;
+    private final int water;
+    private final double littoralWidth;
+    private final SiteSampler sites;
+    private final CellMemo<Segment> segments = new CellMemo<>(4096);
+    private final ThreadLocal<TerrainMap.BaseSample> scratch =
+            ThreadLocal.withInitial(TerrainMap.BaseSample::new);
+
+    Shore(long worldSeed, TerrainHeightReference heights, WorldScale world, SiteSampler sites) {
+        seed = SeededNoise.mix(worldSeed ^ VARIATION);
+        cell = CELL * world.layout;
+        keep = KEEP * cell;
         sea = heights.seaLevel;
         water = heights.waterTopY;
-        plainY = sea + plain.elevationOffset.targetAverage;
-        beachY = sea + beach.elevationOffset.targetAverage;
-        plainRelief = plain.relief.targetAverage;
-        beachRelief = beach.relief.targetAverage;
-        cliffChance = Rules.number(j, "cliffChance", 0, 1);
-        rockStart = Rules.number(j, "rockSlopeStart", 0, 1);
-        rockEnd = Rules.number(j, "rockSlopeEnd", rockStart + .001, 2);
-        marshMoisture = Rules.number(j, "marshMoisture", 0, .9);
-        marshTemperature = Rules.number(j, "marshMinimumCelsius", 0, 20);
-        JsonObject e = j.getAsJsonObject("envelope");
-        envelopeBase = sea + beach.elevationOffset.max;
-        double inland =
-                sea
-                        + heights.feature(e.get("inlandFeature").getAsString())
-                                .elevationOffset
-                                .targetAverage;
-        double reach = plainWidth * Rules.number(e, "reachInCoastalPlainWidths", .25, 4);
-        if (inland <= envelopeBase) throw new IllegalStateException("Envelope must rise inland");
-        envelopeSlope = (inland - envelopeBase) / reach;
-        envelopeSteep = envelopeSlope * Rules.number(e, "steepFactor", 1, 20);
-        envelopeKnee = Rules.number(e, "kneeFraction", .1, .9);
-        majorSlope =
-                (heights.highestSurface - envelopeBase)
-                        / (plainWidth * Rules.number(e, "majorReachInCoastalPlainWidths", .25, 8));
-        if (!(majorSlope > 0)) throw new IllegalStateException("Major envelope must rise inland");
+        highest = heights.highestSurface;
+        littoralWidth = heights.feature("beach").width.max;
+        this.sites = sites;
     }
 
     /**
-     * Upper bound on final height near the coast, from the shoreline beach maximum rising inland;
-     * steeper on rocky and cliff shores. Unbounded where the coast distance is not estimated.
+     * The segment of coast cell (i, j). Its jittered site is kept only within keep of the coast,
+     * where it is moved onto the shore (two steps along the outline's normal, since the coast
+     * distance changes about a block per block), so segment edges cross the coast instead of
+     * slicing along it. Its type and widths are chosen there from facts read probe blocks inland.
      */
-    public double envelopeMaximum(Sample shore) {
-        if (shore.kind == Kind.OCEAN || !Double.isFinite(shore.distance))
-            return Double.POSITIVE_INFINITY;
-        return envelopeBase
-                + (shore.rocky() ? envelopeSteep : envelopeSlope) * Math.max(0, shore.distance);
+    private Segment segment(int i, int j) {
+        return segments.get(
+                i,
+                j,
+                () -> {
+                    double[] p = site(i, j);
+                    TerrainMap.BaseSample b = scratch.get();
+                    sites.sample(p[0], p[1], b);
+                    if (!(Math.abs(b.ocean.distance) <= keep))
+                        return new Segment(p[0], p[1], null, 0, 0);
+                    double nx = 0, nz = 0;
+                    for (int step = 0; step < 2; step++) {
+                        ContinentalMap.Sample o = b.ocean;
+                        if (!Double.isFinite(o.distance) || o.normalX == 0 && o.normalZ == 0) break;
+                        nx = o.normalX;
+                        nz = o.normalZ;
+                        p[0] -= nx * o.distance;
+                        p[1] -= nz * o.distance;
+                        sites.sample(p[0], p[1], b);
+                    }
+                    if (b.ocean.normalX != 0 || b.ocean.normalZ != 0) {
+                        nx = b.ocean.normalX;
+                        nz = b.ocean.normalZ;
+                    }
+                    sites.sample(p[0] + nx * PROBE, p[1] + nz * PROBE, b);
+                    double[] f = facts(b);
+                    long h = SeededNoise.cell(seed ^ 0x5345474dL, i, j);
+                    Type best = TYPES[0];
+                    double bestScore = Double.NEGATIVE_INFINITY;
+                    for (int t = 0; t < TYPES.length; t++) {
+                        double score =
+                                CHOICE * (SeededNoise.unit(SeededNoise.mix(h + t * 0x9e37L)) - .5);
+                        for (int k = 0; k < FACTS.length; k++) score += TYPES[t].weights[k] * f[k];
+                        if (score > bestScore) {
+                            bestScore = score;
+                            best = TYPES[t];
+                        }
+                    }
+                    double u = SeededNoise.unit(SeededNoise.mix(h ^ 0x57494454L)),
+                            v = SeededNoise.unit(SeededNoise.mix(h ^ 0x464f4f54L));
+                    return new Segment(
+                            p[0],
+                            p[1],
+                            best,
+                            best.bandMin + (best.bandMax - best.bandMin) * u,
+                            best.footMin + (best.footMax - best.footMin) * v);
+                });
+    }
+
+    /** The facts at a segment's site, each 0 to 1. */
+    private static double[] facts(TerrainMap.BaseSample b) {
+        double[] f = new double[FACTS.length];
+        Terrain.Sample land = b.land;
+        ContinentalMap.Sample o = b.ocean;
+        f[0] = land.low;
+        f[1] = land.middle;
+        f[2] = land.high;
+        f[3] = land.rugged;
+        f[4] = o.cape;
+        f[5] = o.headland;
+        f[6] = Rules.smooth(o.shelter * 3);
+        f[7] = o.shoaling;
+        double grade = Math.abs(b.broadDx * o.normalX + b.broadDz * o.normalZ);
+        f[8] = Rules.smooth((grade - ROCK_START) / (ROCK_END - ROCK_START));
+        f[9] = Math.max(f[8], o.cape);
+        f[10] = Rules.smooth((b.climate.moisture - WET) / .18);
+        f[11] = Rules.smooth((b.climate.celsius - WARM) / 8);
+        f[12] = 1;
+        return f;
+    }
+
+    private double[] site(int i, int j) {
+        long h = SeededNoise.cell(seed, i, j);
+        double u = SeededNoise.unit(h), v = SeededNoise.unit(SeededNoise.mix(h));
+        return new double[] {
+            (i + 0.5 + JITTER * (u - 0.5)) * cell, (j + 0.5 + JITTER * (v - 0.5)) * cell
+        };
     }
 
     /**
-     * Softly caps a feature's raise above its parent by the envelope and never lowers the parent.
-     * Raises below the knee pass unchanged; above it they bend smoothly toward the cap.
+     * Softly caps a feature's raise above its parent inside the coast's band, where it may rise no
+     * higher than the sea plus the band's rise times the highest surface; past the band it is free.
+     * It never lowers the parent.
      */
     public double envelope(double parent, double height, Sample shore) {
         return soften(parent, height, envelopeMaximum(shore));
     }
 
-    /**
-     * Softly caps a major feature's raise (volcanic, cold, plateau, mountain) by a ceiling that
-     * rises from the beach maximum at the coast to the highest planned surface one major reach
-     * inland. It reads the continental score, which is finite and continuous everywhere, so the
-     * ceiling has no edge where the estimated coast distance ends.
-     */
-    public double majorEnvelope(double parent, double height, double coastCoordinate) {
-        return soften(parent, height, envelopeBase + majorSlope * Math.max(0, coastCoordinate));
+    /** As {@link #envelope}: major features (volcanic, cold, plateau, mountain, wonder) too. */
+    public double majorEnvelope(double parent, double height, Sample shore) {
+        return soften(parent, height, envelopeMaximum(shore));
     }
 
-    private double soften(double parent, double height, double maximum) {
+    /** The highest a feature may stand at a column: unbounded past the band. */
+    public double envelopeMaximum(Sample shore) {
+        if (shore.kind == Kind.OCEAN || shore.landWeight >= 1) return Double.POSITIVE_INFINITY;
+        return sea + (highest - sea) * shore.landWeight;
+    }
+
+    private static double soften(double parent, double height, double maximum) {
         double raise = height - parent;
         if (raise <= 0) return height;
         double cap = maximum - parent;
         if (cap == Double.POSITIVE_INFINITY) return height;
         if (cap <= 0) return parent;
-        double knee = cap * envelopeKnee;
+        double knee = cap * KNEE;
         if (raise <= knee) return height;
         return parent + cap - (cap - knee) * (cap - knee) / (raise - 2 * knee + cap);
     }
@@ -127,17 +311,27 @@ public final class Shore {
                 cliff,
                 rock,
                 marsh;
-        public double landWeight, height;
+
+        /** The band's rise at the column: 0 at the waterline, 1 at and past the band's edge. */
+        public double landWeight;
+
+        public double height;
         public boolean sandy, littoral;
 
-        /** The same broad coastal surface used by planners and by final shaping. */
-        public double shape(double inlandHeight) {
-            double blended = waterDatum + landWeight * (inlandHeight - waterDatum);
-            blended += (plainTarget - blended) * plain;
-            return blended + (beachTarget - blended) * beach;
-        }
+        /** The column's segment type (the nearer of the two it blends), or null off the coast. */
+        public Type type;
 
-        private double waterDatum, plainTarget, beachTarget;
+        // The column's two nearest segments, their mix and its shore distance, for shape().
+        private Segment a, b;
+        private double mix, sea;
+
+        /** The same coastal surface used by planners and by final shaping: the band's profile. */
+        public double shape(double inlandHeight) {
+            if (a == null) return inlandHeight;
+            double ha = profile(a, distance, inlandHeight, sea, null);
+            if (mix <= 0) return ha;
+            return ha + (profile(b, distance, inlandHeight, sea, null) - ha) * mix;
+        }
 
         public boolean rocky() {
             return kind == Kind.ROCK || kind == Kind.CLIFF;
@@ -149,20 +343,54 @@ public final class Shore {
         }
     }
 
+    /**
+     * A segment's profile height at shore distance d for inland height h; its rise (0 at the shore,
+     * 1 at and past the band's edge) into rise[0] if given.
+     */
+    private static double profile(Segment s, double d, double h, double sea, double[] rise) {
+        double w = s.width, low, r;
+        switch (s.type.shape) {
+            case SHAPE_CLIFF:
+                {
+                    double end = Math.max(s.foot + 3, w / 4);
+                    low = sea;
+                    r = Rules.smooth((d - s.foot) / (end - s.foot));
+                    break;
+                }
+            case SHAPE_BLUFF:
+                low = sea;
+                r = Rules.smooth((d - s.foot) / (w - s.foot));
+                break;
+            case SHAPE_PLATFORM:
+                low = sea + Rules.smooth(d / 4);
+                r = Rules.smooth((d - .4 * w) / (.2 * w));
+                break;
+            case SHAPE_BEACH:
+                low = sea + 2 * Rules.smooth(d / (.1 * w));
+                r = Rules.smooth((d - .25 * w) / (.75 * w));
+                break;
+            default:
+                low = sea + Rules.smooth(d / 8);
+                r = Rules.smooth((d - .7 * w) / (.3 * w));
+                break;
+        }
+        if (rise != null) rise[0] = r;
+        low = Math.min(low, h);
+        return low + (h - low) * r;
+    }
+
     public void classify(double x, double z, TerrainMap.BaseSample base, Sample out) {
         ContinentalMap.Sample ocean = base.ocean;
-        Terrain.Sample land = base.land;
         out.distance = ocean.distance;
         out.normalX = ocean.normalX;
         out.normalZ = ocean.normalZ;
         out.shelter = ocean.shelter;
         out.beach = out.plain = out.cliff = out.rock = out.marsh = out.grade = out.proximity = 0;
-        out.waterDatum = water;
-        // Set before the marine return, where zero plain and beach weights leave them unused, so a
-        // reused sample keeps nothing from an earlier column.
-        out.plainTarget = plainY;
-        out.beachTarget = beachY;
         out.sandy = false;
+        out.type = null;
+        out.a = out.b = null;
+        out.mix = 0;
+        out.sea = sea;
         out.littoral = !ocean.marine && ocean.distance <= littoralWidth;
         if (ocean.marine) {
             out.kind = Kind.OCEAN;
@@ -171,53 +399,87 @@ public final class Shore {
             return;
         }
         out.kind = Kind.INLAND;
-        out.landWeight = ocean.landWeight;
+        out.landWeight = 1;
         double distance = Math.max(0, ocean.distance);
-        if (distance >= plainWidth * 1.5) {
-            out.height = out.shape(base.baseHeight);
+        out.grade = Math.abs(base.broadDx * ocean.normalX + base.broadDz * ocean.normalZ);
+        if (!(distance < WIDEST)) {
+            out.height = base.baseHeight;
             return;
         }
-        double n = variation.sample(x / plainWidth, z / plainWidth), patch = .5 + .5 * n;
-        double width = beachWidth * (.75 + .5 * patch), plainSpan = plainWidth * (.75 + .5 * patch);
-        out.proximity = 1 - Rules.smooth(distance / plainSpan);
-        out.grade = Math.abs(base.broadDx * ocean.normalX + base.broadDz * ocean.normalZ);
-        // Shelter is geometric indentation, not wind, fetch or a simulated wave field.
-        double sheltered = Rules.smooth(ocean.shelter * 3);
-        double cliffFit =
-                Rules.smooth(
-                        (cliffChance + .12 * ocean.headland - .1 * sheltered - patch) / .18 + .5);
-        double cliff = land.high * cliffFit;
-        out.cliff = cliff * out.proximity;
-        double sharp = Rules.smooth(distance / (cliffWidth * (.8 + .4 * patch)));
-        out.landWeight += (sharp - out.landWeight) * cliff;
-        // Steep shore grade or a cape (convex coast, from the outline) on raised land is rock.
-        out.rock =
-                Math.max(Rules.smooth((out.grade - rockStart) / (rockEnd - rockStart)), ocean.cape)
-                        * (land.middle + land.high)
-                        * out.proximity;
-        // A rock shore is a bluff: its land rises over a few cliff widths instead of the long
-        // continental ramp, so rocky coast features cut into the relief they stand on.
-        double bluff = Rules.smooth(distance / (bluffWidth * (.8 + .4 * patch)));
-        out.landWeight += Math.max(0, bluff - out.landWeight) * out.rock;
-        double rocky = Math.max(out.rock, out.cliff);
-        out.marsh =
-                out.proximity
-                        * sheltered
-                        * land.low
-                        * (1 - land.rugged)
-                        * Rules.smooth((base.climate.moisture - marshMoisture) / .18)
-                        * Rules.smooth((base.climate.celsius - marshTemperature) / 8);
-        out.plain = out.proximity * land.low * (1 - land.rugged) * (1 - rocky);
-        out.beach = (1 - Rules.smooth(distance / width)) * (1 - rocky);
-        out.plainTarget = plainY + plainRelief * n;
-        out.beachTarget =
-                sea + Math.max(0, beachY - sea + beachRelief * n) * Rules.smooth(distance / width);
-        if (out.cliff > .35) out.kind = Kind.CLIFF;
-        else if (out.rock > .45) out.kind = Kind.ROCK;
-        else if (out.beach > .35) out.kind = Kind.BEACH;
-        else if (out.marsh > .2) out.kind = Kind.MARSH;
-        else if (out.plain > .35) out.kind = Kind.PLAIN;
+        // The two nearest segments; the column blends them near the edge between.
+        int ci = (int) Math.floor(x / cell), cj = (int) Math.floor(z / cell);
+        double d1 = Double.POSITIVE_INFINITY, d2 = Double.POSITIVE_INFINITY;
+        Segment a = null, b = null;
+        for (int di = -2; di <= 2; di++)
+            for (int dj = -2; dj <= 2; dj++) {
+                Segment s = segment(ci + di, cj + dj);
+                if (s.type == null) continue;
+                double d = Math.hypot(x - s.x, z - s.z);
+                if (d < d1) {
+                    d2 = d1;
+                    b = a;
+                    d1 = d;
+                    a = s;
+                } else if (d < d2) {
+                    d2 = d;
+                    b = s;
+                }
+            }
+        if (a == null) {
+            out.height = base.baseHeight;
+            return;
+        }
+        if (b == null) b = a;
+        out.a = a;
+        out.b = b;
+        out.mix = .5 * (1 - Rules.smooth((d2 - d1) / BLEND));
+        out.type = a.type;
+        out.distance = distance;
+        double[] rise = new double[1];
+        profile(a, distance, base.baseHeight, sea, rise);
+        double riseA = rise[0];
+        profile(b, distance, base.baseHeight, sea, rise);
+        out.landWeight = riseA + (rise[0] - riseA) * out.mix;
+        out.proximity =
+                (1 - out.mix) * (1 - Rules.smooth(distance / a.width))
+                        + out.mix * (1 - Rules.smooth(distance / b.width));
+        weights(a, distance, 1 - out.mix, out);
+        weights(b, distance, out.mix, out);
+        // The kind follows the nearer segment while the column is near its shore.
+        if (out.proximity > .35) {
+            Kind k = a.type.kind;
+            if (k == Kind.BEACH && distance >= .25 * a.width) k = Kind.PLAIN;
+            out.kind = k;
+        }
         out.sandy = out.beach > .35 && !out.rocky();
         out.height = out.shape(base.baseHeight);
+    }
+
+    /** Adds a segment's coastal weights, by its share of the column, to the sample. */
+    private static void weights(Segment s, double d, double share, Sample out) {
+        if (share <= 0) return;
+        double near = 1 - Rules.smooth(d / s.width);
+        // A rocky class names its stretch of coast: whole across the band, fading over one more.
+        double reach = 1 - Rules.smooth((d - s.width) / s.width);
+        switch (s.type.kind) {
+            case CLIFF:
+                out.cliff += share * reach;
+                if (d < s.foot) out.beach += share;
+                break;
+            case ROCK:
+                out.rock += share * reach;
+                if (d < s.foot) out.beach += share;
+                break;
+            case BEACH:
+                {
+                    double berm = 1 - Rules.smooth((d - .25 * s.width) / (.1 * s.width));
+                    out.beach += share * berm;
+                    out.plain += share * near * (1 - berm);
+                    break;
+                }
+            default:
+                out.marsh += share * (1 - Rules.smooth((d - .7 * s.width) / (.3 * s.width)));
+                break;
+        }
     }
 }

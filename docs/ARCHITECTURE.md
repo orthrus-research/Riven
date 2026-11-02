@@ -253,7 +253,8 @@ Terrain-v39, 64 km windows on seeds 8675309, 101, 1, 42, 7 and -991 (atlas and `
   nearest lines fall 18 km from the origin, outside a 32 km world.
 - Every marine column holds water to Y62; enclosed marine areas are inland seas.
 - Raising features no longer exclude the shore (v50): hills and the major features (volcanic,
-  cold, plateaus, mountains) keep the coast with envelopes in `Shore`, and only water, marine
+  cold, plateaus, mountains) keep the coast with the band envelope in `Shore` (v105: capped only
+  inside a coast segment's band), and only water, marine
   anchors and marine footprints still exclude them. Cuts, lowlands and drylands keep the shore
   reservation (0.5 coastal-plain widths), since lowering near the sea could open dry basins.
   Since v52 a site competes only against same-lane anchors whose own earlier facts admit the
@@ -299,7 +300,7 @@ substitutes for the integer, canonical native/DH path when checking parity.
 | `riven-regional-fabric.json`, `riven-climate-forcing.json`, `riven-substrate.json` | Earlier regional axis, moisture forcing, material permissions |
 | `riven-terrain-passes.json`, `riven-landmarks.json`, `riven-surface-carvers.json` | Regional passes, landmarks, legacy carvers |
 | `riven-lowlands.json`, `riven-hills.json`, `riven-mountains.json`, `riven-plateaus.json`, `riven-drylands.json`, `riven-cold-regions.json`, `riven-volcanic.json`, `riven-general-surface-cuts.json` | Contributed land families |
-| `riven-shores.json`, `riven-ocean-floors.json`, `riven-rocky-coasts.json`, `riven-sedimentary-coasts.json`, `riven-estuaries.json` | Coast and seabed |
+| `riven-coasts.json`, `riven-ocean-floors.json`, `riven-rocky-coasts.json`, `riven-sedimentary-coasts.json`, `riven-estuaries.json` | Coast and seabed |
 | `riven-hydrology.json`, `riven-lakes.json`, `riven-rivers.json` | Water |
 | `riven-habitats.json`, `riven-surface-rules.json` | Biome palettes; why a column's ground shows rock |
 | `riven-zones.json`, `riven-surface.json` | The column engine's zones, setting thresholds and setting tables |
