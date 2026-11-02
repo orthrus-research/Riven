@@ -5,11 +5,12 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 102;
+    public static final int VERSION = 103;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
     private final ClimateMap climate;
+    private final ProvinceMap provinces;
     private final RegionalTerrainPasses passes;
     private final LowlandTerrain lowlands;
     private final HillTerrain hills;
@@ -47,14 +48,19 @@ public final class TerrainMap {
             PlateMap plates,
             TerrainHeightReference heights,
             ClimateMap climate,
+            ProvinceMap provinces,
             ContinentalMap continents,
             SubstrateMap substrate,
             BaseTerrainMap baseTerrain,
             RegionalFabricMap fabric,
             WorldScale world,
             BuildPool pool) {
-        if (climate == null || continents == null || baseTerrain == null || fabric == null)
-            throw new NullPointerException();
+        if (climate == null
+                || provinces == null
+                || continents == null
+                || baseTerrain == null
+                || fabric == null) throw new NullPointerException();
+        this.provinces = provinces;
         this.baseTerrain = baseTerrain;
         this.pool = pool;
         this.heights = heights;
@@ -194,6 +200,10 @@ public final class TerrainMap {
         public final ContinentalMap.Sample ocean = new ContinentalMap.Sample();
         public final Shore.Sample shore = new Shore.Sample();
         public final ClimateMap.Sample climate = new ClimateMap.Sample();
+
+        /** The column's province; climate above is already its effective climate. */
+        public final ProvinceMap.Sample province = new ProvinceMap.Sample();
+
         public final Hydro.Sample water = new Hydro.Sample();
 
         /** Logical biome locked at the end of intent; later stages read it, never recompute. */
@@ -526,6 +536,9 @@ public final class TerrainMap {
         out.water.clear();
         continents.sample(x, z, out.ocean);
         climate.sample(x, z, out.climate);
+        // Provinces offset climate once, here: every later reader sees effective climate.
+        provinces.sample(x, z, out.ocean.marine, out.province);
+        out.province.apply(out.climate);
         if (out.ocean.marine) {
             if (out.ocean.supplied) out.water.waterY = heights.waterTopY;
             out.baseHeight = out.ocean.bedHeight;

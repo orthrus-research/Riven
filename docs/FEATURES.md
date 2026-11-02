@@ -58,6 +58,64 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
 - **Classification**: 15 `ClimateRegion` classes (temperature x moisture) select terrain-qualified
   vanilla biome palettes in `riven-habitats.json`.
 
+## Provinces
+
+`ProvinceMap` (`riven-provinces.json`, terrain-v103) is the parent of biomes. It's a seeded
+regional map of provinces about 1,400 blocks across (times the layout scale), on a jittered grid
+read at warped coordinates. Each column belongs to its nearest province, with an intensity from 0
+at the edge to 1 inside (350 blocks).
+
+Every province has two faces, a land type and an ocean class, and each column takes the face of
+its own ground. Islands in a mostly sea province and bays in a land one keep their kind.
+
+The land type is the ground's shape, chosen once per world from facts no later shaping changes,
+over every province's land:
+1. **Tectonic types:** provinces within 700 blocks of a convergent plate boundary become range,
+   nearest first, up to range's share; divergent boundaries give rift the same way.
+2. **Foreland:** provinces within 1.25 cells of a range take foreland next, nearest first, up to
+   its share, so mountains step down through foothills.
+3. **Stable types:** the rest are placed by a seeded level field and their distance to the coast.
+   One capacitated assignment gives each its nearest type with room: plain (low, coastal), basin
+   (low, interior), upland (high) or tableland (highest). It fills each type first to its target
+   share, the middle of its range scaled to the land left, then to its maximum.
+
+The ocean face takes a class by sea floor and climate: warm or cold, shelf or deep, or frozen.
+
+The type budget (`share` per type, `enabled`) is data, so a pack can remove a type or narrow its
+range.
+- A minimum the tectonics, the ranges or whole provinces cannot meet is logged as a shortfall,
+  never forced.
+- A type with a nonzero maximum may always hold one province.
+- A province no type has room for falls to its nearest type and is logged as an overrun.
+
+The world's server log gives the line `Riven provinces:`, and `/riven x z` reports the province,
+its neighbour, its intensity and both climates.
+
+**Climate.** Each province offsets climate by physical effects, never height. One offset serves
+both faces, so climate doesn't jump at the coast.
+- An interior weight rises smoothly from 0 at the coast to 1 at 600 blocks.
+- Continentality dries the interior by up to 0.08 moisture.
+- The sea wets the coast by up to 0.05 and pulls its temperature a quarter of the way toward
+  14 °C, within ±4 °C.
+- Rain shadows are already in the base climate (climate forcing).
+
+Offsets blend between provinces within the edge width, so they change by at most 0.03 °C and
+0.0011 moisture between neighbouring blocks. `TerrainMap.intent` applies them once, so every later
+reader sees effective climate.
+
+**Measured.** `ProvinceCheck`, 64 seeds, terrain-v103:
+- At 8 km, 35.5 of 36 provinces hold land.
+- Mean land shares: plain 20% (15–26), basin 7%, upland 22%, tableland 9%, range 19%, rift 9% and
+  foreland 14%. Every type appears in every world.
+- 1 seed logs a shortfall (range) and none an overrun. 32 km worlds give the same mix, with 3
+  shortfalls.
+- A low type sits straight beside tableland or a range at 2–9% of type borders.
+- The map builds in 209 ms on its own at 8 km.
+- Against terrain-v102, land is unchanged and heights change at 3.4% of an 8 km atlas's pixels,
+  through stages that read climate.
+
+Province types shape nothing yet: relief recipes come with S4 of the engine design.
+
 ## Continents and oceans
 
 - **Outline** (`ContinentalOutlineMap`, MIT kernels; `riven-continents.json`): since v58

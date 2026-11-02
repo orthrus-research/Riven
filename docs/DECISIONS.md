@@ -90,6 +90,21 @@ superseded instead of deleting it.
   fine channels refined per region on demand, never over open sea. Volcanoes are set aside;
   climate decides where they may stand when they return, and a feature that never appears is a
   tuning failure of the 8 km world's diversity, not a reason to loosen its rules.
+- **Province types from facts later shaping keeps, and heights in four layers.** A province's
+  type is chosen from plate tectonics (convergent boundaries give ranges, divergent ones rifts),
+  the distance to the coast and a seeded level field. Never from base height, uplift or crest,
+  which the provinces' own relief recipes will replace. Every province has a land face and an
+  ocean face, and each column takes its own ground's, so the budget counts every province's land.
+  Foreland is budgeted like the other types, taken after the tectonic types by the provinces
+  nearest a range. Stable cells take their nearest type with room in one capacitated assignment,
+  so the budget is the mix itself rather than a correction of weak scores; the budget is data
+  (shares, enabled). Heights are built in four layers, each owning
+  one scale: the province's band (plain 5–35 above the sea, basin −5 to 25, foreland 30–90,
+  upland 60–130, tableland 90–170, range 110–280 with peaks to 288, rift floor 10–50 and shoulders
+  80–150), character patches of 300 to 800 blocks (strong ones on about 15% of a province), texture
+  of 16 to 128 blocks and micro variation of 2 to 8 blocks. Roughness grows with height, and only
+  the calm character is planar. The coast plan is to replace the proportional coastal scaling that
+  today lowers two-thirds of land, so bands reach their levels.
 - **Biomes within provinces.** A province restricts its biomes to a subset: strong expressions
   toward its centre, mild members between, and shared transition biomes at its edges, so
   climatically opposite biomes are never neighbours. Ecotone widths are per biome pair in data

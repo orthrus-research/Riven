@@ -6,6 +6,7 @@ import cc.orthrus.riven.worldgen.CoastShape;
 import cc.orthrus.riven.worldgen.Hydro;
 import cc.orthrus.riven.worldgen.LakeShape;
 import cc.orthrus.riven.worldgen.PlateMap;
+import cc.orthrus.riven.worldgen.ProvinceMap;
 import cc.orthrus.riven.worldgen.RiverShape;
 import cc.orthrus.riven.worldgen.TerrainMap;
 
@@ -57,6 +58,23 @@ final class ColumnReport {
         PlateMap.Sample plate = provider.maps.plates.sample(x, z);
         TerrainMap.Sample terrain = new TerrainMap.Sample();
         provider.maps.terrain.sample(x, z, terrain);
+        // The climate above is the base; the column's own is the province's effective climate.
+        ProvinceMap.Sample province = terrain.province;
+        sender.sendMessage(
+                new TextComponentString(
+                        String.format(
+                                Locale.ROOT,
+                                "Province %s (neighbour %s, intensity %.2f): climate %.1f °C %.3f"
+                                        + " moisture from base %.1f °C %.3f (offset %+.1f °C %+.3f)",
+                                province.type,
+                                province.neighbour,
+                                province.intensity,
+                                terrain.climate.celsius,
+                                terrain.climate.moisture,
+                                climate.celsius,
+                                climate.moisture,
+                                province.celsiusOffset,
+                                province.moistureOffset)));
         sender.sendMessage(
                 new TextComponentString(
                         String.format(

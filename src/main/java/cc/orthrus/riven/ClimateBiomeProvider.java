@@ -49,6 +49,7 @@ final class ClimateBiomeProvider extends BiomeProvider {
         context = new WorldGenerationContext(seed, scale);
         maps = context.maps;
         LOG.info("Riven land: {}", maps.land);
+        LOG.info("Riven provinces: {}", maps.provinces.summary());
         provision = new BiomeProvision(seed);
         // Spawn search stays on land: the biomes inland habitat keys report.
         spawn = RivenBiomes.inland();

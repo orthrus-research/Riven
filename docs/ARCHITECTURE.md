@@ -85,6 +85,10 @@ flowchart TD
   CS --> CF[ClimateForcingMap]
   CF --> C
   O --> CM[ContinentalMap]
+  P --> PR[ProvinceMap]
+  CM --> PR
+  C --> PR
+  PR --> TM
   RP[RegionalProfileMap] --> BT[BaseTerrainMap]
   BE --> BT
   F[RegionalFabricMap] --> TM[TerrainMap]
@@ -106,7 +110,7 @@ they never call `surfaceHabitat` or final `sample`.
 
 | Boundary | Available facts | Excluded |
 | --- | --- | --- |
-| `intent` | Outline, marine ownership and ocean water, climate, base terrain, shore intent | Local hydrology, all shaping |
+| `intent` | Outline, marine ownership and ocean water, climate and the province (effective climate), base terrain, shore intent | Local hydrology, all shaping |
 | `habitat` | Intent plus local surface-water and lens plans | Final terrain, coastal emergence |
 | `sampleBeforeMajorFeatures` | Habitat, erosion, lowlands, regional passes; constrained ocean bed on marine columns | Major forms, carvers, drylands, wonders, coastal formations |
 | `sampleBeforeRocky` | Complete earlier surface with shore/water constraints and roof seal | Rocky and sedimentary formations |

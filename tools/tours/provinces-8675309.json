@@ -1,0 +1,4 @@
+[
+  {"label": "spawn", "x": 0, "y": 160, "z": 0, "yaw": 180, "pitch": 30, "commands": ["gamerule doDaylightCycle false", "weather clear 100000", "time set 6000", "execute {player} ~ ~ ~ riven column 0 0", "execute {player} ~ ~ ~ riven 0 0"]},
+  {"label": "panorama", "x": 300.5, "y": 300, "z": -1250.5, "yaw": 122, "pitch": 10, "commands": ["execute {player} ~ ~ ~ riven column 1536 -2650"]}
+]
