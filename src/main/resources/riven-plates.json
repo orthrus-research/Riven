@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "variationSeed": "0x504c4154454d4150",
+  "cells": {"sizeBlocks": 3072, "jitter": 1.0, "weight": 0.45, "warpBlocks": 820, "warpWavelengthBlocks": 4600},
+  "boundaries": {"convergentMotion": -0.2, "divergentMotion": 0.2},
+  "belts": {"halfWidthBlocks": 620, "minimumWidth": 0.45, "fullMotion": -1.1, "variation": {"wavelengthBlocks": 1700, "floor": 0.15, "peak": 1.9, "width": 0.45, "gap": 0.2}},
+  "uplift": {"kernelRadiusCells": 1.25, "scale": 1.9},
+  "contract": [
+    "Plates (P1 of the engine design): seeded present-day plate domains and motion, no historical simulation. Space splits into cells of sizeBlocks (times the world's layout scale), each with one site placed anywhere in its cell (jitter 1 = the whole cell) and a weight up to weight times the squared cell size; a point belongs to the site with the least squared distance less weight (a power diagram), so plates come in many sizes. Points are read at coordinates warped by up to warpBlocks over warpWavelengthBlocks, so boundaries curve.",
+    "Each plate moves in a seeded direction. A boundary is convergent where the plates' relative motion along its normal is below convergentMotion, divergent above divergentMotion, shear between.",
+    "belts: convergent boundaries raise mountain belts, the source of high ground (base elevation reads them, provinces' ranges sit on them, hydrology routes their land through continental trunks). A belt's strength rises from 0 at convergentMotion to 1 at fullMotion; it reaches up to halfWidthBlocks (times the layout) either side of the boundary, a weak belt minimumWidth of that, and falls off smoothly. Along a belt, slow fields (variation, wavelength wavelengthBlocks) vary it: its strength by a factor from floor (where the field sits in its lowest gap share, so ranges break into massifs) to peak (about 1 on average, so variation moves strength along the belt rather than lowering it; above 0.8 a belt eases smoothly toward 1) and its width by up to variation.width either way. Where belts of several boundaries overlap, the strongest counts.",
+    "uplift: a smooth blend of the plates' velocities (each site's kernel reaching kernelRadiusCells) gives compression, signed and continuous: uplift is tanh(compression / scale), raising where plates converge and lowering where they spread, with no nearest-plate switch. Readers that want only raising (geology, mountain and volcanic stages, hydrology) take its positive part; extension for geology's rifts is its own field."
+  ]
+}

@@ -236,7 +236,8 @@ blocks.
 
 Each family's terrain adapter then certifies its admitted site against the earlier parent and
 rejects it when the footprint fails, without rerolling. Mountains left the lanes at v62
-(`laneDensity` MOUNTAINS 0): they follow continent crests instead (FEATURES.md).
+(`laneDensity` MOUNTAINS 0): they follow the plates' mountain belts instead (continent crests
+until terrain-v104; FEATURES.md).
 
 ## Measured structural limits
 

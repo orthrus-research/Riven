@@ -59,7 +59,7 @@ public final class SampleHistoryCheck {
         // clear the facts and never read these.
         scratch("worldgen.ContinentalMap$Sample", "work", "probe");
         scratch("worldgen.BaseTerrainMap$Sample", "body", "detail", "wide");
-        scratch("worldgen.BaseElevationMap$Sample", "outline", "regional", "upliftSample");
+        scratch("worldgen.BaseElevationMap$Sample", "regional", "upliftSample");
         // Lake, river and coast kernel outputs, filled where each body is evaluated.
         scratch("worldgen.Hydro$Sample", "lakeGeometry", "riverGeometry", "coastGeometry");
         // Climate forcing's structure read and upwind samples, filled before each use.

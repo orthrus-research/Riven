@@ -928,7 +928,6 @@ public final class Hydro
         // first valid source is the most mountainous one. Ties keep attempt order.
         int[] order = new int[sourceAttempts];
         double[] score = new double[sourceAttempts];
-        ContinentalOutlineMap.Sample crestProbe = new ContinentalOutlineMap.Sample();
         for (int attempt = 0; attempt < sourceAttempts; attempt++) {
             long hash = SeededNoise.mix(cell + attempt * 0x9e3779b97f4a7c15L);
             intent.sample(
@@ -960,9 +959,9 @@ public final class Hydro
             if (scratch.ocean.marine
                     || scratch.climate.moisture < minimumMoisture
                     || scratch.shore.height < heights.seaLevel + 8) continue;
-            // Crest land drains through its continent's trunks; cell networks keep the rest.
-            outline.sampleCrest(sx, sz, crestProbe);
-            if (crestProbe.crest() > 0) continue;
+            // Mountain-belt land drains through its continent's trunks; cell networks keep the
+            // rest.
+            if (scratch.baseTerrain().elevation().belt() > 0) continue;
             double supply =
                     scratch.climate.moisture
                             * (1 - .12 * Math.max(0, scratch.climate.celsius) / 40);

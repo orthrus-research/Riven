@@ -70,8 +70,9 @@ its own ground. Islands in a mostly sea province and bays in a land one keep the
 
 The land type is the ground's shape, chosen once per world from facts no later shaping changes,
 over every province's land:
-1. **Tectonic types:** provinces within 700 blocks of a convergent plate boundary become range,
-   nearest first, up to range's share; divergent boundaries give rift the same way.
+1. **Tectonic types:** provinces holding a mountain belt (its mean over the province's land at
+   0.15 or more, since terrain-v104) become range, the most belted first, up to range's share;
+   provinces within 700 blocks of a divergent boundary give rift the same way.
 2. **Foreland:** provinces within 1.25 cells of a range take foreland next, nearest first, up to
    its share, so mountains step down through foothills.
 3. **Stable types:** the rest are placed by a seeded level field and their distance to the coast.
@@ -103,16 +104,17 @@ Offsets blend between provinces within the edge width, so they change by at most
 0.0011 moisture between neighbouring blocks. `TerrainMap.intent` applies them once, so every later
 reader sees effective climate.
 
-**Measured.** `ProvinceCheck`, 64 seeds, terrain-v103:
+**Measured.** `ProvinceCheck`, 64 seeds, terrain-v104:
 - At 8 km, 35.5 of 36 provinces hold land.
-- Mean land shares: plain 20% (15–26), basin 7%, upland 22%, tableland 9%, range 19%, rift 9% and
-  foreland 14%. Every type appears in every world.
-- 1 seed logs a shortfall (range) and none an overrun. 32 km worlds give the same mix, with 3
-  shortfalls.
-- A low type sits straight beside tableland or a range at 2–9% of type borders.
-- The map builds in 209 ms on its own at 8 km.
-- Against terrain-v102, land is unchanged and heights change at 3.4% of an 8 km atlas's pixels,
-  through stages that read climate.
+- Mean land shares: plain 22% (16–30), basin 7%, upland 24%, tableland 10%, range 15% (absent in
+  1 world), rift 9% and foreland 14%.
+- 10 seeds log a shortfall, mostly range where a world's belts are few, and none an overrun.
+  32 km worlds give the same mix, with 9 shortfalls.
+- A low type sits straight beside tableland or a range at 6–15% of type borders. Foreland, at its
+  15% cap in many worlds, cannot line every range.
+- The map builds in 217 ms on its own at 8 km.
+- At terrain-v103, against terrain-v102: land unchanged, heights changed at 3.4% of an 8 km
+  atlas's pixels, through stages that read climate.
 
 Province types shape nothing yet: relief recipes come with S4 of the engine design.
 
@@ -182,11 +184,38 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
 
 ## Inland base
 
-- **Base elevation** (`BaseElevationMap`, v60, `riven-base-elevation.json`): mean elevation,
-  legal bands and analytic gradients from plates, regional noise, the owner continent's crest
-  and the height reference. State is 0.40 + 0.3 plate uplift + 0.3 regional + 1.0 crest
-  (plates were 0.65 before v60); crest also adds to uplift.
-- **Continent crests** (v61, `skeleton` in `riven-continents.json`): 75% of built mainland
+- **Plates** (`PlateMap`, `riven-plates.json`, terrain-v104): a power diagram of one weighted
+  site per 3,072-block cell (times the layout), each site anywhere in its cell with a weight up to
+  0.45 squared cells, read at coordinates warped by up to 820 blocks over 4,600, so plates come in
+  many sizes with curving boundaries. A boundary is convergent where the plates' relative motion
+  along its normal is below −0.2, divergent above 0.2, shear between.
+  - **Mountain belts:** convergent boundaries are the source of high ground. A belt's strength
+    rises from 0 at motion −0.2 to 1 at −1.1 and reaches up to 620 blocks either side (a weak
+    belt 45% of that), falling off smoothly. Slow fields at 1,700 blocks move strength along the
+    belt (a factor from 0.15 to 1.9, about 1 on average, easing smoothly toward 1) and width by
+    up to 45%, so ranges swell, narrow and break into massifs. Where belts overlap, the strongest
+    counts.
+  - **Uplift** is signed and continuous: tanh(compression / 1.9) of a smooth blend of the plates'
+    velocities, raising where they converge and lowering where they spread. Readers that want
+    only raising (geology, the mountain and volcanic stages, hydrology) take its positive part
+    plus the belt.
+  - **Measured** (`PlateCheck`, 32 seeds, 8 and 32 km):
+    - 12.4 plates own at least 1% of a world (9–16), their sizes spreading 0.7 (std / mean).
+    - 30% of land lies in a belt, 8% in a strong one.
+    - 90–91% of high ground (base elevation 100 or more above the sea) lies in a belt, where the
+      outline's crests coincided with plate convergence on 27%.
+    - Uplift is nonzero on 97% of land (raised 52%, lowered 45%), where the one-sided uplift was
+      zero on half the land.
+    - A plate sample costs about 0.3 µs, with each thread memoizing plate sites and each owner
+      plate's boundaries.
+    - Native chunk generation costs the same within 4% as terrain-v103. An 8 km atlas samples
+      18% slower.
+- **Base elevation** (`BaseElevationMap`, v60, `riven-base-elevation.json` revision 4): mean
+  elevation, legal bands and analytic gradients from plates, regional noise and the height
+  reference. State is 0.40 + 0.3 signed plate uplift + 0.3 regional + 1.0 mountain belt (softly
+  capped at 0.45; until terrain-v104 the owner continent's crest).
+- **Continent crests** (v61, `skeleton` in `riven-continents.json`; no longer read since
+  terrain-v104, when plate belts took over high ground): 75% of built mainland
   continents carry a crest in their shape frame (Spine continents along their six nodes, others a
   bent three-point line 0.8 radii each side of the center along the major axis), strength 0.7-1.0
   times continent size, tapered over the outer quarter at each end, with a falloff over 0.9 radii

@@ -105,6 +105,14 @@ superseded instead of deleting it.
   of 16 to 128 blocks and micro variation of 2 to 8 blocks. Roughness grows with height, and only
   the calm character is planar. The coast plan is to replace the proportional coastal scaling that
   today lowers two-thirds of land, so bands reach their levels.
+- **Plates own the mountain belts.** High ground comes from one tectonic source: convergent
+  plate boundaries carry mountain belts, which base elevation, the mountain stage's massif,
+  hydrology and the provinces' ranges all read. The outline's authored continent crests are no
+  longer read; continents stay as the outline draws them. Plates are a power diagram read at
+  warped coordinates, so they vary in size and their boundaries curve. Belts vary along their
+  length, and uplift is signed, lowering where plates spread. A province's belt is the mean over
+  its land, a province-scale fact rather than one point's. Plate count was measured and is not
+  the problem: 13–16 per world before, about 12 now.
 - **Biomes within provinces.** A province restricts its biomes to a subset: strong expressions
   toward its centre, mild members between, and shared transition biomes at its edges, so
   climatically opposite biomes are never neighbours. Ecotone widths are per biome pair in data

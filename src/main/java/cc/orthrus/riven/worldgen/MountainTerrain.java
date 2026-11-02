@@ -230,7 +230,7 @@ public final class MountainTerrain {
         BaseElevationMap.Sample e = base.base.elevation();
         double room = Math.max(0, reference.maxY - parent);
         double massifDelta =
-                base.ocean.marine ? 0 : Math.min(room, massif(x, z, e.crest())) * massifKeep;
+                base.ocean.marine ? 0 : Math.min(room, massif(x, z, e.belt())) * massifKeep;
         out.massif = massifDelta;
         if (massifDelta > 0) {
             out.delta = massifDelta;

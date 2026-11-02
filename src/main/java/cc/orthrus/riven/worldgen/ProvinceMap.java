@@ -62,7 +62,7 @@ public final class ProvinceMap {
     /** The definitions, read once: the packaged ones, or a variant a check builds. */
     static final class Definition {
         final double size, jitter, warp, warpWavelength, edge;
-        final double reach, threshold, levelWavelength, forelandReach;
+        final double reach, threshold, beltThreshold, levelWavelength, forelandReach;
         final int side;
         final Type[] types;
         final int landTypes, foreland, convergent, divergent, coastal, interior, rest, top, beside;
@@ -103,6 +103,7 @@ public final class ProvinceMap {
             divergent = landType(tectonic.get("divergent").getAsString());
             reach = Rules.number(tectonic, "reachBlocks", 1, 16384);
             threshold = Rules.number(tectonic, "threshold", 0, 1);
+            beltThreshold = Rules.number(tectonic, "beltThreshold", 0, 1);
             JsonObject stable = j.getAsJsonObject("stable");
             coastal = landType(stable.getAsJsonObject("low").get("coastal").getAsString());
             interior = landType(stable.getAsJsonObject("low").get("interior").getAsString());
@@ -164,7 +165,11 @@ public final class ProvinceMap {
     /** What a cell's seed point says, sampled once. */
     private static final class Facts {
         final int i, j;
-        final double x, z, coast, celsius, convergent, divergent, level;
+        final double x, z, coast, celsius, divergent, level;
+
+        /** The province's mountain belt: over its measured land, else at its seed point. */
+        double convergent;
+
         final boolean marine, deep;
         double area;
 
@@ -222,6 +227,9 @@ public final class ProvinceMap {
 
     /** The world square's land faces, which provinces outside it read for the beside type. */
     private final Map<Long, Type> faces = new HashMap<>();
+
+    /** The world square's land-bearing provinces' seed points, for checks. */
+    private final Map<Long, double[]> centres = new HashMap<>();
 
     private final CellMemo<Cell> outside = new CellMemo<>(1024);
 
@@ -292,22 +300,32 @@ public final class ProvinceMap {
                     cells.put(key(i, j), facts(i, j));
             }
         // Their land areas, on a grid over the world square.
+        // Their land areas and mountain belts, on a grid over the world square: a province's
+        // belt is the mean over its land, a province-scale fact rather than one point's.
         Map<Long, int[]> area = new HashMap<>();
+        Map<Long, double[]> belts = new HashMap<>();
         double step = scale.side() / def.side, origin = -half + step / 2;
         ContinentalMap.Sample c = new ContinentalMap.Sample();
         for (int a = 0; a < def.side; a++)
             for (int b = 0; b < def.side; b++) {
                 double x = origin + a * step, z = origin + b * step;
                 continents.sample(x, z, c);
-                int[] counts = area.computeIfAbsent(nearest(x, z), k -> new int[2]);
+                long owner = nearest(x, z);
+                int[] counts = area.computeIfAbsent(owner, k -> new int[2]);
                 counts[c.marine ? 1 : 0]++;
+                if (!c.marine)
+                    belts.computeIfAbsent(owner, k -> new double[1])[0] +=
+                            plates.sample((int) Math.floor(x), (int) Math.floor(z)).belt;
             }
         // Every province holding measured land enters the budget, by its land area.
         List<Facts> land = new ArrayList<>();
         for (Facts f : cells.values()) {
             int[] counts = area.get(key(f.i, f.j));
             f.area = counts == null ? 0 : counts[0];
-            if (f.area > 0) land.add(f);
+            if (f.area > 0) {
+                f.convergent = belts.get(key(f.i, f.j))[0] / f.area;
+                land.add(f);
+            }
         }
         landCells = land.size();
         this.cells = cells.size();
@@ -322,6 +340,7 @@ public final class ProvinceMap {
         double total = 0;
         for (Facts f : land) total += f.area;
         faces.putAll(base);
+        for (Facts f : land) centres.put(key(f.i, f.j), new double[] {f.x, f.z, f.convergent});
         for (Facts f : cells.values()) {
             Type t = base.get(key(f.i, f.j));
             world.put(key(f.i, f.j), cell(f, t, ocean(f)));
@@ -347,8 +366,7 @@ public final class ProvinceMap {
             if (!type.allowed()) continue;
             List<Facts> candidates = new ArrayList<>();
             for (Facts f : land)
-                if (!out.containsKey(key(f.i, f.j)) && near(f, t) >= def.threshold)
-                    candidates.add(f);
+                if (!out.containsKey(key(f.i, f.j)) && near(f, t) >= limit(t)) candidates.add(f);
             candidates.sort(
                     Comparator.comparingDouble((Facts f) -> -near(f, t))
                             .thenComparingLong(this::tie));
@@ -553,6 +571,11 @@ public final class ProvinceMap {
         return cut;
     }
 
+    /** The level a tectonic fact must reach: the province belt for convergent, nearness for divergent. */
+    private double limit(int t) {
+        return t == def.convergent ? def.beltThreshold : def.threshold;
+    }
+
     /** How near a cell lies to a boundary of the tectonic type's kind, 0 to 1. */
     private double near(Facts f, int t) {
         return t == def.convergent ? f.convergent : f.divergent;
@@ -584,14 +607,26 @@ public final class ProvinceMap {
         return best;
     }
 
-    /** The tectonic type a cell gives, from its seed point's plate alone, or -1. */
+    /** The tectonic type a cell gives, from plates alone (its nine-point belt), or -1. */
     private int tectonicAt(int i, int j) {
         double[] p = seedPoint(i, j);
         PlateMap.Sample plate = plates.sample((int) Math.floor(p[0]), (int) Math.floor(p[1]));
         double near = Math.max(0, 1 - plate.boundaryDistance / reach);
-        return tectonic(
-                plate.boundary == PlateMap.Boundary.CONVERGENT ? near : 0,
-                plate.boundary == PlateMap.Boundary.DIVERGENT ? near : 0);
+        return tectonic(beltAround(p), plate.boundary == PlateMap.Boundary.DIVERGENT ? near : 0);
+    }
+
+    /** The mean belt of nine points a third of a cell apart around a seed point. */
+    private double beltAround(double[] p) {
+        double belt = 0;
+        for (int a = -1; a <= 1; a++)
+            for (int b = -1; b <= 1; b++)
+                belt +=
+                        plates.sample(
+                                                (int) Math.floor(p[0] + a * size / 3),
+                                                (int) Math.floor(p[1] + b * size / 3))
+                                        .belt
+                                / 9;
+        return belt;
     }
 
     /** The tectonic type a cell's seed point gives, or -1. */
@@ -600,7 +635,7 @@ public final class ProvinceMap {
     }
 
     private int tectonic(double convergent, double divergent) {
-        if (def.types[def.convergent].allowed() && convergent >= def.threshold)
+        if (def.types[def.convergent].allowed() && convergent >= def.beltThreshold)
             return def.convergent;
         if (def.types[def.divergent].allowed() && divergent >= def.threshold) return def.divergent;
         return -1;
@@ -660,6 +695,9 @@ public final class ProvinceMap {
         PlateMap.Sample plate = plates.sample((int) Math.floor(p[0]), (int) Math.floor(p[1]));
         double near = Math.max(0, 1 - plate.boundaryDistance / reach);
         double w = def.levelWavelength * size;
+        // The province's belt where no grid measures it: the mean of nine points around the seed
+        // point (a province-scale fact, like the grid's mean over its land).
+        double belt = beltAround(p);
         return new Facts(
                 i,
                 j,
@@ -667,7 +705,7 @@ public final class ProvinceMap {
                 p[1],
                 c.marine ? 0 : Math.max(0, c.distance),
                 s.celsius,
-                plate.boundary == PlateMap.Boundary.CONVERGENT ? near : 0,
+                belt,
                 plate.boundary == PlateMap.Boundary.DIVERGENT ? near : 0,
                 level.sample(p[0] / w, p[1] / w),
                 c.marine,
@@ -758,6 +796,19 @@ public final class ProvinceMap {
         }
         out.celsiusOffset = celsius / weights;
         out.moistureOffset = moisture / weights;
+    }
+
+    /** For checks: {x, z, belt} of the world square's land-bearing provinces of a type. */
+    List<double[]> centres(Type t) {
+        List<double[]> out = new ArrayList<>();
+        for (Map.Entry<Long, double[]> e : centres.entrySet())
+            if (faces.get(e.getKey()) == t) out.add(e.getValue());
+        return out;
+    }
+
+    /** The province belt (mean over its land) at or above which it may take the convergent type. */
+    double tectonicThreshold() {
+        return def.beltThreshold;
     }
 
     /** How many of the world square's land provinces have a type. */

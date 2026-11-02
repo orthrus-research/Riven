@@ -10,7 +10,7 @@
       ],
       "size": 4096,
       "step": 32,
-      "digest": "a887ab575691c6bb28184f18c6e766a01acb04b7a2e984ca0b7d29e74b6a88fa"
+      "digest": "247a6dd30fedd80ef93c0fe9ebfc02fb57611f1bd94b0a7c877826f1333b7417"
     },
     {
       "name": "spawn-8675309",
@@ -22,7 +22,7 @@
       "size": 1024,
       "step": 8,
       "footprint": 2,
-      "digest": "5f29378b98e49e02e683c3ec5347034db2106a77895e5f0265b72434adb03a4c"
+      "digest": "a49bb3348df72777964b224a18dd09ed98328c3df6f5e30c1c068743e1928eab"
     },
     {
       "name": "origin-101",
@@ -33,7 +33,7 @@
       ],
       "size": 4096,
       "step": 32,
-      "digest": "44e917ba81b010bd1c51a8c1b7b5b8034fada7ca0bdd3822379d1bc4a9e15f04"
+      "digest": "9e3d0fc582c3f3df6bd65bd08aa57dba3929409c4c59f473bc036fcc1b0a8edf"
     },
     {
       "name": "origin-42",
@@ -44,7 +44,7 @@
       ],
       "size": 4096,
       "step": 32,
-      "digest": "70840ca1b661a193825a06975fb0126ea8ecffdaf4328da319f14e2ef4f1a5d7"
+      "digest": "f544a8143bdb360c95430663aa69e1676bf7a9c98dfabbe6420a2255791ecd7e"
     },
     {
       "name": "world32k-8675309",
@@ -56,7 +56,7 @@
       ],
       "size": 16384,
       "step": 128,
-      "digest": "b3ac8284b6c4ece8c9e9d4f5fe55bab1183caa88825013ee7416e9d92346f233"
+      "digest": "f06a397d562902444b4f0b8a9cf1d099319be56d0221f6753f3ca27063ac80ee"
     }
   ]
 }

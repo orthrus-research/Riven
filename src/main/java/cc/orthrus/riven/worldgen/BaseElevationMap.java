@@ -11,38 +11,17 @@ public final class BaseElevationMap {
     private final TerrainHeightReference heights;
     private final TerrainHeightReference.Feature[] forms;
     private final SeededNoise regional;
-    private final double regionalScale, stateOffset, upliftWeight, regionalWeight, crestWeight;
-    private final double crestCap;
+    private final double regionalScale, stateOffset, upliftWeight, regionalWeight, beltWeight;
+    private final double beltCap;
     public final int minimumSurfaceY;
 
-    /** Continent crests raise the state; null leaves plates and regional noise alone. */
-    private final ContinentalOutlineMap outline;
-
     public BaseElevationMap(long seed, PlateMap plates, TerrainHeightReference heights) {
-        this(seed, plates, heights, RULES.json, null);
-    }
-
-    public BaseElevationMap(
-            long seed,
-            PlateMap plates,
-            TerrainHeightReference heights,
-            ContinentalOutlineMap outline) {
-        this(seed, plates, heights, RULES.json, outline);
+        this(seed, plates, heights, RULES.json);
     }
 
     BaseElevationMap(long seed, PlateMap plates, TerrainHeightReference heights, JsonObject json) {
-        this(seed, plates, heights, json, null);
-    }
-
-    BaseElevationMap(
-            long seed,
-            PlateMap plates,
-            TerrainHeightReference heights,
-            JsonObject json,
-            ContinentalOutlineMap outline) {
         if (plates == null || heights == null || json == null) throw new NullPointerException();
         this.plates = plates;
-        this.outline = outline;
         this.heights = heights;
         forms =
                 new TerrainHeightReference.Feature[] {
@@ -62,10 +41,10 @@ public final class BaseElevationMap {
         stateOffset = Rules.number(json, "stateOffset", -2, 2);
         upliftWeight = Rules.number(json, "upliftWeight", 0, 2);
         regionalWeight = Rules.number(json, "regionalWeight", 0, 2);
-        crestWeight = json.has("crestWeight") ? Rules.number(json, "crestWeight", 0, 2) : 0;
-        crestCap =
-                json.has("crestCap")
-                        ? Rules.number(json, "crestCap", .05, 4)
+        beltWeight = json.has("beltWeight") ? Rules.number(json, "beltWeight", 0, 2) : 0;
+        beltCap =
+                json.has("beltCap")
+                        ? Rules.number(json, "beltCap", .05, 4)
                         : Double.POSITIVE_INFINITY;
         regional = new SeededNoise(SeededNoise.mix(seed ^ Rules.seed(json, "regionalSeed")));
     }
@@ -73,9 +52,8 @@ public final class BaseElevationMap {
     /** Read-only observations in caller-owned scratch; allocation is not a final-terrain bound. */
     public static final class Sample {
         private final HeightSample regional = new HeightSample(), upliftSample = new HeightSample();
-        private final ContinentalOutlineMap.Sample outline = new ContinentalOutlineMap.Sample();
         private double meanHeight, dx, dz, minimumY, maximumY, envelope, envelopeDx, envelopeDz;
-        private double uplift, blend, intentDx, intentDz, crest, crestDx, crestDz;
+        private double uplift, blend, intentDx, intentDz, belt, beltDx, beltDz;
         private double legacyPosition = -1;
         private String firstLandform, secondLandform;
         // Retain the interpolation terms so the LEGACY consumer keeps its exact arithmetic order.
@@ -117,17 +95,17 @@ public final class BaseElevationMap {
             return uplift;
         }
 
-        /** The column's continent crest weight (0 off any range) and its world gradient. */
-        public double crest() {
-            return crest;
+        /** The column's mountain belt (riven-plates.json belts: 0 off any) and its world gradient. */
+        public double belt() {
+            return belt;
         }
 
-        public double crestDx() {
-            return crestDx;
+        public double beltDx() {
+            return beltDx;
         }
 
-        public double crestDz() {
-            return crestDz;
+        public double beltDz() {
+            return beltDz;
         }
 
         public double blend() {
@@ -195,24 +173,27 @@ public final class BaseElevationMap {
         double sz =
                 upliftWeight * out.upliftSample.dz
                         + regionalWeight * out.regional.dz / regionalScale;
-        // The largest continent crest here: one outline read with crests (cached cells).
-        double crest = 0, crestDx = 0, crestDz = 0;
-        if (outline != null && crestWeight > 0) {
-            outline.sampleCrest(x, z, out.outline);
-            crest = out.outline.crest();
-            crestDx = out.outline.crestDx();
-            crestDz = out.outline.crestDz();
-            // Soft saturation: crestCap * (1 - exp(-weight * crest / crestCap)), so crest cores
-            // form a dome below the top band instead of a table clamped at position 3.
-            double raw = crestWeight * crest,
+        // The strongest mountain belt here (the plates' convergent boundaries).
+        double belt = 0, beltDx = 0, beltDz = 0;
+        if (beltWeight > 0) {
+            PlateMap.Sample plate = plates.sample((int) Math.floor(x), (int) Math.floor(z));
+            belt = plate.belt;
+            beltDx = plate.beltDx;
+            beltDz = plate.beltDz;
+            // Soft saturation: beltCap * (1 - exp(-weight * belt / beltCap)), so belt cores form
+            // a dome below the top band instead of a table clamped at position 3.
+            double raw = beltWeight * belt,
                     lift =
-                            crestCap == Double.POSITIVE_INFINITY
+                            beltCap == Double.POSITIVE_INFINITY
                                     ? raw
-                                    : crestCap * (1 - Math.exp(-raw / crestCap)),
-                    slope = crestCap == Double.POSITIVE_INFINITY ? 1 : Math.exp(-raw / crestCap);
+                                    : beltCap * (1 - StrictMath.exp(-raw / beltCap)),
+                    slope =
+                            beltCap == Double.POSITIVE_INFINITY
+                                    ? 1
+                                    : StrictMath.exp(-raw / beltCap);
             state += lift;
-            sx += slope * crestWeight * out.outline.crestDx();
-            sz += slope * crestWeight * out.outline.crestDz();
+            sx += slope * beltWeight * beltDx;
+            sz += slope * beltWeight * beltDz;
         }
         double position = Math.max(0, Math.min(3, state * 3));
         out.legacyPosition = position;
@@ -243,10 +224,11 @@ public final class BaseElevationMap {
         out.firstLandform = a.id;
         out.secondLandform = b.id;
         out.blend = alpha;
-        out.uplift = out.upliftSample.height + crest;
-        out.crest = crest;
-        out.crestDx = crestDx;
-        out.crestDz = crestDz;
+        // Readers of uplift want raising only: the signed uplift's positive part, and the belt.
+        out.uplift = Math.max(0, out.upliftSample.height) + belt;
+        out.belt = belt;
+        out.beltDx = beltDx;
+        out.beltDz = beltDz;
         out.meanSpan = meanB - meanA;
         out.marginA = marginA;
         out.marginB = marginB;
@@ -259,7 +241,7 @@ public final class BaseElevationMap {
         out.meanHeight = out.dx = out.dz = out.minimumY = out.maximumY = 0;
         out.envelope = out.envelopeDx = out.envelopeDz = 0;
         out.uplift = out.blend = out.intentDx = out.intentDz = 0;
-        out.crest = out.crestDx = out.crestDz = 0;
+        out.belt = out.beltDx = out.beltDz = 0;
         out.meanSpan =
                 out.marginA = out.marginB = out.blendDerivative = out.stateDx = out.stateDz = 0;
         out.legacyPosition = -1;

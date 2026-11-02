@@ -46,6 +46,7 @@ public final class Definitions {
                             "riven-ocean-floors.json",
                             "riven-ores.json",
                             "riven-plateaus.json",
+                            "riven-plates.json",
                             "riven-player-effects.json",
                             "riven-provinces.json",
                             "riven-realms.json",

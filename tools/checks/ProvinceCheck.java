@@ -32,7 +32,7 @@ public final class ProvinceCheck {
         TemperatureMap temperature = new TemperatureMap(seed, world);
         PlateMap plates = new PlateMap(seed, world);
         ContinentalOutlineMap outline = LandShare.choose(seed, heights, world).outline;
-        BaseElevationMap elevation = new BaseElevationMap(seed, plates, heights, outline);
+        BaseElevationMap elevation = new BaseElevationMap(seed, plates, heights);
         ClimateStructureMap structure = new ClimateStructureMap(outline, elevation, heights);
         ClimateForcingMap forcing = new ClimateForcingMap(structure, heights, world);
         ClimateMap climate = new ClimateMap(seed, temperature, forcing);

@@ -64,7 +64,7 @@ public final class GenerationMaps {
         plates = new PlateMap(seed, world);
         land = LandShare.choose(seed, heights, world);
         outline = land.outline;
-        baseElevation = new BaseElevationMap(seed, plates, heights, outline);
+        baseElevation = new BaseElevationMap(seed, plates, heights);
         climateStructure = new ClimateStructureMap(outline, baseElevation, heights);
         climateForcing = new ClimateForcingMap(climateStructure, heights, world);
         climate = new ClimateMap(seed, temperature, climateForcing);
