@@ -46,6 +46,12 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
   climate band could fall dry: seed 8675309 had no boreal, cold rainforest or temperate woodland
   climate and 52% dry land. Over six seeds (8675309, 101, 42, 7, 2024, -991) forest climates now
   hold 50-75% of land (mean 61%, was 51% with a 31-69% spread) and dry ones 16-31% (was 14-52%).
+  Since terrain-v107 (climate-v4) a temperature profile in data shifts moisture and scales its
+  contrast by the column's temperature: dry subtropics (-0.13 at 22 C, -0.16 at 26 C), contrast
+  up to 2 between 26 and 30 C, and a wet hottest edge (+0.1 from 33 C). Over six seeds hot desert
+  rose from 4.2% to 7.5% of land, dry from 18.6% to 26.2% and rainforest from 5.2% to 6.6%, wet
+  land holding at 28%. A shift alone reached 7% desert but cut rainforest to 3%, since hot land
+  is mostly 25-31 C and desert and rainforest compete for it.
 - **Climate structure** (`ClimateStructureMap`, v35): land obstruction above the sea datum,
   `landWeight * max(0, meanSolidY + 1 - datumY)`, from the outline and base elevation only.
   Marine ownership gives zero obstruction; out-of-domain points return unavailable values.
@@ -59,6 +65,10 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
   The memo keeps the lattice in 16 x 16-node tiles of 2 KB, each built whole on its first read, in
   16,384 slots: 12 players spread over 8 km read 545,139 nodes (2,527 tiles), which 16,384
   single-node slots rebuilt about 36 times per pass.
+  On coast-rich worlds the forcing wets on balance: windward wetting reaches its +0.20 cap at the
+  95th percentile of land, while lee drying passes -0.05 on under 2% (seeds 101 and 8675309,
+  terrain-v106), so a lee cap of 0.45 moved dry land by 0.2 points. Rain shadows behind the plate
+  mountains are an open item.
 - **Classification**: 15 `ClimateRegion` classes (temperature x moisture) select terrain-qualified
   vanilla biome palettes in `riven-habitats.json`.
 

@@ -20,6 +20,46 @@ public final class ClimateMap {
                     MOISTURE.has("beltOffsetBlocks")
                             ? Rules.number(MOISTURE, "beltOffsetBlocks", 0, 4194304)
                             : 0;
+
+    /**
+     * Moisture by temperature: {celsius, shift, contrast} stops, ascending, held beyond the ends.
+     * Shift moves moisture; contrast (default 1) scales the noise's departure from the mean.
+     */
+    private static final double[][] PROFILE = profile(MOISTURE);
+
+    private static double[][] profile(com.google.gson.JsonObject moisture) {
+        if (!moisture.has("temperatureProfile")) return new double[0][];
+        com.google.gson.JsonArray stops = moisture.getAsJsonArray("temperatureProfile");
+        double[][] out = new double[stops.size()][];
+        for (int i = 0; i < out.length; i++) {
+            com.google.gson.JsonArray stop = stops.get(i).getAsJsonArray();
+            if (stop.size() != 2 && stop.size() != 3)
+                throw new IllegalStateException("temperatureProfile stop " + i + ": " + stop);
+            double celsius = stop.get(0).getAsDouble(), shift = stop.get(1).getAsDouble();
+            double contrast = stop.size() == 3 ? stop.get(2).getAsDouble() : 1;
+            if (!(celsius >= -60 && celsius <= 60)
+                    || !(shift >= -0.5 && shift <= 0.5)
+                    || !(contrast >= 0 && contrast <= 3)
+                    || i > 0 && !(celsius > out[i - 1][0]))
+                throw new IllegalStateException("temperatureProfile stop " + i + ": " + stop);
+            out[i] = new double[] {celsius, shift, contrast};
+        }
+        return out;
+    }
+
+    /** The profile's value k (1 shift, 2 contrast) at a temperature, linear between stops. */
+    private static double profile(double celsius, int k, double none) {
+        double[][] p = PROFILE;
+        if (p.length == 0) return none;
+        if (celsius <= p[0][0]) return p[0][k];
+        for (int i = 1; i < p.length; i++)
+            if (celsius <= p[i][0]) {
+                double t = (celsius - p[i - 1][0]) / (p[i][0] - p[i - 1][0]);
+                return p[i - 1][k] + (p[i][k] - p[i - 1][k]) * t;
+            }
+        return p[p.length - 1][k];
+    }
+
     private final TemperatureMap temperature;
     private final ClimateForcingMap forcing;
     private final SeededNoise broad, detail;
@@ -73,7 +113,11 @@ public final class ClimateMap {
                         ? BELT_AMPLITUDE
                                 * StrictMath.cos(2 * Math.PI * (wx + beltOffset) / beltPeriod)
                         : 0;
-        double backgroundMoisture = Math.max(0, Math.min(1, 0.5 + 0.5 * field + belt));
+        // Zonal moisture by temperature: dry subtropics beside a wet hottest edge, and sharper
+        // contrast where deserts and rainforests should both stand.
+        double shift = profile(celsius, 1, 0), contrast = profile(celsius, 2, 1);
+        double backgroundMoisture =
+                Math.max(0, Math.min(1, 0.5 + 0.5 * contrast * field + belt + shift));
         forcing.sample(x, z, out.forcing);
         double factor = out.forcing.moistureFactor();
         double moisture = backgroundMoisture;
