@@ -69,8 +69,9 @@ not qualify them. Copyright (c) 2026 Riven contributors. Native extensions
 remain MIT. Binary and source artifacts include the full grant and research/
 utility notices in `META-INF/licenses/rocky-coasts/{MIT.txt,SOURCES.md}`.
 The latter retains Sebastiano Vigna's SplitMix64 public-domain dedication,
-permission and disclaimer. `RockyTerrain`, the shared resolver changes and
-`riven-rocky-coasts.json` remain original NRR material. Retained comparative
+permission and disclaimer. `CoastForms` (which places the kernels as coast segment
+forms since terrain-v110), the shared resolver changes and the forms in `riven-coasts.json`
+remain original NRR material. Retained comparative
 figures are covered by the contribution's MIT grant; third-party reference
 illustrations and text are not included.
 

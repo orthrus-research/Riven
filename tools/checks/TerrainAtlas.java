@@ -7,7 +7,6 @@ import cc.orthrus.riven.contrib.dryland.Drylands;
 import cc.orthrus.riven.contrib.hills.Hills;
 import cc.orthrus.riven.contrib.mountains.MountainKernels;
 import cc.orthrus.riven.contrib.plateau.PlateauKernels;
-import cc.orthrus.riven.contrib.rocky.RockyCoasts;
 import cc.orthrus.riven.contrib.volcanic.VolcanicKernels;
 
 import com.google.gson.GsonBuilder;
@@ -82,9 +81,27 @@ public final class TerrainAtlas {
         Drylands.Family.values(),
         WonderTerrain.Family.values(),
         Shore.Kind.values(),
-        RockyCoasts.Family.values(),
+        familiesOf("rocky"),
         SedimentaryCoasts.Family.values()
     };
+
+    /**
+     * A stage's families, read from its result's family field: the rocky stage's are the coast's
+     * forms since terrain-v110 and the rocky kernel's before, so one sampler builds both trees.
+     */
+    private static Enum<?>[] familiesOf(String stage) {
+        try {
+            return (Enum<?>[])
+                    TerrainMap.Sample.class
+                            .getField(stage)
+                            .getType()
+                            .getField("family")
+                            .getType()
+                            .getEnumConstants();
+        } catch (NoSuchFieldException absent) {
+            throw new IllegalStateException("No families for stage " + stage, absent);
+        }
+    }
 
     /** Height after each stage, in pipeline order; index 0 is the eroded base. */
     private static double after(TerrainMap.Sample s, int stage) {
@@ -641,8 +658,6 @@ public final class TerrainAtlas {
                 return 9;
             case SEDIMENT:
                 return 13;
-            case ROCKY:
-                return 12;
             default:
                 throw new IllegalArgumentException(lane.name());
         }

@@ -209,11 +209,43 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
   - **Kinds and weights:** the type's kind (cliff, rock, beach, marsh) is the shore kind while
     the column is near its shore; a beach's berm is beach and the rest of its band coastal plain.
     Cliff and rock weights name the stretch of coast: whole across the band, fading over one more
-    band width, so the rocky coast stage still finds rock behind its witness strip (seed 101: 957
-    accepted atlas pixels, 1,040 at v104). The band's rise is the shore's land weight.
+    band width, so feature admission reads the stretch as rugged ground. The band's rise is the
+    shore's land weight.
   - **Envelopes** are band rules: inside a band a raising feature (hills and the major features)
     may rise no higher than the sea plus the land weight times the highest surface, bent softly
     above half that room; past the band it is free.
+  - **Forms** (S3b-1, terrain-v110, `forms` in `riven-coasts.json`): each type lists its forms
+    with the blocks of shore per slot. Cliffs take joint coves every 240 blocks, sea caves every
+    120 and stacks or arches every 80; headlands take stepped headlands every 240 and stacks or
+    arches every 80; platforms take cliff platforms every 200 and stacks or arches every 80. A
+    segment's slots lie along its site's tangent across its cell, jittered, and each is moved
+    exactly onto the shore (the coast crossing along the outline's normal, found by bisection to
+    a quarter block) and kept only on the segment's own stretch. Coves, stepped headlands, cliff
+    platforms and stacks or arches are the MIT rocky kernels (`contrib.rocky`), placed rather
+    than certified: each reads its facts where the segment's profile put the ground, the cliff
+    top one and one and a half kernel widths inland and, for a stack or arch, the sea under its
+    centre or tunnel. A height form's drop is its cliff's own relief, so it never planes a tall
+    cliff down; it only lowers land, shares the segment's blend, fades over the band's last
+    fifth and never lowers a channel's levee below its water. A stack or arch keeps the kernel's
+    drop (29-50 blocks) no taller than its cliff and is built from each column's own ground at
+    any depth; a
+    stack needs open, supplied sea over every column within 2 blocks of its body, however
+    shallow, and `archFraction` (0.2) of them are arches, whose tunnel opens over the sea and
+    runs through body and ground. A sea cave is a tapering vault 16-40 blocks long, 2-4 half-wide
+    and 4-8 high from a block above the water, at least 8 blocks under the surface; nearer the
+    face, where its roof would be thinner, the ground is cut down to the vault's floor, a notch at
+    the waterline through which it opens. Neither opens an aquifer. Within a segment no stack,
+    arch or sea cave overlaps another's body (the form listed first keeps its place), and a body
+    claims only the columns it builds, so none walls another in. Forms leave protected, wet and banked water alone. The rocky coast lane,
+    `RockyTerrain` and `riven-rocky-coasts.json` (v25-v109) are retired.
+  - Forms measured with `CoastCheck` (8 seeds of 8 km): per world about 75 stacks, 11 arches,
+    49 sea caves, 36 stepped headlands, 24 cove sets and under one cliff platform (platforms
+    are mostly backed by land under 8 blocks above the sea, too low for a cliff form). Of stack
+    plans that reach the kernel, about one in eight met its old rule of 8 blocks of water at
+    its centre; most stand in 2-5. Sampled stacks are one solid run from their own ground in
+    open sea all round, arches have a roofed opening over the sea and feet on land and on the
+    sea floor with no solid over air, sea caves keep their water line and roof band and open through a notch, and
+    height forms only lower land inside their band.
   - Measured with `CoastCheck` (8 seeds, 512 x 512 per 8 km world): 39% of land lies inside a
     band; of band columns, beach 61%, marsh 20%, bluff 12%, headland 3.9%, cliff 2.4%, platform
     1.6% (by segments, beach about 45% and the rocky types about 38%). Land past its band keeps its height exactly, and the coast's height has no seam (no jump
@@ -298,7 +330,7 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
 
 Shared rules for the land stages:
 
-- Volcanic, cold, plateau, hill, landmark, carver, cut, sediment, rocky and wonder features
+- Volcanic, cold, plateau, hill, landmark, carver, cut, sediment and wonder features
   are owned by `Sites` lanes ([ARCHITECTURE.md](ARCHITECTURE.md#feature-sites)). Lowlands,
   passes and drylands are continuous fields with no site.
 - Major forms certify their admitted site against `sampleBeforeMajorFeatures` over the support
@@ -490,32 +522,29 @@ Activity: rivers 0.01% of pixels, lakes 0% in the default render.
 
 | Stage | Families | Definition | Activity |
 | --- | --- | --- | --- |
-| Rocky coasts (`RockyTerrain`, v25) | cliff platform, stepped headland, joint coves, stack arch | `riven-rocky-coasts.json` | 10 sites on 4 seeds of 8 km, 123 of 32 km |
 | Sedimentary coasts (`SedimentTerrain`, v24) | beach bench, spit, barrier, tombolo | `riven-sedimentary-coasts.json` | 17 bodies on 4 seeds of 8 km, 117 of 32 km |
 
-Rocky planning reads `sampleBeforeRocky`; sediment reads `sampleBeforeSediment`. Both certify
-complete native proposal boxes, may emerge above water, and feed final habitat through
-`surfaceHabitat`. Tombolos need an earlier isolated dry component; stacks and arches need a moat
-or unchanged mainland contact, supported solids and a through-path. Native solid/void edits and
-DH cuts share one predicate.
+Rocky forms belong to the coast plan's segments since terrain-v110 (stacks, arches, coves, sea
+caves; see the coast plan). Sediment reads `sampleBeforeSediment`, after those forms. It
+certifies complete native proposal boxes, may emerge above water, and feeds final habitat
+through `surfaceHabitat`. Tombolos need an earlier isolated dry component. Native solid/void
+edits and DH cuts share one predicate.
 
-Coastal opportunities (v68): both lanes draw an anchor in every site cell (`laneDensity` 1.0). Each
-anchor first runs every check its own earlier facts decide (`prepare`, memoized per cell): family,
-a shoreline within the anchor band (128 blocks), the shore root, proposal, occurrence, support and
-witness strips for rock; for sediment also a shoaling or sheltered coast or a river mouth, shore
-guides, attachments, the island, reservations and the certificate's per-column and whole-body rules
+Coastal opportunities (v68): the sediment lane draws an anchor in every site cell (`laneDensity`
+1.0). Each anchor first runs every check its own earlier facts decide (`prepare`, memoized per
+cell): family, a shoreline within the anchor band (128 blocks), the shore root, proposal,
+occurrence, support, a shoaling or sheltered coast or a river mouth, shore guides, attachments, the island, reservations and the certificate's per-column and whole-body rules
 (supply, slope, exposure) on a 16-block lattice. Only anchors that pass compete for the lane, so
 one that could never build no longer vetoes one that can. The shore root is the nearest land/sea
 flip along the coast normal, walked out in 8-block steps both ways; the earlier end-point bracket
-failed beside narrow peninsulas, inlets and islets. Lane radii are 320 blocks (rock) and 576
-(sediment, was 1,088). Sediment exposure is the calm of shoaling, shelter or a river mouth; rock
-intent is the rock or cliff shore class or rugged raised ground. Memos keep 8,192 decisions per
+failed beside narrow peninsulas, inlets and islets. The lane radius is 576 blocks (was 1,088).
+Exposure is the calm of shoaling, shelter or a river mouth. Memos keep 8,192 decisions per
 lane at the 8 km layout and as many prepared anchors, growing with the layout scale squared
 (131,072 at 32 km, where 12 players spread over the world read about 7,400): a decision costs
 about 10 ms, and a memo smaller than the working set rebuilt every cell on
 each pass (8 km warm pass 8 s against 0.6 s at v67, now 1.0 s). Concurrent misses on one cell share
-a single build (`SharedBuild`), as do hydrology owner-cell plans, which sediment and rock decisions of
-one 2,048-block cell miss together (DH-like cold workload, details 0-4 to 4 km on 8 threads: 12.2 s
+a single build (`SharedBuild`), as do hydrology owner-cell plans, which coastal decisions of
+one 2,048-block cell miss together (v68, with the rocky lane retired at v110; DH-like cold workload, details 0-4 to 4 km on 8 threads: 12.2 s
 to 9.7 s wall, identical heights). The decisions cost about 15 CPU-seconds per 8 km world, little in
 game but most of an 8 km atlas render (17 s on 8 threads against 3.8 s at v67), since threads on
 neighboring rows wait on the same new cells.

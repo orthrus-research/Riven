@@ -243,7 +243,7 @@ final class ColumnReport {
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Rocky=%s reason=%s id=%s arch=%s | parent=%.2f top=%.2f weight=%.3f emergent=%s | candidates=%d boxColumns=%d bodyColumns=%d certificateVoxels=%d volumeCuts=%d",
+                                "Coast form=%s reason=%s id=%s arch=%s | parent=%.2f top=%.2f weight=%.3f emergent=%s | runs=%d",
                                 terrain.rocky.family,
                                 terrain.rocky.reason,
                                 Long.toUnsignedString(terrain.rocky.id, 16),
@@ -252,11 +252,7 @@ final class ColumnReport {
                                 terrain.rocky.height,
                                 terrain.rocky.weight,
                                 terrain.emergentRock,
-                                terrain.rocky.candidates,
-                                terrain.rocky.boxColumns,
-                                terrain.rocky.bodyColumns,
-                                terrain.rocky.voxels,
-                                terrain.rocky.cutCount)));
+                                terrain.rocky.runs())));
         if (terrain.ocean.marine) return;
         sender.sendMessage(
                 new TextComponentString(

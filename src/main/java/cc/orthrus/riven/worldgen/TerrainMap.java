@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 109;
+    public static final int VERSION = 110;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -21,7 +21,7 @@ public final class TerrainMap {
     private final VolcanicTerrain volcanic;
     private final GeneralSurfaceCuts cuts;
     public final SedimentTerrain sediment;
-    public final RockyTerrain rocky;
+    public final CoastForms rocky;
     private final RegionalLandmarks landmarks;
     private final SurfaceCarvers carvers;
     private final WonderTerrain wonders;
@@ -137,16 +137,7 @@ public final class TerrainMap {
         floods = new FloodMap(seed, world, this::sampleGeology);
         caves = new CaveMap(seed, heights, this::sample, this::sampleWater);
         ores = new OreMap(seed, heights);
-        rocky =
-                new RockyTerrain(
-                        seed,
-                        heights,
-                        types.sites,
-                        intentSampler,
-                        this::sampleBeforeRocky,
-                        hydro,
-                        hydro.cellBlocks,
-                        world);
+        rocky = new CoastForms(seed, heights, shores, this::sampleBeforeRocky);
         sediment =
                 new SedimentTerrain(
                         seed,
@@ -163,8 +154,8 @@ public final class TerrainMap {
     /**
      * Preparation of one hydrology owner cell ahead of demand (Cubature's regional preparation;
      * docs/DECISIONS.md, "Preparation within bounds"): drainage and the cell's plan first, then
-     * the sediment and rock decisions within it, which read them. False when a memo declines for
-     * lack of room. Timing only.
+     * the sediment decisions and the coast forms within it, which read them. False when a memo
+     * declines for lack of room. Timing only.
      */
     public boolean prepareRegion(int cellX, int cellZ) {
         if (!hydro.prepareRegion(cellX, cellZ)) return false;
@@ -279,7 +270,7 @@ public final class TerrainMap {
                 stage(Phase.LATER, new GeneralSurfaceCuts.Result());
         public final SedimentTerrain.Result sediment =
                 stage(Phase.LATER, new SedimentTerrain.Result());
-        public final RockyTerrain.Result rocky = stage(Phase.LATER, new RockyTerrain.Result());
+        public final CoastForms.Result rocky = stage(Phase.LATER, new CoastForms.Result());
         public final WonderTerrain.Result wonders = stage(Phase.LATER, new WonderTerrain.Result());
         public final GeologyMap.Column geology = new GeologyMap.Column();
 

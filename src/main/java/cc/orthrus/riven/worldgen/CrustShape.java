@@ -9,9 +9,9 @@ import cc.orthrus.riven.worldgen.engine.Shape;
 
 /**
  * The crust's shape operator: maps a terrain sample onto the engine's shape operations. The
- * ground is raised to the sky's floor; sediment and a rocky shore's build-up are laid over it; a
- * rocky volume's solid is built and its tunnel carved (the volume is an overhang over the ground
- * as it was before it, which is the sky's floor); a wonder's void is carved; an aquifer is a
+ * ground is raised to the sky's floor; sediment is laid over it; a coast form's runs are built
+ * and carved (a stack's or arch's solid over the ground as it was before it, which is the sky's
+ * floor, and an arch's tunnel or a sea cave); a wonder's void is carved; an aquifer is a
  * pocket; and the column's caves are carved, entrances apart, under the sky's roof band, their
  * fill left to the engine's precedence.
  */
@@ -73,21 +73,16 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
         horizons(s, shape::publish);
         if (CaveMap.wet(s)) shape.flag(Flags.WET);
         int surface = s.blockY();
-        boolean volume = s.rocky.hasVolume(),
-                sediment = s.sediment.weight > 0,
-                rock = s.rocky.weight > 0;
+        boolean volume = s.rocky.hasVolume(), sediment = s.sediment.weight > 0;
         int ground = shape.horizon(Horizons.GROUND),
-                beforeDeposit = shape.horizon(Horizons.GROUND_BEFORE_DEPOSIT),
-                beforeRocky = shape.horizon(Horizons.GROUND_BEFORE_ROCKY);
+                beforeDeposit = shape.horizon(Horizons.GROUND_BEFORE_DEPOSIT);
         Hydro.Sample w = s.water;
         boolean aquifer = w.aquiferMin <= w.aquiferMax;
-        // Raise to the ground buried under what is laid over it.
+        // Raise to the ground buried under what is laid over it. A coast form without a volume
+        // only lowers its land, so it lays nothing.
         int raised = ground;
         if (sediment) raised = Math.min(raised, beforeDeposit);
-        if (rock && !volume) raised = Math.min(raised, beforeRocky);
         shape.raise(raised + 1);
-        // A rocky shore without a volume builds its land up in its own rock; sediment lies on top.
-        if (rock && !volume) shape.layBed(beforeRocky + 1, ground + 1, surface);
         if (sediment) shape.lay(beforeDeposit + 1, ground + 1, TerrainBlock.SAND);
         if (volume) volume(s, shape, surface);
         if (s.wonders.hasVoid()) shape.carve(s.wonders.voidBottom, s.wonders.voidTop);
@@ -129,21 +124,15 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
     }
 
     /**
-     * A rocky volume's edits, constant between its cut boundaries: solid is built (its depth from
-     * the column's own top) and the arch's tunnel carved.
+     * A coast form's runs: a stack's or arch's solid is built (its depth from the column's own
+     * top), and an arch's tunnel or a sea cave carved.
      */
     private static void volume(TerrainMap.Sample s, Shape shape, int surface) {
-        RockyTerrain.Result r = s.rocky;
-        int cuts = r.cutCount;
-        if (cuts == 0) return;
-        int[] at = new int[cuts];
-        for (int i = 0; i < cuts; i++) at[i] = r.boundary(i, surface + 1);
-        java.util.Arrays.sort(at);
-        for (int i = 0; i + 1 < cuts; i++) {
-            if (at[i + 1] <= at[i]) continue;
-            Edit edit = RockyTerrain.edit(r, at[i]);
-            if (edit == Edit.SOLID) shape.build(at[i], at[i + 1], surface);
-            else if (edit == Edit.VOID) shape.carve(at[i], at[i + 1]);
+        CoastForms.Result r = s.rocky;
+        for (int i = 0; i < r.runs(); i++) {
+            Edit edit = r.edit(i);
+            if (edit == Edit.SOLID) shape.build(r.bottom(i), r.top(i), surface);
+            else if (edit == Edit.VOID) shape.carve(r.bottom(i), r.top(i));
         }
     }
 }

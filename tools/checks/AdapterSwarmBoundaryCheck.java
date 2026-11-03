@@ -1,6 +1,6 @@
+import cc.orthrus.riven.worldgen.CoastForms;
 import cc.orthrus.riven.worldgen.GenerationMaps;
 import cc.orthrus.riven.worldgen.Hydro;
-import cc.orthrus.riven.worldgen.RockyTerrain;
 import cc.orthrus.riven.worldgen.Sites;
 import cc.orthrus.riven.worldgen.TerrainMap;
 
@@ -89,9 +89,7 @@ public final class AdapterSwarmBoundaryCheck {
                 }) points.add(new Point("CONTROL", 0, 0, xy[0], xy[1]));
         Sites sites = maps.terrain.types.sites;
         for (Sites.Lane lane :
-                new Sites.Lane[] {
-                    Sites.Lane.HILLS, Sites.Lane.CUTS, Sites.Lane.ROCKY, Sites.Lane.SEDIMENT
-                }) {
+                new Sites.Lane[] {Sites.Lane.HILLS, Sites.Lane.CUTS, Sites.Lane.SEDIMENT}) {
             int owners = 0;
             search:
             for (int z = 0; z <= LAST_CELL; z++)
@@ -137,6 +135,13 @@ public final class AdapterSwarmBoundaryCheck {
         write(output, MANIFEST, rows);
     }
 
+    /** The coast form's edit at block Y: its run's, else KEEP. */
+    private static String edit(CoastForms.Result r, int y) {
+        for (int i = 0; i < r.runs(); i++)
+            if (y >= r.bottom(i) && y < r.top(i)) return r.edit(i).name();
+        return "KEEP";
+    }
+
     private static String snapshot(GenerationMaps maps, Point p, int stage, TerrainMap.Sample s)
             throws Exception {
         if (stage == 0) maps.terrain.sampleBeforeMajorFeatures(p.x, p.z, s);
@@ -145,8 +150,14 @@ public final class AdapterSwarmBoundaryCheck {
         else maps.terrain.sample(p.x, p.z, s);
         require(Double.isFinite(s.height), "Nonfinite height");
         StringBuilder boundaries = new StringBuilder(), edits = new StringBuilder();
-        for (int i = 0; i < s.rocky.cutCount; i++)
-            boundaries.append(s.rocky.boundary(i, Integer.MIN_VALUE)).append('|');
+        for (int i = 0; i < s.rocky.runs(); i++)
+            boundaries
+                    .append(s.rocky.bottom(i))
+                    .append(':')
+                    .append(s.rocky.top(i))
+                    .append(':')
+                    .append(s.rocky.edit(i))
+                    .append('|');
         for (int y :
                 new int[] {
                     s.blockY() - 1,
@@ -154,7 +165,7 @@ public final class AdapterSwarmBoundaryCheck {
                     s.blockY() + 1,
                     s.waterY(),
                     (int) Math.floor(s.rocky.parentHeight)
-                }) edits.append(y).append(':').append(RockyTerrain.edit(s.rocky, y)).append('|');
+                }) edits.append(y).append(':').append(edit(s.rocky, y)).append('|');
         String land =
                 bits(s.baseHeight)
                         + '|'

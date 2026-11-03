@@ -66,6 +66,11 @@ public final class Shore {
         final double bandMin, bandMax, footMin, footMax;
         final double[] weights = new double[FACTS.length];
 
+        /** The type's forms (CoastForms): each form's name and the blocks of shore per form. */
+        final String[] forms;
+
+        final double[] formSpacing;
+
         Type(JsonObject j) {
             id = j.get("id").getAsString();
             kind = Kind.valueOf(j.get("kind").getAsString().toUpperCase(java.util.Locale.ROOT));
@@ -85,6 +90,14 @@ public final class Shore {
                     && footMin <= footMax
                     && footMax < bandMin / 2))
                 throw new IllegalStateException("riven-coasts.json " + id + ": band or foot");
+            JsonArray list = j.has("forms") ? j.getAsJsonArray("forms") : new JsonArray();
+            forms = new String[list.size()];
+            formSpacing = new double[list.size()];
+            for (int k = 0; k < forms.length; k++) {
+                JsonObject form = list.get(k).getAsJsonObject();
+                forms[k] = form.get("form").getAsString();
+                formSpacing[k] = Rules.number(form, "perBlocks", 8, 4096);
+            }
             for (Map.Entry<String, JsonElement> w : j.getAsJsonObject("suitability").entrySet()) {
                 int f = java.util.Arrays.asList(FACTS).indexOf(w.getKey());
                 if (f < 0)
@@ -108,6 +121,15 @@ public final class Shore {
             WARM,
             KNEE;
     private static final long VARIATION;
+
+    /**
+     * The shore snap's precision, not a terrain value: how near the coast a snapped point stops,
+     * the bracket's reaches in multiples of the point's distance, and the most halvings.
+     */
+    private static final double SNAP = .25;
+
+    private static final double[] BRACKET = {1, 1.5, 2, 3, 4, 6, 8};
+    private static final int BISECTIONS = 24;
 
     static {
         JsonObject j = RULES.json;
@@ -144,20 +166,59 @@ public final class Shore {
     }
 
     /**
-     * A coast cell's segment: its site on the shore, type, band width and foot. A cell whose site
-     * lies farther from the coast than keep has no segment (type null).
+     * A coast cell's segment: its site on the shore, the outline's inland normal there, type, band
+     * width and foot, and its cell and key. A cell whose site lies farther from the coast than keep
+     * has no segment (type null).
      */
-    private static final class Segment {
-        final double x, z;
+    static final class Segment {
+        final int i, j;
+        final long key;
+        final double x, z, nx, nz;
         final Type type;
         final double width, foot;
 
-        Segment(double x, double z, Type type, double width, double foot) {
+        Segment(
+                int i,
+                int j,
+                long key,
+                double x,
+                double z,
+                double nx,
+                double nz,
+                Type type,
+                double width,
+                double foot) {
+            this.i = i;
+            this.j = j;
+            this.key = key;
             this.x = x;
             this.z = z;
+            this.nx = nx;
+            this.nz = nz;
             this.type = type;
             this.width = width;
             this.foot = foot;
+        }
+
+        /**
+         * Whether o is this cell's segment. Segments live in a bounded memo, so one evicted and
+         * rebuilt is a new object equal to the old: compare cells, never references.
+         */
+        boolean is(Segment o) {
+            return o != null && o.i == i && o.j == j;
+        }
+    }
+
+    /** A column's two nearest segments and how far it blends toward the second (0 to .5). */
+    static final class Nearest {
+        Segment a, b;
+        double mix;
+
+        /** The share of the column that segment s owns. */
+        double share(Segment s) {
+            if (a == null) return 0;
+            if (a.is(b)) return a.is(s) ? 1 : 0;
+            return (a.is(s) ? 1 - mix : 0) + (b.is(s) ? mix : 0);
         }
     }
 
@@ -169,6 +230,7 @@ public final class Shore {
     private final CellMemo<Segment> segments = new CellMemo<>(4096);
     private final ThreadLocal<TerrainMap.BaseSample> scratch =
             ThreadLocal.withInitial(TerrainMap.BaseSample::new);
+    private final ThreadLocal<Nearest> nearestScratch = ThreadLocal.withInitial(Nearest::new);
 
     Shore(long worldSeed, TerrainHeightReference heights, WorldScale world, SiteSampler sites) {
         seed = SeededNoise.mix(worldSeed ^ VARIATION);
@@ -183,9 +245,9 @@ public final class Shore {
 
     /**
      * The segment of coast cell (i, j). Its jittered site is kept only within keep of the coast,
-     * where it is moved onto the shore (two steps along the outline's normal, since the coast
-     * distance changes about a block per block), so segment edges cross the coast instead of
-     * slicing along it. Its type and widths are chosen there from facts read probe blocks inland.
+     * where it is moved toward the shore (towardShore), so segment edges cross the coast instead
+     * of slicing along it. Its type and widths are chosen there from facts read probe blocks
+     * inland.
      */
     private Segment segment(int i, int j) {
         return segments.get(
@@ -193,27 +255,13 @@ public final class Shore {
                 j,
                 () -> {
                     double[] p = site(i, j);
-                    TerrainMap.BaseSample b = scratch.get();
-                    sites.sample(p[0], p[1], b);
-                    if (!(Math.abs(b.ocean.distance) <= keep))
-                        return new Segment(p[0], p[1], null, 0, 0);
-                    double nx = 0, nz = 0;
-                    for (int step = 0; step < 2; step++) {
-                        ContinentalMap.Sample o = b.ocean;
-                        if (!Double.isFinite(o.distance) || o.normalX == 0 && o.normalZ == 0) break;
-                        nx = o.normalX;
-                        nz = o.normalZ;
-                        p[0] -= nx * o.distance;
-                        p[1] -= nz * o.distance;
-                        sites.sample(p[0], p[1], b);
-                    }
-                    if (b.ocean.normalX != 0 || b.ocean.normalZ != 0) {
-                        nx = b.ocean.normalX;
-                        nz = b.ocean.normalZ;
-                    }
-                    sites.sample(p[0] + nx * PROBE, p[1] + nz * PROBE, b);
-                    double[] f = facts(b);
                     long h = SeededNoise.cell(seed ^ 0x5345474dL, i, j);
+                    double[] q = towardShore(p[0], p[1], keep);
+                    if (q == null) return new Segment(i, j, h, p[0], p[1], 0, 0, null, 0, 0);
+                    double nx = q[2], nz = q[3];
+                    TerrainMap.BaseSample b = scratch.get();
+                    sites.sample(q[0] + nx * PROBE, q[1] + nz * PROBE, b);
+                    double[] f = facts(b);
                     Type best = TYPES[0];
                     double bestScore = Double.NEGATIVE_INFINITY;
                     for (int t = 0; t < TYPES.length; t++) {
@@ -228,12 +276,125 @@ public final class Shore {
                     double u = SeededNoise.unit(SeededNoise.mix(h ^ 0x57494454L)),
                             v = SeededNoise.unit(SeededNoise.mix(h ^ 0x464f4f54L));
                     return new Segment(
-                            p[0],
-                            p[1],
+                            i,
+                            j,
+                            h,
+                            q[0],
+                            q[1],
+                            nx,
+                            nz,
                             best,
                             best.bandMin + (best.bandMax - best.bandMin) * u,
                             best.footMin + (best.footMax - best.footMin) * v);
                 });
+    }
+
+    /** The segment of coast cell (i, j), for the coast's forms. */
+    Segment segmentAt(int i, int j) {
+        return segment(i, j);
+    }
+
+    /** The side of a coast cell in blocks. */
+    double cellBlocks() {
+        return cell;
+    }
+
+    /**
+     * A point moved toward the shore: {x, z, nx, nz} with the outline's inland normal, or null
+     * when the point lies farther than within from the coast. Two steps along the normal by the
+     * coast distance, which close most of the way where the distance changes about a block per
+     * block and stop short where it changes more slowly; a segment's site needs no closer, and
+     * moving it would reclassify the coast's segments (onShore is exact).
+     */
+    private double[] towardShore(double x, double z, double within) {
+        TerrainMap.BaseSample b = scratch.get();
+        sites.sample(x, z, b);
+        if (!(Math.abs(b.ocean.distance) <= within)) return null;
+        double nx = 0, nz = 0;
+        for (int step = 0; step < 2; step++) {
+            ContinentalMap.Sample o = b.ocean;
+            if (!Double.isFinite(o.distance) || o.normalX == 0 && o.normalZ == 0) break;
+            nx = o.normalX;
+            nz = o.normalZ;
+            x -= nx * o.distance;
+            z -= nz * o.distance;
+            sites.sample(x, z, b);
+        }
+        if (b.ocean.normalX != 0 || b.ocean.normalZ != 0) {
+            nx = b.ocean.normalX;
+            nz = b.ocean.normalZ;
+        }
+        if (nx == 0 && nz == 0) return null;
+        return new double[] {x, z, nx, nz};
+    }
+
+    /**
+     * A point moved onto the shore, within SNAP of its line: {x, z, nx, nz} with the outline's
+     * inland normal there, or null when the point lies farther than within from the coast or the
+     * coast does not cross its normal within eight times its distance. The distance is the
+     * outline's score, continuous but often changing only about half a block per block along the
+     * normal (the crossing lies at a median 2.2 times the distance from points beside a segment's
+     * shore), so stepping by it stops short; the crossing is bracketed along the normal and found
+     * by bisection.
+     */
+    double[] onShore(double x, double z, double within) {
+        TerrainMap.BaseSample b = scratch.get();
+        sites.sample(x, z, b);
+        double d0 = b.ocean.distance, rx = b.ocean.normalX, rz = b.ocean.normalZ;
+        if (!(Math.abs(d0) <= within) || rx == 0 && rz == 0) return null;
+        // t is blocks seaward along the normal; the crossing lies where the distance changes sign.
+        double near = 0, far = Double.NaN, t = 0, d = d0;
+        if (Math.abs(d0) > SNAP) {
+            for (double k : BRACKET) {
+                sites.sample(x - rx * d0 * k, z - rz * d0 * k, b);
+                if (Math.signum(b.ocean.distance) != Math.signum(d0)) {
+                    far = d0 * k;
+                    break;
+                }
+                near = d0 * k;
+            }
+            if (Double.isNaN(far)) return null;
+            for (int step = 0; step < BISECTIONS && Math.abs(d) > SNAP; step++) {
+                t = .5 * (near + far);
+                sites.sample(x - rx * t, z - rz * t, b);
+                d = b.ocean.distance;
+                if (Math.signum(d) == Math.signum(d0)) near = t;
+                else far = t;
+            }
+            if (!(Math.abs(d) <= SNAP)) return null;
+        }
+        double nx = b.ocean.normalX, nz = b.ocean.normalZ;
+        if (nx == 0 && nz == 0) {
+            nx = rx;
+            nz = rz;
+        }
+        return new double[] {x - rx * t, z - rz * t, nx, nz};
+    }
+
+    /** The column's two nearest kept segments and their blend; a null when there is none. */
+    void nearest(double x, double z, Nearest out) {
+        int ci = (int) Math.floor(x / cell), cj = (int) Math.floor(z / cell);
+        double d1 = Double.POSITIVE_INFINITY, d2 = Double.POSITIVE_INFINITY;
+        Segment a = null, b = null;
+        for (int di = -2; di <= 2; di++)
+            for (int dj = -2; dj <= 2; dj++) {
+                Segment s = segment(ci + di, cj + dj);
+                if (s.type == null) continue;
+                double d = Math.hypot(x - s.x, z - s.z);
+                if (d < d1) {
+                    d2 = d1;
+                    b = a;
+                    d1 = d;
+                    a = s;
+                } else if (d < d2) {
+                    d2 = d;
+                    b = s;
+                }
+            }
+        if (a != null && b == null) b = a;
+        out.a = a;
+        out.b = b;
+        out.mix = a == null ? 0 : .5 * (1 - Rules.smooth((d2 - d1) / BLEND));
     }
 
     /** The facts at a segment's site, each 0 to 1. */
@@ -407,32 +568,16 @@ public final class Shore {
             return;
         }
         // The two nearest segments; the column blends them near the edge between.
-        int ci = (int) Math.floor(x / cell), cj = (int) Math.floor(z / cell);
-        double d1 = Double.POSITIVE_INFINITY, d2 = Double.POSITIVE_INFINITY;
-        Segment a = null, b = null;
-        for (int di = -2; di <= 2; di++)
-            for (int dj = -2; dj <= 2; dj++) {
-                Segment s = segment(ci + di, cj + dj);
-                if (s.type == null) continue;
-                double d = Math.hypot(x - s.x, z - s.z);
-                if (d < d1) {
-                    d2 = d1;
-                    b = a;
-                    d1 = d;
-                    a = s;
-                } else if (d < d2) {
-                    d2 = d;
-                    b = s;
-                }
-            }
+        Nearest n = nearestScratch.get();
+        nearest(x, z, n);
+        Segment a = n.a, b = n.b;
         if (a == null) {
             out.height = base.baseHeight;
             return;
         }
-        if (b == null) b = a;
         out.a = a;
         out.b = b;
-        out.mix = .5 * (1 - Rules.smooth((d2 - d1) / BLEND));
+        out.mix = n.mix;
         out.type = a.type;
         out.distance = distance;
         double[] rise = new double[1];
@@ -459,7 +604,8 @@ public final class Shore {
     private static void weights(Segment s, double d, double share, Sample out) {
         if (share <= 0) return;
         double near = 1 - Rules.smooth(d / s.width);
-        // A rocky class names its stretch of coast: whole across the band, fading over one more.
+        // A rocky class names its stretch of coast, whole across the band and fading over one more:
+        // feature admission reads it as rugged ground (Terrain.Admission).
         double reach = 1 - Rules.smooth((d - s.width) / s.width);
         switch (s.type.kind) {
             case CLIFF:

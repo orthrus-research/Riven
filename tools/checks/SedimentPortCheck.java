@@ -171,8 +171,7 @@ public final class SedimentPortCheck {
                     "mountainShare",
                     "plateauShare",
                     "coldShare",
-                    "volcanicShare",
-                    "rockyShare"
+                    "volcanicShare"
                 }) ownership.addProperty(share, 0);
         ownership.addProperty("sedimentShare", 1);
         ownership.addProperty("anchorProbability", .02);

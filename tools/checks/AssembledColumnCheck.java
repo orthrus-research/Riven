@@ -15,8 +15,9 @@ import java.util.TreeMap;
 
 /**
  * Assembled crust columns are well formed and pure. Usage: AssembledColumnCheck [seed ...].
- * Samples a coarse grid plus dense coastal and wonder strips per seed, and every column of chunk
- * columns along a diagonal crossing land and coast (carved as native cubes carve them), and
+ * Samples a coarse grid plus dense coastal and wonder strips per seed, every column around the
+ * first 12 stacks, arches and sea caves (the coast forms that hold volumes), and every column of
+ * chunk columns along a diagonal crossing land and coast (carved as native cubes carve them), and
  * requires: runs cover the crust without gaps or overlaps, and neighbours differ; at(y) and
  * role(y) equal the runs at every boundary; a column assembled cold, from the reused buffer and
  * in reverse order is the same column; soil roles lie only in their layer under the sky's floor;
@@ -219,34 +220,50 @@ public final class AssembledColumnCheck {
                     int strip = dense ? 37 : 1;
                     for (int dx = 0; dx < strip; dx++) {
                         terrain.sample(x + dx, z, s);
-                        boolean rocky = dense && s.rocky.weight > 0;
-                        // A rocky shore's sites can hold volumes: a whole patch around the first
-                        // few.
-                        int side = rocky && patches < 12 ? 48 : 1;
-                        if (side > 1) patches++;
-                        for (int pz = 0; pz < side; pz++)
-                            for (int px = 0; px < side; px++) {
-                                int wx = x + dx + px - side / 2, wz = z + pz - side / 2;
-                                if (side > 1) terrain.sample(wx, wz, s);
-                                columns++;
-                                column(
-                                        maps,
-                                        crust,
-                                        table,
-                                        s,
-                                        reused,
-                                        wx + "," + wz + " seed " + seed,
-                                        minimumSoilY,
-                                        h,
-                                        columns,
-                                        coverage,
-                                        settings);
-                                AssembledColumn c = reused;
-                                runs += c.count();
-                                maximumRuns = Math.max(maximumRuns, c.count());
-                            }
+                        columns++;
+                        column(
+                                maps,
+                                crust,
+                                table,
+                                s,
+                                reused,
+                                (x + dx) + "," + z + " seed " + seed,
+                                minimumSoilY,
+                                h,
+                                columns,
+                                coverage,
+                                settings);
+                        runs += reused.count();
+                        maximumRuns = Math.max(maximumRuns, reused.count());
                     }
                 }
+            // Every column of a patch around the first few forms that hold volumes.
+            for (CoastForms.View v : terrain.rocky.placed(-4096, -4096, 4096, 4096)) {
+                if (v.form != CoastForms.Form.STACK_ARCH && v.form != CoastForms.Form.SEA_CAVE)
+                    continue;
+                if (patches++ == 12) break;
+                int cx = (int) Math.floor(v.x + v.nx * v.centerD),
+                        cz = (int) Math.floor(v.z + v.nz * v.centerD);
+                for (int wz = cz - 24; wz < cz + 24; wz++)
+                    for (int wx = cx - 24; wx < cx + 24; wx++) {
+                        terrain.sample(wx, wz, s);
+                        columns++;
+                        column(
+                                maps,
+                                crust,
+                                table,
+                                s,
+                                reused,
+                                wx + "," + wz + " seed " + seed,
+                                minimumSoilY,
+                                h,
+                                columns,
+                                coverage,
+                                settings);
+                        runs += reused.count();
+                        maximumRuns = Math.max(maximumRuns, reused.count());
+                    }
+            }
             chunkColumns += chunks(maps, h, seed, table);
         }
         System.out.println(
@@ -308,7 +325,6 @@ public final class AssembledColumnCheck {
         if (s.sediment.weight > 0) coverage.merge("sediment", 1, Integer::sum);
         if (s.rocky.weight > 0) coverage.merge("rocky", 1, Integer::sum);
         if (s.rocky.hasVolume()) coverage.merge("rockyVolume", 1, Integer::sum);
-        if (s.rocky.cutCount > 0) coverage.merge("rockyCuts", 1, Integer::sum);
         if (s.wonders.family != null) coverage.merge("wonder", 1, Integer::sum);
         if (s.wonders.palette != null) coverage.merge("wonderStrata", 1, Integer::sum);
         if (s.wonders.hasVoid()) coverage.merge("wonderVoid", 1, Integer::sum);

@@ -5,17 +5,26 @@ import com.google.gson.JsonObject;
 /** Shared factory for sparse, exclusive major-feature sites, independent of terrain queries. */
 public final class Sites {
     public enum Lane {
-        LANDMARK,
-        CARVER,
-        HILLS,
-        MOUNTAINS,
-        PLATEAUS,
-        COLD,
-        VOLCANIC,
-        CUTS,
-        SEDIMENT,
-        ROCKY,
-        WONDER
+        LANDMARK(0),
+        CARVER(1),
+        HILLS(2),
+        MOUNTAINS(3),
+        PLATEAUS(4),
+        COLD(5),
+        VOLCANIC(6),
+        CUTS(7),
+        SEDIMENT(8),
+        WONDER(10);
+
+        /**
+         * The lane's permanent seed index, never its position: retiring a lane (ROCKY was 9 until
+         * terrain-v110) must not move another lane's anchors.
+         */
+        final int seedIndex;
+
+        Lane(int seedIndex) {
+            this.seedIndex = seedIndex;
+        }
     }
 
     /** SHARED: any higher-priority raw neighbour vetoes. LANE: only same-lane neighbours do. */
@@ -49,14 +58,12 @@ public final class Sites {
             coldShare,
             volcanicShare,
             sedimentShare,
-            rockyShare,
             separation,
             mountainRadius,
             plateauRadius,
             coldRadius,
             volcanicRadius,
             sedimentRadius,
-            rockyRadius,
             wonderRadius,
             largestRadius;
 
@@ -88,7 +95,6 @@ public final class Sites {
         coldShare = json.has("coldShare") ? Rules.number(json, "coldShare", 0, 1) : 0;
         volcanicShare = json.has("volcanicShare") ? Rules.number(json, "volcanicShare", 0, 1) : 0;
         sedimentShare = json.has("sedimentShare") ? Rules.number(json, "sedimentShare", 0, 1) : 0;
-        rockyShare = json.has("rockyShare") ? Rules.number(json, "rockyShare", 0, 1) : 0;
         maximumRadius = spacing * Rules.number(json, "maximumRadiusInCells", 0.1, 1);
         mountainRadius =
                 json.has("maximumMountainRadiusInReferenceWidths")
@@ -123,12 +129,6 @@ public final class Sites {
                                 * Rules.number(
                                         json, "maximumSedimentRadiusInCoastalPlainWidths", 1, 8)
                         : maximumRadius;
-        rockyRadius =
-                json.has("maximumRockyRadiusInScarpWidths")
-                        ? heights.feature("scarp").width.max
-                                * TerrainScale.HORIZONTAL
-                                * Rules.number(json, "maximumRockyRadiusInScarpWidths", 4, 16)
-                        : maximumRadius;
         // Wonders are rare set pieces, larger than a carver but sized in site cells.
         wonderRadius =
                 json.has("maximumWonderRadiusInCells")
@@ -138,18 +138,15 @@ public final class Sites {
                 Math.max(
                         wonderRadius,
                         Math.max(
-                                rockyRadius,
+                                sedimentRadius,
                                 Math.max(
-                                        sedimentRadius,
+                                        volcanicRadius,
                                         Math.max(
-                                                volcanicRadius,
+                                                maximumRadius,
                                                 Math.max(
-                                                        maximumRadius,
+                                                        coldRadius,
                                                         Math.max(
-                                                                coldRadius,
-                                                                Math.max(
-                                                                        mountainRadius,
-                                                                        plateauRadius)))))));
+                                                                mountainRadius, plateauRadius))))));
         separation = spacing * Rules.number(json, "minimumSeparationInCells", 0.1, 4);
         if (separation < 2 * maximumRadius)
             throw new IllegalStateException("Major feature supports must not overlap");
@@ -178,7 +175,7 @@ public final class Sites {
         for (Lane lane : Lane.values())
             laneSeeds[lane.ordinal()] =
                     SeededNoise.mix(
-                            seed ^ (0x4c414e4553454544L + lane.ordinal() * 0x9e3779b97f4a7c15L));
+                            seed ^ (0x4c414e4553454544L + lane.seedIndex * 0x9e3779b97f4a7c15L));
     }
 
     /** The first lattice node at or above {@code min}. */
@@ -219,11 +216,9 @@ public final class Sites {
                                         ? volcanicRadius
                                         : lane == Lane.SEDIMENT
                                                 ? sedimentRadius
-                                                : lane == Lane.ROCKY
-                                                        ? rockyRadius
-                                                        : lane == Lane.WONDER
-                                                                ? wonderRadius
-                                                                : maximumRadius;
+                                                : lane == Lane.WONDER
+                                                        ? wonderRadius
+                                                        : maximumRadius;
     }
 
     public int searchRadius(Lane lane) {
@@ -239,7 +234,7 @@ public final class Sites {
         if (random(key, 0x434f4c44) < coldShare) return Lane.COLD;
         if (random(key, 0x564f4c43) < volcanicShare) return Lane.VOLCANIC;
         if (random(key, 0x53454449) < sedimentShare) return Lane.SEDIMENT;
-        return random(key, 0x524f434b) < rockyShare ? Lane.ROCKY : Lane.LANDMARK;
+        return Lane.LANDMARK;
     }
 
     /** An anchor's own admission from earlier facts; it must never read another site. */

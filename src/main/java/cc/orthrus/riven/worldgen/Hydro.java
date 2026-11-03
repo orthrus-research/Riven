@@ -1642,8 +1642,16 @@ public final class Hydro
         // A valley never cuts into a network lake's or route's bank.
         double w = (1 - Rules.smooth(water.channelBeyond / span)) * (1 - water.weight);
         h += (bank - h) * w;
-        // The blocks beside the water hold it: never below the highest water they touch.
-        if (water.channelBeyond > Drainage.LEVEE) return h;
-        return Math.max(h, Math.floor(Math.max(water.channelHead, water.channelLevee)) + .5);
+        return holding(h, water);
+    }
+
+    /**
+     * The blocks beside a channel's water hold it: a dry column within Drainage.LEVEE of a bed
+     * never stands below the highest water it touches. Later stages that lower dry ground keep
+     * it too.
+     */
+    public static double holding(double height, Sample water) {
+        if (!water.channel || water.channelBeyond > Drainage.LEVEE) return height;
+        return Math.max(height, Math.floor(Math.max(water.channelHead, water.channelLevee)) + .5);
     }
 }

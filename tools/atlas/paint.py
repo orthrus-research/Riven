@@ -81,6 +81,7 @@ LANE_STAGE = {
     "VOLCANIC": "volcanic",
     "CUTS": "cut",
     "SEDIMENT": "sediment",
+    # Retired at terrain-v110 (the coast's forms have no lane); renders of older trees keep it.
     "ROCKY": "rocky",
     "WONDER": "wonder",
 }

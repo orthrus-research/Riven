@@ -39,7 +39,7 @@ public final class SampleHistoryCheck {
         bounded("worldgen.CaveMap$Voids", "decorations", "decorLo", "decorHi", "decorBlock");
         bounded("worldgen.CaveMap$Voids", "entrances", "entranceLo", "entranceHi");
         bounded("worldgen.FloodMap$Column", "dams", "damDistance", "damLo", "damHi");
-        bounded("worldgen.RockyTerrain$Result", "cutCount", "cuts");
+        bounded("worldgen.CoastForms$Result", "runs", "bottom", "top", "edit");
         // Erosion's per-octave orientation (phacelle) and the passes' per-kind scores and shapes.
         scratch("worldgen.ErosionFilter$Result", "cosine", "sine");
         scratch("worldgen.RegionalTerrainPasses$Result", "admission", "coarse", "fine");
@@ -53,8 +53,6 @@ public final class SampleHistoryCheck {
         scratch("worldgen.MountainTerrain$Result", "sample", "crest");
         scratch("worldgen.LowlandTerrain$Result", "sample");
         scratch("worldgen.SedimentTerrain$Result", "geometry");
-        // Read only through plan, which is set after the kernel fills it and cleared with it.
-        scratch("worldgen.RockyTerrain$Result", "column");
         // Kernel work buffers and noise samples behind the published base facts; marine columns
         // clear the facts and never read these.
         scratch("worldgen.ContinentalMap$Sample", "work", "probe");
