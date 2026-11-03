@@ -71,6 +71,9 @@ public final class Shore {
 
         final double[] formSpacing;
 
+        /** The type's sediment forms (CoastSediment), by name. */
+        final String[] sediment;
+
         Type(JsonObject j) {
             id = j.get("id").getAsString();
             kind = Kind.valueOf(j.get("kind").getAsString().toUpperCase(java.util.Locale.ROOT));
@@ -98,6 +101,9 @@ public final class Shore {
                 forms[k] = form.get("form").getAsString();
                 formSpacing[k] = Rules.number(form, "perBlocks", 8, 4096);
             }
+            JsonArray deposits = j.has("sediment") ? j.getAsJsonArray("sediment") : new JsonArray();
+            sediment = new String[deposits.size()];
+            for (int k = 0; k < sediment.length; k++) sediment[k] = deposits.get(k).getAsString();
             for (Map.Entry<String, JsonElement> w : j.getAsJsonObject("suitability").entrySet()) {
                 int f = java.util.Arrays.asList(FACTS).indexOf(w.getKey());
                 if (f < 0)

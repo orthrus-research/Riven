@@ -1,7 +1,6 @@
 package cc.orthrus.riven.worldgen;
 
 import cc.orthrus.riven.contrib.carvers.SurfaceCuts;
-import cc.orthrus.riven.contrib.coast.SedimentaryCoasts;
 import cc.orthrus.riven.contrib.cold.ColdRegions;
 import cc.orthrus.riven.contrib.dryland.Drylands;
 import cc.orthrus.riven.contrib.hills.Hills;
@@ -80,7 +79,7 @@ public final class TerrainAtlas {
         Drylands.Family.values(),
         Shore.Kind.values(),
         CoastForms.Form.values(),
-        SedimentaryCoasts.Family.values()
+        CoastSediment.Form.values()
     };
 
     /** Height after each stage, in pipeline order; index 0 is the eroded base. */
@@ -630,8 +629,6 @@ public final class TerrainAtlas {
                 return 2;
             case CUTS:
                 return 9;
-            case SEDIMENT:
-                return 13;
             default:
                 throw new IllegalArgumentException(lane.name());
         }

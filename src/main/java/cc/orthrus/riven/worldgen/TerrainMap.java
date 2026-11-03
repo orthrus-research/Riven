@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 112;
+    public static final int VERSION = 113;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -20,7 +20,7 @@ public final class TerrainMap {
     private final ColdTerrain cold;
     private final VolcanicTerrain volcanic;
     private final GeneralSurfaceCuts cuts;
-    public final SedimentTerrain sediment;
+    public final CoastSediment sediment;
     public final CoastForms rocky;
     private final RegionalLandmarks landmarks;
     private final SurfaceCarvers carvers;
@@ -136,17 +136,7 @@ public final class TerrainMap {
         caves = new CaveMap(seed, heights, this::sample, this::sampleWater);
         ores = new OreMap(seed, heights);
         rocky = new CoastForms(seed, heights, shores, this::sampleBeforeRocky);
-        sediment =
-                new SedimentTerrain(
-                        seed,
-                        heights,
-                        types.sites,
-                        intentSampler,
-                        this::sampleBeforeSediment,
-                        hydro,
-                        hydro.cellBlocks,
-                        hydro.bankScale,
-                        world);
+        sediment = new CoastSediment(seed, heights, shores, rocky, this::sampleBeforeSediment);
     }
 
     /**
@@ -266,8 +256,7 @@ public final class TerrainMap {
                 stage(Phase.LATER, new VolcanicTerrain.Result());
         public final GeneralSurfaceCuts.Result cuts =
                 stage(Phase.LATER, new GeneralSurfaceCuts.Result());
-        public final SedimentTerrain.Result sediment =
-                stage(Phase.LATER, new SedimentTerrain.Result());
+        public final CoastSediment.Result sediment = stage(Phase.LATER, new CoastSediment.Result());
         public final CoastForms.Result rocky = stage(Phase.LATER, new CoastForms.Result());
         public final GeologyMap.Column geology = new GeologyMap.Column();
 

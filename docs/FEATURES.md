@@ -245,6 +245,23 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
     keeps its place), and a body claims only the columns it builds. Forms leave protected, wet and
     banked water alone. The rocky coast lane, `RockyTerrain` and `riven-rocky-coasts.json`
     (v25-v109) are retired.
+  - **Sediment** (S3b-2, terrain-v113; `sediment` in `riven-coasts.json`) comes from the MIT
+    sedimentary kernels (`contrib.coast`), placed by a type's `sediment` list (beach: bench, spit,
+    tombolo) against the ground the forms left. A segment's stretch is its own shore walked from
+    its site both ways, 24 blocks a step along each point's own shore and snapped onto it, keeping
+    the first point of the next segment so stretches overlap. A bench follows the whole stretch. A
+    spit grows, six times in ten, from a stretch end beside a cliff or rock segment, rooted 2 blocks
+    inland and drifting away from the rock. A tombolo ties a slot every 96 blocks to the nearest
+    stack seaward (within 40 degrees of the normal) or to an islet (land with open sea all round
+    within 48 blocks), one per segment. The segment's type is the kernel's admission; a spit or
+    tombolo stands only where every node of its line is unreserved, no deeper than the shoal (15
+    blocks) and no higher than a beach. Sediment leaves coast-form columns alone, takes each
+    column's highest edit, only builds outside a bench, keeps channel levees, and sand rising from
+    the sea is emergent. Bars and lagoons across bays wait for S5.
+  - Sediment measured with `CoastCheck` (8 seeds of 8 km): per world about 96 benches, 10 spits
+    and 4 tombolos. Checked benches stay between the ground they found and a beach's heights,
+    spits and tombolos only build, every emergent spit column joins land through the spit's sand,
+    and each tombolo's sand reaches its far end.
   - Forms measured with `CoastCheck` (8 seeds of 8 km): per world about 108 stacks in groups, 12
     arches, 52 sea caves, 36 stepped headlands, 24 cove sets and under one cliff platform
     (platforms are mostly backed by land under 8 blocks above the sea, too low for a cliff form).
@@ -525,34 +542,8 @@ Activity: rivers 0.01% of pixels, lakes 0% in the default render.
 
 ## Coastal formations
 
-| Stage | Families | Definition | Activity |
-| --- | --- | --- | --- |
-| Sedimentary coasts (`SedimentTerrain`, v24) | beach bench, spit, barrier, tombolo | `riven-sedimentary-coasts.json` | 17 bodies on 4 seeds of 8 km, 117 of 32 km |
-
-Rocky forms belong to the coast plan's segments since terrain-v110 (stacks, arches, coves, sea
-caves; see the coast plan). Sediment reads `sampleBeforeSediment`, after those forms. It
-certifies complete native proposal boxes, may emerge above water, and feeds final habitat
-through `surfaceHabitat`. Tombolos need an earlier isolated dry component. Native solid/void
-edits and DH cuts share one predicate.
-
-Coastal opportunities (v68): the sediment lane draws an anchor in every site cell (`laneDensity`
-1.0). Each anchor first runs every check its own earlier facts decide (`prepare`, memoized per
-cell): family, a shoreline within the anchor band (128 blocks), the shore root, proposal,
-occurrence, support, a shoaling or sheltered coast or a river mouth, shore guides, attachments, the island, reservations and the certificate's per-column and whole-body rules
-(supply, slope, exposure) on a 16-block lattice. Only anchors that pass compete for the lane, so
-one that could never build no longer vetoes one that can. The shore root is the nearest land/sea
-flip along the coast normal, walked out in 8-block steps both ways; the earlier end-point bracket
-failed beside narrow peninsulas, inlets and islets. The lane radius is 576 blocks (was 1,088).
-Exposure is the calm of shoaling, shelter or a river mouth. Memos keep 8,192 decisions per
-lane at the 8 km layout and as many prepared anchors, growing with the layout scale squared
-(131,072 at 32 km, where 12 players spread over the world read about 7,400): a decision costs
-about 10 ms, and a memo smaller than the working set rebuilt every cell on
-each pass (8 km warm pass 8 s against 0.6 s at v67, now 1.0 s). Concurrent misses on one cell share
-a single build (`SharedBuild`), as do hydrology owner-cell plans, which coastal decisions of
-one 2,048-block cell miss together (v68, with the rocky lane retired at v110; DH-like cold workload, details 0-4 to 4 km on 8 threads: 12.2 s
-to 9.7 s wall, identical heights). The decisions cost about 15 CPU-seconds per 8 km world, little in
-game but most of an 8 km atlas render (17 s on 8 threads against 3.8 s at v67), since threads on
-neighboring rows wait on the same new cells.
+Coastal formations belong to the coast plan's segments: rocky forms since terrain-v110 and
+sediment since terrain-v113 (see the coast plan, above). No coastal stage has a site lane.
 
 ## Biomes and blocks
 

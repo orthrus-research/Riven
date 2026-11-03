@@ -12,8 +12,7 @@ public final class Sites {
         PLATEAUS,
         COLD,
         VOLCANIC,
-        CUTS,
-        SEDIMENT
+        CUTS
     }
 
     /** SHARED: any higher-priority raw neighbour vetoes. LANE: only same-lane neighbours do. */
@@ -46,13 +45,11 @@ public final class Sites {
             plateauShare,
             coldShare,
             volcanicShare,
-            sedimentShare,
             separation,
             mountainRadius,
             plateauRadius,
             coldRadius,
             volcanicRadius,
-            sedimentRadius,
             largestRadius;
 
     /**
@@ -82,7 +79,6 @@ public final class Sites {
         plateauShare = json.has("plateauShare") ? Rules.number(json, "plateauShare", 0, 1) : 0;
         coldShare = json.has("coldShare") ? Rules.number(json, "coldShare", 0, 1) : 0;
         volcanicShare = json.has("volcanicShare") ? Rules.number(json, "volcanicShare", 0, 1) : 0;
-        sedimentShare = json.has("sedimentShare") ? Rules.number(json, "sedimentShare", 0, 1) : 0;
         maximumRadius = spacing * Rules.number(json, "maximumRadiusInCells", 0.1, 1);
         mountainRadius =
                 json.has("maximumMountainRadiusInReferenceWidths")
@@ -110,23 +106,12 @@ public final class Sites {
                                 * TerrainScale.HORIZONTAL
                                 * Rules.number(json, "maximumVolcanicRadiusInConeWidths", .5, 4)
                         : maximumRadius;
-        sedimentRadius =
-                json.has("maximumSedimentRadiusInCoastalPlainWidths")
-                        ? heights.feature("coastal_plain").width.targetAverage
-                                * TerrainScale.HORIZONTAL
-                                * Rules.number(
-                                        json, "maximumSedimentRadiusInCoastalPlainWidths", 1, 8)
-                        : maximumRadius;
         largestRadius =
                 Math.max(
-                        sedimentRadius,
+                        volcanicRadius,
                         Math.max(
-                                volcanicRadius,
-                                Math.max(
-                                        maximumRadius,
-                                        Math.max(
-                                                coldRadius,
-                                                Math.max(mountainRadius, plateauRadius)))));
+                                maximumRadius,
+                                Math.max(coldRadius, Math.max(mountainRadius, plateauRadius))));
         separation = spacing * Rules.number(json, "minimumSeparationInCells", 0.1, 4);
         if (separation < 2 * maximumRadius)
             throw new IllegalStateException("Major feature supports must not overlap");
@@ -192,9 +177,7 @@ public final class Sites {
                         ? plateauRadius
                         : lane == Lane.COLD
                                 ? coldRadius
-                                : lane == Lane.VOLCANIC
-                                        ? volcanicRadius
-                                        : lane == Lane.SEDIMENT ? sedimentRadius : maximumRadius;
+                                : lane == Lane.VOLCANIC ? volcanicRadius : maximumRadius;
     }
 
     public int searchRadius(Lane lane) {
@@ -209,7 +192,6 @@ public final class Sites {
         if (random(key, 0x504c4154) < plateauShare) return Lane.PLATEAUS;
         if (random(key, 0x434f4c44) < coldShare) return Lane.COLD;
         if (random(key, 0x564f4c43) < volcanicShare) return Lane.VOLCANIC;
-        if (random(key, 0x53454449) < sedimentShare) return Lane.SEDIMENT;
         return Lane.LANDMARK;
     }
 

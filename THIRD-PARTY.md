@@ -26,7 +26,7 @@ the original delivery.
 | Lakes and ponds | `cc/orthrus/riven/contrib/lakes/Lakes.java` | `LakeShape` | `lakes/MIT.txt` | `lakes-ponds-20261019` | Adapted |
 | Rivers and streams | `cc/orthrus/riven/contrib/river/Rivers.java` | `RiverShape` | `rivers/MIT.txt` | `rivers-streams-20261019` | Adapted |
 | Lagoons and estuaries | `cc/orthrus/riven/contrib/estuaries/EstuaryKernels.java` | `CoastShape` | `estuaries/MIT.txt` | `lagoons-estuaries-15-20261019` (second pass) | Adapted |
-| Sedimentary coasts | `cc/orthrus/riven/contrib/coast/SedimentaryCoasts.java` | `SedimentTerrain` | `sedimentary-coasts/MIT.txt` | `sedimentary-coasts-20261019` | Adapted |
+| Sedimentary coasts | `cc/orthrus/riven/contrib/coast/SedimentaryCoasts.java` | `CoastSediment` | `sedimentary-coasts/MIT.txt` | `sedimentary-coasts-20261019` | Adapted |
 | Rocky coasts | `cc/orthrus/riven/contrib/rocky/RockyCoasts.java` | `CoastForms` | `rocky-coasts/MIT.txt`, `SOURCES.md` | `rocky-coasts-20261019` | Adapted |
 
 Production sources are under `src/main/java/`. "Adapted" files carry a modification notice in

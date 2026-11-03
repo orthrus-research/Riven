@@ -52,7 +52,7 @@ public final class SampleHistoryCheck {
         scratch("worldgen.PlateauTerrain$Result", "sample");
         scratch("worldgen.MountainTerrain$Result", "sample", "crest");
         scratch("worldgen.LowlandTerrain$Result", "sample");
-        scratch("worldgen.SedimentTerrain$Result", "geometry");
+        scratch("worldgen.CoastSediment$Result", "geometry");
         // Kernel work buffers and noise samples behind the published base facts; marine columns
         // clear the facts and never read these.
         scratch("worldgen.ContinentalMap$Sample", "work", "probe");

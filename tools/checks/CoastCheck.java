@@ -25,6 +25,11 @@ import java.util.Set;
  * is one void from above the water to no higher than its roof band under the surface, opening
  * through a notch cut to its floor; a height form only lowers land and edits nothing past its
  * segment's band.
+ *
+ * <p>The coast's sediment (S3b-2), up to 6 of each form per world: a bench stays between the
+ * ground it found and a beach's heights; a spit or tombolo only builds; every emergent column of
+ * a spit joins land through the spit's own sand, and a tombolo's emergent sand joins the land at
+ * its root to the land or stack at its far end.
  */
 public final class CoastCheck {
     private static void require(boolean value, String message) {
@@ -42,6 +47,7 @@ public final class CoastCheck {
         for (long seed = 1; seed <= seeds; seed++) {
             GenerationMaps maps = new GenerationMaps(seed);
             forms(maps, seed, forms);
+            sediment(maps, seed, forms);
             TerrainMap.BaseSample s = new TerrainMap.BaseSample(), e = new TerrainMap.BaseSample();
             for (int i = 0; i < 512; i++)
                 for (int j = 0; j < 512; j++) {
@@ -311,5 +317,118 @@ public final class CoastCheck {
                                 + at(x, z, seed));
             }
         return columns;
+    }
+
+    private static final int SEDIMENT_CHECKS = 6;
+
+    /** The sediment checks for one world; tallies are placed, checked and columns per form. */
+    private static void sediment(GenerationMaps maps, long seed, Map<String, int[]> tallies) {
+        TerrainMap terrain = maps.terrain;
+        Map<String, Integer> checked = new HashMap<>();
+        TerrainMap.Sample s = new TerrainMap.Sample();
+        for (CoastSediment.View v : terrain.sediment.placed(-4096, -4096, 4096, 4096)) {
+            String name = v.form.name();
+            int[] tally = tallies.computeIfAbsent(name, k -> new int[3]);
+            tally[0]++;
+            int done = checked.getOrDefault(name, 0);
+            if (done >= SEDIMENT_CHECKS) continue;
+            int columns = deposit(terrain, v, s, seed);
+            if (columns == 0) continue;
+            checked.put(name, done + 1);
+            tally[1]++;
+            tally[2] += columns;
+        }
+    }
+
+    /**
+     * One sediment form over its nodes' box: heights within its rule, and for a spit or tombolo its
+     * emergent sand joined as the form requires.
+     */
+    private static int deposit(
+            TerrainMap terrain, CoastSediment.View v, TerrainMap.Sample s, long seed) {
+        TerrainHeightReference h = TerrainHeightReference.DEFAULT;
+        int sea = h.waterTopY + 1;
+        TerrainHeightReference.Feature beach = h.feature("beach");
+        double low = sea + beach.elevationOffset.min, high = sea + beach.elevationOffset.max;
+        double minX = Double.POSITIVE_INFINITY, minZ = minX, maxX = -minX, maxZ = -minX;
+        for (int k = 0; k < v.x.length; k++) {
+            minX = Math.min(minX, v.x[k]);
+            maxX = Math.max(maxX, v.x[k]);
+            minZ = Math.min(minZ, v.z[k]);
+            maxZ = Math.max(maxZ, v.z[k]);
+        }
+        int pad = 24, x0 = (int) Math.floor(minX) - pad, z0 = (int) Math.floor(minZ) - pad;
+        int w = (int) Math.ceil(maxX) + pad - x0 + 1, d = (int) Math.ceil(maxZ) + pad - z0 + 1;
+        boolean bench = v.form == CoastSediment.Form.BEACH_BENCH;
+        // 1: this form's emergent sand; 2: land or a stack's body, which sand may join.
+        byte[] kind = new byte[w * d];
+        int columns = 0;
+        for (int dz = 0; dz < d; dz++)
+            for (int dx = 0; dx < w; dx++) {
+                int x = x0 + dx, z = z0 + dz;
+                terrain.sample(x, z, s);
+                CoastSediment.Result f = s.sediment;
+                boolean mine = f.id == v.id && f.weight > 0;
+                if (mine) {
+                    columns++;
+                    if (bench)
+                        require(
+                                f.height >= Math.min(f.parentHeight, low) - 1e-9
+                                        && f.height <= Math.max(f.parentHeight, high) + 1e-9,
+                                "Bench outside the ground it found and a beach" + at(x, z, seed));
+                    else
+                        require(
+                                f.height >= f.parentHeight - 1e-9
+                                        && f.height <= Math.max(f.parentHeight, high) + 1e-9,
+                                v.form + " lowered ground or rose past a beach" + at(x, z, seed));
+                }
+                if (mine && s.ocean.marine && f.height >= sea) kind[dz * w + dx] = 1;
+                else if (!s.ocean.marine || s.rocky.hasVolume()) kind[dz * w + dx] = 2;
+            }
+        if (bench || columns == 0) return columns;
+        // Flood the emergent sand from every column of it that touches land.
+        int[] queue = new int[w * d];
+        boolean[] seen = new boolean[w * d];
+        int head = 0, tail = 0;
+        for (int i = 0; i < w * d; i++)
+            if (kind[i] == 1 && touches(kind, w, d, i, (byte) 2)) {
+                seen[i] = true;
+                queue[tail++] = i;
+            }
+        while (head < tail) {
+            int i = queue[head++];
+            for (int q : neighbours(w, d, i))
+                if (q >= 0 && kind[q] == 1 && !seen[q]) {
+                    seen[q] = true;
+                    queue[tail++] = q;
+                }
+        }
+        for (int i = 0; i < w * d; i++)
+            require(
+                    kind[i] != 1 || seen[i],
+                    v.form + " sand cut off from land" + at(x0 + i % w, z0 + i / w, seed));
+        if (v.form == CoastSediment.Form.TOMBOLO) {
+            // The flooded sand reaches within 4 blocks of the tie's far end.
+            int ex = (int) Math.floor(v.x[v.x.length - 1]) - x0,
+                    ez = (int) Math.floor(v.z[v.z.length - 1]) - z0;
+            boolean joined = false;
+            for (int i = 0; i < w * d && !joined; i++)
+                if (seen[i] && Math.abs(i % w - ex) <= 4 && Math.abs(i / w - ez) <= 4)
+                    joined = true;
+            require(joined, "Tombolo does not reach its far end" + at(v.x[0], v.z[0], seed));
+        }
+        return columns;
+    }
+
+    private static int[] neighbours(int w, int d, int i) {
+        int x = i % w, z = i / w;
+        return new int[] {
+            x > 0 ? i - 1 : -1, x + 1 < w ? i + 1 : -1, z > 0 ? i - w : -1, z + 1 < d ? i + w : -1
+        };
+    }
+
+    private static boolean touches(byte[] kind, int w, int d, int i, byte k) {
+        for (int q : neighbours(w, d, i)) if (q >= 0 && kind[q] == k) return true;
+        return false;
     }
 }

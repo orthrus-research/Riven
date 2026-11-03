@@ -14,7 +14,7 @@ misses may duplicate cold work but cannot produce different values. An evicted e
 a new object equal to the old, so a value that refers to another memo's entries compares them by
 key, never by reference (`Shore.Segment.is`: a coast form keeps its segment while the segment memo
 may rebuild it). Memos with a `SharedBuild`
-(every `CellMemo`, hydrology plans, sediment decisions) give concurrent misses on one key
+(every `CellMemo` and hydrology plans) give concurrent misses on one key
 a single build, which publishes its value before it lets go of the key and first looks for the
 value again, so a miss that raced a build ending finds the value instead of building it again.
 In-build parallelism (drainage scans, network and plan builds) runs through `BuildPool` on the
@@ -25,7 +25,7 @@ pool cannot deadlock on a single build. Preview columns build on their own threa
 much later, and on the shared pool those would hold the helpers native builds wait for. Cubature also prepares regional plans ahead of the
 players through `ICubeGenerator.prepareRegion` ("Preparation within bounds" in DECISIONS.md):
 `TerrainMap.prepareRegion` builds one hydrology owner cell's drainage networks and plan, then its
-sediment decisions and coast forms, and declines once a memo would pass its headroom: a quarter of a
+coast forms and sediment, and declines once a memo would pass its headroom: a quarter of a
 set-associative memo, half the drainage memo, or 10 MB x layout squared of networks. A `CellMemo`
 keeps each cell in either of two slots and a miss replaces the older entry, so cells no longer read age out and
 two cells sharing a slot do not rebuild each other on every read (with a fixed victim, two
@@ -116,13 +116,13 @@ they never call `surfaceHabitat` or final `sample`.
 | `intent` | Outline, marine ownership and ocean water, climate and the province (effective climate), base terrain, shore intent | Local hydrology, all shaping |
 | `habitat` | Intent plus local surface-water and lens plans | Final terrain, coastal emergence |
 | `sampleBeforeMajorFeatures` | Habitat, erosion, lowlands, regional passes; constrained ocean bed on marine columns | Major forms, carvers, drylands, coastal formations |
-| `sampleBeforeRocky` | Complete earlier surface with shore/water constraints and roof seal | Coast forms and sedimentary formations |
-| `sampleBeforeSediment` | The above plus the coast's forms and roof seal | Sedimentary formations |
+| `sampleBeforeRocky` | Complete earlier surface with shore/water constraints and roof seal | Coast forms |
+| `sampleBeforeSediment` | The above plus the coast's forms and roof seal | Coast sediment |
 
 Major-form certificates read `sampleBeforeMajorFeatures` on the shared site-certificate lattice
 (every 8 blocks, world-aligned, since v56) over their support plus an anchor and halo, so a site
-decision costs the same whatever resolution a native cube or a DH tile requests; the coast's forms read their facts from `sampleBeforeRocky`; sediment
-certificates read `sampleBeforeSediment`. `surfaceHabitat` is for final biome consumers and runs
+decision costs the same whatever resolution a native cube or a DH tile requests; the coast's forms read their facts from `sampleBeforeRocky` and its
+sediment from `sampleBeforeSediment`. `surfaceHabitat` is for final biome consumers and runs
 final shaping where a native coastal plan exists.
 
 ```mermaid
@@ -141,7 +141,7 @@ flowchart TD
   D --> W[Shore shaping, water constraint, roof seal]
   W --> R[Coast forms, roof seal]
   Q --> R
-  R --> S[Sedimentary coasts, roof seal]
+  R --> S[Coast sediment, roof seal]
   S --> F[Final biome and block resolution]
 ```
 
@@ -149,7 +149,7 @@ flowchart TD
 
 Land columns run, in order: erosion, lowlands, regional passes, volcanic, cold, plateaus,
 mountains, hills (capped by the coastal envelope), regional landmarks, surface carvers, general surface cuts, drylands, shore
-shaping, hydrology constraint, coast forms, sedimentary coasts. Marine columns run ocean bed,
+shaping, hydrology constraint, coast forms, coast sediment. Marine columns run ocean bed,
 hydrology constraint and roof seal, then the coastal stages. This order is part of the generator
 definition:
 
@@ -227,14 +227,14 @@ their own cube path below the crust floor.
 `Sites` (configured in `riven-terrain.json`) places sparse major features on a 288-block cell
 grid. Every cell is a raw anchor (`anchorProbability` 1.0, v42); a sequential lottery assigns its
 lane (carver/cut 40%, hills 30%, mountains 15%, plateaus 7.5%, cold 3.75%, volcanic 1.9%, then
-sediment and landmark under 1% each). With `competition` LANE (v42) an anchor is admitted
+landmark under 1%). With `competition` LANE (v42) an anchor is admitted
 only if no higher-priority raw anchor of the same lane lies within twice that lane's radius;
 supports of different lanes may overlap and compose in stage order. Since v52, mountain, plateau, volcanic and
 cold neighbors veto only if their own anchor passes the stage's anchor-local admission
 (earlier intent, climate, water and marine tests, memoized per cell); other raw neighbors veto
 whether or not they would build. (SHARED, the rule until v41, also let every other lane veto within the
 larger of the 518-block separation and the sum of both radii; it vetoed about 90% of anchors.) Per-lane maximum radii: carver, cut, hills,
-landmark 259; plateau and volcanic 288; mountains 576; cold 816; sediment 1,088
+landmark 259; plateau and volcanic 288; mountains 576; cold 816
 blocks.
 
 Each family's terrain adapter then certifies its admitted site against the earlier parent and
@@ -303,7 +303,7 @@ substitutes for the integer, canonical native/DH path when checking parity.
 | `riven-regional-fabric.json`, `riven-climate-forcing.json`, `riven-substrate.json` | Earlier regional axis, moisture forcing, material permissions |
 | `riven-terrain-passes.json`, `riven-landmarks.json`, `riven-surface-carvers.json` | Regional passes, landmarks, legacy carvers |
 | `riven-lowlands.json`, `riven-hills.json`, `riven-mountains.json`, `riven-plateaus.json`, `riven-drylands.json`, `riven-cold-regions.json`, `riven-volcanic.json`, `riven-general-surface-cuts.json` | Contributed land families |
-| `riven-coasts.json`, `riven-ocean-floors.json`, `riven-sedimentary-coasts.json`, `riven-estuaries.json` | Coast and seabed |
+| `riven-coasts.json`, `riven-ocean-floors.json`, `riven-estuaries.json` | Coast and seabed |
 | `riven-hydrology.json`, `riven-lakes.json`, `riven-rivers.json` | Water |
 | `riven-habitats.json`, `riven-surface-rules.json` | Biome palettes; why a column's ground shows rock |
 | `riven-zones.json`, `riven-surface.json` | The column engine's zones, setting thresholds and setting tables |

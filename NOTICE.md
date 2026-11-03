@@ -78,14 +78,14 @@ illustrations and text are not included.
 `src/main/java/cc/orthrus/riven/contrib/coast/SedimentaryCoasts.java` adapts the MIT
 package `contributions/sedimentary-coasts-20261019`, retaining the reviewed
 barrier-centerline, convex-beach-vertex and spit-join corrections. Original
-continuous APIs, geometry and stable salts remain. Native additions provide
-separate geometry proposals, proposal-bound integer-column facts/plans,
-primitive sampling and explicit tentative-footprint inspection. Native
-certificates do not qualify the original continuous API. Copyright (c) 2026
-Riven contributors. The complete grant is packaged in
+continuous APIs, geometry and stable salts remain. Riven's modifications add
+primitive sampling and a caller-chosen spit drift; the proposal-bound column
+admission it once added is removed (terrain-v113). Copyright (c) 2026 Riven
+contributors. The complete grant is packaged in
 `META-INF/licenses/sedimentary-coasts/MIT.txt` in binary and source artifacts.
-Native extensions remain MIT. `SedimentTerrain`, the common biome/material
-integration and `riven-sedimentary-coasts.json` remain original NRR material.
+Modifications remain MIT. `CoastSediment` (which places the kernels as coast
+segment sediment), the common biome/material integration and the sediment in
+`riven-coasts.json` remain original NRR material.
 
 `src/main/java/cc/orthrus/riven/contrib/estuaries/EstuaryKernels.java` adapts the MIT
 package `contributions/lagoons-estuaries-15-20261019`, including its reviewed

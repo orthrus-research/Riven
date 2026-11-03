@@ -79,7 +79,6 @@ LANE_STAGE = {
     "COLD": "cold",
     "VOLCANIC": "volcanic",
     "CUTS": "cut",
-    "SEDIMENT": "sediment",
 }
 
 Color = tuple[int, int, int]

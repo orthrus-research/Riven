@@ -225,20 +225,14 @@ final class ColumnReport {
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Sediment=%s reason=%s id=%s | parent=%.2f top=%.2f weight=%.3f emergent=%s | candidates=%d boxColumns=%d active=%d masked=%d earlierProbes=%d islandColumns=%d",
+                                "Sediment=%s reason=%s id=%s | parent=%.2f top=%.2f weight=%.3f emergent=%s",
                                 terrain.sediment.family,
                                 terrain.sediment.reason,
                                 Long.toUnsignedString(terrain.sediment.id, 16),
                                 terrain.sediment.parentHeight,
                                 terrain.sediment.height,
                                 terrain.sediment.weight,
-                                terrain.emergentSediment,
-                                terrain.sediment.candidates,
-                                terrain.sediment.boxColumns,
-                                terrain.sediment.activeColumns,
-                                terrain.sediment.maskedColumns,
-                                terrain.sediment.probeColumns,
-                                terrain.sediment.islandColumns)));
+                                terrain.emergentSediment)));
         sender.sendMessage(
                 new TextComponentString(
                         String.format(

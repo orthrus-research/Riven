@@ -5,6 +5,9 @@
  * Original continuous APIs remain available; native certificates do not certify them.
  * Native extensions remain MIT. Packaged grant: META-INF/licenses/sedimentary-coasts/MIT.txt.
  * Riven modification (2026-10-23): admission thresholds named so callers can pre-check them.
+ * Riven modification (2026-11-02): a spit's drift is the caller's argument, plans sample from
+ * primitives without a Column, and the proposal-bound column admission of 2026-10-20 is removed
+ * (Riven places sediment by construction).
  */
 package cc.orthrus.riven.contrib.coast;
 
@@ -40,7 +43,6 @@ public final class SedimentaryCoasts {
         BAD_INPUT,
         BAD_ATTACHMENT,
         BLOCKED_CONNECTION,
-        COLUMN_DOMAIN,
         UNKNOWN_COLUMNS
     }
 
@@ -341,7 +343,10 @@ public final class SedimentaryCoasts {
                 Family.BEACH_BENCH, seed, id, r, t, facts, shoreX, shoreZ, masks, null, null);
     }
 
-    /** Recurved spit: two cubic lobes, fixed 40 segments, rooted at an earlier shore attachment. */
+    /**
+     * Recurved spit: two cubic lobes, fixed 40 segments, rooted at an earlier shore attachment,
+     * growing along its tangent (drift 1) or against it (drift -1).
+     */
     public static Plan spit(
             long seed,
             long id,
@@ -349,13 +354,15 @@ public final class SedimentaryCoasts {
             Tuning t,
             Admission facts,
             Anchor root,
-            Reservation[] masks) {
+            Reservation[] masks,
+            int drift) {
+        if (drift != 1 && drift != -1) throw new IllegalArgumentException("Drift is 1 or -1");
         long k = mix(seed ^ Family.SPIT.salt ^ mix(id));
         double len = r.plainWidth * t.lengthScale * (.78 + .26 * unit(k));
         double tx = root.tangentX, tz = root.tangentZ, nx = tz, nz = -tx;
-        double bend = t.hook * (.8 + .4 * unit(mix(k + 1))), dir = unit(mix(k + 2)) < .5 ? -1 : 1;
-        tx *= dir;
-        tz *= dir; // Seaward normal remains inherited; drift orientation may reverse.
+        double bend = t.hook * (.8 + .4 * unit(mix(k + 1)));
+        tx *= drift;
+        tz *= drift; // The seaward normal stays the root's; only the drift orientation turns.
         double[] xx = new double[41], zz = new double[41];
         for (int i = 0; i <= 40; i++) {
             double q = i / 40.0, u, v;
@@ -442,6 +449,19 @@ public final class SedimentaryCoasts {
     /** O(63+16), no allocation, no mutable shared state, no callbacks or recursive terrain reads. */
     public static void sample(Plan p, Column c, Sample out) {
         sample(p, c.x, c.z, c.parentY, c.marine, c.sedimentPermission, c.waterReserved, true, out);
+    }
+
+    /** As {@link #sample(Plan, Column, Sample)}, from the column's facts directly. */
+    public static void sample(
+            Plan p,
+            double x,
+            double z,
+            double parent,
+            boolean marine,
+            boolean permission,
+            boolean reserved,
+            Sample out) {
+        sample(p, x, z, parent, marine, permission, reserved, true, out);
     }
 
     private static void sample(
@@ -569,188 +589,6 @@ public final class SedimentaryCoasts {
         out.heightY = parent + (target - parent) * weight;
         out.reason = Reason.ACCEPTED;
         out.emergentSediment = marine && out.heightY >= r.sea;
-    }
-
-    /** Tentative geometry only. Its foundation is deliberately not admitted. */
-    public static final class ColumnProposal {
-        private final Plan geometry;
-        private final long seed, id;
-        private final Anchor a, b;
-        public final Family family;
-        public final double minX, minZ, maxX, maxZ;
-        public final int boxColumns;
-
-        private ColumnProposal(Plan p, long seed, long id, Anchor a, Anchor b) {
-            geometry = p;
-            this.seed = seed;
-            this.id = id;
-            this.a = a;
-            this.b = b;
-            family = p.family;
-            minX = p.minX;
-            minZ = p.minZ;
-            maxX = p.maxX;
-            maxZ = p.maxZ;
-            long count =
-                    ((long) StrictMath.ceil(maxX) - (long) StrictMath.floor(minX) + 1)
-                            * ((long) StrictMath.ceil(maxZ) - (long) StrictMath.floor(minZ) + 1);
-            boxColumns = count > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) count;
-        }
-    }
-
-    public static ColumnProposal proposeColumns(
-            Family f,
-            long seed,
-            long id,
-            Reference r,
-            Tuning t,
-            double[] guideX,
-            double[] guideZ,
-            Anchor mainland,
-            Anchor island,
-            Reservation[] masks) {
-        Admission pending = new Admission(1, 0, 0, false);
-        Plan p;
-        switch (f) {
-            case BEACH_BENCH:
-                p = beach(seed, id, r, t, pending, guideX, guideZ, masks);
-                break;
-            case SPIT:
-                p = spit(seed, id, r, t, pending, mainland, masks);
-                break;
-            case BARRIER:
-                p = barrier(seed, id, r, t, pending, guideX, guideZ, masks);
-                break;
-            case TOMBOLO:
-                p = tombolo(seed, id, r, t, pending, mainland, island, masks);
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown family");
-        }
-        return new ColumnProposal(p, seed, id, mainland, island);
-    }
-
-    /** Admission inspects these exact columns; it does not make the proposal sampleable as a plan. */
-    public static void probeColumns(
-            ColumnProposal p,
-            int x,
-            int z,
-            double parent,
-            boolean marine,
-            boolean permission,
-            boolean reserved,
-            Sample out) {
-        sample(p.geometry, x, z, parent, marine, permission, reserved, false, out);
-    }
-
-    public static boolean masked(ColumnProposal p, int x, int z) {
-        for (Reservation m : p.geometry.reservations)
-            if (pointDistance2(x, z, m.ax, m.az, m.bx, m.bz) <= m.radius * m.radius) return true;
-        return false;
-    }
-
-    public static final class ColumnFacts {
-        private final ColumnProposal proposal;
-        private final Admission admission;
-        private final int columns, active, islandColumns;
-        private final boolean guide, connected;
-
-        public ColumnFacts(
-                ColumnProposal p,
-                double sediment,
-                double slope,
-                double exposure,
-                int columns,
-                int active,
-                boolean guide,
-                boolean connected,
-                int islandColumns) {
-            if (p == null || columns < 0 || active < 0 || active > columns || islandColumns < 0)
-                throw new IllegalArgumentException("Invalid native column certificate");
-            proposal = p;
-            admission =
-                    new Admission(sediment, slope, exposure, columns == p.boxColumns && active > 0);
-            this.columns = columns;
-            this.active = active;
-            this.guide = guide;
-            this.connected = connected;
-            this.islandColumns = islandColumns;
-        }
-    }
-
-    /** Separate native proof domain. The continuous Plan is not exposed by this wrapper. */
-    public static final class ColumnPlan {
-        private final Plan geometry;
-        public final Family family;
-        public final double minX, minZ, maxX, maxZ;
-
-        private ColumnPlan(Plan p) {
-            geometry = p;
-            family = p.family;
-            minX = p.minX;
-            minZ = p.minZ;
-            maxX = p.maxX;
-            maxZ = p.maxZ;
-        }
-
-        public boolean contains(double x, double z) {
-            return x >= minX && x <= maxX && z >= minZ && z <= maxZ;
-        }
-    }
-
-    public static final class ColumnDecision {
-        public final Reason reason;
-        public final ColumnPlan plan;
-
-        private ColumnDecision(Reason reason, ColumnPlan plan) {
-            this.reason = reason;
-            this.plan = plan;
-        }
-    }
-
-    public static ColumnDecision admitColumns(ColumnProposal p, ColumnFacts facts) {
-        if (facts.proposal != p
-                || facts.columns != p.boxColumns
-                || facts.active == 0
-                || !facts.guide) return new ColumnDecision(Reason.UNKNOWN_COLUMNS, null);
-        if ((p.family == Family.SPIT || p.family == Family.TOMBOLO) && !facts.connected)
-            return new ColumnDecision(Reason.BLOCKED_CONNECTION, null);
-        if (p.family == Family.TOMBOLO && facts.islandColumns == 0)
-            return new ColumnDecision(Reason.BAD_ATTACHMENT, null);
-        Plan g = p.geometry;
-        Plan admitted =
-                new Plan(
-                        p.family,
-                        p.seed,
-                        p.id,
-                        g.reference,
-                        g.tuning,
-                        facts.admission,
-                        g.x,
-                        g.z,
-                        g.reservations,
-                        p.a,
-                        p.b);
-        return new ColumnDecision(
-                admitted.admission,
-                admitted.admission == Reason.ACCEPTED ? new ColumnPlan(admitted) : null);
-    }
-
-    public static void sampleColumns(
-            ColumnPlan p,
-            double x,
-            double z,
-            double parent,
-            boolean marine,
-            boolean permission,
-            boolean reserved,
-            Sample out) {
-        if (x != StrictMath.floor(x) || z != StrictMath.floor(z)) {
-            out.reset(parent, marine);
-            out.reason = Reason.COLUMN_DOMAIN;
-            return;
-        }
-        sample(p.geometry, x, z, parent, marine, permission, reserved, true, out);
     }
 
     private static void nearest(Plan p, double x, double z, Sample out) {

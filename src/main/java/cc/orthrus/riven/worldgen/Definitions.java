@@ -52,7 +52,6 @@ public final class Definitions {
                             "riven-realms.json",
                             "riven-regional-fabric.json",
                             "riven-rivers.json",
-                            "riven-sedimentary-coasts.json",
                             "riven-shaderprops.json",
                             "riven-substrate.json",
                             "riven-subsurface-climate.json",
