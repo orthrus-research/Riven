@@ -169,17 +169,16 @@ public final class RivenContent {
             for (JsonElement g : d.getAsJsonArray("ground")) kinds.add(g.getAsString());
             int ground = Grounds.mask(kinds);
             boolean replaceable = d.get("replaceable").getAsBoolean();
+            boolean flammable = !d.has("flammable") || d.get("flammable").getAsBoolean();
             String kind = d.get("kind").getAsString();
             Block block;
-            if (kind.equals("plant")) block = new BlockRivenPlant(ground, replaceable);
+            if (kind.equals("plant")) block = new BlockRivenPlant(ground, replaceable, flammable);
+            else if (kind.equals("hanging")) block = new BlockRivenHanging(ground, flammable);
+            else if (kind.equals("submerged")) block = new BlockRivenSubmerged(ground);
             else if (kind.equals("tall")) block = new BlockRivenTallPlant(ground, replaceable);
             else if (kind.equals("cane")) block = new BlockRivenCane(ground, replaceable);
             else if (kind.equals("decal"))
-                block =
-                        new BlockRivenDecal(
-                                e.getKey(),
-                                ground,
-                                !d.has("flammable") || d.get("flammable").getAsBoolean());
+                block = new BlockRivenDecal(e.getKey(), ground, flammable);
             else throw new IllegalStateException("Unknown decoration kind " + kind);
             block.setHardness(0);
             if (d.has("light")) block.setLightLevel(d.get("light").getAsInt() / 15f);
@@ -228,9 +227,11 @@ public final class RivenContent {
                 Blocks.FIRE.setFireInfo(block, 30, 60);
             } else if (block instanceof BlockRivenDecal) {
                 if (((BlockRivenDecal) block).flammable) Blocks.FIRE.setFireInfo(block, 60, 100);
-            } else if (block instanceof BlockRivenPlant
-                    || block instanceof BlockRivenTallPlant
-                    || block instanceof BlockRivenCane) {
+            } else if (block instanceof BlockRivenPlant) {
+                if (((BlockRivenPlant) block).flammable) Blocks.FIRE.setFireInfo(block, 60, 100);
+            } else if (block instanceof BlockRivenHanging) {
+                if (((BlockRivenHanging) block).flammable) Blocks.FIRE.setFireInfo(block, 60, 100);
+            } else if (block instanceof BlockRivenTallPlant || block instanceof BlockRivenCane) {
                 Blocks.FIRE.setFireInfo(block, 60, 100);
             }
         }

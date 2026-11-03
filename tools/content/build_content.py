@@ -405,7 +405,7 @@ def decoration_assets(decorations: dict[str, Any]) -> tuple[dict[str, bytes], di
             faces = form_faces(subject)
             for n, png_bytes in enumerate(faces):
                 out[f"textures/blocks/decor/{id_}_{n}.png"] = png_bytes
-                if kind == "plant":
+                if kind in ("plant", "hanging"):
                     model: dict[str, Any] = {
                         "parent": "block/cross",
                         "textures": {"cross": f"{tex}_{n}"},

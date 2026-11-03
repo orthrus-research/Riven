@@ -44,12 +44,12 @@ public final class WaterCheck {
     private static boolean passable(TerrainBlock t) {
         return t == TerrainBlock.AIR
                 || t == TerrainBlock.COBWEB
-                || t == TerrainBlock.ROOT
+                || t == TerrainBlock.HANGING_ROOTS
                 || t == TerrainBlock.INK_CAP
                 || t == TerrainBlock.PALE_CAVE_MUSHROOM
                 || t == TerrainBlock.BROWN_MUSHROOM
                 || t == TerrainBlock.RED_MUSHROOM
-                || t == TerrainBlock.MINERS_DELIGHT
+                || t == TerrainBlock.STONEBELL
                 || t == TerrainBlock.GLOWING_MUSHROOM;
     }
 
@@ -100,7 +100,7 @@ public final class WaterCheck {
                     byte c;
                     if (y > surface[i]) c = OTHER;
                     else if (passable(t)) c = AIR;
-                    else if (t == TerrainBlock.WATER || t == TerrainBlock.ALGAE)
+                    else if (t == TerrainBlock.WATER || t == TerrainBlock.GREEN_BIOFILM)
                         c = lake ? LAKE_WATER : CAVE_WATER;
                     else c = SOLID;
                     cat[i * span + y - y0] = c;

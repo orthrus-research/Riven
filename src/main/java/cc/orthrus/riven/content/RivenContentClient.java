@@ -25,6 +25,13 @@ public final class RivenContentClient {
                             new ModelResourceLocation(block.getRegistryName(), "host=" + i));
                 continue;
             }
+            // A submerged decoration carries water's level for the game, not for its model.
+            if (block instanceof BlockRivenSubmerged)
+                ModelLoader.setCustomStateMapper(
+                        block,
+                        new net.minecraft.client.renderer.block.statemap.StateMap.Builder()
+                                .ignore(net.minecraft.block.BlockLiquid.LEVEL)
+                                .build());
             ModelLoader.setCustomModelResourceLocation(
                     Item.getItemFromBlock(block),
                     0,

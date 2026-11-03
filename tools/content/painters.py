@@ -188,6 +188,80 @@ def fungus(species: str, form: int) -> Image:
     return image
 
 
+# Placeholders for hanging roots (Requisition 05's root threads), green biofilm (Requisition 07)
+# and the stonebell, which has no requisitioned art yet: dark to light.
+ROOTS = [(0x55, 0x4B, 0x3B), (0x70, 0x62, 0x4B), (0x8A, 0x79, 0x5D)]
+BIOFILM = [(0x42, 0x5A, 0x4A), (0x58, 0x73, 0x5B), (0x72, 0x8D, 0x6B), (0x91, 0xA9, 0x83)]
+STONEBELL_STEM = [(0x5E, 0x6B, 0x58), (0x7A, 0x8A, 0x6F)]
+STONEBELL_BELL = [(0x7C, 0x7F, 0xA8), (0xA3, 0xA6, 0xC9), (0xC9, 0xCB, 0xE4)]
+
+
+def opaque(rgb: tuple[int, int, int]) -> Pixel:
+    return (rgb[0], rgb[1], rgb[2], 255)
+
+
+def roots(form: int) -> Image:
+    """Root strands hanging from the top edge, wandering a pixel at a time, lit from the left."""
+    image = blank()
+    salt = 90 + 7 * form
+    for k in range(3 + int(noise(form, 0, salt) * 3)):
+        x = 2 + int(noise(k, 1, salt) * 12)
+        length = 6 + int(noise(k, 2, salt) * 9)
+        for y in range(length):
+            if noise(k, y, salt + 1) < 0.25:
+                x = max(1, min(SIZE - 2, x + (1 if noise(k, y, salt + 2) < 0.5 else -1)))
+            image[y][x] = opaque(ROOTS[2 if y < 2 else 1])
+            image[y][x + 1] = opaque(ROOTS[0]) if y < length - 2 else CLEAR
+    return image
+
+
+def biofilm(form: int) -> Image:
+    """A slick of green film over a wet floor, in soft patches; clear between them."""
+    image = blank()
+    salt = 110 + 5 * form
+    for y in range(SIZE):
+        for x in range(SIZE):
+            # Smooth coarse noise (interpolated between 4-pixel cells, wrapping so the face tiles)
+            # blended with fine grain, so patches have ragged but connected edges.
+            gx, gy, fx, fy = x // 4, y // 4, (x % 4) / 4, (y % 4) / 4
+
+            def cell(i: int, j: int) -> float:
+                return noise(i % 4, j % 4, salt)
+
+            top = cell(gx, gy) * (1 - fx) + cell(gx + 1, gy) * fx
+            bottom = cell(gx, gy + 1) * (1 - fx) + cell(gx + 1, gy + 1) * fx
+            coarse = top * (1 - fy) + bottom * fy
+            fine = noise(x, y, salt + 1)
+            film = 0.7 * coarse + 0.3 * fine
+            if film > 0.55:
+                level = min(len(BIOFILM) - 1, int((film - 0.55) / 0.45 * len(BIOFILM) * 1.4))
+                image[y][x] = opaque(BIOFILM[level])
+    return image
+
+
+def stonebell(form: int) -> Image:
+    """One to three thin stems, each nodding under a small pale bell."""
+    image = blank()
+    salt = 130 + 11 * form
+    count = 1 + int(noise(form, 0, salt) * 3)
+    slots = {1: [7], 2: [4, 10], 3: [3, 7, 12]}[count]
+    for k in range(count):
+        x = slots[k] + int(noise(k, 1, salt) * 3) - 1
+        top = 5 + int(noise(k, 2, salt) * 6)
+        for y in range(top - 1, SIZE):
+            image[y][x] = opaque(STONEBELL_STEM[1 if y < SIZE - 3 else 0])
+        # The stem bends over in a crook and the bell hangs under its end, flaring at the mouth.
+        side = 1 if noise(k, 3, salt) < 0.5 else -1
+        bx = max(2, min(SIZE - 3, x + 2 * side))
+        image[top - 1][x + side] = opaque(STONEBELL_STEM[1])
+        image[top - 1][bx] = opaque(STONEBELL_STEM[1])
+        for dy, (left, right) in enumerate(((0, 0), (0, 1), (-1, 1))):
+            for dx in range(left, right + 1):
+                level = 2 if dx <= 0 and dy < 2 else 1 if dy < 2 else 0
+                image[top + dy][bx + dx] = opaque(STONEBELL_BELL[level])
+    return image
+
+
 # Half-widths (pixels) of a spike at its pointed end and its broad end, by thickness.
 WIDTHS = {
     "tip": (0.4, 2.2),
@@ -328,4 +402,7 @@ PAINTERS: dict[str, Callable[..., Image]] = {
     "pointed_item": pointed_item,
     "sediment": sediment,
     "fungus": fungus,
+    "roots": roots,
+    "biofilm": biofilm,
+    "stonebell": stonebell,
 }

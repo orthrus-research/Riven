@@ -8,8 +8,8 @@ import com.google.gson.JsonObject;
  * (riven-realms.json): formations by setting (calcite dripstone in soluble rock and along faults,
  * ice, salt and basalt where the depth biome names them, more in humid caves), gravel floors and
  * pockets, mud,
- * salt, sand, packed ice, ash and magma floors, litter with mushrooms, hanging roots, Miner's
- * Delight, glowing mushrooms above the world's lowest third, algae in flooded caves and cobwebs.
+ * salt, sand, packed ice, ash and magma floors, litter with mushrooms, hanging roots, stonebells,
+ * glowing mushrooms above the world's lowest third, green biofilm in flooded caves and cobwebs.
  * Placed on each native column's cave floors and ceilings as runs, so column runs stay exact.
  * Every choice is a pure function of seed, definitions and the column.
  */
@@ -47,8 +47,8 @@ final class CaveDecor {
                     };
     private static final double GRAVEL_FLOOR, POCKET_TOP, POCKET_CELL, POCKET_CHANCE;
     private static final double[] POCKET_RADIUS;
-    private static final double WET_BAND, MUD, ALGAE;
-    private static final double LITTER, LITTER_MUSHROOM, ROOT_MAT, MINERS_DELIGHT, MUSHROOM;
+    private static final double WET_BAND, MUD, BIOFILM;
+    private static final double LITTER, LITTER_MUSHROOM, ROOT_MAT, STONEBELL, MUSHROOM;
     private static final double GLOW_MIN_Y, GLOW_CLUSTER, GLOW_CHANCE;
     private static final double COBWEB, ASH, SAND, ICE;
     private static final int UNSTABLE_THICKNESS, UNSTABLE_DROP, UNSTABLE_HEADROOM;
@@ -93,12 +93,12 @@ final class CaveDecor {
         JsonObject w = j.getAsJsonObject("wet");
         WET_BAND = Rules.number(w, "bandBlocks", 0, 256);
         MUD = Rules.number(w, "mudThreshold", -1, 1);
-        ALGAE = Rules.number(w, "algaeChance", 0, 1);
+        BIOFILM = Rules.number(w, "biofilmChance", 0, 1);
         JsonObject o = j.getAsJsonObject("organics");
         LITTER = Rules.number(o, "litterThreshold", -1, 1);
         LITTER_MUSHROOM = Rules.number(o, "mushroomOnLitterChance", 0, 1);
         ROOT_MAT = Rules.number(o, "rootMatChance", 0, 1);
-        MINERS_DELIGHT = Rules.number(o, "minersDelightChance", 0, 1);
+        STONEBELL = Rules.number(o, "stonebellChance", 0, 1);
         MUSHROOM = Rules.number(o, "mushroomChance", 0, 1);
         JsonObject gl = j.getAsJsonObject("glow");
         GLOW_MIN_Y = Rules.number(gl, "minimumY", -512, 384);
@@ -397,8 +397,8 @@ final class CaveDecor {
             TerrainBlock plant = null;
             if (lo > GLOW_MIN_Y && c > GLOW_CLUSTER && unit(key, 7) < GLOW_CHANCE)
                 plant = TerrainBlock.GLOWING_MUSHROOM;
-            else if (floorBlock == null && bareStone(floorUnit) && unit(key, 8) < MINERS_DELIGHT)
-                plant = TerrainBlock.MINERS_DELIGHT;
+            else if (floorBlock == null && bareStone(floorUnit) && unit(key, 8) < STONEBELL)
+                plant = TerrainBlock.STONEBELL;
             else if (unit(key, 9) < MUSHROOM)
                 plant =
                         unit(key, 10) < 0.5
@@ -409,8 +409,13 @@ final class CaveDecor {
                 below = 1;
             }
         }
-        if (floorFill == TerrainBlock.WATER && floor.life && unit(key, 11) < ALGAE) {
-            v.addDecor(lo, lo + 1, TerrainBlock.ALGAE);
+        // Biofilm only under at least a second block of water: in water one block deep it would
+        // stand where the water's surface is drawn and leave a hole in it.
+        if (floorFill == TerrainBlock.WATER
+                && v.fill(lo + 1, s) == TerrainBlock.WATER
+                && floor.life
+                && unit(key, 11) < BIOFILM) {
+            v.addDecor(lo, lo + 1, TerrainBlock.GREEN_BIOFILM);
             below = 1;
         }
         // Ceilings: root mats under living ground, cobwebs in dry caves.
@@ -419,7 +424,7 @@ final class CaveDecor {
                     && !bareCeiling
                     && unit(key, 12) < ROOT_MAT) {
                 ceilingBlock = TerrainBlock.DIRT;
-                v.addDecor(hi - 1, hi, TerrainBlock.ROOT);
+                v.addDecor(hi - 1, hi, TerrainBlock.HANGING_ROOTS);
             } else if (ceiling.ceiling == RealmMap.Ceiling.COBWEBS && unit(key, 13) < COBWEB)
                 v.addDecor(hi - 1, hi, TerrainBlock.COBWEB);
         }

@@ -659,12 +659,12 @@ public final class GeologySection {
             TerrainBlock.DIRT,
             TerrainBlock.INK_CAP,
             TerrainBlock.PALE_CAVE_MUSHROOM,
-            TerrainBlock.ROOT,
-            TerrainBlock.MINERS_DELIGHT,
+            TerrainBlock.HANGING_ROOTS,
+            TerrainBlock.STONEBELL,
             TerrainBlock.BROWN_MUSHROOM,
             TerrainBlock.RED_MUSHROOM,
             TerrainBlock.GLOWING_MUSHROOM,
-            TerrainBlock.ALGAE,
+            TerrainBlock.GREEN_BIOFILM,
             TerrainBlock.COBWEB
         };
         RealmMap.Crust[] realms = RealmMap.Crust.values();

@@ -106,8 +106,7 @@ final class TerrainColumn {
         result[at("rock.terracotta_gray")] = terracotta(EnumDyeColor.GRAY);
         result[at("rock.terracotta_black")] = terracotta(EnumDyeColor.BLACK);
         result[at("fluid.lava")] = Blocks.LAVA.getDefaultState();
-        // Cave decoration: Riven's own blocks, Biomes O' Plenty's where it is loaded, vanilla
-        // stand-ins otherwise (riven-cave-decor.json lists them).
+        // Cave decoration: Riven's own blocks, vanilla stand-ins should one be missing.
         IBlockState clay = Blocks.CLAY.getDefaultState(), air = Blocks.AIR.getDefaultState();
         IBlockState brown = Blocks.BROWN_MUSHROOM.getDefaultState();
         result[at("soil.mud")] = named("riven:mud", null, null, clay);
@@ -133,19 +132,18 @@ final class TerrainColumn {
         result[at("formation.basalt_up")] = named("riven:pointed_basalt", "direction", "up", air);
         result[at("formation.basalt_down")] =
                 named("riven:pointed_basalt", "direction", "down", air);
-        result[at("plant.root")] = named("biomesoplenty:plant_1", "variant", "root", air);
+        result[at("plant.hanging_roots")] = named("riven:hanging_roots", null, null, air);
         result[at("plant.ink_cap")] =
                 named("riven:plant_ink_cap", null, null, Blocks.RED_MUSHROOM.getDefaultState());
         result[at("plant.pale_cave_mushroom")] =
                 named("riven:plant_pale_cave_mushroom", null, null, brown);
         result[at("plant.brown_mushroom")] = brown;
         result[at("plant.red_mushroom")] = Blocks.RED_MUSHROOM.getDefaultState();
-        result[at("plant.miners_delight")] =
-                named("biomesoplenty:flower_1", "variant", "miners_delight", air);
+        result[at("plant.stonebell")] = named("riven:plant_stonebell", null, null, air);
         result[at("plant.glowing_mushroom")] =
                 named("riven:plant_glowing_mushroom", null, null, brown);
-        result[at("plant.algae")] =
-                named("biomesoplenty:coral", "variant", "algae", Blocks.WATER.getDefaultState());
+        result[at("plant.green_biofilm")] =
+                named("riven:submerged_green_biofilm", null, null, Blocks.WATER.getDefaultState());
         // Riven host stones, with vanilla stand-ins should a block be missing.
         IBlockState stone = Blocks.STONE.getDefaultState();
         for (TerrainBlock b : TerrainBlock.values())

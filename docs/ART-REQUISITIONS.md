@@ -71,7 +71,8 @@ set holds and what it is for; open requests stay here until a set arrives.
   meteorites and impact craters; rare ground; a hydrothermal salt field; and mineral waters
   (acid brine, boiling mud, bitumen, heavy brine). None is imported yet. Riven would take them in
   order: 31 to 36 with the gem work, which retires the tinted overlay on every gem; 40 and 41
-  first, since they retire Biomes O' Plenty's cave life and the last painted overlay; 37 to 39
+  first, since they fill the cave life Riven places with painted placeholders (glowing mushroom,
+  pale cave mushroom, ink cap, green biofilm) and retire the last painted overlay; 37 to 39
   with the cave formation work; 42 to 44 with the surface; 45 when Riven builds
   fluids the distant preview can show. The production's own review leaves host comparisons,
   repetition, contrast and animation playback to be judged in game.
@@ -196,3 +197,22 @@ labPBR 1.3 normal and specular maps for the 108 vanilla textures flagged `pbr` a
 classes in Riven's sets (gems and their growths, ores, gem rock, native metals, ice, glass,
 water-polished and wet faces, fluids, every emitter), authored from height maps as
 ART-DIRECTION.md specifies, with emission matching each block's light.
+
+Requisition 09: cave decorations Riven places without art. When Biomes O' Plenty's blocks left
+Riven's catalogue (2026-11-03), two of their replacements had no received set; they show painted
+placeholders until these arrive. Both are drawn in Survey Plate under the same tests as
+Requisition 08, in the skin's and layered deep's color script.
+
+### 58. Stonebell
+
+`riven:blocks/decor/stonebell_<0-3>`: four forms of a small cave flower that roots in cracks of
+bare stone in living depth biomes, crossed planes like Requisition 07's cave life: one to three
+thin stems, each bending over in a crook under a single pale, nodding bell. It grows in twilight
+and dark, so its bells may carry a faint cool tint but give no light.
+
+### 59. Hanging roots
+
+`riven:blocks/decor/roots_<0-3>`: four forms of roots hanging from the ceiling of a shallow cave
+under living ground, crossed planes anchored at the top edge and fading out downward, fine root
+threads and a few thicker roots, in the family of Requisition 05's root threads and Requisition
+04's drowned roots.

@@ -57,14 +57,14 @@ public final class TerrainBlock {
             SALT_DOWN = of("formation.salt_down"),
             BASALT_UP = of("formation.basalt_up"),
             BASALT_DOWN = of("formation.basalt_down"),
-            ROOT = of("plant.root"),
+            HANGING_ROOTS = of("plant.hanging_roots"),
             INK_CAP = of("plant.ink_cap"),
             PALE_CAVE_MUSHROOM = of("plant.pale_cave_mushroom"),
             BROWN_MUSHROOM = of("plant.brown_mushroom"),
             RED_MUSHROOM = of("plant.red_mushroom"),
-            MINERS_DELIGHT = of("plant.miners_delight"),
+            STONEBELL = of("plant.stonebell"),
             GLOWING_MUSHROOM = of("plant.glowing_mushroom"),
-            ALGAE = of("plant.algae"),
+            GREEN_BIOFILM = of("plant.green_biofilm"),
             COBWEB = of("decor.cobweb");
     public final String id, kind;
     public final List<String> tags, candidates;

@@ -841,8 +841,8 @@ hold even where a void cuts down to the formation below; rock tests (solubility,
   grid) fill rock below Y-150, never an unstable floor, and fall when a cave opens under them.
 - Ceilings: hanging roots under root mats in Root Hollows, cobwebs in the Broken Basement and Dust
   Hollows.
-- Life, where the depth biome holds it: Miner's Delight on bare stone, vanilla mushrooms,
-  glowing mushrooms in clusters above Y-213 and algae on flooded floors. Salt, frost, dust and the root
+- Life, where the depth biome holds it: stonebells on bare stone, vanilla mushrooms,
+  glowing mushrooms in clusters above Y-213 and green biofilm on floors under at least two blocks of water. Salt, frost, dust and the root
   stay lifeless, and nothing decorates lava (magma-chamber pools carried dirt and mud patches
   before terrain-v87).
 - Pools (terrain-v88, `CavePools`, `riven-cave-decor.json` pools): now and then a small still
@@ -884,8 +884,8 @@ hold even where a void cuts down to the formation below; rock tests (solubility,
   planners immediately outside it that neighboring chunks would otherwise wake later. A carve over a few
   heights builds only the cave lattice levels it reads, and `CellMemo` gives each cell two slots
   (a pair of cells that shared one slot recomputed on every alternate read).
-- Mud, salt sand, ash and the cave fungi are Riven content (below). Roots, Miner's Delight and
-  algae are still Biomes O' Plenty's blocks; without it, vanilla stand-ins replace them.
+- Every block cave decoration places is Riven content (below) or vanilla's; none comes from
+  Biomes O' Plenty.
 
 On seed 8675309 (4 km, 32-block grid) 81% of land columns carry some decoration (84% before
 terrain-v87, when dry, frozen and wet skins also took roots and litter; `GeologySection decor`
@@ -942,7 +942,7 @@ in), so a biome holds across thin beds:
 | Skin | Frost Hollows | under FROZEN land | pools frozen to ice, packed ice floors and seeps, pointed ice; lifeless |
 | Skin | Dust Hollows | under DRY land | sand floors, cobwebs, dripstone; lifeless |
 | Skin | Root Hollows | other land | hanging roots, litter with ink caps, mud near the water table, dripstone, fungi |
-| Layered deep | Drowned Galleries | a flooded cell's band (see Caves) | flooded passages, algae, mud |
+| Layered deep | Drowned Galleries | a flooded cell's band (see Caves) | flooded passages, green biofilm, mud |
 | Layered deep | Salt Halls | evaporite | as in the skin |
 | Layered deep | Karst Galleries | rock at least 0.5 soluble | dripstone, mud, mushrooms, glowing mushrooms |
 | Layered deep | The Layered Deep | other sediment | mud, litter, mushrooms, glowing mushrooms |
@@ -1154,12 +1154,19 @@ from cave decoration, ore blocks, and unstable stone on the floors cave decorati
   placed blocks like tall grass; none has collision; all but the stone props burn. Underwater
   plants, floating pads, lianas, epiphytes and picked berry shrubs wait for the blocks that hold
   them.
-- **Cave fungi** (`decorations`, kind plant): ink cap, pale cave mushroom and glowing mushroom
-  (light 6), the catalogue's `plant.ink_cap`, `plant.pale_cave_mushroom` and
-  `plant.glowing_mushroom`, which were Biomes O' Plenty's toadstool, portobello and glowshroom.
-  Cave decoration places them (above); they stand on grass, dirt, sand (Riven's sediments
-  included), gravel and stone, and do not burn or give way. Their four forms are placeholders
-  painted on Requisition 07's tones (`painters.py` fungus) until the art pack fills their slots.
+- **Cave decorations** (`decorations`): what cave decoration places (above), all Riven's own
+  since Biomes O' Plenty's blocks left the catalogue. Ink cap, pale cave mushroom and glowing
+  mushroom (light 6) are plants (`plant.ink_cap`, `plant.pale_cave_mushroom`,
+  `plant.glowing_mushroom`; formerly BoP's toadstool, portobello and glowshroom) on grass, dirt,
+  sand (Riven's sediments included), gravel and stone. The stonebell (`plant.stonebell`, formerly
+  Miner's Delight) is a plant on stone and gravel. Hanging roots (`plant.hanging_roots`, kind
+  hanging) hang under dirt or grass ceilings, give way to placed blocks and burn. Green biofilm
+  (`plant.green_biofilm`, kind submerged, formerly algae) is a plane on a flooded floor of water's
+  material and level, so the water around it stays whole and swimmers swim through it; broken, it
+  leaves water. The fungi, stonebell and biofilm do not burn or give way. Their four forms are
+  placeholders painted by `painters.py` on the tones of Requisition 07 (fungi, biofilm) and 05
+  (root threads) until the art pack fills their slots; the stonebell's and hanging roots' art is
+  requested (ART-REQUISITIONS.md, Requisition 09).
 - **Unstable stone** (terrain-v88, `unstable`): one block per host rock, 19 in all (stone, granite,
   diorite, andesite, sandstone, red sandstone and the 13 host stones), named Unstable <host> and
   drawn as the host's own faces under a painted crack network that crosses every edge, so a floor

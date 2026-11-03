@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_stonebell_0"
+      },
+      {
+        "model": "riven:plant_stonebell_1"
+      },
+      {
+        "model": "riven:plant_stonebell_2"
+      },
+      {
+        "model": "riven:plant_stonebell_3"
+      }
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+[
+  {"label": "hanging-roots", "x": -886.5, "y": 53, "z": -893.5, "yaw": 45, "pitch": -40, "commands": ["effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "stonebells", "x": -1202.5, "y": -280, "z": -959.5, "yaw": 45, "pitch": 35, "commands": ["execute {player} -886.5 53 -893.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "green-biofilm-underwater", "x": 521.5, "y": 20.5, "z": -575.5, "yaw": 45, "pitch": 70, "commands": ["execute {player} -1202.5 -280 -959.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "green-biofilm-from-above", "x": 530.5, "y": 25, "z": -575.5, "yaw": 90, "pitch": 50, "commands": ["execute {player} 521.5 20.5 -575.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "return", "x": 530.5, "y": 45, "z": -575.5, "yaw": 90, "pitch": 50, "commands": ["execute {player} 530.5 25 -575.5 riven"]}
+]

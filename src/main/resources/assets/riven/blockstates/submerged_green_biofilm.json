@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:submerged_green_biofilm_0"
+      },
+      {
+        "model": "riven:submerged_green_biofilm_1"
+      },
+      {
+        "model": "riven:submerged_green_biofilm_2"
+      },
+      {
+        "model": "riven:submerged_green_biofilm_3"
+      }
+    ]
+  }
+}

@@ -25,8 +25,7 @@
     "frozen": "ice or snow",
     "karst": "from dissolved rock (dripstone)",
     "fungus": "a fungus",
-    "luminous": "gives light",
-    "provider": "its first candidate is an optional provider mod's block"
+    "luminous": "gives light"
   },
   "entries": {
     "air": {
@@ -729,13 +728,10 @@
         "minecraft:air"
       ]
     },
-    "plant.root": {
+    "plant.hanging_roots": {
       "kind": "plant",
-      "tags": [
-        "provider"
-      ],
       "block": [
-        "biomesoplenty:plant_1[variant=root]",
+        "riven:hanging_roots",
         "minecraft:air"
       ]
     },
@@ -777,13 +773,10 @@
         "minecraft:red_mushroom"
       ]
     },
-    "plant.miners_delight": {
+    "plant.stonebell": {
       "kind": "plant",
-      "tags": [
-        "provider"
-      ],
       "block": [
-        "biomesoplenty:flower_1[variant=miners_delight]",
+        "riven:plant_stonebell",
         "minecraft:air"
       ]
     },
@@ -798,13 +791,10 @@
         "minecraft:brown_mushroom"
       ]
     },
-    "plant.algae": {
+    "plant.green_biofilm": {
       "kind": "plant",
-      "tags": [
-        "provider"
-      ],
       "block": [
-        "biomesoplenty:coral[level=0,variant=algae]",
+        "riven:submerged_green_biofilm",
         "minecraft:water"
       ]
     },

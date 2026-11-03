@@ -10,15 +10,17 @@ import net.minecraft.world.World;
 /**
  * A Riven ground plant (riven-content.json decorations): crossed planes in one of four forms by
  * position, offset within its block like vanilla flowers, standing on its own grounds; replaceable
- * ones give way to placed blocks like tall grass.
+ * ones give way to placed blocks like tall grass, and flammable ones burn like vanilla plants.
  */
 final class BlockRivenPlant extends BlockBush implements GroundPlant {
+    final boolean flammable;
     private final int ground;
     private final boolean replaceable;
 
-    BlockRivenPlant(int ground, boolean replaceable) {
+    BlockRivenPlant(int ground, boolean replaceable, boolean flammable) {
         this.ground = ground;
         this.replaceable = replaceable;
+        this.flammable = flammable;
         setSoundType(SoundType.PLANT);
     }
 

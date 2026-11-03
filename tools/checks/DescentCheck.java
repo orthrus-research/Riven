@@ -215,9 +215,9 @@ public final class DescentCheck {
                 case "plant.pale_cave_mushroom":
                 case "plant.brown_mushroom":
                 case "plant.red_mushroom":
-                case "plant.miners_delight":
+                case "plant.stonebell":
                 case "plant.glowing_mushroom":
-                case "plant.algae":
+                case "plant.green_biofilm":
                     require(floor.life, b + " in lifeless " + floor.biome + at);
                     decor.incrementAndGet(floor.index * n + b.index());
                     break;
@@ -253,7 +253,7 @@ public final class DescentCheck {
                             b + " in " + ceiling.biome + at);
                     decor.incrementAndGet(ceiling.index * n + b.index());
                     break;
-                case "plant.root":
+                case "plant.hanging_roots":
                     require(
                             ceiling.ceiling == RealmMap.Ceiling.ROOTS,
                             "Roots in " + ceiling.biome + at);
