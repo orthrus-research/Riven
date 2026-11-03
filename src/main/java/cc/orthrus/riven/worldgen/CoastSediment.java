@@ -172,6 +172,8 @@ public final class CoastSediment {
     private final double mudCreekBonus;
     private final SeededNoise mud;
     private final int sea, waterTop;
+    private final Form[][] sedimentOf;
+    private final boolean[] mudFlat;
     private final CellMemo<Placed[]> plans = new CellMemo<>(4096);
     private final ThreadLocal<TerrainMap.Sample> scratch =
             ThreadLocal.withInitial(TerrainMap.Sample::new);
@@ -248,7 +250,17 @@ public final class CoastSediment {
         mudCreek = Rules.number(m, "creekBlocks", 1, 64);
         mudCreekBonus = Rules.number(m, "creekBonus", 0, 2);
         mud = new SeededNoise(SeededNoise.mix(seed ^ Form.MUD_FLAT.salt));
-        for (Shore.Type type : Shore.TYPES) for (String form : type.sediment) Form.valueOf(form);
+        // Names resolve once here; generation reads only the forms they name.
+        sedimentOf = new Form[Shore.TYPES.length][];
+        mudFlat = new boolean[Shore.TYPES.length];
+        for (Shore.Type type : Shore.TYPES) {
+            sedimentOf[type.index] = new Form[type.sediment.length];
+            for (int f = 0; f < type.sediment.length; f++) {
+                Form form = Form.valueOf(type.sediment[f]);
+                sedimentOf[type.index][f] = form;
+                if (form == Form.MUD_FLAT) mudFlat[type.index] = true;
+            }
+        }
     }
 
     private static double unit(long h, int k) {
@@ -267,25 +279,17 @@ public final class CoastSediment {
         return range[0] + (range[1] - range[0]) * t;
     }
 
-    /** Whether a coast type lists a sediment form. */
-    private static boolean lists(Shore.Type type, Form form) {
-        if (type == null) return false;
-        for (String name : type.sediment) if (name.equals(form.name())) return true;
-        return false;
-    }
-
     /** A segment's sediment, placed once. */
     private Placed[] forms(int i, int j) {
         return plans.get(i, j, () -> place(shore.segmentAt(i, j)));
     }
 
     private Placed[] place(Shore.Segment s) {
-        if (s.type == null || s.type.sediment.length == 0) return NONE;
+        if (s.type == null || sedimentOf[s.type.index].length == 0) return NONE;
         Stretch stretch = stretch(s);
         if (stretch == null) return NONE;
         List<Placed> out = new ArrayList<>();
-        for (String name : s.type.sediment) {
-            Form form = Form.valueOf(name);
+        for (Form form : sedimentOf[s.type.index]) {
             long h = SeededNoise.mix(s.key ^ seed ^ form.salt);
             switch (form) {
                 case BEACH_BENCH -> bench(stretch, h, out);
@@ -814,7 +818,8 @@ public final class CoastSediment {
                 || out.weight > 0
                 || sample.shore.marsh < marshShare
                 || sample.height > waterTop + flatRise
-                || !lists(sample.shore.type, Form.MUD_FLAT)) return;
+                || sample.shore.type == null
+                || !mudFlat[sample.shore.type.index]) return;
         // Two octaves, the finer offset from the coarser's lattice, so patches have ragged edges.
         double fine = mudWavelength * .4;
         double m =

@@ -1,7 +1,8 @@
 # Decisions
 
-Dated decisions that shape the project. Add one paragraph per decision; mark a decision
-superseded instead of deleting it.
+Dated decisions that shape the project, each true now. Add one paragraph per decision. When a
+decision, or part of one, stops being true or is replaced, delete or rewrite it in the same change;
+history lives in git and [CHANGELOG.md](../CHANGELOG.md).
 
 ## Standing
 
@@ -17,31 +18,17 @@ superseded instead of deleting it.
 - **2026-10-19. Licensing.** Original Riven material is NRR-1.0. Contributed kernels keep MIT,
   the erosion file MPL-2.0, Forge-derived Cubature I/O LGPL-2.1. See [NOTICE.md](../NOTICE.md)
   and [THIRD-PARTY.md](../THIRD-PARTY.md).
-- **2026-10-19. Generation constraints.** One reviewed concept at a time. No preparation
-  coordinator, background graph, terrain raster cache, global drainage simulation, geology or
-  decorator framework. Vanilla palette and empty population until a layer is designed;
-  `useVanillaChunkWorldGenerators=false`. *Population superseded 2026-10-23 by the Biomes O'
-  Plenty decoration provider.* *Partly superseded 2026-10-22 by the two-tier
-  generator:* pure per-tile region plans and per-tile drainage are allowed; the other limits stand.
-  *No preparation coordinator superseded 2026-10-30 (Preparation within bounds).* *No global
-  drainage simulation partly superseded 2026-11-01: a coarse network per land body is computed at
-  world creation (The surface).*
-- **Undated. Additional shaping deferred.** Further shaping of water bodies and basins waits
-  until the hydrology layers are established.
+- **2026-10-19. Generation constraints.** One reviewed concept at a time;
+  `useVanillaChunkWorldGenerators=false`.
 - **2026-10-20. Static quality checks.** Formatting, linting and type checks
-  (`tools/code_quality.py`) gate every change. Contribution integrations v13-v25 were committed
-  without builds or tests; their runtime qualification is open.
+  (`tools/code_quality.py`) gate every change.
 - **2026-10-21. Parent classifications.** Downstream features qualify against higher-level
-  parent classifications. Recorded direction: earlier stages own broad intent, marine/shore
-  ownership, supplied-water reservations and legal headroom, and downstream stages consume them
-  with explicit reasons and coverage. Not yet implemented. *Taken up 2026-11-01 by provinces and
-  the coast plan (The surface).*
-- **2026-10-21. Water-shape planners.** Both remaining water-shape planners are to be revisited.
-  *Taken up 2026-11-01 by the coast plan and drainage (The surface).*
-- **2026-10-21. Volcanoes.** Volcanoes are reserved for hot biomes and will get a dedicated
-  design pass; the design pass is still open. **2026-10-22 revision:** a volcano needs a HOT
-  anchor, and the cone fades toward cooler columns like cold forms do (terrain-v55), replacing the
-  terrain-v37 rule that every support column be HOT. *Set aside 2026-11-01 (The surface).*
+  parent classifications: earlier stages (provinces, the coast plan) own broad intent,
+  marine/shore ownership, supplied-water reservations and legal headroom, and downstream stages
+  consume them with explicit reasons and coverage.
+- **2026-10-21. Volcanoes.** Volcanoes are reserved for hot climates: a volcano needs a HOT
+  anchor, and its cone fades toward cooler columns as cold forms do (terrain-v55). A dedicated
+  design pass is open.
 
 ## Adopted 2026-11-03
 
@@ -53,11 +40,10 @@ superseded instead of deleting it.
 
 ## Adopted 2026-11-02
 
-- **Wonders removed.** At the user's direction the wonders (pillar forests, tepuis, hoodoos,
-  tower karst, sinkholes, fin arches, tsingy, ring structures, basalt columns) leave the
-  generator at terrain-v112, with their site lane, strata palettes (`riven-materials.json`) and
-  void carving. Supersedes "Novel terrain features" (2026-10-23); arches and stacks continue as
-  coast forms.
+- **No wonders.** The generator has no wonders (pillar forests, tepuis, hoodoos, tower karst,
+  sinkholes, fin arches, tsingy, ring structures, basalt columns), no wonder site lane, strata
+  palettes or wonder void carving (removed at terrain-v112 at the user's direction). Arches and
+  stacks are coast forms.
 - **No compatibility code.** Tools serve the current tree only: the atlas sampler compiles
   against the present layout and stages, with no renamed-package copies, pre-catalogue
   fallbacks or entries kept for retired stages and lanes.
@@ -99,16 +85,16 @@ superseded instead of deleting it.
   blocks under dry ground, 16 under fluid); the numbers are data, the rule is the engine's.
 - **The surface: land share, provinces, coast and drainage.** The surface is a chain: outline
   with land check, provinces, coast plan, base ground, drainage, landform primitives, biomes,
-  blocks. Land targets a 50% mean (from 40.6%), held by redrawing an outline that misses its band
-  (35 to 65%); the band is data and the mean is a target the atlas measures. Provinces are a
-  seeded regional map precomputed as a pure plan, covering sea (a few ocean classes, such as
-  warm or cold, deep or shallow) as well as land. A province is the parent of its biomes and owns
-  the rules that ease transitions between them, blending recipe parameters, not heights, at its
-  margins. The coastal band's width is set per coast type. Drainage comes after the coast plan:
-  a coarse network per land body, computed at world creation and recorded with the world, and
-  fine channels refined per region on demand, never over open sea. Volcanoes are set aside;
-  climate decides where they may stand when they return, and a feature that never appears is a
-  tuning failure of the 8 km world's diversity, not a reason to loosen its rules.
+  blocks. Land targets a 50% mean, held by redrawing an outline that misses its band (35 to 65%);
+  the band is data and the mean is a target the atlas measures. Provinces are a seeded regional
+  map precomputed as a pure plan, covering sea (a few ocean classes, such as warm or cold, deep or
+  shallow) as well as land. A province is the parent of its biomes and owns the rules that ease
+  transitions between them, blending recipe parameters, not heights, at its margins. The coastal
+  band's width is set per coast type. Drainage comes after the coast plan: a coarse network per
+  land body, a pure function of seed and definitions held in a bounded memo and prepared ahead of
+  demand within bounds, and fine channels refined per region on demand, never over open sea. A
+  feature that never appears is a tuning failure of the 8 km world's diversity, not a reason to
+  loosen its rules.
 - **Province types from facts later shaping keeps, and heights in four layers.** A province's
   type is chosen from plate tectonics (convergent boundaries give ranges, divergent ones rifts),
   the distance to the coast and a seeded level field. Never from base height, uplift or crest,
@@ -122,16 +108,14 @@ superseded instead of deleting it.
   upland 60–130, tableland 90–170, range 110–280 with peaks to 288, rift floor 10–50 and shoulders
   80–150), character patches of 300 to 800 blocks (strong ones on about 15% of a province), texture
   of 16 to 128 blocks and micro variation of 2 to 8 blocks. Roughness grows with height, and only
-  the calm character is planar. The coast plan is to replace the proportional coastal scaling that
-  today lowers two-thirds of land, so bands reach their levels.
+  the calm character is planar.
 - **Plates own the mountain belts.** High ground comes from one tectonic source: convergent
   plate boundaries carry mountain belts, which base elevation, the mountain stage's massif,
-  hydrology and the provinces' ranges all read. The outline's authored continent crests are no
-  longer read; continents stay as the outline draws them. Plates are a power diagram read at
-  warped coordinates, so they vary in size and their boundaries curve. Belts vary along their
-  length, and uplift is signed, lowering where plates spread. A province's belt is the mean over
-  its land, a province-scale fact rather than one point's. Plate count was measured and is not
-  the problem: 13–16 per world before, about 12 now.
+  hydrology and the provinces' ranges all read. The outline's authored continent crests are not
+  read; continents stay as the outline draws them. Plates are a power diagram read at warped
+  coordinates, so they vary in size and their boundaries curve. Belts vary along their length,
+  and uplift is signed, lowering where plates spread. A province's belt is the mean over its
+  land, a province-scale fact rather than one point's. About 12 plates per world.
 - **Biomes within provinces.** A province restricts its biomes to a subset: strong expressions
   toward its centre, mild members between, and shared transition biomes at its edges, so
   climatically opposite biomes are never neighbours. Ecotone widths are per biome pair in data
@@ -175,8 +159,7 @@ superseded instead of deleting it.
   executor that Cubature supplies. Cubature sizes it from the processor count inside its worker
   budget, where its governor sees it. It never runs on the JVM's common pool, and tools outside the
   game supply their own bounded executor. Riven starts no threads of its own, and results stay a
-  pure function of seed, definitions and layout scale. This extends the 2026-10-23 approval of
-  bounded Cubature pools to Riven's in-build work. Evidence (`RegionalCacheProbe`, 12 players,
+  pure function of seed, definitions and layout scale. Evidence (`RegionalCacheProbe`, 12 players,
   cold pass): drainage network builds still left 49 s of waiting on the common pool at 8 km and
   86 s at 32 km. That pool holds P - 1 threads outside the budget, and its bursts lined up with
   98 ms ticks in the land run. Shrinking it instead stretched 32 km network builds from 4.7 s to
@@ -184,9 +167,8 @@ superseded instead of deleting it.
 
 - **Preparation within bounds.** Preparing pure regional plans before a worker needs them is
   encouraged: hydrology plans, drainage networks and region tiles built ahead of the players'
-  motion, the native view and Distant Horizons' reach, on Cubature's bounded pool. This
-  supersedes "no preparation coordinator" (2026-10-19, restated 2026-10-22 and 2026-10-23), which
-  was stricter than needed. Preparation becomes too planned, and stops, when any of these holds:
+  motion, the native view and Distant Horizons' reach, on Cubature's bounded pool. Preparation
+  becomes too planned, and stops, when any of these holds:
   - it changes content, or lets a result depend on what was prepared or in what order (prepared
     values are the same pure functions, published through the same bounded memos);
   - it prepares more than the memos hold with headroom, so plans are evicted before they are read
@@ -197,25 +179,23 @@ superseded instead of deleting it.
 
   Order-dependent state and unbounded memory stay forbidden.
 
-- **Bounded pools for preview sampling.** The 2026-10-23 approval of bounded Cubature worker
-  pools extends to Distant Horizons preview sampling: Cubature may run one bounded preview pool
-  per server in place of DH's World Gen executor, sized from the processor count and paced by its
-  own governor (Cubature `docs/LOD-DELIVERY.md`, step 3). DH still chooses which tile comes next
-  and owns its request limits, propagation, persistence and delivery. The pool changes when
-  previews are produced, never their content, and the native view still comes first.
+- **Bounded pools for preview sampling.** Cubature may run one bounded preview pool per server
+  in place of DH's World Gen executor for Distant Horizons preview sampling, sized from the
+  processor count and paced by its own governor (Cubature `docs/LOD-DELIVERY.md`, step 3). DH
+  still chooses which tile comes next and owns its request limits, propagation, persistence and
+  delivery. The pool changes when previews are produced, never their content, and the native view
+  still comes first.
 
 - **Cleanroom on Java 25 and later only.** Riven and Cubature target the latest Cleanroom on Java
-  25 or 26, and no Java 8 compatibility will ship. The Forge 14.23.5.2860 / Java 8 fallback is
-  retired: its builds, ci's Forge build, the pin's Forge artifact and their docs are gone, and
-  the atlas and checks compile with `--release 25`. Code on critical paths uses modern Java where
-  it helps instead of working around Java 8; for example, the build pool can take a hard thread cap
-  and a governor can resize it live.
+  25 or 26, and no Java 8 compatibility will ship. There is no Forge 14.23.5.2860 / Java 8 build,
+  and the atlas and checks compile with `--release 25`. Code on critical paths uses modern Java
+  where it helps instead of working around Java 8; for example, the build pool can take a hard
+  thread cap and a governor can resize it live.
 
 ## Adopted 2026-10-29
 
-- **Survey Plate art direction.** Every block Riven draws, and every vanilla block through a
-  separate resource pack (Riven Survey Plate, on in prepared instances, off for any pack that
-  leaves it), is drawn in one language: native 16 x 16 faces of large connected forms, ink only
+- **Survey Plate art direction.** Every block Riven draws, and every vanilla block through Riven's
+  art pack, is drawn in one language: native 16 x 16 faces of large connected forms, ink only
   where forms meet, five-step hue-shifted ramps from one palette, a saturation budget that leaves
   color to ores, gems, fluids and light, and a color script by climate and depth
   (Riven Resources' `docs/ART-DIRECTION.md`). It replaces the naturalistic direction of Riven
@@ -225,25 +205,22 @@ superseded instead of deleting it.
   `tools/survey_plate.py check` and a calibration set; vanilla's noisy faces and the
   received quiet naturalistic faces both fail those tests.
 
-- **Cubature delivery mode.** `deliveryMode` is Cubature's only delivery input. The
-  `incrementalMaintenance` option and the `cubature.deliveryExperiment` JVM property are removed:
-  the option with BASELINE gave an unnamed mode (incremental GC driven by player movement, 8 unloads
-  per tick, no pre-unload check) that no test covered, while Riven ships PREFETCH. The stage is
-  read when the server starts and shared by every dimension (`RequiresWorldRestart`).
-  `maintenanceUnloadsPerTick`, now 64 by default (the value staged modes had hard-coded), applies
-  wherever incremental maintenance runs. Lab and measurement tools record `deliveryMode` in
-  `cubeExperiments`; a legacy `incrementalMaintenance=false` in an older config reads as BASELINE.
+- **Cubature delivery mode.** `deliveryMode` is Cubature's only delivery input; there is no
+  `incrementalMaintenance` option or `cubature.deliveryExperiment` JVM property, since together
+  with BASELINE they gave an unnamed mode no test covered, while Riven ships PREFETCH. The stage
+  is read when the server starts and shared by every dimension (`RequiresWorldRestart`).
+  `maintenanceUnloadsPerTick`, 64 by default, applies wherever incremental maintenance runs. Lab
+  and measurement tools record `deliveryMode` in `cubeExperiments`; a legacy
+  `incrementalMaintenance=false` in an older config reads as BASELINE.
 - **Explicit generation timing in Cubature.** Only delivery requests (cube and column watchers and
   ahead preparation) hand generation to the workers; every other request, including reads that
   Riven's population makes outside its prepared box, gets real terrain on the server thread. A
   request that does not schedule never treats work in flight as absent: it runs the job if no
-  worker has started it, or waits for the worker. This replaces a scope flag under which any read
-  during the delivery pass returned air, which made decoration depend on worker timing in
-  principle; saved blocks of 82,215 cubes matched across builds, so no observed world changed.
-  Riven's population reads outside its box cost about 2,000 synchronous cubes per minute of PREFETCH
-  flight; widening its pregeneration requirements would move them to the workers.
+  worker has started it, or waits for the worker, so decoration never depends on worker timing.
+  Riven's population reads outside its box cost about 2,000 synchronous cubes per minute of
+  PREFETCH flight; widening its pregeneration requirements would move them to the workers.
 - **Riven owns reeds.** The vanilla decorator's reed stage, which placed no reed on Riven ground
-  where measured but made 61% of population's reads outside its box, no longer runs in Riven worlds,
+  where measured but made 61% of population's reads outside its box, does not run in Riven worlds,
   and the provider's stands aside with the stages Riven owns. Ground cover places Riven's own Common
   Reed, a cane block, at water margins in warm and temperate biomes. It grows on gravel and sandstone
   as well as grass, dirt and sand, where vanilla sugar cane would have fit about 40% of the margins.
@@ -273,9 +250,8 @@ superseded instead of deleting it.
   Shader support adds no mods: Euphoria Patches, a Forge mod on 1.12.2, and other pack add-ons are
   out. Solas 3.8 is the reserve; it keys biome effects to named `BIOME_*` constants, which
   `/riven shaderprops` leaves alone. Excluded: Bliss, Photon, Rethinking Voxels and Super Duper
-  Vanilla (no 1.12.2 release), Miniature and Lux (no DH programs). MakeUp Ultra Fast 9.6 passed
-  the tour and was dropped the same day: its 1.12 `block.properties` has no entry for flowers,
-  saplings, vines, lily pads or glowing blocks. This supersedes the 2026-10-23 renderer targets.
+  Vanilla (no 1.12.2 release), Miniature and Lux (no DH programs), and MakeUp Ultra Fast 9.6 (its
+  1.12 `block.properties` has no entry for flowers, saplings, vines, lily pads or glowing blocks).
 
 ## Adopted 2026-10-26
 
@@ -296,76 +272,75 @@ superseded instead of deleting it.
   Hollows near the surface, Drowned and Karst Galleries, Salt Halls and the Layered Deep, the
   Broken Basement, Lava Shores and the Molten Root. Only cubes wholly under the ground report
   them, so the surface keeps its biomes. Vanilla mobs thin with depth through per-biome spawn
-  tables. This takes up the underground 3D biomes that "Renderer targets" (2026-10-25) deferred:
-  Cubature samples shader biomes at the camera's height (since 2026-10-25).
+  tables. Cubature samples shader biomes at the camera's height.
 - **Subsurface climate first.** The parameters come before more biomes: temperature, humidity, air
   and the modifiers they allow, so the biomes they can support become visible. The variety
   proposed for depth biomes needs more discovery; the order of the remaining work and the biome
   names are not settled. Settled: all the backported cave blocks are wanted (moss, glow lichen,
-  cave vines with glow berries, tuff, calcite, amethyst); light below Y-213 may vary (lava is no
-  longer the only light there); infested rock and per-biome spawn pressure wait; player effects
-  are built now, as a mechanism driven by the climate with a mild first set of effects. The player
+  cave vines with glow berries, tuff, calcite, amethyst); light below Y-213 may vary (lava is not
+  the only light there); infested rock and per-biome spawn pressure wait; player effects
+  are a mechanism driven by the climate with a mild first set of effects. The player
   effects are a configurable option that ships with Riven (`config/riven/player-effects.json`,
   reloadable); the subsurface climate stays a packaged definition, as generated content must.
 - **Underground water and hazards.** After a review of cave water: flood by water body (flood
-  cells with rock dams and sump floors); the sealed lens becomes an underground lake that caves
-  can reach; joint mazes become connected networks; the water-curtain pattern returns as a
-  seep-wall decoration (moss, flowstone, drips) at the water table; small water pools occasionally
-  in wet depth biomes; new pointed ice, salt and basalt formations, with humidity and faults
-  setting density; and unstable stone. Unstable stone collapses under a walking player and is safe
-  to sneak across; it is its own block family with visual clues, one variant per host rock of the
-  depth biome it lies in. Its art comes from Riven Resources, the separate art project behind
-  Riven's textures; the blocks are Riven content. Water comes first; flood cells and lakes landed
-  in terrain-v88. *Built in terrain-v88: all of the above but the seep walls' moss and drips
-  (waiting for the moss backport).* The painted crack overlay is final art, and the falls are
-  balanced: most hurt without killing, about 10% kill, and 1-2% are severe drops that leave a
-  player a hard way back (terrain-v89).
+  cells with rock dams and sump floors); the sealed lens is an underground lake that caves
+  can reach; joint mazes are connected networks; the water-curtain pattern is a seep-wall
+  decoration (moss, flowstone, drips) at the water table, whose moss and drips wait for the moss
+  backport; small water pools occasionally in wet depth biomes; pointed ice, salt and basalt
+  formations, with humidity and faults setting density; and unstable stone. Unstable stone
+  collapses under a walking player and is safe to sneak across; it is its own block family with
+  visual clues, one variant per host rock of the depth biome it lies in. Its art comes from Riven
+  Resources, the separate art project behind Riven's textures; the blocks are Riven content. The
+  painted crack overlay is final art, and the falls are balanced: most hurt without killing,
+  about 10% kill, and 1-2% are severe drops that leave a player a hard way back.
 
 ## Adopted 2026-10-25
 
 - **Realms by height.** One cubic world holds what were separate dimensions, as vertical realms
   with Y biomes, reinvented for Riven rather than copied (no Nether mobs, nothing from The Beneath).
-  The world spans Y-1664 to Y384: today's surface and crust keep Y384 to Y-512 unchanged, the
-  Beneath takes Y-512 to Y-1088 and a Nether-themed realm Y-1088 to Y-1664. Boundaries are open
-  and gradual (no barrier layers). Realm-scoped event behavior on players and machines comes later:
-  where the realm lookup and event router live, and how they tie into GTCEu, is still open.
-  *Players: built 2026-10-26 (player effects from the subsurface climate); machines and GTCEu
-  remain open.*
+  The world spans Y-1664 to Y384: the surface and crust take Y384 to Y-512, the Beneath Y-512 to
+  Y-1088 and a Nether-themed realm Y-1088 to Y-1664. Boundaries are open and gradual (no barrier
+  layers). Players feel each realm through the subsurface climate's player effects; realm-scoped
+  behavior on machines, where its lookup and event router live, and how it ties into GTCEu are
+  open.
 - **Riven content.** Riven hosts its own blocks, items and assets, declared in
   `riven-content.json` and built into `assets/riven` by `tools/content/build_content.py`. Blocks
   from later Minecraft versions are backported as clean-room reimplementations of their gameplay
   with original art; no Mojang code, textures, models or sounds ship. First: pointed dripstone
   (stalactites and stalagmites with falling, fall damage and dripping) and the dripstone block.
 - **Supersymmetry deposits.** Supersymmetry's overworld veins and deposits (pack commit
-  `79cc760`) are the catalog's main source, recreated as Riven content: 13 host stones, 15 deposit
-  blocks and Riven ore blocks for 86 minerals (including 15 Supersymmetry minerals GTCEu lacks),
-  with Supersymmetry's textures borrowed for test builds and replaced before release. *Replaced
-  2026-10-28 by Riven Resources art (Requisition 06).* Supersymmetry places platinum (cooperite,
+  `79cc760`) are the catalog's main source, recreated as Riven content with Riven Resources art
+  (Requisition 06): 13 host stones, 15 deposit blocks and Riven ore blocks for 86 minerals
+  (including 15 Supersymmetry minerals GTCEu lacks). Supersymmetry places platinum (cooperite,
   sperrylite, braggite) in the overworld, so Riven's rare platinum reef follows it; GTCEu's Nether
   and End veins stay out. Riven ore blocks drop GTCEu ores where GTCEu has the mineral, so GTCEu
   processing applies.
 - **Cave decoration.** Life thins with depth: a twilight zone at entrances, roots and litter in
   the skin, dripstone and wet life in the layered deep, a dry and nearly empty basement, a sterile
-  root of ash, magma and gravel. Glowing fungi are allowed except in the world's lowest third
-  (below about Y-213), where lava stays the only light (*superseded 2026-10-26: light below Y-213
-  may vary*). Gravel pockets fill the deep rock. Build
-  order: formations, then floors and ceilings, then walls and the twilight zone.
-- **Tree sites.** Riven owns where trees stand: a pure site layer (`riven-trees.json`) decides
-  position, species and exact height, and native population grows each site with the provider's
-  generator (BoP's shapes stay), replacing the provider's tree stage in owned biomes. The distant
-  preview draws the same trunks and certain crown leaves at fine detail and canopy cover at coarse
-  detail, so distant forests match the trees that load. Prototype: BoP woodland first, then biome
-  families. Cubature's preview contract accepts light-filtering states (leaves) and tells the
-  sampler each cell's footprint. (*Superseded 2026-10-27: Riven draws every tree with its own shapes
-  from its own woods, in layered stands per riven: biome; no provider or vanilla tree or huge mushroom
-  stage runs.*)
+  root of ash, magma and gravel. Glowing fungi are allowed. Gravel pockets fill the deep rock.
+  Build order: formations, then floors and ceilings, then walls and the twilight zone.
+- **Tree sites.** Riven owns where trees stand and how they grow: a pure site layer
+  (`riven-trees.json`) decides position, species and exact height, and Riven draws every tree
+  with its own shapes from its own woods, in layered stands per `riven:` biome; no provider or
+  vanilla tree or huge mushroom stage runs. The distant preview draws the same trunks and certain
+  crown leaves at fine detail and canopy cover at coarse detail, so distant forests match the
+  trees that load. Cubature's preview contract accepts light-filtering states (leaves) and tells
+  the sampler each cell's footprint.
 
 - **Full worldgen ownership** (proposal "Riven full worldgen ownership", revision 2). Riven owns
   every placement in its worlds: its own `riven:` biomes, its own feature engine and shape models,
-  and composable resource mappings that bind features to any installed mod's blocks. No other
-  mod's generator runs in a Riven world, so the DH preview draws the same models without extra LOD
-  cost. BoP and other packs become block libraries, bootstrapped on BoP until Riven's own assets
-  replace them.
+  and composable resource mappings that bind features to any installed mod's blocks, so the DH
+  preview draws the same models without extra LOD cost. BoP and other packs are block libraries,
+  bootstrapped on BoP until Riven's own assets and feature families replace them. Until then each
+  column's legacy look (its BoP biome) reworks the soil Riven placed through its surface routine
+  and decorates the stages Riven does not own yet; Riven owns trees, huge mushrooms, grass,
+  flowers, dead bushes, mushrooms and reeds. Only generators that swap blocks without moving the
+  surface run (`riven-bop.json`): never ores, lakes, boulders, spikes, columns, crystals or hives,
+  and never BoP's terrain. Those
+  placements cross chunk borders, so decoration is the one exception to order independence;
+  terrain, water and biome identity stay pure. BoP is optional, compiled against but never
+  bundled or modified (1.12.2-7.0.1.2445, CC BY-NC-ND 4.0, pinned in `runtime.lock.json`), and
+  Distant Horizons previews carry surface blocks, not decorations, until chunks generate natively.
 - **Per-world definitions.** Mapping layers (Riven defaults, integration layers for loaded mods,
   pack layers in `config/riven/mappings/`) resolve once, when a world is created, into its snapshot
   (`data/riven/definitions.json`); the world generates from that snapshot for life, and a small
@@ -375,10 +350,6 @@ superseded instead of deleting it.
 - **BoP's overworld biomes are withheld** from the registry by default whenever BoP is present
   (BoP's own `biome_ids.json` switch, set during Riven's preInit; `withholdProviderBiomes` opts
   out), and BoP's world type is hidden. BoP keeps its blocks, saplings and Nether biomes.
-- **Renderer targets.** BSL is the one targeted shader pack (under Demonica); other packs are
-  outside these deliverables. *Shader packs superseded 2026-10-28 (Shader packs).* Underground 3D biomes wait until after Phase 3, once Cubature samples
-  shader biomes at the camera's height. *Underground 3D biomes taken up 2026-10-26 (Depth biomes).* No second mod integration is planned; Phase 4 proves the
-  mapping scheme with vanilla-only and BoP-to-vanilla layers.
 
 ## Adopted 2026-10-23
 
@@ -388,88 +359,49 @@ superseded instead of deleting it.
   Unofficial 2.8.10-beta (pinned, optional) supplies a catalog of veins and deposits; Riven
   places them with its own geology- and lithology-driven generators in the cube fill, never with
   GTCEu's world generator. Supersymmetry's realistic host stones and their ore variants are
-  wanted; their resources are extracted from the pack and hosted in Riven test builds as Riven
-  test blocks (no Susy-Core code runs), kept apart with provenance, and replaced with Riven's own
-  copies before any release. Without GTCEu the same generators place vanilla ores. Rock blocks
-  map per provider (vanilla, GTCEu, Supersymmetry). Richness starts from a strong default and is
-  tuned from data later.
+  recreated as Riven content (no Susy-Core code runs). Without GTCEu the same generators place
+  vanilla ores. Rock blocks map per provider (vanilla, GTCEu, Supersymmetry). Richness starts from
+  a strong default and is tuned from data later.
   Phase 1: a geological-history model (an event sequence traced backward per block); surface
-  outcrops come from the geology and retire the climate strata palettes; chasms both open to the
-  sky (rare, planned in 2D) and hidden; hazards are flooding water-bearing layers, lava depths and
-  chambers, unstable sand and gravel, and sheer drops. No glowstone or other invented blocks (it
-  does not exist in nature and could break GTCEu progression); lava is the only natural
-  underground light (*superseded 2026-10-26: light in the deep may vary; no glowstone still
-  holds*). The rock is the adventure: no underground structures, chests or special
-  creatures. No guaranteed routes between depth realms: networks break off and continue in lower
-  layers.
+  outcrops come from the geology; chasms both open to the sky (rare, planned in 2D) and hidden;
+  hazards are flooding water-bearing layers, lava depths and chambers, unstable sand and gravel,
+  and sheer drops. No glowstone or other invented blocks (it does not exist in nature and could
+  break GTCEu progression). The rock is the adventure: no underground structures, chests or
+  special creatures. No guaranteed routes between depth realms: networks break off and continue
+  in lower layers.
   Phase 2 (2026-10-24): the ore catalog is GTCEu's overworld veins only. Nether and End
   veins (platinum, tungsten, uranium, beryllium, monazite) stay out so GTCEu's dimension
   progression holds; root rewards come from nickel, olivine, sulfides and diamonds. Riven may
   compose its own mineral sets from GTCEu overworld vein materials (orogenic gold veins, vanadium
   magnetite layers in gabbro) rather than only GTCEu's exact vein recipes.
 
-- **Novel terrain features.** Strong realism is balanced back toward novel features: exaggerated
-  real wonders (pillar forests, tepuis, hoodoos, tower karst, sinkholes, arches) rather than
-  stylized fantasy; some land features may carve through rock (arches, overhangs, bridges) with
-  the same column-run machinery in native cubes and the DH preview; rare landmarks only, not
-  provinces or common texture; existing carvers and landmarks are exaggerated as well. Implemented
-  on the prototype branch as `WonderTerrain` (terrain-v71). *Superseded 2026-11-02: wonders
-  removed (terrain-v112).*
-
-- **Biomes O' Plenty as decoration provider.** Biomes O' Plenty (1.12.2-7.0.1.2445,
-  CC BY-NC-ND 4.0, pinned in `runtime.lock.json`, compiled against but never bundled or modified)
-  is the first worldgen mod, used for its decorators only, as an optional dependency. Riven maps
-  its habitat keys to BoP biomes (`riven-bop.json`): (1) decoration is the one recorded exception
-  to order independence, since placements that cross chunk borders depend on population order
-  (terrain, water and biome identity stay pure); (2) vegetation plus surface patches that swap
-  blocks without moving the surface run, but not ores, lakes, boulders, spikes, columns, crystals
-  or hives; (3) chunks report the BoP biome (colors, sky, weather and spawns). Riven still decides
-  every block; BoP supplies the biome's top and filler blocks where Riven places soil, and never
-  runs its terrain or surface routines. Without BoP the vanilla palette and empty population
-  stand. Supersedes "empty population" and "no decorator framework" in the 2026-10-19 generation
-  constraints. Distant Horizons previews carry the surface blocks but not decorations until chunks
-  generate natively.
-
-- **Cubature delivery scheduler.** The two-tier rule against background work is revised:
-  Cubature may run bounded worker pools that generate cubes off the server thread (Riven's
-  generator is a pure function of seed, definitions and coordinates, proven thread- and
-  order-independent) and that write storage continuously, with the server thread installing
-  finished cubes within a per-tick budget and blocking on a full write drain only at durability
-  barriers (shutdown, explicit flush). Riven itself still has no background jobs, preparation
-  coordinator or order-dependent state. Evidence: server ticks sat near 60 ms while loading or
-  moving because generation filled a 50 ms server-thread budget, which kept DH's health pause on;
-  save/purge stalls reached 2,024 ms waiting for the writer to drain its backlog (lifecycle
-  captures, 2026-10-20). *Riven's background work and preparation revised 2026-10-30 (Cubature
-  supplies Riven's in-build executor; Preparation within bounds).*
+- **Cubature delivery scheduler.** Cubature may run bounded worker pools that generate cubes off
+  the server thread (Riven's generator is a pure function of seed, definitions and coordinates,
+  proven thread- and order-independent) and that write storage continuously, with the server
+  thread installing finished cubes within a per-tick budget and blocking on a full write drain
+  only at durability barriers (shutdown, explicit flush). Riven itself has no order-dependent
+  state. Evidence: server ticks sat near 60 ms while loading or moving because generation filled a
+  50 ms server-thread budget, which kept DH's health pause on; save/purge stalls reached 2,024 ms
+  waiting for the writer to drain its backlog (lifecycle captures, 2026-10-20).
 
 ## Adopted 2026-10-22
 
 - **Two-tier generator.** Deterministic region-plan tiles (continents, coast distance, elevation,
-  climate, drainage, placement) plus column synthesis, migrated in phases. Allowed: lazily
-  computed region tiles and per-continent drainage that are pure functions of seed, definitions
-  and tile coordinates, held in bounded caches whose eviction cannot change results, and a bounded
-  per-column sample cache for native cubes. Still forbidden: background jobs, preparation
-  coordinators, order-dependent state and unbounded memory. Every phase is proven with
-  `terrain_atlas.py render --verify` and a `compare` against the previous phase. Continents 4-20 km
-  across; land target as set under Coast-first landforms below. *Background jobs and preparation
-  coordinators superseded 2026-10-30 (Cubature supplies Riven's in-build executor; Preparation
-  within bounds); order-dependent state and unbounded memory stay forbidden.*
+  climate, drainage, placement) plus column synthesis. Allowed: lazily computed region tiles and
+  per-continent drainage that are pure functions of seed, definitions and tile coordinates, held
+  in bounded caches whose eviction cannot change results, and a bounded per-column sample cache
+  for native cubes. Forbidden: order-dependent state and unbounded memory. Every phase is proven
+  with `terrain_atlas.py render --verify` and a `compare` against the previous phase.
 
 - **Coast-first landforms.** Protect the coast with a coastal height envelope instead of exclusion
   tests, give the world plate-margin classes and provinces, place features by suitability, and
-  decide ocean water at plan level. Modifications: the land target is biased toward a mean of 40%
-  land, preferring more land to less (supersedes the 25-40% working target above); hills are the
-  first family moved to the envelope; the envelope also yields a height class that combines with
-  climate into biome sub-classes (for example HIGH + HOT + DRY = a high-mesa sub-class;
-  illustration, not a fixed list).
+  decide ocean water at plan level; hills were the first family moved to the envelope.
 
-- **Locked biome layer.** A layer selects and locks the final biome, about 250 biomes with
-  transitions across the major inputs: hybrid identity (logical biomes mapped to vanilla IDs now,
-  a curated registered subset under about 195 later), locked after base terrain, overrides limited
-  to water, shore and height, and an axis grid with transition bands. Implemented as `Biomes`
-  (terrain-v44, 260 biomes); it supersedes the v41 sub-class table.
+- **Locked biome layer.** A layer selects and locks each column's final biome after base terrain
+  (`Biomes`), on an axis grid with transition bands, with overrides limited to water, shore and
+  height. Columns report Riven's own `riven:` biomes (`riven-biome-registry.json`).
 
 ## Adopted 2026-10-21
 
-- **Documentation reset.** History moved to [CHANGELOG.md](../CHANGELOG.md); contributions,
-  research, dated documents and superseded patches moved out of the source tree.
+- **Documentation reset.** History lives in [CHANGELOG.md](../CHANGELOG.md); contributions,
+  research, dated documents and superseded patches live outside the source tree.

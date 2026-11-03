@@ -71,7 +71,7 @@
         "server",
         "client"
       ],
-      "reason": "Optional decoration provider (decided 2026-10-23): Riven maps its biomes to BoP biomes for biome IDs, surface blocks and vegetation; BoP never shapes terrain. CC BY-NC-ND 4.0; not redistributed or modified"
+      "reason": "Optional decoration provider and block library (DECISIONS 2026-10-25, Full worldgen ownership): legacy looks rework Riven's soil and decorate the stages Riven does not own yet; BoP never shapes terrain. CC BY-NC-ND 4.0; not redistributed or modified"
     },
     {
       "file": "dev/pins/CodeChickenLib-1.12.2-3.2.3.358-universal.jar",

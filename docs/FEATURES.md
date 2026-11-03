@@ -619,7 +619,7 @@ generators (vegetation and block-swapping surface patches; BoP's own event handl
 filter listens on the main event bus as well: Cleanroom delivers decoration and ore events there,
 so before terrain-v71 springs and ores still generated.
 Without BoP the vanilla habitat and empty population stand. Decoration is the one recorded
-exception to order independence (DECISIONS 2026-10-23). `runtime.py play --tour
+exception to order independence (DECISIONS 2026-10-25, Full worldgen ownership). `runtime.py play --tour
 tools/tours/standard-8675309.json` captures nine labeled views and closes the client; prepare
 tour instances with `--capture-ticks 900`, since decorated chunks take longer to arrive.
 

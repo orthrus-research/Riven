@@ -50,6 +50,13 @@ public final class CoastForms {
         Family.CLIFF_PLATFORM, Family.STEPPED_HEADLAND, Family.JOINT_COVES
     };
 
+    /** Each height form's kernel family, by form ordinal (null for bodies). */
+    private static final Family[] FAMILY_OF = new Family[Form.values().length];
+
+    static {
+        for (Family f : HEIGHT_FAMILIES) FAMILY_OF[Form.valueOf(f.name()).ordinal()] = f;
+    }
+
     /** Where a stack or arch reads its cliff's top, in blocks inland of its shore point. */
     private static final double[] CREST_PROBES = {12, 18};
 
@@ -370,6 +377,7 @@ public final class CoastForms {
     private final RockyCoasts.Tuning[] tuning = new RockyCoasts.Tuning[Family.values().length];
     private final SeededNoise rough;
     private final int waterTop, sea, groupMax, archRoof;
+    private final Form[][] formsOf;
     private final double jitter, minimumExposure, caveRoof, roughness, lobe, archFraction;
     private final double archLand, thicknessVariation, seawardFall, irregularity, wander;
     private final double[] caveLength, caveHalfWidth, caveHeight;
@@ -459,7 +467,13 @@ public final class CoastForms {
         caveHalfWidth = range(cave, "halfWidthBlocks", 1, 16);
         caveHeight = range(cave, "heightBlocks", 2, 32);
         caveRoof = Rules.number(cave, "roofBlocks", 4, 64);
-        for (Shore.Type type : Shore.TYPES) for (String form : type.forms) Form.valueOf(form);
+        // Names resolve once here; generation reads only the forms and families they name.
+        formsOf = new Form[Shore.TYPES.length][];
+        for (Shore.Type type : Shore.TYPES) {
+            formsOf[type.index] = new Form[type.forms.length];
+            for (int f = 0; f < type.forms.length; f++)
+                formsOf[type.index][f] = Form.valueOf(type.forms[f]);
+        }
     }
 
     private static double[] range(JsonObject j, String key, double min, double max) {
@@ -488,12 +502,13 @@ public final class CoastForms {
     }
 
     private Placed[] place(Shore.Segment s) {
-        if (s.type == null || s.type.forms.length == 0) return NONE;
+        if (s.type == null || formsOf[s.type.index].length == 0) return NONE;
         List<Placed> out = new ArrayList<>();
         Shore.Nearest owner = new Shore.Nearest();
         double span = shore.cellBlocks(), tx = -s.nz, tz = s.nx;
-        for (int f = 0; f < s.type.forms.length; f++) {
-            Form form = Form.valueOf(s.type.forms[f]);
+        Form[] forms = formsOf[s.type.index];
+        for (int f = 0; f < forms.length; f++) {
+            Form form = forms[f];
             double per = s.type.formSpacing[f];
             int slots = Math.max(1, (int) Math.round(span / per));
             for (int k = 0; k < slots; k++) {
@@ -666,7 +681,7 @@ public final class CoastForms {
      * inland. That reading and the exposure at the point are the anchor's only facts.
      */
     private Placed kernel(Form form, Shore.Segment s, double[] at, long h) {
-        Family family = Family.valueOf(form.name());
+        Family family = FAMILY_OF[form.ordinal()];
         RockyCoasts.Tuning t = tuning[family.ordinal()];
         RockyCoasts.Plan geometry =
                 RockyCoasts.prepare(

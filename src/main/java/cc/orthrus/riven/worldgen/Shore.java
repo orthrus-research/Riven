@@ -61,6 +61,10 @@ public final class Shore {
     /** A coast type: its kind, profile shape, band and foot ranges and suitability. */
     public static final class Type {
         public final String id;
+
+        /** The type's place in TYPES, which stages index their resolved lists by. */
+        final int index;
+
         final Kind kind;
         final int shape;
         final double bandMin, bandMax, footMin, footMax;
@@ -74,8 +78,9 @@ public final class Shore {
         /** The type's sediment forms (CoastSediment), by name. */
         final String[] sediment;
 
-        Type(JsonObject j) {
+        Type(JsonObject j, int index) {
             id = j.get("id").getAsString();
+            this.index = index;
             kind = Kind.valueOf(j.get("kind").getAsString().toUpperCase(java.util.Locale.ROOT));
             if (kind != Kind.CLIFF && kind != Kind.ROCK && kind != Kind.BEACH && kind != Kind.MARSH)
                 throw new IllegalStateException("riven-coasts.json " + id + ": kind " + kind);
@@ -157,7 +162,8 @@ public final class Shore {
         WARM = Rules.number(f, "warmCelsius", -40, 60);
         KNEE = Rules.number(j.getAsJsonObject("envelope"), "kneeFraction", .1, .9);
         List<Type> types = new ArrayList<>();
-        for (JsonElement e : j.getAsJsonArray("types")) types.add(new Type(e.getAsJsonObject()));
+        for (JsonElement e : j.getAsJsonArray("types"))
+            types.add(new Type(e.getAsJsonObject(), types.size()));
         if (types.isEmpty()) throw new IllegalStateException("riven-coasts.json: no types");
         TYPES = types.toArray(new Type[0]);
     }
