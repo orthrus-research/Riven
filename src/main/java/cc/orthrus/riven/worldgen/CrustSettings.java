@@ -14,6 +14,11 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
     private final double shallowFrom, bar, green, reflective, cover, rough, steep, snowline, sea;
     private final double clayWavelength, clayThreshold;
     private final SeededNoise clay;
+    // Soils by climate at the floor's own height (terrain-v115, thresholds.crust.soils).
+    private final double peatCelsius, peatMoisture, peatSlope;
+    private final double podzolFromCelsius, podzolToCelsius, podzolMoisture, podzolAboveSea;
+    private final double siltCelsius, sandyMoisture, sandyCelsius, loamMoisture;
+    private final double wetlandMud, mouthMud, mouthMudCelsius, redSandCelsius;
 
     CrustSettings(JsonObject t, SurfaceRules rules, TerrainHeightReference heights) {
         this.rules = rules;
@@ -34,6 +39,25 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
         clay = new SeededNoise(SeededNoise.mix(Rules.seed(patch, "variationSeed") ^ 0x434c4159L));
         clayWavelength = Rules.number(patch, "wavelengthBlocks", 4, 4096);
         clayThreshold = Rules.number(patch, "threshold", -1, 1);
+        JsonObject soils = t.getAsJsonObject("soils");
+        JsonObject peat = soils.getAsJsonObject("peat"), podzol = soils.getAsJsonObject("podzol");
+        peatCelsius = Rules.number(peat, "belowCelsius", -60, 60);
+        peatMoisture = Rules.number(peat, "fromMoisture", 0, 1);
+        peatSlope = Rules.number(peat, "belowSlope", 0, 16);
+        podzolFromCelsius = Rules.number(podzol, "fromCelsius", -60, 60);
+        podzolToCelsius = Rules.number(podzol, "belowCelsius", -60, 60);
+        podzolMoisture = Rules.number(podzol, "fromMoisture", 0, 1);
+        podzolAboveSea = Rules.number(podzol, "fromBlocksAboveSea", 0, 256);
+        siltCelsius = Rules.number(soils.getAsJsonObject("silt"), "belowCelsius", -60, 60);
+        JsonObject sandy = soils.getAsJsonObject("sandyLoam");
+        sandyMoisture = Rules.number(sandy, "belowMoisture", 0, 1);
+        sandyCelsius = Rules.number(sandy, "fromCelsius", -60, 60);
+        loamMoisture = Rules.number(soils.getAsJsonObject("loam"), "fromMoisture", 0, 1);
+        JsonObject mud = soils.getAsJsonObject("wetlandMud");
+        wetlandMud = Rules.number(mud, "aboveWetlandWeight", 0, 1);
+        mouthMud = Rules.number(mud, "aboveMouth", 0, 1);
+        mouthMudCelsius = Rules.number(mud, "mouthFromCelsius", -60, 60);
+        redSandCelsius = Rules.number(soils.getAsJsonObject("redSand"), "fromCelsius", -60, 60);
     }
 
     @Override
@@ -91,6 +115,36 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
         double slope = Math.hypot(s.broadDx, s.broadDz);
         if (slope > steep) h |= Settings.bit(Settings.STEEP);
         if (slope > rough) h |= Settings.bit(Settings.ROUGH);
+        if (!s.ocean.marine && s.waterY() <= floor) h |= soils(s, floor, slope, h);
+        return h;
+    }
+
+    /**
+     * The soils that hold on a dry land floor, from the climate at the floor's own height: peat on
+     * cold, wet flats; podzol in the cool wet band clear of the coast; silt in the cold; sandy loam where it is warm
+     * and dry; loam where it is wet; mud in a wetland's core and at warm river mouths; red sand
+     * where the hottest sand lies.
+     */
+    private long soils(TerrainMap.Sample s, int floor, double slope, long held) {
+        double celsius = ClimateMap.celsiusAt(s.climate, floor - sea);
+        double moisture = s.climate.moisture;
+        long h = 0;
+        if (celsius < peatCelsius && moisture >= peatMoisture && slope < peatSlope)
+            h |= Settings.bit(Settings.PEAT);
+        if (celsius >= podzolFromCelsius
+                && celsius < podzolToCelsius
+                && moisture >= podzolMoisture
+                && floor - sea >= podzolAboveSea) h |= Settings.bit(Settings.PODZOL);
+        if (celsius < siltCelsius) h |= Settings.bit(Settings.SILT);
+        if (moisture < sandyMoisture && celsius >= sandyCelsius)
+            h |= Settings.bit(Settings.SANDY_LOAM);
+        if (moisture >= loamMoisture) h |= Settings.bit(Settings.LOAM);
+        Hydro.Sample w = s.water;
+        if ((w.kind == Hydro.Kind.WETLAND && w.weight > wetlandMud)
+                || (w.mouth > mouthMud && celsius >= mouthMudCelsius))
+            h |= Settings.bit(Settings.WETLAND_MUD);
+        long sand = Settings.bit(Settings.DRYLAND_SAND) | Settings.bit(Settings.CLIMATE_SAND);
+        if ((held & sand) != 0 && celsius >= redSandCelsius) h |= Settings.bit(Settings.HOT_SAND);
         return h;
     }
 

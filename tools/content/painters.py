@@ -65,6 +65,37 @@ PALETTES = {
         (0x97, 0x8B, 0x7A),
         (0xA8, 0x9C, 0x8A),
     ],
+    # Soils (terrain-v115), placeholders on Requisition 05's rooted loam and frozen silt and 04's
+    # peat (a step darker than its tidal mud tones); sandy loam has no art yet and sits between
+    # loam and sand.
+    "loam": [
+        (0x4E, 0x43, 0x34),
+        (0x5C, 0x50, 0x3E),
+        (0x64, 0x57, 0x43),
+        (0x6D, 0x60, 0x4A),
+        (0x7A, 0x6D, 0x55),
+    ],
+    "silt": [
+        (0x66, 0x5E, 0x50),
+        (0x77, 0x6E, 0x5E),
+        (0x86, 0x7C, 0x6A),
+        (0x95, 0x8B, 0x77),
+        (0xA4, 0x99, 0x84),
+    ],
+    "sandy_loam": [
+        (0x6A, 0x5B, 0x44),
+        (0x7C, 0x6B, 0x51),
+        (0x8C, 0x7A, 0x5D),
+        (0x9C, 0x8A, 0x6A),
+        (0xAB, 0x99, 0x78),
+    ],
+    "peat": [
+        (0x26, 0x21, 0x1C),
+        (0x31, 0x2B, 0x24),
+        (0x3B, 0x34, 0x2B),
+        (0x46, 0x3E, 0x33),
+        (0x52, 0x49, 0x3C),
+    ],
 }
 
 # Cave fungi placeholders, dark to light, on Requisition 07's tones: (stem ramp, cap ramp, cap
@@ -93,6 +124,10 @@ SEDIMENTS = {
     "mud": (0.16, 0.05, True),
     "salt_sand": (0.18, 0.06, False),
     "volcanic_ash": (0.20, 0.06, False),
+    "loam": (0.18, 0.07, False),
+    "silt": (0.12, 0.04, True),
+    "sandy_loam": (0.22, 0.10, False),
+    "peat": (0.16, 0.05, True),
 }
 
 

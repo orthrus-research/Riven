@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 3,
+  "revision": 4,
   "about": "Riven's catalogue (catalogue-v1): every block the generator places, one entry each, with one id every definition can name. An id is its kind, or the kind, a dot and a name (rock.gabbro). block lists candidate block states (modid:block or modid:block[property=value,...]); the first that resolves wins, so later candidates are the stand-ins.",
   "kinds": {
     "air": "empty space",
@@ -802,6 +802,46 @@
       "kind": "decor",
       "block": [
         "minecraft:web"
+      ]
+    },
+    "soil.loam": {
+      "kind": "soil",
+      "block": [
+        "riven:loam",
+        "minecraft:dirt"
+      ]
+    },
+    "soil.silt": {
+      "kind": "soil",
+      "block": [
+        "riven:silt",
+        "minecraft:dirt"
+      ]
+    },
+    "soil.sandy_loam": {
+      "kind": "soil",
+      "block": [
+        "riven:sandy_loam",
+        "minecraft:dirt"
+      ]
+    },
+    "soil.peat": {
+      "kind": "soil",
+      "block": [
+        "riven:peat",
+        "minecraft:dirt"
+      ]
+    },
+    "soil.podzol": {
+      "kind": "soil",
+      "block": [
+        "minecraft:dirt[variant=podzol]"
+      ]
+    },
+    "sediment.red_sand": {
+      "kind": "sediment",
+      "block": [
+        "minecraft:sand[variant=red_sand]"
       ]
     }
   },

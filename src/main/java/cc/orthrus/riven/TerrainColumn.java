@@ -105,6 +105,22 @@ final class TerrainColumn {
         result[at("rock.terracotta_white")] = terracotta(EnumDyeColor.WHITE);
         result[at("rock.terracotta_gray")] = terracotta(EnumDyeColor.GRAY);
         result[at("rock.terracotta_black")] = terracotta(EnumDyeColor.BLACK);
+        // Soils by climate (riven-surface.json), Riven's own but for vanilla's podzol and red sand.
+        IBlockState dirt = Blocks.DIRT.getDefaultState();
+        result[at("soil.loam")] = named("riven:loam", null, null, dirt);
+        result[at("soil.silt")] = named("riven:silt", null, null, dirt);
+        result[at("soil.sandy_loam")] = named("riven:sandy_loam", null, null, dirt);
+        result[at("soil.peat")] = named("riven:peat", null, null, dirt);
+        result[at("soil.podzol")] =
+                Blocks.DIRT
+                        .getDefaultState()
+                        .withProperty(BlockDirt.VARIANT, BlockDirt.DirtType.PODZOL);
+        result[at("sediment.red_sand")] =
+                Blocks.SAND
+                        .getDefaultState()
+                        .withProperty(
+                                net.minecraft.block.BlockSand.VARIANT,
+                                net.minecraft.block.BlockSand.EnumType.RED_SAND);
         result[at("fluid.lava")] = Blocks.LAVA.getDefaultState();
         // Cave decoration: Riven's own blocks, vanilla stand-ins should one be missing.
         IBlockState clay = Blocks.CLAY.getDefaultState(), air = Blocks.AIR.getDefaultState();

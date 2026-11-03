@@ -31,7 +31,14 @@ public final class Settings {
         "rough",
         "default",
         "snowcap",
-        "mud"
+        "mud",
+        "peat",
+        "podzol",
+        "silt",
+        "sandy-loam",
+        "loam",
+        "wetland-mud",
+        "hot-sand"
     };
 
     public static final int SEDIMENT = 0,
@@ -58,7 +65,14 @@ public final class Settings {
             ROUGH = 21,
             DEFAULT = 22,
             SNOWCAP = 23,
-            MUD = 24;
+            MUD = 24,
+            PEAT = 25,
+            PODZOL = 26,
+            SILT = 27,
+            SANDY_LOAM = 28,
+            LOAM = 29,
+            WETLAND_MUD = 30,
+            HOT_SAND = 31;
 
     static {
         if (NAMES.length > 64) throw new IllegalStateException("Setting masks hold 64 settings");

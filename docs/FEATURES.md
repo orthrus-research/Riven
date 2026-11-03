@@ -1050,13 +1050,20 @@ turns the router off. `RivenClimate.at(world, pos)` gives any server-side caller
 biome at a block, for machines later; `/riven` prints them with the effects that apply.
 
 **Ground cover** (`riven-surface.json`, the column engine's crust settings): each column's ground
-takes the first of 25 settings that holds, in the crust table's order, and the table names its top
+takes the first of 32 settings that holds, in the crust table's order, and the table names its top
 (one block), soil (two) and subsoil (three). Sediment and a rocky shore's build-up lie over their
 own deposits; a marsh's mud and its creeks' beds are three blocks of mud; marine and lagoon beds are sand down to the shoal level and gravel below; river and
-lake beds are sand, dirt, gravel or clay in patches; channel bars, green oasis and wetland margins,
+lake beds are sand, dirt, gravel or clay in patches; channel bars, mud in a wetland's core and at
+warm river mouths (above 20 C), green oasis and wetland margins,
 bare stone (riven-surface-rules.json), sandy shores (gravel on reflective coasts, shoaling under
-0.25), dryland pavement and sand, climate sand and snow follow; grass on the steepest soil (broad
-slope over 0.12, about 7% of soil) is coarse dirt, and gravel over 0.2. Sand Riven places as soil
+0.25), dryland pavement and sand (red sand on red sandstone from 28 C), climate sand and snow follow; grass on the steepest soil (broad
+slope over 0.12, about 7% of soil) is coarse dirt, and gravel over 0.2. Elsewhere the climate at
+the floor's own height (terrain-v115) chooses the soil under the grass: peat on cold, wet flats
+(below 6 C, moisture from 0.78, broad slope under 0.03), podzol over loam in the cool wet band (0
+to 7 C, moisture from 0.72, 6 or more blocks above the sea), silt below 2 C, sandy loam where it is dry (under 0.42) from 12 C,
+loam where it is wet (from 0.6) and plain dirt between. Over `AssembledColumnCheck`'s 16 km grid on seeds
+8675309 and 101 grass-topped land is 32-37% loam, 25-26% dirt, 20-22% silt, 14-19% sandy
+loam, 1.4-2.1% podzol and 0.7-1.1% peat, and 15-16% of dryland and climate sand is red. Sand Riven places as soil
 rests on three blocks of sandstone, and covers over it (bars, green margins, pavement, beach sand)
 keep it. Rock comes from the geology (above).
 
@@ -1088,6 +1095,11 @@ from cave decoration, ore blocks, and unstable stone on the floors cave decorati
   horizontal motion, as on soul sand. Salt sand and ash fall like sand. Until the art pack fills
   their slots they show placeholder faces painted on ramps taken from Requisition 04's tidal mud,
   coral white sand and volcanic ash (DECISIONS 2026-11-01).
+- **Soils** (kind `soil`, terrain-v115): loam, silt, sandy loam and peat, the crust table's soils
+  under the grass (Ground cover, above), with vanilla's podzol and red sand. They hold plains plants
+  as dirt does. Their faces are placeholders on Requisition 05's rooted loam and frozen silt and
+  Requisition 04's peat (sandy loam has no art yet) until the art pack fills their slots; grass over
+  them stays vanilla grass.
 - **Ore blocks** (`ores`): one block per mineral (86, including 15 Supersymmetry minerals GTCEu
   lacks) over the 13 host stones, drawn as the stone's face, main or alternate as the stone shows
   it, under a painted overlay tinted with the mineral's color. Every mineral names a GTCEu

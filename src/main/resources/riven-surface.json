@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 3,
+  "revision": 4,
   "thresholds": {
     "crust": {
       "shallowFromReference": "shoal",
@@ -11,7 +11,16 @@
       "roughAboveSlope": 0.12,
       "steepAboveSlope": 0.2,
       "snowlineCelsius": -5,
-      "clayPatch": {"variationSeed": "0x4d4154455249414c", "wavelengthBlocks": 48, "threshold": 0.35}
+      "clayPatch": {"variationSeed": "0x4d4154455249414c", "wavelengthBlocks": 48, "threshold": 0.35},
+      "soils": {
+        "peat": {"belowCelsius": 6, "fromMoisture": 0.78, "belowSlope": 0.03},
+        "podzol": {"fromCelsius": 0, "belowCelsius": 7, "fromMoisture": 0.72, "fromBlocksAboveSea": 6},
+        "silt": {"belowCelsius": 2},
+        "sandyLoam": {"belowMoisture": 0.42, "fromCelsius": 12},
+        "loam": {"fromMoisture": 0.6},
+        "wetlandMud": {"aboveWetlandWeight": 0.85, "aboveMouth": 0.5, "mouthFromCelsius": 20},
+        "redSand": {"fromCelsius": 28}
+      }
     }
   },
   "tables": {
@@ -31,17 +40,24 @@
         {"setting": "water-bed-gravel", "top": "sediment.gravel", "soil": "sediment.gravel", "subsoil": "bed"},
         {"setting": "bar-sand", "top": "sediment.sand", "soil": "sediment.sand"},
         {"setting": "bar-gravel", "top": "sediment.gravel", "soil": "sediment.gravel"},
+        {"setting": "wetland-mud", "top": "soil.mud", "soil": "soil.mud"},
         {"setting": "green", "top": "soil.grass", "soil": "soil.dirt"},
         {"setting": "snowcap", "top": "ice.snow", "soil": "bed", "subsoil": "bed"},
         {"setting": "bare-stone", "top": "bed", "soil": "bed", "subsoil": "bed"},
         {"setting": "shore-reflective", "top": "sediment.gravel", "soil": "sediment.gravel", "subsoil": "bed"},
         {"setting": "shore-sandy", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "rock.sandstone"},
         {"setting": "dryland-pavement", "top": "sediment.gravel", "soil": "sediment.gravel"},
+        {"setting": "hot-sand", "top": "sediment.red_sand", "soil": "sediment.red_sand", "subsoil": "rock.red_sandstone"},
         {"setting": "dryland-sand", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "rock.sandstone"},
         {"setting": "climate-sand", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "rock.sandstone"},
         {"setting": "snow", "top": "ice.snow", "soil": "soil.dirt", "subsoil": "bed"},
         {"setting": "steep", "top": "sediment.gravel", "soil": "soil.dirt", "subsoil": "bed"},
         {"setting": "rough", "top": "soil.coarse_dirt", "soil": "soil.dirt", "subsoil": "bed"},
+        {"setting": "peat", "top": "soil.grass", "soil": "soil.peat", "subsoil": "bed"},
+        {"setting": "podzol", "top": "soil.podzol", "soil": "soil.loam", "subsoil": "bed"},
+        {"setting": "silt", "top": "soil.grass", "soil": "soil.silt", "subsoil": "bed"},
+        {"setting": "sandy-loam", "top": "soil.grass", "soil": "soil.sandy_loam", "subsoil": "bed"},
+        {"setting": "loam", "top": "soil.grass", "soil": "soil.loam", "subsoil": "bed"},
         {"setting": "default", "top": "soil.grass", "soil": "soil.dirt", "subsoil": "bed"}
       ]
     }
@@ -52,6 +68,7 @@
     "A table's rows are tried in order; a column takes the first whose setting holds, and default always holds. Each row names the entries of three layers counted down from the floor, top, soil and subsoil, with the table's depths (a row may give its own); bed shows the zone's rock. A row without a subsoil takes the subsoil of the next row that holds and names one, so a cover over the ground (sediment, a rocky build-up, a bar, green margins, pavement) keeps the ground's subsoil.",
     "The crust table reproduces the cover the surface rules laid before the engine (terrain-v99): bare stone (riven-surface-rules.json) shows rock, sand Riven places as soil rests on sandstone, and laid deposits keep their own material.",
     "Snowline (terrain-v109): a dry land floor is a snowcap where the climate's temperature at the floor's own height (the lapse rate in riven-climate.json, applied from the column's climate before its own lapse) is below snowlineCelsius. There the floor takes snow: the snowcap row (snow over stone) where the ground would be bare stone, which it precedes, so snow covers the rock above the treeline, and the snow row (snow over soil) elsewhere. Below the snowline the treeline's rock band remains, and frozen climates keep their snow.",
-    "Mud (terrain-v114): a marsh's mud cover (riven-coasts.json sediment.mud) and every tidal creek's bed take mud (top and soil), before any water bed's row, so a creek's bed is mud like the flat it cuts."
+    "Mud (terrain-v114): a marsh's mud cover (riven-coasts.json sediment.mud) and every tidal creek's bed take mud (top and soil), before any water bed's row, so a creek's bed is mud like the flat it cuts.",
+    "Soils (terrain-v115): on a dry land floor the climate at the floor's own height (riven-climate.json's lapse rate, as for the snowline) chooses the soil under the grass when no earlier row holds: peat on cold, wet flats (below peat.belowCelsius, moisture from peat.fromMoisture, broad slope below peat.belowSlope), podzol over loam in the cool wet band (podzol.fromCelsius to podzol.belowCelsius, moisture from podzol.fromMoisture) at least podzol.fromBlocksAboveSea above the sea, clear of coastal flats, silt in the cold (below silt.belowCelsius), sandy loam where it is warm and dry (moisture below sandyLoam.belowMoisture from sandyLoam.fromCelsius) and loam where it is wet (moisture from loam.fromMoisture); plain dirt elsewhere. A wetland's core (water weight above wetlandMud.aboveWetlandWeight) and a river mouth's land (mouth above wetlandMud.aboveMouth) from wetlandMud.mouthFromCelsius take mud, ahead of the green row. Dryland and climate sand from redSand.fromCelsius is red sand on red sandstone."
   ]
 }

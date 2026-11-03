@@ -1,0 +1,10 @@
+[
+  {"label": "podzol", "x": 8128.5, "y": 238, "z": -4735.5, "yaw": 45, "pitch": 40, "commands": ["effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "red-sand", "x": -127.5, "y": 74, "z": -4351.5, "yaw": 45, "pitch": 40, "commands": ["execute {player} 8128.5 238 -4735.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "inland-mud", "x": 3873.5, "y": 77, "z": -3711.5, "yaw": 45, "pitch": 40, "commands": ["execute {player} -127.5 74 -4351.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "loam-under-grass", "x": -2618.5, "y": 131, "z": -7231.5, "yaw": 90, "pitch": 25, "commands": ["execute {player} 3873.5 77 -3711.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "peat-under-grass", "x": -7222.5, "y": 94, "z": 1604.5, "yaw": 180, "pitch": 25, "commands": ["execute {player} -2618.5 131 -7231.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "silt-under-grass", "x": 1984.5, "y": 109, "z": 644.5, "yaw": 180, "pitch": 25, "commands": ["execute {player} -7222.5 94 1604.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "sandy-loam-under-grass", "x": 1028.5, "y": 130, "z": -7615.5, "yaw": 90, "pitch": 25, "commands": ["execute {player} 1984.5 109 644.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "return", "x": 1028.5, "y": 150, "z": -7615.5, "yaw": 0, "pitch": 30, "commands": ["execute {player} 1028.5 130 -7615.5 riven"]}
+]
