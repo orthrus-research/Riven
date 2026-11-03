@@ -675,9 +675,10 @@ stands; `/riven find <biome>` names the nearest column of a riven: biome or a lo
 
 **Ground cover** (prototype, ground-cover-v2, terrain-v99, `riven-ground-cover.json`,
 `GroundCover`): Riven places the plants and decals on the ground itself; neither the provider's nor
-the vanilla decorator's grass, flower, dead bush, small mushroom or reed stage runs (cactus and
-pumpkins still come from the looks until desert work replaces them, and the provider's lily-pad
-stage until Riven's underwater plants join its floating ones). A column's cover is a pure function of seed, its riven: biome and the
+the vanilla decorator's grass, flower, dead bush, small mushroom, reed or lily-pad stage runs
+(cactus and pumpkins still come from the looks until desert work replaces them); since
+terrain-v120 the provider's lily-pad stage (its reeds, lilies, algae, coral and kelp) does not run
+either, as Riven's shallows and underwater plants take the water. A column's cover is a pure function of seed, its riven: biome and the
 block it stands on: the biome lists palettes (temperate meadow, woodland, conifer, temperate and
 cold rainforest, tropical and cloud forest floors, tundra, polar, alpine rock, heath, steppe,
 grassland, wetland, scrub, Mediterranean, savanna, desert, badlands, four shores, reed margins and

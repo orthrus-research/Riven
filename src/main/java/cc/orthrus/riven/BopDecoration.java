@@ -27,7 +27,10 @@ final class BopDecoration {
     /** Vanilla decoration order, as BoP's own event handler would run its stages. */
     private static final GeneratorStage[] ORDER = order();
 
-    /** Stages Riven owns: tree sites place trees and huge mushrooms, ground cover the plants. */
+    /**
+     * Stages Riven owns: tree sites place trees and huge mushrooms, ground cover the plants, on
+     * land and on and under water.
+     */
     private static final java.util.EnumSet<GeneratorStage> OWNED = owned();
 
     private static final Field CHILDREN = children();
@@ -78,7 +81,14 @@ final class BopDecoration {
         java.util.EnumSet<GeneratorStage> owned = java.util.EnumSet.noneOf(GeneratorStage.class);
         for (String name :
                 new String[] {
-                    "TREE", "BIG_SHROOM", "GRASS", "FLOWERS", "DEAD_BUSH", "SHROOM", "REED"
+                    "TREE",
+                    "BIG_SHROOM",
+                    "GRASS",
+                    "FLOWERS",
+                    "DEAD_BUSH",
+                    "SHROOM",
+                    "REED",
+                    "LILYPAD"
                 })
             for (GeneratorStage stage : GeneratorStage.values())
                 if (stage.name().equals(name)) owned.add(stage);

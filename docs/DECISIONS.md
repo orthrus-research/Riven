@@ -334,7 +334,7 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   bootstrapped on BoP until Riven's own assets and feature families replace them. Until then each
   column's legacy look (its BoP biome) decorates the stages Riven does not own yet; Riven owns
   every soil (`riven-surface.json`, terrain-v116), trees, huge mushrooms, grass, flowers, dead
-  bushes, mushrooms and reeds. Only vegetation generators run (`riven-bop.json`): never ores, lakes, boulders, spikes, columns, crystals or hives,
+  bushes, mushrooms, reeds and the plants on and under water (terrain-v120). Only vegetation generators run (`riven-bop.json`): never ores, lakes, boulders, spikes, columns, crystals or hives,
   and never BoP's terrain. Those
   placements cross chunk borders, so decoration is the one exception to order independence;
   terrain, water and biome identity stay pure. BoP is optional, compiled against but never
