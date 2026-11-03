@@ -23,7 +23,7 @@ import java.util.Set;
  * look comes from an explicit override for its habitat key, else from the provider's own climate
  * table at the column's climate grid cell, weighted as the provider weights it, one pick per variety
  * cell; a look bordering a different pick may give way to its edge look. Otherwise the vanilla
- * habitat stands. A look only lends decoration, surface routines and colours-of-record; every
+ * habitat stands. A look only lends decoration and colours-of-record; every
  * column reports a riven: biome (RivenBiomes).
  */
 final class BiomeProvision {

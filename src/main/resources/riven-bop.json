@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 4,
+  "revision": 5,
   "provider": "biomesoplenty",
   "variationSeed": "0x424f505641524931",
   "varietyCellBlocks": 1536,
@@ -209,17 +209,14 @@
     "big_flowers",
     "bramble",
     "vines",
-    "mixed_lily",
-    "waterside",
-    "splatter",
-    "splotches"
+    "mixed_lily"
   ],
   "contract": [
     "Optional provider (user decision 2026-10-23): with Biomes O' Plenty loaded, a column's biome comes from an explicit entry in biomes for its habitat key (Habitats.key; REGION/HIGH with an optional /rugged override, the coastal and water keys, MOUTH/<name>), else, inland, from BoP's own climate table: the column's climate (Habitats.climate) maps onto BoP's 9 temperature x 12 rainfall grid (coldestCelsius in steps of celsiusPerStep; wettestMoisture to driestMoisture) and picks from that climate's land biomes by BoP's weights, minus excludedFromClimates. Without BoP, or where nothing is registered, the vanilla habitat stands.",
     "Coastal and water keys carry their temperature core after '#' (BEACH#HOT, OCEAN#COOL); an entry for the plain key covers every temperature without its own.",
     "Each pick is per variety cell: the nearest of jittered points every varietyCellBlocks, hashed with the world seed. Within edgeBlocks of a border with a cell that picked differently, a biome listed in edges gives way to its edge biome (foothills, forest edges), as BoP's own edge layers do.",
-    "The chosen biome is the chunk biome (colours, sky, weather, spawns). Riven still decides every block: soil it places as grass takes the biome's top block and soil below takes its filler, both only when the state is a full solid block. BoP's genTerrainBlocks never runs.",
-    "Decoration runs once per chunk column, in the cube holding the surface at the centre of its offset decoration area, with the biome's BoP generators in vanilla decoration order. Only allowedGenerators run (vegetation and surface patches that swap blocks without moving the surface); a weighted generator runs only if all of its children are allowed. Lakes, blobs, columns, spikes, crystals, hives and ores never run.",
+    "The chosen biome is the column's legacy look (decoration and climate weights); Riven reports its own riven: biome and decides every block, soil included (riven-surface.json): no look's top, filler or surface routine changes Riven's ground (terrain-v116).",
+    "Decoration runs once per chunk column, in the cube holding the surface at the centre of its offset decoration area, with the biome's BoP generators in vanilla decoration order. Only allowedGenerators run (vegetation that BoP's soil generators no longer accompany: waterside, splatter and splotches left with terrain-v116); a weighted generator runs only if all of its children are allowed. Lakes, blobs, columns, spikes, crystals, hives and ores never run.",
     "Lush desert is left out: its trees and grass splatter only grow at Y62-68, a window tuned for BoP terrain, so on Riven land it stayed bare clay.",
     "Decoration is the recorded exception to order independence: placements that cross into neighbouring chunks depend on population order (docs/DECISIONS.md). Terrain, water and biome identity stay pure."
   ]

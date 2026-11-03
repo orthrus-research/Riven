@@ -597,25 +597,21 @@ Native chunk biomes, biome queries and the DH preview all resolve through
 `Habitats.at(TerrainMap.Sample)` via `NativeColumns`. The crust floor is at Y -512 (since terrain-v72, 400 blocks under the lowest surface for geology, ore and caves); sea level is Y63 with still water through Y62.
 
 **Decoration provider** (prototype; `riven-bop.json`,
-`BiomeProvision`, `BopLooks`, `BopDecoration`, `DecorationFilter`, `SurfaceTranscription`):
+`BiomeProvision`, `BopLooks`, `BopDecoration`, `DecorationFilter`):
 with Biomes O' Plenty loaded, a column's biome comes from an explicit override for its habitat key
 (highlands; coasts and water by temperature core after `#`; river mouths), else inland from BoP's
 own climate table: Riven's temperature and moisture map onto BoP's 9 x 12 grid and pick by BoP's
 weights (vanilla biomes included, fantasy and terrain-dependent biomes excluded), one pick per
 warped 1.5 km variety cell, with edge biomes (foothills, forest edges) along borders between
-differing picks. Since terrain-v84 that pick is the column's legacy look, never the biome it reports (see Riven biomes): BoP's overworld biomes are withheld from the registry and Riven builds them itself, unregistered, in BoP's registration order (`BopLooks`, `riven-compat-biomesoplenty.json`), so BoP's climate table is rebuilt exactly. Riven decides every block's place; each look's own
-surface routine (`genTerrainBlocks`) then reworks only the soil Riven placed (solid to solid, in
-the top 8 blocks, and to stone where the routine itself chose stone, as chaparral's rocky patches
-do), the same in native cubes and the DH preview (one column at a time there). Many routines rewrite
-their biome's top and filler fields per column (chaparral, bog, bamboo forest, cold desert,
-overgrown cliffs, redwood forest, xeric shrubland; vanilla's mutated hills and mega taiga), so each
-runs under its look's lock from the look's blocks as built and leaves them so, and Riven's own soil
-takes the look's top and filler as built; until terrain-v95 both read whatever the last column on
-any thread had left there, which drew stone in the preview where the world had grass.
+differing picks. Since terrain-v84 that pick is the column's legacy look, never the biome it reports (see Riven biomes): BoP's overworld biomes are withheld from the registry and Riven builds them itself, unregistered, in BoP's registration order (`BopLooks`, `riven-compat-biomesoplenty.json`), so BoP's climate table is rebuilt exactly. Riven decides every block, soil included (Ground
+cover): since terrain-v116 no look's top, filler or surface routine changes it, where they had
+changed 60-69% of Riven's soil-topped columns (the census behind terrain-v115); the soils
+they had supplied are Riven's own crust rows.
 Population decorates each chunk column once, in the cube holding the surface at the center of its
 offset area: first the biome's own decorator, with springs, wells, fossils, ice spikes, boulders and
 every ore or stone blob denied in Riven worlds (`DecorationFilter`), then BoP's allow-listed
-generators (vegetation and block-swapping surface patches; BoP's own event handler stands aside). The
+generators (vegetation only: waterside, splatter and splotches left with terrain-v116; BoP's own
+event handler stands aside). The
 filter listens on the main event bus as well: Cleanroom delivers decoration and ore events there,
 so before terrain-v71 springs and ores still generated.
 Without BoP the vanilla habitat and empty population stand. Decoration is the one recorded
@@ -623,7 +619,7 @@ exception to order independence (DECISIONS 2026-10-25, Full worldgen ownership).
 tools/tours/standard-8675309.json` captures nine labeled views and closes the client; prepare
 tour instances with `--capture-ticks 900`, since decorated chunks take longer to arrive.
 
-**Riven biomes** (prototype, terrain-v84, `riven-biome-registry.json`, `RivenBiomeTable`, `RivenBiomes`, `RivenBiomeTypes`): every column reports one of 61 `riven:` biomes, chosen from its habitat key: 30 inland by climate region and calm elevation (lowland for LOW and MID, highland for HIGH), 10 rugged by temperature band (hills, peaks), 13 coast and water biomes and 8 river mouths. Each extends the vanilla class of its kind (snow, taiga, plains, forest, savanna, jungle, desert, hills, mesa, beach, stone beach, swamp, ocean, river), which Demonica reads as its shader category and other mods test with `instanceof`; names avoid substrings shader packs misread ("end", "ice", "nether"); temperature, rainfall and precipitation drive vanilla weather; grass and foliage colors follow the vanilla color maps unless the world's mappings override them. They empty their decorators and surface hooks: decoration and surface still come from each column's legacy look until Riven's feature families replace them. Spawn search uses the 40 inland biomes. Underground, cubes report the 12 realm and depth biomes below (73 `riven:` biomes in all). With BoP loaded, Riven withholds its 68 overworld biomes through BoP's own `biome_ids.json` switch before BoP's preInit (`config/riven.cfg` `withholdProviderBiomes`, default on) and hides BoP's world type; a Riven world with BoP then uses 140 of 256 biome IDs (62 vanilla, 5 BoP Nether, 73 Riven). `/riven biomes` lists them with IDs, parents and categories; `tools/checks/BiomeTableCheck.java` proves all 163 habitat keys select a biome.
+**Riven biomes** (prototype, terrain-v84, `riven-biome-registry.json`, `RivenBiomeTable`, `RivenBiomes`, `RivenBiomeTypes`): every column reports one of 61 `riven:` biomes, chosen from its habitat key: 30 inland by climate region and calm elevation (lowland for LOW and MID, highland for HIGH), 10 rugged by temperature band (hills, peaks), 13 coast and water biomes and 8 river mouths. Each extends the vanilla class of its kind (snow, taiga, plains, forest, savanna, jungle, desert, hills, mesa, beach, stone beach, swamp, ocean, river), which Demonica reads as its shader category and other mods test with `instanceof`; names avoid substrings shader packs misread ("end", "ice", "nether"); temperature, rainfall and precipitation drive vanilla weather; grass and foliage colors follow the vanilla color maps unless the world's mappings override them. They empty their decorators and surface hooks: decoration still comes from each column's legacy look until Riven's feature families replace it, and Riven decides the surface itself. Spawn search uses the 40 inland biomes. Underground, cubes report the 12 realm and depth biomes below (73 `riven:` biomes in all). With BoP loaded, Riven withholds its 68 overworld biomes through BoP's own `biome_ids.json` switch before BoP's preInit (`config/riven.cfg` `withholdProviderBiomes`, default on) and hides BoP's world type; a Riven world with BoP then uses 140 of 256 biome IDs (62 vanilla, 5 BoP Nether, 73 Riven). `/riven biomes` lists them with IDs, parents and categories; `tools/checks/BiomeTableCheck.java` proves all 163 habitat keys select a biome.
 
 **Resource mappings** (prototype, mappings-v1, `riven-mappings.json`, `Mappings`, `RivenNetwork`): roles name materials (`wood.oak.log`), each an ordered list of block states whose first loaded entry wins; layers add or replace roles and riven: biome colors: Riven's defaults (Riven's own and vanilla blocks; every wood's log and leaves), integration layers for loaded mods, then pack layers in `config/riven/mappings/*.json` by file name. A world resolves them once, when it is created, into `data/riven/definitions.json` with a SHA-256 fingerprint, and loads that snapshot for life; each joining client receives its fingerprint and biome colors in one packet. `/riven mappings` compares the world's snapshot with the current layers.
 
@@ -706,12 +702,8 @@ Distant Horizons skips as non-colliding while tinting the ground under them, as 
 data. Palettes cover a quarter to two fifths of fitting ground in meadows, forests and wetlands, a
 tenth on rock and shores and a twentieth in deserts. `/riven cover [radius]` compares preview and
 world block by block and names what each path decided from where they differ, and counts columns
-whose ground block itself differs; `/riven column x z` prints one column through both paths. `/riven soil [radius] [step]` counts, per legacy look, what its top, filler and surface
-routine change in Riven's grass and dirt over every step-th chunk column, from the same pure
-transcription the cubes and preview use, without generating the world. The
-provider's surface patches (splatter, splotches) still rework some ground during population, after
-cover and preview decide (25 of 4,225 columns near seed 8675309's 0 -2880), until Riven owns those
-surfaces.
+whose ground block itself differs; `/riven column x z` prints one column through both paths. Since terrain-v116
+no provider generator reworks ground after cover and preview decide.
 
 **Geology** (prototype, phase 1a of the subsurface design; `riven-geology.json`, `GeologyMap`): every
 block below the soil, and all exposed rock, comes from a geological history evaluated per column.

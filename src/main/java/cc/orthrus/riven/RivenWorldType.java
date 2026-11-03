@@ -104,12 +104,6 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         return generator == null ? null : generator.trees;
     }
 
-    /** The surface transcription of a Riven cubic server world, or null (diagnostics). */
-    static SurfaceTranscription surfaces(World world) {
-        Generator generator = generator(world);
-        return generator == null ? null : generator.surfaces;
-    }
-
     /** The ground cover of a Riven cubic server world, or null. */
     static GroundCover cover(World world) {
         Generator generator = generator(world);
@@ -132,9 +126,6 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         /** The provider's decoration, or null without the provider (population stays empty). */
         private final BopDecoration decoration;
 
-        /** Biome surface routines on Riven's soil, or null without the provider. */
-        private final SurfaceTranscription surfaces;
-
         Generator(ClimateBiomeProvider biomes, World world) {
             this.biomes = biomes;
             this.world = world;
@@ -143,12 +134,11 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
                             ? new BopDecoration(
                                     biomes.provision.allowedGenerators(), world.getWorldType())
                             : null;
-            surfaces = decoration != null ? new SurfaceTranscription(biomes, world) : null;
             // The world's recorded definitions: resolved once, at creation, then loaded for life.
             snapshot = Mappings.load(world);
             trees =
                     decoration != null
-                            ? new TreeSites(world.getSeed(), biomes, surfaces, HEIGHTS, snapshot)
+                            ? new TreeSites(world.getSeed(), biomes, HEIGHTS, snapshot)
                             : null;
             cover = trees != null ? new GroundCover(world.getSeed(), biomes, trees) : null;
             realms = new RealmMap(world.getSeed(), HEIGHTS);
@@ -206,11 +196,9 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
                         biomes.maps.terrain.sample(x, z, sample);
                         TerrainColumn.preview(
                                 sample,
-                                biomes.look(sample, x, z),
                                 biomes.biome(sample, x, z),
                                 biomes.maps.columns.assembler(),
                                 HEIGHTS,
-                                surfaces,
                                 biomes.maps.boulders,
                                 trees,
                                 cover,
@@ -320,31 +308,23 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             // the stored runs equal the engine's).
             NativeColumns.Column column = biomes.maps.columns.column(cubeX, cubeZ);
             TerrainBlock[] line = new TerrainBlock[16];
-            SurfaceTranscription.Surface surface =
-                    surfaces == null ? null : surfaces.surface(cubeX, cubeZ);
             for (int z = 0; z < 16; z++)
                 for (int x = 0; x < 16; x++) {
                     int index = (z << 4) | x;
-                    Biome look = biomes.look(column, index, (int) west + x, (int) north + z);
                     column.cube(index, (int) bottom, line);
-                    for (int y = 0; y < 16; y++) {
-                        IBlockState kept =
-                                surface == null ? null : surface.at(index, (int) bottom + y);
+                    for (int y = 0; y < 16; y++)
                         primer.setBlockState(
                                 x,
                                 y,
                                 z,
-                                kept != null
-                                        ? kept
-                                        : rock(
-                                                column,
-                                                index,
-                                                (int) west + x,
-                                                (int) bottom + y,
-                                                (int) north + z,
-                                                line[y],
-                                                TerrainColumn.state(line[y], look)));
-                    }
+                                rock(
+                                        column,
+                                        index,
+                                        (int) west + x,
+                                        (int) bottom + y,
+                                        (int) north + z,
+                                        line[y],
+                                        TerrainColumn.state(line[y])));
                 }
             // Boulders and trees are part of the cube: each cube writes their blocks inside itself,
             // boulders first, so trees (whose sites see boulders as ground) grow around them.
@@ -360,18 +340,9 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
                         cubeZ,
                         column,
                         (index, x, y, z) -> {
-                            IBlockState kept = surface == null ? null : surface.at(index, y);
-                            if (kept != null) return kept;
                             column.cube(index, Math.floorDiv(y, 16) * 16, at);
                             TerrainBlock block = at[Math.floorMod(y, 16)];
-                            return rock(
-                                    column,
-                                    index,
-                                    x,
-                                    y,
-                                    z,
-                                    block,
-                                    TerrainColumn.state(block, biomes.look(column, index, x, z)));
+                            return rock(column, index, x, y, z, block, TerrainColumn.state(block));
                         });
             }
             return depthBiomes(primer, column, cubeX, cubeY, cubeZ);

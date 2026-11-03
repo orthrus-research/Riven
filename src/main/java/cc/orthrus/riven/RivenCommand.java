@@ -25,7 +25,7 @@ final class RivenCommand extends CommandBase {
 
     @Override
     public String getUsage(ICommandSender sender) {
-        return "/riven [x z] | /riven find <biome> [radius] | /riven trees [radius] | /riven cover [radius] | /riven soil [radius] [step] | /riven boulders [radius] | /riven biomes | /riven mappings | /riven shaderprops [player] | /riven effects [reload]";
+        return "/riven [x z] | /riven find <biome> [radius] | /riven trees [radius] | /riven cover [radius] | /riven boulders [radius] | /riven biomes | /riven mappings | /riven shaderprops [player] | /riven effects [reload]";
     }
 
     /**
@@ -234,98 +234,6 @@ final class RivenCommand extends CommandBase {
     }
 
     /**
-     * What the legacy looks' surface routines change in Riven's soil, by look: over every step-th
-     * chunk column within radius blocks, each column's kept band (the look's top and filler and its
-     * routine) against Riven's own grass and dirt, counted by depth below the ground top. Reads the
-     * same pure transcription the native cubes and the preview use; generates no world.
-     */
-    private static void soil(ICommandSender sender, World world, String[] args)
-            throws CommandException {
-        int radius = args.length > 1 ? parseInt(args[1], 16, 30000) : 1024;
-        int step = args.length > 2 ? parseInt(args[2], 1, 64) : 8;
-        SurfaceTranscription surfaces = RivenWorldType.surfaces(world);
-        if (surfaces == null)
-            throw new CommandException("Riven's soil census needs the decoration provider");
-        ClimateBiomeProvider provider = (ClimateBiomeProvider) world.getBiomeProvider();
-        BlockPos at = sender.getPosition();
-        // Per look: columns, columns with Riven soil on top, columns the look changed.
-        Map<String, long[]> looks = new TreeMap<>();
-        Map<String, Long> changes = new java.util.HashMap<>();
-        cc.orthrus.riven.worldgen.TerrainBlock[] line =
-                new cc.orthrus.riven.worldgen.TerrainBlock[16];
-        long started = System.nanoTime();
-        int x0 = (at.getX() - radius) >> 4, x1 = (at.getX() + radius) >> 4;
-        int z0 = (at.getZ() - radius) >> 4, z1 = (at.getZ() + radius) >> 4;
-        for (int cz = z0; cz <= z1; cz += step)
-            for (int cx = x0; cx <= x1; cx += step) {
-                cc.orthrus.riven.worldgen.NativeColumns.Column column =
-                        provider.maps.columns.column(cx, cz);
-                SurfaceTranscription.Surface surface = surfaces.surface(cx, cz);
-                for (int index = 0; index < 256; index++) {
-                    int x = cx * 16 + (index & 15), z = cz * 16 + (index >> 4);
-                    net.minecraft.world.biome.Biome biome = provider.look(column, index, x, z);
-                    String look = BiomeProvision.lookName(biome);
-                    long[] n = looks.computeIfAbsent(look, k -> new long[3]);
-                    n[0]++;
-                    int top = surface.bandTop(index);
-                    boolean soilTop = false, changed = false;
-                    for (int y = top - 8; y < top; y++) {
-                        column.cube(index, Math.floorDiv(y, 16) * 16, line);
-                        cc.orthrus.riven.worldgen.TerrainBlock riven = line[Math.floorMod(y, 16)];
-                        if (riven != cc.orthrus.riven.worldgen.TerrainBlock.GRASS
-                                && riven != cc.orthrus.riven.worldgen.TerrainBlock.DIRT) continue;
-                        if (y == top - 1) soilTop = true;
-                        // What the world gets: the routine's kept block, else the look's top or
-                        // filler in place of Riven's grass or dirt.
-                        net.minecraft.block.state.IBlockState kept = surface.at(index, y);
-                        if (kept == null) kept = TerrainColumn.state(riven, biome);
-                        if (kept.equals(TerrainColumn.state(riven))) continue;
-                        changed = true;
-                        changes.merge(
-                                look + "|" + (top - 1 - y) + "|" + riven.id + "|" + kept,
-                                1L,
-                                Long::sum);
-                    }
-                    if (soilTop) n[1]++;
-                    if (changed) n[2]++;
-                }
-            }
-        sender.sendMessage(
-                new TextComponentString(
-                        String.format(
-                                Locale.ROOT,
-                                "Riven soil census: radius %d around %d %d, every %d chunks, %.1f s",
-                                radius,
-                                at.getX(),
-                                at.getZ(),
-                                step,
-                                (System.nanoTime() - started) / 1e9)));
-        for (Map.Entry<String, long[]> e : looks.entrySet()) {
-            long[] n = e.getValue();
-            sender.sendMessage(
-                    new TextComponentString(
-                            String.format(
-                                    Locale.ROOT,
-                                    "Riven soil look %s: columns=%d soil=%d changed=%d",
-                                    e.getKey(),
-                                    n[0],
-                                    n[1],
-                                    n[2])));
-        }
-        // Every change, most frequent first: look, depth below the top, Riven's entry, kept state.
-        changes.entrySet().stream()
-                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .forEach(
-                        e ->
-                                sender.sendMessage(
-                                        new TextComponentString(
-                                                "Riven soil change "
-                                                        + e.getKey()
-                                                        + " blocks="
-                                                        + e.getValue())));
-    }
-
-    /**
      * Ground cover parity around the sender: every ground cover block the preview draws against
      * the world, near each loaded column's ground, and how many columns carry cover.
      */
@@ -486,46 +394,9 @@ final class RivenCommand extends CommandBase {
                 new TextComponentString(
                         "  looks native="
                                 + BiomeProvision.lookName(nativeLook)
-                                + " (top "
-                                + nativeLook.topBlock
-                                + ", filler "
-                                + nativeLook.fillerBlock
-                                + ") sample="
+                                + " sample="
                                 + BiomeProvision.lookName(sampleLook)
                                 + (nativeLook == sampleLook ? " (same)" : " (DIFFERENT)")));
-        SurfaceTranscription surfaces = RivenWorldType.surfaces(world);
-        SurfaceTranscription.Surface chunk =
-                surfaces == null ? null : surfaces.surface(x >> 4, z >> 4);
-        cc.orthrus.riven.worldgen.TerrainBlock[] riven =
-                new cc.orthrus.riven.worldgen.TerrainBlock[256];
-        int ground = Integer.MIN_VALUE;
-        for (int i = 0; i < count; i++) {
-            cc.orthrus.riven.worldgen.TerrainBlock block = assembled.runBlock(i);
-            for (int y = Math.max(0, assembled.bottom(i)); y < Math.min(256, assembled.top(i)); y++)
-                riven[y] = block;
-            if (block != cc.orthrus.riven.worldgen.TerrainBlock.AIR
-                    && block != cc.orthrus.riven.worldgen.TerrainBlock.WATER)
-                ground = assembled.top(i);
-        }
-        for (int y = 0; y < 256; y++)
-            if (riven[y] == null) riven[y] = cc.orthrus.riven.worldgen.TerrainBlock.AIR;
-        SurfaceTranscription.Surface single =
-                surfaces == null ? null : surfaces.column(riven, ground, sampleLook, x, z);
-        StringBuilder kept = new StringBuilder("  kept chunk/column:");
-        for (int y = surface - 5; y <= surface; y++)
-            kept.append(' ')
-                    .append(y)
-                    .append('=')
-                    .append(chunk == null ? null : chunk.at(index, y))
-                    .append('/')
-                    .append(single == null ? null : single.at(0, y));
-        sender.sendMessage(
-                new TextComponentString(
-                        kept
-                                + " tops "
-                                + (chunk == null ? null : chunk.bandTop(index))
-                                + "/"
-                                + (single == null ? null : single.bandTop(0))));
         for (int y = surface - 5; y <= surface + 1; y++) {
             native_.cube(index, Math.floorDiv(y, 16) * 16, line);
             int run = assembled.run(y);
@@ -651,10 +522,6 @@ final class RivenCommand extends CommandBase {
         }
         if (args.length >= 1 && args[0].equals("trees")) {
             trees(sender, world, args);
-            return;
-        }
-        if (args.length >= 1 && args[0].equals("soil")) {
-            soil(sender, world, args);
             return;
         }
         if (args.length >= 1 && args[0].equals("cover")) {

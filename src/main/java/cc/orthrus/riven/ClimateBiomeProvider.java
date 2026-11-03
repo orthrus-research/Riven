@@ -76,8 +76,8 @@ final class ClimateBiomeProvider extends BiomeProvider {
 
     /**
      * The legacy look of a complete sample at a column: the provider's pick, else the vanilla
-     * habitat. It lends decoration, surface routines and soil blocks until Riven's feature families
-     * replace them; it is never reported.
+     * habitat. It lends decoration until Riven's feature families replace it; it is never
+     * reported, and Riven decides every soil itself.
      */
     Biome look(TerrainMap.Sample sample, int x, int z) {
         Biome provided = provision.biome(Habitats.key(sample), Habitats.climate(sample), x, z);

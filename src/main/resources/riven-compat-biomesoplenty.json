@@ -2,7 +2,7 @@
   "schema": 1,
   "revision": 1,
   "provider": "biomesoplenty",
-  "about": "Biomes O' Plenty integration (compat-bop-v1). Riven withholds BoP's overworld biomes from the biome registry by giving them ID -1 in BoP's own biome_ids.json before BoP's preInit (BoP then skips them as Optional.absent), keeping the Nether biomes listed here. Until Riven's feature families replace them, BoP's overworld biomes still lend their decoration, surface routines and climate weights as legacy looks: Riven builds them itself, unregistered, in BoP's registration order (looks, generated from BoP 7.0.1.2445's ModBiomes.registerBiomes), so BoP's climate table is rebuilt exactly.",
+  "about": "Biomes O' Plenty integration (compat-bop-v1). Riven withholds BoP's overworld biomes from the biome registry by giving them ID -1 in BoP's own biome_ids.json before BoP's preInit (BoP then skips them as Optional.absent), keeping the Nether biomes listed here. Until Riven's feature families replace them, BoP's overworld biomes still lend their decoration and climate weights as legacy looks (never Riven's soil, terrain-v116): Riven builds them itself, unregistered, in BoP's registration order (looks, generated from BoP 7.0.1.2445's ModBiomes.registerBiomes), so BoP's climate table is rebuilt exactly.",
   "keepRegistered": [
     "corrupted_sands",
     "fungi_forest",

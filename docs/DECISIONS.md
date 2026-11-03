@@ -332,10 +332,9 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   and composable resource mappings that bind features to any installed mod's blocks, so the DH
   preview draws the same models without extra LOD cost. BoP and other packs are block libraries,
   bootstrapped on BoP until Riven's own assets and feature families replace them. Until then each
-  column's legacy look (its BoP biome) reworks the soil Riven placed through its surface routine
-  and decorates the stages Riven does not own yet; Riven owns trees, huge mushrooms, grass,
-  flowers, dead bushes, mushrooms and reeds. Only generators that swap blocks without moving the
-  surface run (`riven-bop.json`): never ores, lakes, boulders, spikes, columns, crystals or hives,
+  column's legacy look (its BoP biome) decorates the stages Riven does not own yet; Riven owns
+  every soil (`riven-surface.json`, terrain-v116), trees, huge mushrooms, grass, flowers, dead
+  bushes, mushrooms and reeds. Only vegetation generators run (`riven-bop.json`): never ores, lakes, boulders, spikes, columns, crystals or hives,
   and never BoP's terrain. Those
   placements cross chunk borders, so decoration is the one exception to order independence;
   terrain, water and biome identity stay pure. BoP is optional, compiled against but never

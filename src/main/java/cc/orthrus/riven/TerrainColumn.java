@@ -223,41 +223,10 @@ final class TerrainColumn {
         return STATES[block.index()];
     }
 
-    /**
-     * The state of a Riven block in a column of the given biome. A provider biome (riven-bop.json)
-     * supplies its own surface: the soil Riven places as grass takes the biome's top block and the
-     * soil below takes its filler (as the look was built: routines rewrite the live fields per
-     * column), each only when it is a full solid block. Riven still decides where soil lies;
-     * nothing else changes.
-     */
-    static IBlockState state(TerrainBlock block, Biome biome) {
-        IBlockState[] soil;
-        if ((block == TerrainBlock.GRASS || block == TerrainBlock.DIRT)
-                && BiomeProvision.isProviderLook(biome)
-                && (soil = BopLooks.soil(biome)) != null) {
-            IBlockState own = block == TerrainBlock.GRASS ? soil[0] : soil[1];
-            if (own != null && own.isFullCube() && own.getMaterial().isSolid()) return own;
-        }
-        return STATES[block.index()];
-    }
-
     /** The block at Y of a sample's crust column, assembled afresh (reports). */
     static IBlockState blockAt(
             int y, TerrainMap.Sample sample, Assembler<TerrainMap.Sample> crust) {
         return state(crust.assemble(sample, new AssembledColumn()).at(y));
-    }
-
-    /**
-     * A kept surface block as the preview's lighting accepts it: translucent or emitting blocks
-     * (a frozen biome's ice) cannot be lit there, so ice previews as packed ice and others as
-     * Riven's own block.
-     */
-    @SuppressWarnings("deprecation") // The preview lighting guard reads the same properties.
-    private static IBlockState previewable(IBlockState kept) {
-        if (kept == null) return null;
-        int opacity = kept.getLightOpacity();
-        if ((opacity <= 0 || opacity >= 15) && kept.getLightValue() == 0) return kept;
-        return kept.getBlock() == Blocks.ICE ? Blocks.PACKED_ICE.getDefaultState() : null;
     }
 
     /**
@@ -267,18 +236,15 @@ final class TerrainColumn {
      */
     static final class Scratch {
         final AssembledColumn column = new AssembledColumn();
-        final TerrainBlock[] riven = new TerrainBlock[256];
         final TreeSites.Recorder recorder = new TreeSites.Recorder();
         final TreeSites.Canopy canopy = new TreeSites.Canopy();
     }
 
     static void preview(
             TerrainMap.Sample sample,
-            Biome biome,
             Biome reported,
             Assembler<TerrainMap.Sample> crust,
             TerrainHeightReference heights,
-            SurfaceTranscription surfaces,
             Boulders boulders,
             TreeSites trees,
             GroundCover cover,
@@ -302,24 +268,6 @@ final class TerrainColumn {
         if (heights.worldMinimumY < heights.minimumY)
             consumer.addRun(
                     heights.worldMinimumY, heights.minimumY, state(RealmMap.realms().get(0).rock));
-        SurfaceTranscription.Surface surface = null;
-        int index = 0;
-        if (surfaces != null) {
-            // The same kept band as native cubes, from this column's own runs.
-            TerrainBlock[] riven = scratch.riven;
-            java.util.Arrays.fill(riven, TerrainBlock.AIR);
-            int ground = Integer.MIN_VALUE;
-            for (int i = 0; i < count; i++) {
-                TerrainBlock block = column.runBlock(i);
-                for (int y = Math.max(0, column.bottom(i)); y < Math.min(256, column.top(i)); y++)
-                    riven[y] = block;
-                if (block != TerrainBlock.AIR && block != TerrainBlock.WATER)
-                    ground = column.top(i);
-            }
-            surface = surfaces.column(riven, ground, biome, x, z);
-        }
-        int lo = surface == null ? Integer.MAX_VALUE : surface.bandBottom(index);
-        int hi = lo == Integer.MAX_VALUE ? lo : surface.bandTop(index);
         // The preview cannot light air under water: air below a column's highest water (an
         // underground lake's dome under a pond) never shows from the sky and previews as stone.
         int highestWater = -1;
@@ -334,15 +282,8 @@ final class TerrainColumn {
                             ? Blocks.STONE.getDefaultState()
                             : block == TerrainBlock.ICE
                                     ? Blocks.PACKED_ICE.getDefaultState()
-                                    : state(block, biome);
-            int bottom = column.bottom(i), top = column.top(i);
-            // Below and above a column's kept band the run is Riven's own; inside it, per block.
-            if (bottom < Math.min(top, lo)) consumer.addRun(bottom, Math.min(top, lo), own);
-            for (int y = Math.max(bottom, lo); y < Math.min(top, hi); y++) {
-                IBlockState kept = previewable(surface.at(index, y));
-                consumer.addRun(y, y + 1, kept != null ? kept : own);
-            }
-            if (Math.max(bottom, hi) < top) consumer.addRun(Math.max(bottom, hi), top, own);
+                                    : state(block);
+            consumer.addRun(column.bottom(i), column.top(i), own);
         }
         if (recorded == null) return;
         // The boulder's rock replaces the column's ground block and the air above it, as the

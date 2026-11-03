@@ -11,7 +11,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 
@@ -35,7 +34,8 @@ import java.util.Set;
 /**
  * Biomes O' Plenty's overworld biomes as Riven uses them (riven-compat-biomesoplenty.json): withheld
  * from the biome registry, and built by Riven, unregistered, as legacy looks that still lend their
- * decoration, surface routines and climate weights until Riven's feature families replace them.
+ * decoration and climate weights until Riven's feature families replace them; Riven decides every
+ * soil itself.
  * Loaded only when BoP is present.
  */
 final class BopLooks {
@@ -46,12 +46,6 @@ final class BopLooks {
     private static Map<String, Biome> looks;
     private static Map<Biome, String> names;
 
-    /**
-     * Each look's top and filler blocks as built, before any surface routine runs: some routines
-     * (chaparral, bog, overgrown cliffs and others) rewrite their biome's fields per column.
-     */
-    private static Map<Biome, IBlockState[]> soils;
-
     private BopLooks() {}
 
     /** BoP's overworld biomes by name, in its registration order (built once, on first use). */
@@ -59,26 +53,17 @@ final class BopLooks {
         if (looks == null) {
             Map<String, Biome> built = new LinkedHashMap<>();
             Map<Biome, String> reverse = new IdentityHashMap<>();
-            Map<Biome, IBlockState[]> soil = new IdentityHashMap<>();
             for (JsonElement e : RULES.json.getAsJsonArray("looks")) {
                 JsonObject look = e.getAsJsonObject();
                 Biome biome = construct(look);
                 String name = look.get("name").getAsString();
                 built.put(name, biome);
                 reverse.put(biome, name);
-                soil.put(biome, new IBlockState[] {biome.topBlock, biome.fillerBlock});
             }
             looks = Collections.unmodifiableMap(built);
             names = reverse;
-            soils = soil;
         }
         return looks;
-    }
-
-    /** A look's top (0) and filler (1) blocks as built, or null for any other biome. */
-    static IBlockState[] soil(Biome biome) {
-        looks();
-        return soils.get(biome);
     }
 
     /** The BoP name of a look, or null for any other biome. */

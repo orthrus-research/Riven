@@ -21,7 +21,7 @@ import java.util.Set;
 /**
  * Runs a Biomes O' Plenty biome's own generators on Riven terrain. The only class that touches BoP;
  * it is loaded only when BoP is present. Only allowed generator types run, so BoP adds vegetation
- * and surface patches but never lakes, boulders, spikes, columns, crystals, hives or ores.
+ * but never soil patches, lakes, boulders, spikes, columns, crystals, hives or ores.
  */
 final class BopDecoration {
     /** Vanilla decoration order, as BoP's own event handler would run its stages. */

@@ -206,7 +206,6 @@ final class TreeSites {
     private final List<Layer> layers = new ArrayList<>();
     private final Map<Biome, Stand[]> stands = new IdentityHashMap<>();
     private final ClimateBiomeProvider biomes;
-    private final SurfaceTranscription surfaces;
     private final TerrainHeightReference heights;
     private final ThreadLocal<Scratch> scratch = ThreadLocal.withInitial(Scratch::new);
     private final ThreadLocal<Shapes> shapes = ThreadLocal.withInitial(Shapes::new);
@@ -228,7 +227,6 @@ final class TreeSites {
     TreeSites(
             long worldSeed,
             ClimateBiomeProvider biomes,
-            SurfaceTranscription surfaces,
             TerrainHeightReference heights,
             Mappings.Snapshot snapshot) {
         JsonObject j = RULES.json;
@@ -258,7 +256,6 @@ final class TreeSites {
             stands.put(biome, array);
         }
         this.biomes = biomes;
-        this.surfaces = surfaces;
         this.heights = heights;
     }
 
@@ -362,10 +359,8 @@ final class TreeSites {
                 TerrainColumn.preview(
                         s.sample,
                         look,
-                        look,
                         biomes.maps.columns.assembler(),
                         heights,
-                        surfaces,
                         biomes.maps.boulders,
                         null,
                         null,
@@ -689,11 +684,9 @@ final class TreeSites {
         Recorder r = new Recorder();
         TerrainColumn.preview(
                 sample,
-                biomes.look(sample, x, z),
                 biomes.biome(sample, x, z),
                 biomes.maps.columns.assembler(),
                 heights,
-                surfaces,
                 biomes.maps.boulders,
                 this,
                 cover,
