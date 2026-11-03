@@ -335,7 +335,8 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   stage the looks decorated: every soil (`riven-surface.json`, terrain-v116), trees, huge
   mushrooms, grass, flowers, dead bushes, mushrooms, reeds, the plants on and under water
   (terrain-v120), cactus and pumpkins (terrain-v121); no BoP generator runs and BoP's terrain never
-  did. BoP's presence still gates Riven's tree sites and ground cover, until that work moves them.
+  did. Riven's tree sites, ground cover, population and creature spawning run the same with or
+  without BoP (terrain-v122).
   Population (other mods' custom decoration, a chunk's first animals) crosses chunk borders, so it
   is the one exception to order independence;
   terrain, water and biome identity stay pure. BoP is optional, compiled against but never

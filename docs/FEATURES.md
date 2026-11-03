@@ -615,7 +615,8 @@ spikes, boulders and every ore or stone blob), so it carries only other mods' cu
 and the column's first animals. No BoP generator runs (terrain-v121; BoP's own event handler
 stands aside). The filter listens on the main event bus as well: Cleanroom delivers decoration and
 ore events there, so before terrain-v71 springs and ores still generated.
-Without BoP the vanilla habitat and empty population stand. Population is the one recorded
+Without BoP each look is its vanilla habitat biome and everything else runs the same: tree sites,
+ground cover, population and creature spawning no longer wait on BoP (terrain-v122). Population is the one recorded
 exception to order independence (DECISIONS 2026-10-25, Full worldgen ownership). `runtime.py play --tour
 tools/tours/standard-8675309.json` captures nine labeled views and closes the client; prepare
 tour instances with `--capture-ticks 900`, since decorated chunks take longer to arrive.

@@ -71,8 +71,8 @@ candidates are the stand-ins. Definitions name entries by id; the generator's co
 vanilla, soil, decoration and formation entries it needs as `TerrainBlock` constants.
 `TerrainColumn` resolves each entry to its Minecraft state. Until the remaining Java block rules
 move into the catalogue, startup also builds the former hard-coded table and fails on any
-difference, and logs which entries resolved to a stand-in. Population is empty unless the optional Biomes O' Plenty
-decoration provider is loaded (FEATURES.md, "Decoration provider"); its placements are the one
+difference, and logs which entries resolved to a stand-in. Population (FEATURES.md, "Decoration provider") runs with or without the optional Biomes O'
+Plenty; its placements are the one
 recorded exception to order independence.
 
 ## Map graph

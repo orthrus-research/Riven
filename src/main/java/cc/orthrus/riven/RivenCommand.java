@@ -164,8 +164,7 @@ final class RivenCommand extends CommandBase {
             throws CommandException {
         int radius = args.length > 1 ? parseInt(args[1], 1, 128) : 48;
         TreeSites sites = RivenWorldType.trees(world);
-        if (sites == null)
-            throw new CommandException("Riven tree sites need the decoration provider");
+        if (sites == null) throw new CommandException("Riven tree sites need a Riven cubic world");
         BlockPos at = sender.getPosition();
         long logs = 0, leaves = 0, previewOnly = 0, worldOnly = 0, columns = 0;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
@@ -244,7 +243,7 @@ final class RivenCommand extends CommandBase {
         TreeSites sites = RivenWorldType.trees(world);
         GroundCover cover = RivenWorldType.cover(world);
         if (sites == null || cover == null)
-            throw new CommandException("Riven ground cover needs the decoration provider");
+            throw new CommandException("Riven ground cover needs a Riven cubic world");
         BlockPos at = sender.getPosition();
         long matched = 0, previewOnly = 0, worldOnly = 0, columns = 0, covered = 0, grounds = 0;
         long submerged = 0;

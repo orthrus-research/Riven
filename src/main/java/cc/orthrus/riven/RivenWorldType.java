@@ -34,7 +34,6 @@ import org.apache.logging.log4j.LogManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
@@ -123,20 +122,15 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         private final ClimateBiomeProvider biomes;
         private final World world;
 
-        /** The provider's decoration, or null without the provider (population stays empty). */
-        private final BopDecoration decoration;
-
         Generator(ClimateBiomeProvider biomes, World world) {
             this.biomes = biomes;
             this.world = world;
-            decoration = BiomeProvision.active() ? new BopDecoration(world.getWorldType()) : null;
+            // Biomes O' Plenty, where loaded, keeps its own decoration out of the world.
+            if (BiomeProvision.active()) new BopDecoration(world.getWorldType());
             // The world's recorded definitions: resolved once, at creation, then loaded for life.
             snapshot = Mappings.load(world);
-            trees =
-                    decoration != null
-                            ? new TreeSites(world.getSeed(), biomes, HEIGHTS, snapshot)
-                            : null;
-            cover = trees != null ? new GroundCover(world.getSeed(), biomes, trees) : null;
+            trees = new TreeSites(world.getSeed(), biomes, HEIGHTS, snapshot);
+            cover = new GroundCover(world.getSeed(), biomes, trees);
             realms = new RealmMap(world.getSeed(), HEIGHTS);
             List<Biome> realmBiomes = new ArrayList<>();
             for (RealmMap.Realm realm : RealmMap.realms())
@@ -159,10 +153,10 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         /** The world's resolved definitions (data/riven/definitions.json). */
         private final Mappings.Snapshot snapshot;
 
-        /** Riven's tree sites, grown with the provider's generators, or null without it. */
+        /** Riven's tree sites. */
         private final TreeSites trees;
 
-        /** Riven's ground cover, or null without the provider. */
+        /** Riven's ground cover. */
         private final GroundCover cover;
 
         @Override
@@ -325,22 +319,20 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             // Boulders and trees are part of the cube: each cube writes their blocks inside itself,
             // boulders first, so trees (whose sites see boulders as ground) grow around them.
             TerrainColumn.placeBoulders(biomes.maps.boulders, primer, cubeX, cubeY, cubeZ);
-            if (trees != null) trees.place(primer, cubeX, cubeY, cubeZ);
+            trees.place(primer, cubeX, cubeY, cubeZ);
             // Ground cover last, into the air boulders and trees leave on each column's surface.
-            if (cover != null) {
-                TerrainBlock[] at = new TerrainBlock[16];
-                cover.place(
-                        primer,
-                        cubeX,
-                        cubeY,
-                        cubeZ,
-                        column,
-                        (index, x, y, z) -> {
-                            column.cube(index, Math.floorDiv(y, 16) * 16, at);
-                            TerrainBlock block = at[Math.floorMod(y, 16)];
-                            return rock(column, index, x, y, z, block, TerrainColumn.state(block));
-                        });
-            }
+            TerrainBlock[] at = new TerrainBlock[16];
+            cover.place(
+                    primer,
+                    cubeX,
+                    cubeY,
+                    cubeZ,
+                    column,
+                    (index, x, y, z) -> {
+                        column.cube(index, Math.floorDiv(y, 16) * 16, at);
+                        TerrainBlock block = at[Math.floorMod(y, 16)];
+                        return rock(column, index, x, y, z, block, TerrainColumn.state(block));
+                    });
             return depthBiomes(primer, column, cubeX, cubeY, cubeZ);
         }
 
@@ -469,7 +461,6 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
          */
         @Override
         public void populate(ICube cube) {
-            if (decoration == null) return;
             int cubeX = cube.getX(), cubeZ = cube.getZ();
             int ax = cubeX * 16 + 16, az = cubeZ * 16 + 16;
             if (!ClimateBiomeProvider.inWorld(cubeX * 16L, cubeZ * 16L)
@@ -521,17 +512,13 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         /** Decorations of the columns at and below/west/north of a cube reach into it. */
         @Override
         public Box getFullPopulationRequirements(ICube cube) {
-            return decoration == null
-                    ? NO_REQUIREMENT
-                    : new Box(-1, -DECORATION_ABOVE, -1, 0, DECORATION_BELOW, 0);
+            return new Box(-1, -DECORATION_ABOVE, -1, 0, DECORATION_BELOW, 0);
         }
 
         /** An anchor decorates its offset area, spanning the next column east and south. */
         @Override
         public Box getPopulationPregenerationRequirements(ICube cube) {
-            return decoration == null
-                    ? NO_REQUIREMENT
-                    : new Box(0, -DECORATION_BELOW, 0, 1, DECORATION_ABOVE, 1);
+            return new Box(0, -DECORATION_BELOW, 0, 1, DECORATION_ABOVE, 1);
         }
 
         @Override
@@ -543,10 +530,8 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         @Override
         public List<Biome.SpawnListEntry> getPossibleCreatures(
                 EnumCreatureType type, BlockPos pos) {
-            // With the provider, creatures follow the reported biome; without it there are none.
-            return decoration == null
-                    ? Collections.emptyList()
-                    : world.getBiome(pos).getSpawnableList(type);
+            // Creatures follow the biome the position reports.
+            return world.getBiome(pos).getSpawnableList(type);
         }
 
         @Override
