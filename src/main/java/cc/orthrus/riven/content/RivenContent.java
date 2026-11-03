@@ -59,6 +59,9 @@ public final class RivenContent {
             if (kind.equals("stone")) block = new Block(Material.ROCK);
             else if (kind.equals("pointed_dripstone"))
                 block = new BlockPointedDripstone(j.getAsJsonObject("behaviour"));
+            else if (kind.equals("soil"))
+                block = new BlockRivenSoil(j.getAsJsonObject("behaviour"));
+            else if (kind.equals("sediment")) block = new BlockRivenSediment();
             else throw new IllegalStateException("Unknown content kind " + kind + " for " + id);
             block.setRegistryName("riven", id);
             block.setTranslationKey("riven." + id);

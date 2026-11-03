@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 5,
+  "revision": 6,
   "lang": {
     "generator.riven": "Riven"
   },
@@ -809,6 +809,49 @@
           }
         ]
       }
+    },
+    {
+      "id": "mud",
+      "kind": "soil",
+      "name": "Mud",
+      "creativeTab": "building",
+      "hardness": 0.5,
+      "resistance": 0.5,
+      "tool": "shovel",
+      "harvestLevel": 0,
+      "behaviour": {
+        "sinkBlocks": 0.125,
+        "slowdown": 0.4
+      },
+      "textures": {
+        "all": "mud"
+      }
+    },
+    {
+      "id": "salt_sand",
+      "kind": "sediment",
+      "name": "Salt Sand",
+      "creativeTab": "building",
+      "hardness": 0.5,
+      "resistance": 0.5,
+      "tool": "shovel",
+      "harvestLevel": 0,
+      "textures": {
+        "all": "salt_sand"
+      }
+    },
+    {
+      "id": "volcanic_ash",
+      "kind": "sediment",
+      "name": "Volcanic Ash",
+      "creativeTab": "building",
+      "hardness": 0.5,
+      "resistance": 0.5,
+      "tool": "shovel",
+      "harvestLevel": 0,
+      "textures": {
+        "all": "volcanic_ash"
+      }
     }
   ],
   "textures": {
@@ -923,6 +966,24 @@
     },
     "unstable_overlay": {
       "painter": "unstable_overlay"
+    },
+    "mud": {
+      "painter": "sediment",
+      "args": {
+        "material": "mud"
+      }
+    },
+    "salt_sand": {
+      "painter": "sediment",
+      "args": {
+        "material": "salt_sand"
+      }
+    },
+    "volcanic_ash": {
+      "painter": "sediment",
+      "args": {
+        "material": "volcanic_ash"
+      }
     }
   },
   "provenance": {
@@ -935,6 +996,7 @@
     "Riven's own content (blocks, items and their assets). Every block declares an id (registry riven:<id>), a kind that selects its Java implementation, its English name, creative tab, hardness, resistance, harvest tool and level, behaviour values for its kind, and textures by name.",
     "textures: each named texture comes from a painter in tools/content/painters.py (with fixed args, or expanded over 'for' values) or a committed file under tools/content/; a name with {placeholders} expands over its 'for' values. tools/content/build_content.py writes blockstates, models, item models, textures and the lang file under assets/riven from this file, and --check proves the committed assets match.",
     "kinds. stone: a full rock block, either one texture by name (all) or Riven Resources face sets (textures.source, a folder under tools/content/, and faces: all, or side and top with the top also below; the main set first), one set by position so wide walls do not repeat. pointed_dripstone: a stalactite (direction down) or stalagmite (direction up) whose thickness (tip_merge, tip, frustum, middle, base) follows its neighbours along its direction. A stalactite that loses the block it hangs from falls; a falling piece hurts what it lands on with fallDamagePerBlock per block fallen, at most fallDamageMax, and breaks on landing. A stalagmite that loses its base breaks. Landing on a stalagmite tip deals fall damage for the distance plus stalagmiteExtraFallBlocks, times stalagmiteDamageMultiplier. A stalactite tip drips water or lava (dripChance per display tick) when that fluid sits on top of the block its column hangs from, and a water drip fills a cauldron up to cauldronReachBlocks below (cauldronFillChance per random tick). The same kind serves every pointed formation material (pointed_ice, pointed_salt, pointed_basalt): a piece's thickness follows only neighbours of its own block, so two materials never merge into one column.",
+    "soil and sediment: loose ground for cave floors and seeps, drawn by Riven-painted placeholders until the art pack fills their slots. A soil block is ground material, so decorations take it as dirt; its behaviour sinks walkers sinkBlocks below its top and keeps slowdown of their horizontal motion, as soul sand does. A sediment block is sand material and falls like sand.",
     "ores: one block riven:ore_<mineral> per mineral, its host property indexing hosts (Riven's host stones); each state draws its host stone's face sets, one by position as the host shows them, under an overlay (ore_overlay_<shine>) tinted with the mineral's color. With GTCEu, a mineral naming a gregtech material drops that material's GTCEu ore, so GTCEu processing applies; otherwise the block drops itself. Minerals with gregtech null are Supersymmetry minerals GTCEu lacks.",
     "unstable: one block riven:unstable_<host> per host rock, named Unstable <host>: the host's own faces under an untinted crack overlay (overlay, a texture). block and meta name the host's registered state (what it drops and how it maps), terrain the catalogue entry (riven-catalogue.json) of the rock it replaces where a cave floor is unstable (riven-cave-decor.json unstable), and dust the colour of the dust it sheds into open space below (dustChance per display tick). A Riven host takes its block's face sets and name; another names its textures (all, or top, bottom and side). A player who steps or lands on it without sneaking sets it off: it creaks and, after triggerDelayTicks, the unstable stone joined to it within spreadRadiusBlocks (at most maximumBlocks, any host) falls ring by ring outward, spreadTicksPerBlock apart, each column from the bottom up. A falling piece hurts what it lands on (fallDamagePerBlock per block fallen, at most fallDamageMax) and shatters, dropping its host's drops at debrisDropChance. Mined it drops its host's drops; silk touch keeps it, and placed again it behaves the same. Unstable stone holds otherwise: no neighbour change or missing support sets it off.",
     "oreDictionary: Forge ore dictionary names, registered with the items, so recipes, GroovyScript and GTCEu: Reloaded (first-class support) see Riven's blocks. A stone block lists its names (oreDictionary). Every ore block registers, on each host state, ores.oreDictionary followed by its mineral's gregtech material id in upper camel case without its namespace (oreCopper, oreAnglesite), as GTCEu names its ores. A gregtech id is a GTCEu material: bare for GTCEu's own materials, riven: for materials that are Riven's. With GTCEu, Riven creates the riven material registry and builds each riven: mineral's material there (material: id, fixed for ever once worlds hold it, components, element ids to counts, and an optional name where the mineral's own would repeat a GTCEu material's), with dust and ore properties, the mineral's color and an icon set by its shine. Woods list names per part (log, planks, leaves, sapling)."

@@ -216,7 +216,7 @@ def block_assets(block: dict[str, Any]) -> dict[str, bytes]:
     out: dict[str, bytes] = {}
     if block["kind"] == "stone" and "faces" in block["textures"]:
         out.update(stone_assets(block))
-    elif block["kind"] == "stone":
+    elif block["kind"] in ("stone", "soil", "sediment"):
         out[f"blockstates/{id_}.json"] = text({"variants": {"normal": {"model": f"riven:{id_}"}}})
         out[f"models/block/{id_}.json"] = text(
             {

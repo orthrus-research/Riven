@@ -364,10 +364,11 @@ final class CaveDecor {
         if (floorAir && floorBlock == null && !bareFloor) {
             if (floor.floor == RealmMap.Floor.MAGMA) floorBlock = TerrainBlock.MAGMA;
             else if (floor.floor == RealmMap.Floor.ASH)
-                floorBlock = p > ASH ? TerrainBlock.ASH : p < -ASH ? TerrainBlock.GRAVEL : null;
+                floorBlock =
+                        p > ASH ? TerrainBlock.VOLCANIC_ASH : p < -ASH ? TerrainBlock.GRAVEL : null;
             else if (floor.floor == RealmMap.Floor.GRAVEL)
                 floorBlock = p > GRAVEL_FLOOR ? TerrainBlock.GRAVEL : null;
-            else if (floorUnit == EVAPORITE) floorBlock = TerrainBlock.WHITE_SAND;
+            else if (floorUnit == EVAPORITE) floorBlock = TerrainBlock.SALT_SAND;
             else if (floor.mud && lo - g.waterTable <= WET_BAND && p > MUD)
                 floorBlock = TerrainBlock.MUD;
             else if (floor.floor == RealmMap.Floor.LITTER && c > LITTER) {
@@ -385,7 +386,7 @@ final class CaveDecor {
             } else if (floor.floor == RealmMap.Floor.SAND && p > SAND)
                 floorBlock = TerrainBlock.SAND;
             else if (floor.floor == RealmMap.Floor.SALT && p > SAND)
-                floorBlock = TerrainBlock.WHITE_SAND;
+                floorBlock = TerrainBlock.SALT_SAND;
             else if (floor.floor == RealmMap.Floor.ICE && p > ICE)
                 floorBlock = TerrainBlock.PACKED_ICE;
         }

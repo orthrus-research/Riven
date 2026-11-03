@@ -1,0 +1,6 @@
+[
+  {"label": "mud-floor", "x": -1399.5, "y": -174, "z": -631.5, "yaw": 45, "pitch": 35, "commands": ["effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "salt-sand-floor", "x": -1210.5, "y": 20, "z": -1279.5, "yaw": 45, "pitch": 35, "commands": ["execute {player} -1399.5 -174 -631.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "volcanic-ash-floor", "x": -567.5, "y": -287, "z": 200.5, "yaw": 45, "pitch": 35, "commands": ["execute {player} -1210.5 20 -1279.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "return", "x": -567.5, "y": -267, "z": 200.5, "yaw": 45, "pitch": 35, "commands": ["execute {player} -567.5 -287 200.5 riven"]}
+]

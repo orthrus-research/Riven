@@ -42,6 +42,37 @@ PALETTES = {
         (0x57, 0x51, 0x5A),
         (0x6E, 0x66, 0x70),
     ],
+    # Placeholders until the art pack fills their slots, ramped on the delivered faces' tones:
+    # tidal mud (Requisition 04), coral white sand (04, paled toward salt) and volcanic ash (04).
+    "mud": [
+        (0x3F, 0x38, 0x2F),
+        (0x4D, 0x45, 0x38),
+        (0x5B, 0x50, 0x40),
+        (0x6A, 0x5D, 0x49),
+        (0x7A, 0x6C, 0x55),
+    ],
+    "salt_sand": [
+        (0xA6, 0x9E, 0x8A),
+        (0xB8, 0xB0, 0x9B),
+        (0xC8, 0xC1, 0xAD),
+        (0xD6, 0xD0, 0xBE),
+        (0xE4, 0xDF, 0xCF),
+    ],
+    "volcanic_ash": [
+        (0x65, 0x5D, 0x52),
+        (0x76, 0x6C, 0x5F),
+        (0x84, 0x79, 0x6B),
+        (0x97, 0x8B, 0x7A),
+        (0xA8, 0x9C, 0x8A),
+    ],
+}
+
+# Sediment faces: how much grains vary, how often a grain stands out, and whether the face is
+# smeared into flat bands (wet mud) rather than speckled.
+SEDIMENTS = {
+    "mud": (0.16, 0.05, True),
+    "salt_sand": (0.18, 0.06, False),
+    "volcanic_ash": (0.20, 0.06, False),
 }
 
 
@@ -77,6 +108,22 @@ def dripstone_block() -> Image:
             band = 0.18 * ((y + int(streak[x] * 7)) % 5 == 0)
             level = 0.25 + 0.45 * streak[x] + 0.25 * noise(x, y, 12) - band
             image[y][x] = shade(level)
+    return image
+
+
+def sediment(material: str) -> Image:
+    """A loose ground face: speckled grains, or flat wet smears for mud; tiles on every side."""
+    image = blank()
+    spread, grains, smeared = SEDIMENTS[material]
+    salt = 50 + len(material)
+    for y in range(SIZE):
+        # A smear shifts a whole row a little, so wet mud reads as laid down in sheets.
+        row = 0.12 * (noise(0, y // 2, salt) - 0.5) if smeared else 0.0
+        for x in range(SIZE):
+            level = 0.5 + row + spread * (noise(x, y, salt + 1) - 0.5)
+            if noise(x, y, salt + 2) < grains:
+                level += 0.3 if noise(x, y, salt + 3) < 0.5 else -0.3
+            image[y][x] = shade(level, material)
     return image
 
 
@@ -218,4 +265,5 @@ PAINTERS: dict[str, Callable[..., Image]] = {
     "pointed_dripstone_item": pointed_dripstone_item,
     "pointed": pointed,
     "pointed_item": pointed_item,
+    "sediment": sediment,
 }

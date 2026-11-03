@@ -835,8 +835,8 @@ hold even where a void cuts down to the formation below; rock tests (solubility,
   seed 8675309 over 8 km (`DescentCheck`), the Broken Basement holds 867 stalactite runs (none
   before), Lava Shores 1,081 basalt stalactites and 164 spires, and Salt Halls 39 salt stalactites
   where they had calcite.
-- Floors: litter (dirt) with toadstools and portobellos, sand, white sand, packed ice, gravel, ash
-  (or gravel) or magma by depth biome; white sand on every evaporite floor; mud within 14 blocks
+- Floors: litter (dirt) with toadstools and portobellos, sand, salt sand, packed ice, gravel, ash
+  (or gravel) or magma by depth biome; salt sand on every evaporite floor; mud within 14 blocks
   above the water table (and below it) in the layered deep. Gravel pockets (balls of 2-4 blocks radius on an 18-block
   grid) fill rock below Y-150, never an unstable floor, and fall when a cave opens under them.
 - Ceilings: hanging roots under root mats in Root Hollows, cobwebs in the Broken Basement and Dust
@@ -884,7 +884,8 @@ hold even where a void cuts down to the formation below; rock tests (solubility,
   planners immediately outside it that neighboring chunks would otherwise wake later. A carve over a few
   heights builds only the cave lattice levels it reads, and `CellMemo` gives each cell two slots
   (a pair of cells that shared one slot recomputed on every alternate read).
-- Without Biomes O' Plenty, vanilla stand-ins replace its blocks.
+- Mud, salt sand and ash are Riven content (below). The fungi, roots, Miner's Delight and algae
+  are still Biomes O' Plenty's blocks; without it, vanilla stand-ins replace them.
 
 On seed 8675309 (4 km, 32-block grid) 81% of land columns carry some decoration (84% before
 terrain-v87, when dry, frozen and wet skins also took roots and litter; `GeologySection decor`
@@ -937,7 +938,7 @@ in), so a biome holds across thin beds:
 
 | Realm | Depth biome | Where | Its caves |
 | --- | --- | --- | --- |
-| Skin | Salt Halls | evaporite | white sand floors, pointed salt; lifeless |
+| Skin | Salt Halls | evaporite | salt sand floors, pointed salt; lifeless |
 | Skin | Frost Hollows | under FROZEN land | pools frozen to ice, packed ice floors and seeps, pointed ice; lifeless |
 | Skin | Dust Hollows | under DRY land | sand floors, cobwebs, dripstone; lifeless |
 | Skin | Root Hollows | other land | hanging roots, litter with toadstools, mud near the water table, dripstone, fungi |
@@ -1079,6 +1080,12 @@ from cave decoration, ore blocks, and unstable stone on the floors cave decorati
   halide, sulfate, carbonate and non-marine evaporites, potash, bauxite, caliche, phosphorite,
   sulfur, native copper, platinum placer and gold alluvium, faced like the host stones. They drop
   themselves.
+- **Mud, salt sand and volcanic ash** (kinds `soil` and `sediment`): the catalogue's `soil.mud`,
+  `sediment.salt_sand` and `sediment.volcanic_ash`, which were Biomes O' Plenty's blocks. Mud is ground
+  that decorations take as dirt; walkers sink an eighth of a block into it and keep 40% of their
+  horizontal motion, as on soul sand. Salt sand and ash fall like sand. Until the art pack fills
+  their slots they show placeholder faces painted on ramps taken from Requisition 04's tidal mud,
+  coral white sand and volcanic ash (DECISIONS 2026-11-01).
 - **Ore blocks** (`ores`): one block per mineral (86, including 15 Supersymmetry minerals GTCEu
   lacks) over the 13 host stones, drawn as the stone's face, main or alternate as the stone shows
   it, under a painted overlay tinted with the mineral's color. Every mineral names a GTCEu

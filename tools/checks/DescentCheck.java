@@ -266,23 +266,24 @@ public final class DescentCheck {
                     decor.incrementAndGet(ceiling.index * n + b.index());
                     break;
                 case "rock.magma":
-                case "sediment.ash":
+                case "sediment.volcanic_ash":
                 case "ice.packed_ice":
                 case "sediment.sand":
                 case "soil.mud":
-                case "sediment.white_sand":
+                case "sediment.salt_sand":
                     // A floor block replaces the rock under a void (the run ends at the void).
                     require(s.geology.unit(lo) != magma, b + " on lava" + at);
                     RealmMap.Floor kind = under.floor;
                     require(
                             b == TerrainBlock.MUD
                                     ? under.mud
-                                    : (b == TerrainBlock.WHITE_SAND
+                                    : (b == TerrainBlock.SALT_SAND
                                                     && (s.geology.unit(lo).name.equals("evaporite")
                                                             || kind == RealmMap.Floor.SALT))
                                             || (b == TerrainBlock.MAGMA
                                                     && kind == RealmMap.Floor.MAGMA)
-                                            || (b == TerrainBlock.ASH && kind == RealmMap.Floor.ASH)
+                                            || (b == TerrainBlock.VOLCANIC_ASH
+                                                    && kind == RealmMap.Floor.ASH)
                                             || (b == TerrainBlock.PACKED_ICE
                                                     && kind == RealmMap.Floor.ICE)
                                             || (b == TerrainBlock.SAND

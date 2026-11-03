@@ -110,11 +110,11 @@ final class TerrainColumn {
         // stand-ins otherwise (riven-cave-decor.json lists them).
         IBlockState clay = Blocks.CLAY.getDefaultState(), air = Blocks.AIR.getDefaultState();
         IBlockState brown = Blocks.BROWN_MUSHROOM.getDefaultState();
-        result[at("soil.mud")] = named("biomesoplenty:mud", "variant", "mud", clay);
-        result[at("sediment.white_sand")] =
-                named("biomesoplenty:white_sand", null, null, Blocks.SAND.getDefaultState());
-        result[at("sediment.ash")] =
-                named("biomesoplenty:ash_block", null, null, Blocks.GRAVEL.getDefaultState());
+        result[at("soil.mud")] = named("riven:mud", null, null, clay);
+        result[at("sediment.salt_sand")] =
+                named("riven:salt_sand", null, null, Blocks.SAND.getDefaultState());
+        result[at("sediment.volcanic_ash")] =
+                named("riven:volcanic_ash", null, null, Blocks.GRAVEL.getDefaultState());
         result[at("rock.magma")] = Blocks.MAGMA.getDefaultState();
         result[at("rock.netherrack")] = Blocks.NETHERRACK.getDefaultState();
         result[at("ice.ice")] = Blocks.ICE.getDefaultState();
