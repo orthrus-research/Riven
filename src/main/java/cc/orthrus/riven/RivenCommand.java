@@ -25,7 +25,7 @@ final class RivenCommand extends CommandBase {
 
     @Override
     public String getUsage(ICommandSender sender) {
-        return "/riven [x z] | /riven find <biome> [radius] | /riven trees [radius] | /riven cover [radius] | /riven boulders [radius] | /riven biomes | /riven mappings | /riven shaderprops [player] | /riven effects [reload]";
+        return "/riven [x z] | /riven find <biome> [radius] | /riven trees [radius] | /riven cover [radius] | /riven boulders [radius] | /riven digest [radius [x z]] | /riven biomes | /riven mappings | /riven shaderprops [player] | /riven effects [reload]";
     }
 
     /**
@@ -491,6 +491,124 @@ final class RivenCommand extends CommandBase {
             sender.sendMessage(new TextComponentString("Riven boulders missing: " + missing));
     }
 
+    /** Blocks below a chunk column's lowest surface and above its highest that a digest hashes. */
+    private static final int DIGEST_BELOW = 32, DIGEST_ABOVE = 48;
+
+    /**
+     * A digest of the world's blocks around a point, to compare two worlds of one seed block for
+     * block: each chunk column within the radius whose band (its lowest surface less DIGEST_BELOW
+     * up to its highest plus DIGEST_ABOVE, from the generator's own columns, so both worlds hash
+     * the same blocks) is wholly loaded is hashed by block state names, one line per chunk column
+     * in {@code riven/digests/} of the world's save, and the lines are hashed into one total.
+     */
+    private static void digest(ICommandSender sender, World world, String[] args)
+            throws CommandException {
+        int radius = args.length > 1 ? parseInt(args[1], 1, 256) : 48;
+        int x =
+                args.length > 3
+                        ? parseInt(args[2], -29999984, 29999984)
+                        : sender.getPosition().getX();
+        int z =
+                args.length > 3
+                        ? parseInt(args[3], -29999984, 29999984)
+                        : sender.getPosition().getZ();
+        ClimateBiomeProvider provider = (ClimateBiomeProvider) world.getBiomeProvider();
+        Map<net.minecraft.block.state.IBlockState, byte[]> names = new java.util.HashMap<>();
+        java.security.MessageDigest chunk = sha256(), total = sha256();
+        StringBuilder lines = new StringBuilder();
+        int hashed = 0, skipped = 0;
+        long blocks = 0;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int cz = (z - radius) >> 4; cz <= (z + radius) >> 4; cz++)
+            for (int cx = (x - radius) >> 4; cx <= (x + radius) >> 4; cx++) {
+                if (!ClimateBiomeProvider.inWorld(cx * 16L, cz * 16L)) continue;
+                cc.orthrus.riven.worldgen.NativeColumns.Column column =
+                        provider.maps.columns.column(cx, cz);
+                int low = Integer.MAX_VALUE, high = Integer.MIN_VALUE;
+                for (int i = 0; i < 256; i++) {
+                    low = Math.min(low, column.surface(i));
+                    high = Math.max(high, column.surface(i));
+                }
+                int bottom = low - DIGEST_BELOW, top = high + DIGEST_ABOVE;
+                boolean loaded = true;
+                for (int y = Math.floorDiv(bottom, 16) * 16; y <= top && loaded; y += 16)
+                    loaded = world.isBlockLoaded(pos.setPos(cx * 16, y, cz * 16));
+                if (!loaded) {
+                    skipped++;
+                    continue;
+                }
+                chunk.reset();
+                for (int y = bottom; y <= top; y++)
+                    for (int lz = 0; lz < 16; lz++)
+                        for (int lx = 0; lx < 16; lx++) {
+                            net.minecraft.block.state.IBlockState state =
+                                    world.getBlockState(pos.setPos(cx * 16 + lx, y, cz * 16 + lz));
+                            chunk.update(
+                                    names.computeIfAbsent(
+                                            state,
+                                            s ->
+                                                    (s.toString() + "\n")
+                                                            .getBytes(
+                                                                    java.nio.charset
+                                                                            .StandardCharsets
+                                                                            .UTF_8)));
+                        }
+                blocks += (top - bottom + 1) * 256L;
+                String line =
+                        String.format(
+                                Locale.ROOT,
+                                "%d %d %d %d %s",
+                                cx,
+                                cz,
+                                bottom,
+                                top,
+                                hex(chunk.digest()));
+                total.update((line + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                lines.append(line).append('\n');
+                hashed++;
+            }
+        String digest = hex(total.digest());
+        java.io.File out =
+                new java.io.File(
+                        world.getSaveHandler().getWorldDirectory(),
+                        String.format(Locale.ROOT, "riven/digests/%d_%d_r%d.txt", x, z, radius));
+        try {
+            java.nio.file.Files.createDirectories(out.getParentFile().toPath());
+            java.nio.file.Files.write(
+                    out.toPath(),
+                    lines.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (java.io.IOException e) {
+            throw new CommandException("Cannot write " + out + ": " + e);
+        }
+        sender.sendMessage(
+                new TextComponentString(
+                        String.format(
+                                Locale.ROOT,
+                                "Riven digest %d %d r=%d: chunks=%d skipped=%d blocks=%d sha256=%s (%s)",
+                                x,
+                                z,
+                                radius,
+                                hashed,
+                                skipped,
+                                blocks,
+                                digest,
+                                out.getName())));
+    }
+
+    private static java.security.MessageDigest sha256() {
+        try {
+            return java.security.MessageDigest.getInstance("SHA-256");
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static String hex(byte[] bytes) {
+        StringBuilder s = new StringBuilder();
+        for (byte b : bytes) s.append(String.format(Locale.ROOT, "%02x", b));
+        return s.toString();
+    }
+
     /** 1 for a log, 2 for leaves, 0 otherwise. */
     private static int kind(net.minecraft.block.state.IBlockState state) {
         if (state == null) return 0;
@@ -537,6 +655,10 @@ final class RivenCommand extends CommandBase {
         }
         if (args.length >= 3 && args[0].equals("column")) {
             column(sender, world, parseInt(args[1]), parseInt(args[2]));
+            return;
+        }
+        if (args.length >= 1 && args[0].equals("digest")) {
+            digest(sender, world, args);
             return;
         }
         if (args.length >= 1 && args[0].equals("boulders")) {

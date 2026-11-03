@@ -237,7 +237,12 @@ refused unless its zip matches the pin, or any zip or folder by path (a `-riven`
 on one instance whose DH tiles have persisted. With `--shaders`, `prepare` also turns on
 Cubature's opt-in Complementary cave fog patch in the client's `cubicchunks.cfg` (see Distant
 Horizons below) for local work; `--no-complementary-cave-fog` leaves it off, as Cubature ships it. `/riven` in game
-prints climate, terrain, biome and feature diagnostics at the player's position. `--lod-trace`
+prints climate, terrain, biome and feature diagnostics at the player's position. `/riven digest
+[radius [x z]]` hashes the world's blocks around a point by state name, one line per chunk column
+whose band (32 blocks under its lowest surface to 48 over its highest, from the generator's
+columns) is wholly loaded, into the save's `riven/digests/<x>_<z>_r<radius>.txt` and one total, so
+two worlds of one seed compare block for block; a tour view's `commands` run before its teleport,
+so `execute {player} ~ ~ ~ riven digest 48 <x> <z>` there digests the previous view. `--lod-trace`
 installs the lab observer so every `play` records DH LOD stages (OBSERVABILITY.md, DH LOD stage
 trace).
 
