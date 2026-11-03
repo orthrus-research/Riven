@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "revision": 4,
+  "revision": 5,
   "variationSeed": "0x47524f554e44434f",
-  "about": "Ground cover (ground-cover-v1): the plants and decals on a column's ground, as pure functions of seed, definitions, the column's riven: biome and the block it stands on. A biome lists palettes (by name, or {palette, scale} at a scaled density) and entries in order; the first entry whose ground fits (a Riven decoration's own grounds, or ground for other blocks) and whose draw falls under its density decides the column. patch (blocks) gathers an entry into drifts covering share of the land (default 0.35) at the same mean density. A plant stands on the column's surface (the top of its highest non-air run) where terrain, boulders and trees leave air, and never on a boulder; a two-block plant needs both blocks clear, its form by position; a cane (height {min, max}, by position) needs all its blocks clear and water beside its ground in a neighbouring column's native blocks, and a preview cell over two blocks wide draws none. Each cube writes the blocks inside itself after its trees; the preview draws the same blocks, so distant ground takes their colour as Distant Horizons tints it. Water, the realms and biomes without an entry stay bare. A column under still water (its ground the water) is decided too: an entry's depth {min, max} names the blocks of water over the bed it takes (any by default), and only floating plants, or blocks with ground water, fit it (terrain-v117). A submerged plant is decided by the bed it stands on, under at least two blocks of water, and stands from the bed up in place of water; an entry with top stacks its block under that top piece, height {min, max} blocks but no higher than the block below the surface (terrain-v119).",
+  "about": "Ground cover (ground-cover-v1): the plants and decals on a column's ground, as pure functions of seed, definitions, the column's riven: biome and the block it stands on. A biome lists palettes (by name, or {palette, scale} at a scaled density) and entries in order; the first entry whose ground fits (a Riven decoration's own grounds, or ground for other blocks) and whose draw falls under its density decides the column. patch (blocks) gathers an entry into drifts covering share of the land (default 0.35) at the same mean density. A plant stands on the column's surface (the top of its highest non-air run) where terrain, boulders and trees leave air, and never on a boulder; a two-block plant needs both blocks clear, its form by position; a cane (height {min, max}, by position) needs all its blocks clear and water beside its ground in a neighbouring column's native blocks, and a preview cell over two blocks wide draws none. Each cube writes the blocks inside itself after its trees; the preview draws the same blocks, so distant ground takes their colour as Distant Horizons tints it. Water, the realms and biomes without an entry stay bare. A column under still water (its ground the water) is decided too: an entry's depth {min, max} names the blocks of water over the bed it takes (any by default), and only floating plants, or blocks with ground water, fit it (terrain-v117). A submerged plant is decided by the bed it stands on, under at least two blocks of water, and stands from the bed up in place of water; an entry with top stacks its block under that top piece, height {min, max} blocks but no higher than the block below the surface (terrain-v119). An entry may stack any block (height, as a cactus stands), and cell gives one candidate column per cell of that many blocks, inside its inner square, so two never stand side by side (terrain-v121).",
   "palettes": {
     "temperate_meadow": [
       {"block": "riven:tall_meadow_grass", "density": 0.03, "patch": 18, "share": 0.4},
@@ -24,7 +24,8 @@
         "block": "minecraft:tallgrass[type=tall_grass]",
         "density": 0.2,
         "ground": ["grass", "dirt"]
-      }
+      },
+      {"block": "minecraft:pumpkin[facing=south]", "ground": ["grass"], "density": 0.0006}
     ],
     "woodland_floor": [
       {"block": "riven:decal_oak_litter", "density": 0.07, "patch": 16, "share": 0.5},
@@ -228,7 +229,8 @@
         "block": "minecraft:tallgrass[type=tall_grass]",
         "density": 0.16,
         "ground": ["grass", "dirt"]
-      }
+      },
+      {"block": "minecraft:pumpkin[facing=south]", "ground": ["grass"], "density": 0.0006}
     ],
     "wetland": [
       {"block": "riven:plant_bronze_rush", "density": 0.06, "patch": 14},
@@ -308,6 +310,13 @@
       {"block": "riven:plant_goldenrod", "density": 0.004}
     ],
     "desert": [
+      {
+        "block": "minecraft:cactus",
+        "ground": ["sand"],
+        "height": {"min": 1, "max": 3},
+        "cell": 4,
+        "density": 0.3
+      },
       {"block": "riven:plant_creosote", "density": 0.008, "patch": 24},
       {"block": "riven:plant_brittlebush", "density": 0.006, "patch": 20},
       {"block": "riven:plant_desert_marigold", "density": 0.004, "patch": 24},
@@ -322,6 +331,13 @@
       {"block": "riven:decal_desert_varnish_pebbles", "density": 0.01, "patch": 24}
     ],
     "badlands": [
+      {
+        "block": "minecraft:cactus",
+        "ground": ["sand"],
+        "height": {"min": 1, "max": 3},
+        "cell": 4,
+        "density": 0.15
+      },
       {"block": "riven:plant_creosote", "density": 0.006},
       {"block": "riven:plant_ocotillo", "density": 0.003},
       {"block": "riven:plant_tumbleweed", "density": 0.004},

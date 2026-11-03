@@ -331,12 +331,13 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   every placement in its worlds: its own `riven:` biomes, its own feature engine and shape models,
   and composable resource mappings that bind features to any installed mod's blocks, so the DH
   preview draws the same models without extra LOD cost. BoP and other packs are block libraries,
-  bootstrapped on BoP until Riven's own assets and feature families replace them. Until then each
-  column's legacy look (its BoP biome) decorates the stages Riven does not own yet; Riven owns
-  every soil (`riven-surface.json`, terrain-v116), trees, huge mushrooms, grass, flowers, dead
-  bushes, mushrooms, reeds and the plants on and under water (terrain-v120). Only vegetation generators run (`riven-bop.json`): never ores, lakes, boulders, spikes, columns, crystals or hives,
-  and never BoP's terrain. Those
-  placements cross chunk borders, so decoration is the one exception to order independence;
+  bootstrapped on BoP until Riven's own assets and feature families replace them. Riven owns every
+  stage the looks decorated: every soil (`riven-surface.json`, terrain-v116), trees, huge
+  mushrooms, grass, flowers, dead bushes, mushrooms, reeds, the plants on and under water
+  (terrain-v120), cactus and pumpkins (terrain-v121); no BoP generator runs and BoP's terrain never
+  did. BoP's presence still gates Riven's tree sites and ground cover, until that work moves them.
+  Population (other mods' custom decoration, a chunk's first animals) crosses chunk borders, so it
+  is the one exception to order independence;
   terrain, water and biome identity stay pure. BoP is optional, compiled against but never
   bundled or modified (1.12.2-7.0.1.2445, CC BY-NC-ND 4.0, pinned in `runtime.lock.json`), and
   Distant Horizons previews carry surface blocks, not decorations, until chunks generate natively.

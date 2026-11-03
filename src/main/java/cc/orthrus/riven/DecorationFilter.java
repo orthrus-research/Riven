@@ -11,9 +11,9 @@ import java.util.Set;
 
 /**
  * Keeps biome decorators off Riven's land shape (riven-bop.json contract). In Riven worlds the
- * vanilla decorator may place cactus and pumpkins, but not trees or huge mushrooms (Riven's tree
- * sites own them), grass, flowers, dead bushes, small mushrooms, reeds or lily pads (Riven's ground
- * cover owns them), the clay, sand and gravel patches that swap surface blocks (Riven decides
+ * vanilla decorator places nothing of its own: not trees or huge mushrooms (Riven's tree sites own
+ * them), grass, flowers, dead bushes, small mushrooms, reeds, lily pads, cactus or pumpkins (Riven's
+ * ground cover owns them), the clay, sand and gravel patches that swap surface blocks (Riven decides
  * every soil, riven-surface.json), springs, wells, fossils, ice spikes or boulders, and no ore or
  * stone blob. Other world types are untouched. Registered on the terrain, ore and main buses:
  * Cleanroom delivers these events to main-bus handlers, Forge to its own buses; a repeat changes
@@ -38,7 +38,9 @@ public final class DecorationFilter {
                     DecorateBiomeEvent.Decorate.EventType.DEAD_BUSH,
                     DecorateBiomeEvent.Decorate.EventType.SHROOM,
                     DecorateBiomeEvent.Decorate.EventType.REED,
-                    DecorateBiomeEvent.Decorate.EventType.LILYPAD);
+                    DecorateBiomeEvent.Decorate.EventType.LILYPAD,
+                    DecorateBiomeEvent.Decorate.EventType.CACTUS,
+                    DecorateBiomeEvent.Decorate.EventType.PUMPKIN);
 
     private DecorationFilter() {}
 

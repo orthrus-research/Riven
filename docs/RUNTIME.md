@@ -13,7 +13,7 @@
 | Distant Horizons | 3.3.3-1.12.2, official upstream (`dev/dh.lock.json`) | Distant terrain renderer and delivery, both sides |
 | Fugue | 0.25.5 | Modern-Java compatibility layer |
 | Scalar Legacy | 1.0.1 | Scala 2.11 provider |
-| Biomes O' Plenty | 1.12.2-7.0.1.2445, official upstream (`runtime.lock.json`) | Optional decoration provider and block library: legacy looks, mapped from Riven habitats, decorate the stages Riven does not own yet (`riven-bop.json`); compiled against, never bundled |
+| Biomes O' Plenty | 1.12.2-7.0.1.2445, official upstream (`runtime.lock.json`) | Optional provider of legacy looks, mapped from Riven habitats (`riven-bop.json`); no BoP generator or block is used, and its presence still gates Riven's tree sites and ground cover; compiled against, never bundled |
 | GregTech CE Unofficial | 1.12.2-2.8.10-beta, official upstream (`runtime.lock.json`), with CodeChickenLib 1.12.2-3.2.3.358 | Optional ore provider (prototype): `riven-ores.json` transcribes its overworld vein catalog, Riven places the bodies, and GTCEu supplies the ore block for each mineral and host stone type; GTCEu's own world generator never runs |
 | Demonica | 0.9.0, official release (`runtime.lock.json`, optional `shaders`) | Client shader stack: Iris on its bundled Celeritas d94ec1e5; installed only by `prepare --shaders` |
 | Shader packs | BSL 10.1.8, Complementary Reimagined r5.9.3, Complementary Unbound r5.9.3, official Modrinth releases (`runtime.lock.json` `shaderPacks`) | The targeted packs under Demonica (docs/DECISIONS.md, Shader packs); local zips in `dev/pins/shaderpacks`, never committed or redistributed |

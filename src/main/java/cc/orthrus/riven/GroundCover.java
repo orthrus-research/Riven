@@ -55,7 +55,7 @@ final class GroundCover {
         final boolean submerged;
         final GroundPlant.Tall tall;
         final GroundPlant.Cane cane;
-        final int ground, shortest, tallest, shallowest, deepest;
+        final int ground, shortest, tallest, shallowest, deepest, cell;
         final GroundPlant plant;
         final double density, patch, share;
         final long seed;
@@ -75,14 +75,16 @@ final class GroundCover {
             if (j.has("top") && (top == null || !submerged))
                 throw new IllegalStateException("Only a submerged stack has a top: " + text);
             // A cane's or a submerged stack's entry gives its height; other plants have their own.
-            if (cane != null || top != null) {
+            // A cane, a submerged stack or a plain block stacked (a cactus) gives its height; a
+            // two-block plant and other plants have their own.
+            if (cane != null || top != null || (tall == null && j.has("height"))) {
                 JsonObject height = j.getAsJsonObject("height");
                 if (height == null)
                     throw new IllegalStateException("A stack needs its height: " + text);
                 shortest = count(height, "min", 1, MAXIMUM_DEPTH);
                 tallest = count(height, "max", shortest, MAXIMUM_DEPTH);
             } else if (j.has("height")) {
-                throw new IllegalStateException("Only a stack has a height: " + text);
+                throw new IllegalStateException("A two-block plant has no height: " + text);
             } else shortest = tallest = tall != null ? 2 : 1;
             List<String> kinds = new ArrayList<>();
             if (j.has("ground"))
@@ -98,7 +100,21 @@ final class GroundCover {
             shallowest = depth == null ? 0 : count(depth, "min", 0, MAXIMUM_DEPTH);
             deepest =
                     depth == null ? MAXIMUM_DEPTH : count(depth, "max", shallowest, MAXIMUM_DEPTH);
+            // One candidate column per cell of this many blocks, inside its inner square, so two
+            // never stand side by side (a cactus breaks beside anything solid).
+            cell = j.has("cell") ? count(j, "cell", 3, 64) : 0;
             this.seed = seed;
+        }
+
+        /** Whether a column is its cell's candidate (every column without cells). */
+        boolean candidate(int x, int z) {
+            if (cell == 0) return true;
+            int cx = Math.floorDiv(x, cell), cz = Math.floorDiv(z, cell);
+            long h = SeededNoise.cell(SeededNoise.mix(seed ^ 0x510e527fade682d1L), cx, cz);
+            int inner = cell - 2;
+            int ox = 1 + (int) Math.floorMod(h, (long) inner);
+            int oz = 1 + (int) Math.floorMod(h >>> 32, (long) inner);
+            return x - cx * cell == ox && z - cz * cell == oz;
         }
 
         private static int count(JsonObject j, String key, int min, int max) {
@@ -201,6 +217,7 @@ final class GroundCover {
             if (depth < e.shallowest || depth > e.deepest) continue;
             // A submerged plant stands on the bed, under at least one block of water.
             if (e.submerged ? depth < 2 || bed == null || !e.fits(bed) : !e.fits(ground)) continue;
+            if (!e.candidate(x, z)) continue;
             if (SeededNoise.unit(SeededNoise.cell(e.seed, x, z)) >= e.threshold(x, z)) continue;
             if (e.cane != null && !(canes && waterBeside(x, s - 1, z))) continue;
             return e;
@@ -245,7 +262,8 @@ final class GroundCover {
         long formSeed = SeededNoise.mix(e.seed ^ 0xbb67ae8584caa73bL);
         double unit = SeededNoise.unit(SeededNoise.cell(formSeed, x, z));
         if (e.tall != null) return e.tall.part(i == 1, (int) (unit * e.tall.forms()));
-        return e.cane.piece(i == n - 1, (int) (unit * e.cane.forms()));
+        if (e.cane != null) return e.cane.piece(i == n - 1, (int) (unit * e.cane.forms()));
+        return e.state;
     }
 
     /**

@@ -129,11 +129,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         Generator(ClimateBiomeProvider biomes, World world) {
             this.biomes = biomes;
             this.world = world;
-            decoration =
-                    BiomeProvision.active()
-                            ? new BopDecoration(
-                                    biomes.provision.allowedGenerators(), world.getWorldType())
-                            : null;
+            decoration = BiomeProvision.active() ? new BopDecoration(world.getWorldType()) : null;
             // The world's recorded definitions: resolved once, at creation, then loaded for life.
             snapshot = Mappings.load(world);
             trees =
@@ -464,10 +460,10 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         }
 
         /**
-         * Provider decoration (riven-bop.json). Each chunk column decorates its vanilla offset area
-         * once, in the cube holding the surface at that area's centre, with a vanilla-style seed:
-         * first the biome's own decorator (vanilla's, filtered by {@link DecorationFilter}), then
-         * the provider's allowed generators.
+         * Population (riven-bop.json). Each chunk column populates its vanilla offset area once, in
+         * the cube holding the surface at that area's centre, with a vanilla-style seed: the legacy
+         * look's own decorator, which {@link DecorationFilter} leaves only other mods' custom
+         * decoration (Riven owns every stage it had), and the column's first animals.
          * Placements that cross into neighbouring chunks depend on population order: the one
          * recorded exception to order independence (docs/DECISIONS.md).
          */
@@ -500,7 +496,6 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             // Tree sites already stand in the cubes; the look's own tree stages stand aside.
             try {
                 biome.decorate(world, random, corner);
-                decoration.decorate(world, random, corner, biome);
             } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
                 if (DECORATION_FAILURES.add(BiomeProvision.lookName(biome) + ": " + e.getMessage()))
                     LogManager.getLogger("Riven")

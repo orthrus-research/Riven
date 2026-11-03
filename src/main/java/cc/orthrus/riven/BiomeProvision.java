@@ -11,7 +11,6 @@ import net.minecraft.world.biome.Biome;
 import net.minecraftforge.fml.common.Loader;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,7 +51,6 @@ final class BiomeProvision {
 
     private final Map<String, Weighted> overrides = new HashMap<>();
     private final Map<Biome, Biome> edges = new HashMap<>();
-    private final List<String> allowedGenerators = new ArrayList<>();
     private final Weighted[] climates;
     private final long seed;
     private final double cell, edgeWidth, warp;
@@ -63,8 +61,6 @@ final class BiomeProvision {
         cell = Rules.number(j, "varietyCellBlocks", 64, 16384);
         edgeWidth = Rules.number(j, "edgeBlocks", 0, 1024) / cell;
         warp = Rules.number(j, "borderWarpInCells", 0, .5);
-        for (JsonElement id : j.getAsJsonArray("allowedGenerators"))
-            allowedGenerators.add(id.getAsString());
         if (!active()) {
             climates = null;
             return;
@@ -154,10 +150,6 @@ final class BiomeProvision {
         if (edge != null && Double.longBitsToDouble(v[2]) < edgeWidth && list.pick(v[1]) != chosen)
             return edge;
         return chosen;
-    }
-
-    List<String> allowedGenerators() {
-        return Collections.unmodifiableList(allowedGenerators);
     }
 
     /**

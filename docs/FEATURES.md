@@ -607,14 +607,15 @@ differing picks. Since terrain-v84 that pick is the column's legacy look, never 
 cover): since terrain-v116 no look's top, filler or surface routine changes it, where they had
 changed 60-69% of Riven's soil-topped columns (the census behind terrain-v115); the soils
 they had supplied are Riven's own crust rows.
-Population decorates each chunk column once, in the cube holding the surface at the center of its
-offset area: first the biome's own decorator, with its sand, clay and gravel patches (since terrain-v118),
-springs, wells, fossils, ice spikes, boulders and every ore or stone blob denied in Riven worlds (`DecorationFilter`), then BoP's allow-listed
-generators (vegetation only: waterside, splatter and splotches left with terrain-v116; BoP's own
-event handler stands aside). The
-filter listens on the main event bus as well: Cleanroom delivers decoration and ore events there,
-so before terrain-v71 springs and ores still generated.
-Without BoP the vanilla habitat and empty population stand. Decoration is the one recorded
+Population runs once per chunk column, in the cube holding the surface at the center of its
+offset area: the legacy look's own decorator, with every stage of its own denied in Riven worlds
+(`DecorationFilter`: trees, plants, reeds, lily pads, cactus and pumpkins, which Riven's tree sites
+and ground cover own; sand, clay and gravel patches since terrain-v118; springs, wells, fossils, ice
+spikes, boulders and every ore or stone blob), so it carries only other mods' custom decoration,
+and the column's first animals. No BoP generator runs (terrain-v121; BoP's own event handler
+stands aside). The filter listens on the main event bus as well: Cleanroom delivers decoration and
+ore events there, so before terrain-v71 springs and ores still generated.
+Without BoP the vanilla habitat and empty population stand. Population is the one recorded
 exception to order independence (DECISIONS 2026-10-25, Full worldgen ownership). `runtime.py play --tour
 tools/tours/standard-8675309.json` captures nine labeled views and closes the client; prepare
 tour instances with `--capture-ticks 900`, since decorated chunks take longer to arrive.
@@ -676,9 +677,12 @@ stands; `/riven find <biome>` names the nearest column of a riven: biome or a lo
 **Ground cover** (prototype, ground-cover-v2, terrain-v99, `riven-ground-cover.json`,
 `GroundCover`): Riven places the plants and decals on the ground itself; neither the provider's nor
 the vanilla decorator's grass, flower, dead bush, small mushroom, reed or lily-pad stage runs
-(cactus and pumpkins still come from the looks until desert work replaces them); since
-terrain-v120 the provider's lily-pad stage (its reeds, lilies, algae, coral and kelp) does not run
-either, as Riven's shallows and underwater plants take the water. A column's cover is a pure function of seed, its riven: biome and the
+or its cactus or pumpkins (terrain-v121); since terrain-v120 the provider's lily-pad stage (its
+reeds, lilies, algae, coral and kelp) does not run either, as Riven's shallows and underwater plants
+take the water. Vanilla cactus stands one to three high in deserts and badlands, at most one per
+4-block cell inside its inner square so no two stand side by side (`cell`), and keeps its item in
+Riven worlds as the Common Reed keeps sugar cane; pumpkins turn up rarely in meadows and
+grassland. A column's cover is a pure function of seed, its riven: biome and the
 block it stands on: the biome lists palettes (temperate meadow, woodland, conifer, temperate and
 cold rainforest, tropical and cloud forest floors, tundra, polar, alpine rock, heath, steppe,
 grassland, wetland, scrub, Mediterranean, savanna, desert, badlands, four shores, reed margins and
