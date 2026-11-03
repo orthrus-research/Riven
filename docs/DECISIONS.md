@@ -43,6 +43,14 @@ superseded instead of deleting it.
   anchor, and the cone fades toward cooler columns like cold forms do (terrain-v55), replacing the
   terrain-v37 rule that every support column be HOT. *Set aside 2026-11-01 (The surface).*
 
+## Adopted 2026-11-03
+
+- **Tidal creeks hold the sea's water as land.** A marsh's creek columns stay land, so the marsh
+  keeps its biome, and take the sea's water level as their own, wet as a stream is (terrain-v114).
+  A creek grows from the shore through the marsh's flat between banks that hold its water, so it
+  is sea-fed and cannot spill. Rejected: marking creek columns marine (ocean biome strips through
+  the marsh) and dry channels.
+
 ## Adopted 2026-11-02
 
 - **Wonders removed.** At the user's direction the wonders (pillar forests, tepuis, hoodoos,

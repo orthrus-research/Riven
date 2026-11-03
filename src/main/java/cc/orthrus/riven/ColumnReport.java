@@ -225,14 +225,15 @@ final class ColumnReport {
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Sediment=%s reason=%s id=%s | parent=%.2f top=%.2f weight=%.3f emergent=%s",
+                                "Sediment=%s reason=%s id=%s | parent=%.2f top=%.2f weight=%.3f emergent=%s mud=%s",
                                 terrain.sediment.family,
                                 terrain.sediment.reason,
                                 Long.toUnsignedString(terrain.sediment.id, 16),
                                 terrain.sediment.parentHeight,
                                 terrain.sediment.height,
                                 terrain.sediment.weight,
-                                terrain.emergentSediment)));
+                                terrain.emergentSediment,
+                                terrain.sediment.mud)));
         sender.sendMessage(
                 new TextComponentString(
                         String.format(

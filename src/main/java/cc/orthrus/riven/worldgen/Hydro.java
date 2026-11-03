@@ -40,7 +40,10 @@ public final class Hydro
         /** 1 at a river's ocean mouth, fading to 0 at the mouth radius; 0 elsewhere. */
         public double mouth;
 
-        /** Wet only by a drainage stream too narrow to be a river: the land keeps its biome. */
+        /**
+         * Wet only by water too narrow to own a biome, a drainage stream too narrow to be a river
+         * or a marsh's tidal creek (CoastSediment): the land keeps its biome.
+         */
         public boolean stream;
 
         /**

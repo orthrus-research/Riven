@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 2,
+  "revision": 3,
   "thresholds": {
     "crust": {
       "shallowFromReference": "shoal",
@@ -20,6 +20,7 @@
       "rows": [
         {"setting": "sediment", "top": "sediment.sand", "soil": "sediment.sand"},
         {"setting": "rocky", "top": "bed", "soil": "bed"},
+        {"setting": "mud", "top": "soil.mud", "soil": "soil.mud"},
         {"setting": "marine-shallow", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "bed"},
         {"setting": "marine-deep", "top": "sediment.gravel", "soil": "sediment.gravel", "subsoil": "bed"},
         {"setting": "lagoon-shallow", "top": "sediment.sand", "soil": "sediment.sand", "subsoil": "bed"},
@@ -50,6 +51,7 @@
     "Crust thresholds: marine and lagoon beds are shallow from the sea level plus shallowFromReference's lowest elevation offset (riven-terrain-height-reference.json). A channel's dry bar counts within barWithinBlocksOfChannelHead of its water's level; oases and wetlands are green above greenAboveWaterWeight. A sandy shore whose coast shoals less than reflectiveBelowShoaling (a steep, reflective coast) is shore-reflective. Dryland pavement or sand cover counts from drylandCoverFrom (pavement where it is the larger). Ground steeper than steepAboveSlope (the smoothed broad slope, which stays under about 0.2 on soil) is steep, and rough above roughAboveSlope. A dirt water bed is clay where a value noise of wavelengthBlocks exceeds threshold.",
     "A table's rows are tried in order; a column takes the first whose setting holds, and default always holds. Each row names the entries of three layers counted down from the floor, top, soil and subsoil, with the table's depths (a row may give its own); bed shows the zone's rock. A row without a subsoil takes the subsoil of the next row that holds and names one, so a cover over the ground (sediment, a rocky build-up, a bar, green margins, pavement) keeps the ground's subsoil.",
     "The crust table reproduces the cover the surface rules laid before the engine (terrain-v99): bare stone (riven-surface-rules.json) shows rock, sand Riven places as soil rests on sandstone, and laid deposits keep their own material.",
-    "Snowline (terrain-v109): a dry land floor is a snowcap where the climate's temperature at the floor's own height (the lapse rate in riven-climate.json, applied from the column's climate before its own lapse) is below snowlineCelsius. There the floor takes snow: the snowcap row (snow over stone) where the ground would be bare stone, which it precedes, so snow covers the rock above the treeline, and the snow row (snow over soil) elsewhere. Below the snowline the treeline's rock band remains, and frozen climates keep their snow."
+    "Snowline (terrain-v109): a dry land floor is a snowcap where the climate's temperature at the floor's own height (the lapse rate in riven-climate.json, applied from the column's climate before its own lapse) is below snowlineCelsius. There the floor takes snow: the snowcap row (snow over stone) where the ground would be bare stone, which it precedes, so snow covers the rock above the treeline, and the snow row (snow over soil) elsewhere. Below the snowline the treeline's rock band remains, and frozen climates keep their snow.",
+    "Mud (terrain-v114): a marsh's mud cover (riven-coasts.json sediment.mud) and every tidal creek's bed take mud (top and soil), before any water bed's row, so a creek's bed is mud like the flat it cuts."
   ]
 }

@@ -42,6 +42,7 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
         boolean volume = s.rocky.hasVolume();
         if (s.sediment.weight > 0) h |= Settings.bit(Settings.SEDIMENT);
         if (!volume && s.rocky.weight > 0) h |= Settings.bit(Settings.ROCKY);
+        if (s.sediment.mud) h |= Settings.bit(Settings.MUD);
         boolean shallow = floor >= shallowFrom;
         if (s.ocean.marine)
             h |= Settings.bit(shallow ? Settings.MARINE_SHALLOW : Settings.MARINE_DEEP);

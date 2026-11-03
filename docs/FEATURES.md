@@ -258,6 +258,28 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
     blocks) and no higher than a beach. Sediment leaves coast-form columns alone, takes each
     column's highest edit, only builds outside a bench, keeps channel levees, and sand rising from
     the sea is emergent. Bars and lagoons across bays wait for S5.
+  - **Marsh** (S3b-2, terrain-v114; `sediment.creek` and `sediment.mud` in `riven-coasts.json`)
+    is Riven's own: a marsh segment lists `MUD_FLAT` and `TIDAL_CREEK`. A creek grows, three
+    times in four, from a mouth every 72 blocks along the segment's stretch (a point clear of
+    each end), on open sea. Its first channel runs inland from two blocks out to sea, 1.5 to 3
+    blocks in half width and 2 to 3 blocks deep at the mouth, wandering up to 18 degrees a
+    3-block step within 55 degrees of its heading and 75 of inland, and narrowing to a 0.75-block
+    half width and a block's depth over 60 to 180 blocks. Branches leave at 35 to 70 degrees,
+    half to three quarters the size, to the third order, at most 24 channels a creek. A channel
+    stops before a node off the marsh's flat (marsh share 0.5, no more than 2.5 blocks above the
+    water's top), without a bank 2 blocks past either edge that holds the sea's water (land at or
+    above the water's top or open sea), or within a bank of another of the segment's channels. A
+    creek's columns stay land and keep the marsh's biome; they take the sea's water level as
+    their own and are wet as a stream is (DECISIONS 2026-11-03), on a bed a block under the water
+    at the edge and the channel's depth at its line. Mud (`riven-surface.json`'s mud row, three
+    blocks deep) covers every creek's bed and the flat in patches: two octaves of value noise
+    (24-block wavelength) plus 0.9 fading over 20 blocks from the shore and 0.9 over 4 blocks
+    from a creek's edge, above 0.5. The mud is cover; it changes no height.
+  - Marsh measured with `CoastCheck` (8 seeds of 8 km): per world about 77 creeks of about 6
+    channels; every checked creek column stands under the sea's water on mud, its water meets no
+    lower ground that does not hold it, and it joins open sea through water at that level.
+    `SurfaceWaterCheck` spills are unchanged from v113, and in the assembled columns mud covers
+    about 10,000 of `AssembledColumnCheck`'s 1.5 million columns.
   - Sediment measured with `CoastCheck` (8 seeds of 8 km): per world about 96 benches, 10 spits
     and 4 tombolos. Checked benches stay between the ground they found and a beach's heights,
     spits and tombolos only build, every emergent spit column joins land through the spit's sand,
@@ -668,18 +690,19 @@ and entries in order, and the first entry whose ground fits and whose draw falls
 decides. Patch noise gathers an entry into drifts over a share of the land at the same mean density,
 so flowers come in sweeps and litter under its trees' crowns of color. Cover stands on the column's
 surface (the top of its highest non-air run) where terrain, boulders and trees leave air, never on a
-boulder (in the preview from 4-block cells, which draw no boulders, cover no longer avoids them); a two-block plant or a cane needs all its blocks free of terrain and trees (the tree sites
-answer which blocks they hold). Reeds are Riven's: the Common Reed (`riven:cane_common_reed`,
-Requisition 03's reed art as stem and top pieces) is a cane of 2 to 4 blocks on grass, dirt, mud,
-sand, gravel or sandstone that stands only where a neighbouring column's native blocks hold water
-beside its ground, as it needs to stay. Its palette leads the lists of 26 warm and temperate biomes
-(1.6 times as dense in wetlands, half on open shores), so it takes a margin before other cover, and
-each piece drops a sugar cane, which keeps that source in Riven worlds. Around seed 8675309's spawn,
-374 stacks stood 2 to 4 high on grass, sand, gravel and dirt, each with water beside its ground, and
-`/riven cover` matched preview and world at seven margins. Each cube writes the cover inside itself
-after its trees, reading the ground block below as native generation writes it even in the cube
-under it; the preview draws the same blocks over every cell (a cell over two blocks wide draws no
-reed: checking a margin reads a native chunk column, and such a cell's column is rarely one), which
+boulder (in the preview from 4-block cells, which draw no boulders, cover no longer avoids them); a
+two-block plant or a cane needs all its blocks free of terrain and trees (the tree sites answer
+which blocks they hold). Reeds are Riven's: the Common Reed (`riven:cane_common_reed`, Requisition
+03's reed art as stem and top pieces) is a cane of 2 to 4 blocks on grass, dirt, mud, sand, gravel
+or sandstone that stands only where a neighbouring column's native blocks hold water beside its
+ground, as it needs to stay. Its palette leads the lists of 26 warm and temperate biomes (1.6 times
+as dense in wetlands, half on open shores), so it takes a margin before other cover, and each piece
+drops a sugar cane, which keeps that source in Riven worlds. Around seed 8675309's spawn, 374 stacks
+stood 2 to 4 high on grass, sand, gravel and dirt, each with water beside its ground, and `/riven
+cover` matched preview and world at seven margins. Each cube writes the cover inside itself after
+its trees, reading the ground block below as native generation writes it even in the cube under it;
+the preview draws the same blocks over every cell (a cell over two blocks wide draws no reed:
+checking a margin reads a native chunk column, and such a cell's column is rarely one), which
 Distant Horizons skips as non-colliding while tinting the ground under them, as it does with world
 data. Palettes cover a quarter to two fifths of fitting ground in meadows, forests and wetlands, a
 tenth on rock and shores and a twentieth in deserts. `/riven cover [radius]` compares preview and
@@ -1025,9 +1048,9 @@ turns the router off. `RivenClimate.at(world, pos)` gives any server-side caller
 biome at a block, for machines later; `/riven` prints them with the effects that apply.
 
 **Ground cover** (`riven-surface.json`, the column engine's crust settings): each column's ground
-takes the first of 23 settings that holds, in the crust table's order, and the table names its top
+takes the first of 25 settings that holds, in the crust table's order, and the table names its top
 (one block), soil (two) and subsoil (three). Sediment and a rocky shore's build-up lie over their
-own deposits; marine and lagoon beds are sand down to the shoal level and gravel below; river and
+own deposits; a marsh's mud and its creeks' beds are three blocks of mud; marine and lagoon beds are sand down to the shoal level and gravel below; river and
 lake beds are sand, dirt, gravel or clay in patches; channel bars, green oasis and wetland margins,
 bare stone (riven-surface-rules.json), sandy shores (gravel on reflective coasts, shoaling under
 0.25), dryland pavement and sand, climate sand and snow follow; grass on the steepest soil (broad

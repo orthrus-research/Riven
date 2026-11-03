@@ -29,7 +29,9 @@ import java.util.Set;
  * <p>The coast's sediment (S3b-2), up to 6 of each form per world: a bench stays between the
  * ground it found and a beach's heights; a spit or tombolo only builds; every emergent column of
  * a spit joins land through the spit's own sand, and a tombolo's emergent sand joins the land at
- * its root to the land or stack at its far end.
+ * its root to the land or stack at its far end. A tidal creek's columns stand under the sea's
+ * water on a mud bed; its water meets no ground below it that does not hold water at its level,
+ * and every column joins open sea through water at that level; mud lies only on creeks and marsh.
  */
 public final class CoastCheck {
     private static void require(boolean value, String message) {
@@ -332,7 +334,10 @@ public final class CoastCheck {
             tally[0]++;
             int done = checked.getOrDefault(name, 0);
             if (done >= SEDIMENT_CHECKS) continue;
-            int columns = deposit(terrain, v, s, seed);
+            int columns =
+                    v.form == CoastSediment.Form.TIDAL_CREEK
+                            ? creek(terrain, v, s, seed)
+                            : deposit(terrain, v, s, seed);
             if (columns == 0) continue;
             checked.put(name, done + 1);
             tally[1]++;
@@ -417,6 +422,96 @@ public final class CoastCheck {
                     joined = true;
             require(joined, "Tombolo does not reach its far end" + at(v.x[0], v.z[0], seed));
         }
+        return columns;
+    }
+
+    /**
+     * One tidal creek over its nodes' box: each of its columns is land under the sea's water, on a
+     * mud bed below the water's top; no creek water meets a column that neither holds it nor
+     * stands at its level; every column of the creek joins open sea through water at the sea's
+     * level; and mud lies only on creeks and marsh.
+     */
+    private static int creek(
+            TerrainMap terrain, CoastSediment.View v, TerrainMap.Sample s, long seed) {
+        int top = TerrainHeightReference.DEFAULT.waterTopY;
+        double minX = Double.POSITIVE_INFINITY, minZ = minX, maxX = -minX, maxZ = -minX;
+        for (int k = 0; k < v.x.length; k++) {
+            minX = Math.min(minX, v.x[k]);
+            maxX = Math.max(maxX, v.x[k]);
+            minZ = Math.min(minZ, v.z[k]);
+            maxZ = Math.max(maxZ, v.z[k]);
+        }
+        int pad = 8, x0 = (int) Math.floor(minX) - pad, z0 = (int) Math.floor(minZ) - pad;
+        int w = (int) Math.ceil(maxX) + pad - x0 + 1, d = (int) Math.ceil(maxZ) + pad - z0 + 1;
+        int[] ground = new int[w * d], water = new int[w * d];
+        // 1: this creek; 2: other water at the sea's level over its ground; 3: open sea.
+        byte[] kind = new byte[w * d];
+        int columns = 0;
+        for (int dz = 0; dz < d; dz++)
+            for (int dx = 0; dx < w; dx++) {
+                int x = x0 + dx, z = z0 + dz, i = dz * w + dx;
+                terrain.sample(x, z, s);
+                CoastSediment.Result f = s.sediment;
+                ground[i] = s.blockY();
+                water[i] = s.waterOverSurface() ? s.waterY() : Integer.MIN_VALUE;
+                if (f.family == CoastSediment.Form.TIDAL_CREEK && f.id == v.id) {
+                    columns++;
+                    kind[i] = 1;
+                    require(
+                            !s.ocean.marine
+                                    && s.water.wet
+                                    && s.waterY() == top
+                                    && s.blockY() < top
+                                    && f.weight == 0
+                                    && f.mud,
+                            "Creek column not under the sea's water on mud" + at(x, z, seed));
+                } else if (s.ocean.marine && water[i] == top) kind[i] = 3;
+                else if (water[i] == top) kind[i] = 2;
+                if (f.mud)
+                    require(
+                            !s.ocean.marine
+                                    && (f.family == CoastSediment.Form.TIDAL_CREEK
+                                            || s.shore.type != null
+                                                    && Arrays.asList(s.shore.type.sediment)
+                                                            .contains("MUD_FLAT")),
+                            "Mud off a marsh" + at(x, z, seed));
+            }
+        if (columns == 0) return 0;
+        // No creek water meets ground below it, unless that column holds water at its level.
+        for (int i = 0; i < w * d; i++) {
+            if (kind[i] != 1) continue;
+            for (int q : neighbours(w, d, i))
+                if (q >= 0)
+                    require(
+                            kind[q] != 0 || ground[q] >= top,
+                            "Creek water spills"
+                                    + at(x0 + q % w, z0 + q / w, seed)
+                                    + " ground "
+                                    + ground[q]
+                                    + " water "
+                                    + water[q]);
+        }
+        // Flood the sea's water from open sea through every column standing at its level.
+        int[] queue = new int[w * d];
+        boolean[] seen = new boolean[w * d];
+        int head = 0, tail = 0;
+        for (int i = 0; i < w * d; i++)
+            if (kind[i] == 3) {
+                seen[i] = true;
+                queue[tail++] = i;
+            }
+        while (head < tail) {
+            int i = queue[head++];
+            for (int q : neighbours(w, d, i))
+                if (q >= 0 && kind[q] != 0 && !seen[q]) {
+                    seen[q] = true;
+                    queue[tail++] = q;
+                }
+        }
+        for (int i = 0; i < w * d; i++)
+            require(
+                    kind[i] != 1 || seen[i],
+                    "Creek cut off from the sea" + at(x0 + i % w, z0 + i / w, seed));
         return columns;
     }
 
