@@ -706,7 +706,9 @@ Distant Horizons skips as non-colliding while tinting the ground under them, as 
 data. Palettes cover a quarter to two fifths of fitting ground in meadows, forests and wetlands, a
 tenth on rock and shores and a twentieth in deserts. `/riven cover [radius]` compares preview and
 world block by block and names what each path decided from where they differ, and counts columns
-whose ground block itself differs; `/riven column x z` prints one column through both paths. The
+whose ground block itself differs; `/riven column x z` prints one column through both paths. `/riven soil [radius] [step]` counts, per legacy look, what its top, filler and surface
+routine change in Riven's grass and dirt over every step-th chunk column, from the same pure
+transcription the cubes and preview use, without generating the world. The
 provider's surface patches (splatter, splotches) still rework some ground during population, after
 cover and preview decide (25 of 4,225 columns near seed 8675309's 0 -2880), until Riven owns those
 surfaces.
