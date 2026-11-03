@@ -365,10 +365,24 @@ final class TerrainColumn {
         // The cover the cube writes on the surface where terrain, boulders and trees leave air.
         IBlockState[] plants = null;
         IBlockState ground = surfaceY == Integer.MIN_VALUE ? null : r.at(surfaceY - 1);
-        if (cover != null && top >= 0 && ground != null)
+        if (cover != null && top >= 0 && ground != null) {
+            // Water over the bed, counted down the column's own runs as the cube counts its blocks.
+            int depth = 0;
+            if (ground.getMaterial() == Material.WATER)
+                while (depth < GroundCover.MAXIMUM_DEPTH
+                        && r.at(surfaceY - 1 - depth) != null
+                        && r.at(surfaceY - 1 - depth).getMaterial() == Material.WATER) depth++;
             plants =
                     cover.preview(
-                            reported, ground, x, surfaceY, z, footprint, y -> taken(r, canopy, y));
+                            reported,
+                            ground,
+                            depth,
+                            x,
+                            surfaceY,
+                            z,
+                            footprint,
+                            y -> taken(r, canopy, y));
+        }
         if (canopy.count == 0 && plants == null) {
             for (int i = 0; i < r.count; i++) target.addRun(r.bottoms[i], r.tops[i], r.states[i]);
             return;

@@ -402,24 +402,32 @@ def decoration_assets(decorations: dict[str, Any]) -> tuple[dict[str, bytes], di
                 {"parent": "item/generated", "textures": {"layer0": f"{tex}_0_top"}}
             )
         else:
-            faces = form_faces(subject)
+            # A subject may draw another's textures (texturesOf): reeds in the shallows wear the
+            # land reed's art, so the same slots serve both.
+            owner = subject.get("texturesOf", id_)
+            tex = f"riven:blocks/decor/{owner}"
+            faces = form_faces(decorations["subjects"][owner])
+            cross = kind in ("plant", "hanging") or subject.get("model") == "cross"
+            # A decal lies just above its floor; a floating pad on the water, as a lily pad does.
+            height = 0.25 if kind == "floating" else 0.1
             for n, png_bytes in enumerate(faces):
-                out[f"textures/blocks/decor/{id_}_{n}.png"] = png_bytes
-                if kind in ("plant", "hanging"):
+                if owner == id_:
+                    out[f"textures/blocks/decor/{id_}_{n}.png"] = png_bytes
+                if cross:
                     model: dict[str, Any] = {
                         "parent": "block/cross",
                         "textures": {"cross": f"{tex}_{n}"},
                     }
                 else:
-                    # A plane just above the block floor, seen from above and below.
+                    # A plane seen from above and below.
                     face = {"uv": [0, 0, 16, 16], "texture": "#surface"}
                     model = {
                         "ambientocclusion": False,
                         "textures": {"particle": f"{tex}_{n}", "surface": f"{tex}_{n}"},
                         "elements": [
                             {
-                                "from": [0, 0.1, 0],
-                                "to": [16, 0.1, 16],
+                                "from": [0, height, 0],
+                                "to": [16, height, 16],
                                 "faces": {"up": face, "down": face},
                             }
                         ],

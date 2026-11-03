@@ -675,12 +675,13 @@ stands; `/riven find <biome>` names the nearest column of a riven: biome or a lo
 
 **Ground cover** (prototype, ground-cover-v2, terrain-v99, `riven-ground-cover.json`,
 `GroundCover`): Riven places the plants and decals on the ground itself; neither the provider's nor
-the vanilla decorator's grass, flower, dead bush, small mushroom or reed stage runs (cactus,
-pumpkins, lily pads and the provider's in-water reeds still come from the looks until desert and
-water work replaces them). A column's cover is a pure function of seed, its riven: biome and the
+the vanilla decorator's grass, flower, dead bush, small mushroom or reed stage runs (cactus and
+pumpkins still come from the looks until desert work replaces them, and the provider's lily-pad
+stage until Riven's underwater plants join its floating ones). A column's cover is a pure function of seed, its riven: biome and the
 block it stands on: the biome lists palettes (temperate meadow, woodland, conifer, temperate and
 cold rainforest, tropical and cloud forest floors, tundra, polar, alpine rock, heath, steppe,
-grassland, wetland, scrub, Mediterranean, savanna, desert, badlands, four shores and reed margins)
+grassland, wetland, scrub, Mediterranean, savanna, desert, badlands, four shores, reed margins and
+shallows)
 and entries in order, and the first entry whose ground fits and whose draw falls under its density
 decides. Patch noise gathers an entry into drifts over a share of the land at the same mean density,
 so flowers come in sweeps and litter under its trees' crowns of color. Cover stands on the column's
@@ -704,6 +705,16 @@ tenth on rock and shores and a twentieth in deserts. `/riven cover [radius]` com
 world block by block and names what each path decided from where they differ, and counts columns
 whose ground block itself differs; `/riven column x z` prints one column through both paths. Since terrain-v116
 no provider generator reworks ground after cover and preview decide.
+
+Shallows (terrain-v117, the `shallows` palette): a column under still water is decided too, its
+ground the water, which only floating plants fit, and each entry names the water depths it takes.
+Reeds stand in water one block deep (Shallow Bent Reed) or up to two (velvet cattail, bronze rush,
+arrow waterleaf, Decoration Library 01's land art drawn again in the water by `texturesOf`), and
+pads float over one to five blocks: blush waterlily, ivory waterstar and water shield, Decoration
+Library 01's floating subjects as painted placeholders, and vanilla's lily pad. The palette follows
+the reed margins in 26 biomes at their scale, at half strength in boreal forests and cold
+rainforests, and alone on lakes (rivers at half). The preview counts the same depth down its own
+runs and draws the same pads and reeds.
 
 **Geology** (prototype, phase 1a of the subsurface design; `riven-geology.json`, `GeologyMap`): every
 block below the soil, and all exposed rock, comes from a geological history evaluated per column.
@@ -1158,8 +1169,13 @@ from cave decoration, ore blocks, and unstable stone on the floors cave decorati
   keeps its form in its state). Each stands only on its grounds (grass; dirt, mud included; sand;
   gravel; snow; stone) and drops without them; grasses, litter, moss, lichen and props give way to
   placed blocks like tall grass; none has collision; all but the stone props burn. Underwater
-  plants, floating pads, lianas, epiphytes and picked berry shrubs wait for the blocks that hold
-  them.
+  plants, lianas, epiphytes and picked berry shrubs wait for the blocks that hold them.
+- **Floating plants** (`decorations`, kind floating, terrain-v117): blush waterlily, ivory
+  waterstar and water shield (pads; painted placeholders on Decoration Library 01's tones) and
+  shallow bent reed, bronze rush, velvet cattail and arrow waterleaf (crossed, drawn with the land
+  plants' textures). They stand on still water (a source or a submerged decoration); pads can be
+  stood on as lily pads can, boats break them, they burn, and their items set them on the water the
+  player looks at.
 - **Cave decorations** (`decorations`): what cave decoration places (above), all Riven's own
   since Biomes O' Plenty's blocks left the catalogue. Ink cap, pale cave mushroom and glowing
   mushroom (light 6) are plants (`plant.ink_cap`, `plant.pale_cave_mushroom`,

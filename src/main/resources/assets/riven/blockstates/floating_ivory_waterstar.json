@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:floating_ivory_waterstar_0"
+      },
+      {
+        "model": "riven:floating_ivory_waterstar_1"
+      },
+      {
+        "model": "riven:floating_ivory_waterstar_2"
+      },
+      {
+        "model": "riven:floating_ivory_waterstar_3"
+      }
+    ]
+  }
+}

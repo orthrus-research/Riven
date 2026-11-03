@@ -1,5 +1,6 @@
 """Original Riven textures painted from code: deterministic 16 x 16 RGBA pixel art."""
 
+import math
 from collections.abc import Callable
 
 Pixel = tuple[int, int, int, int]
@@ -231,6 +232,55 @@ STONEBELL_STEM = [(0x5E, 0x6B, 0x58), (0x7A, 0x8A, 0x6F)]
 STONEBELL_BELL = [(0x7C, 0x7F, 0xA8), (0xA3, 0xA6, 0xC9), (0xC9, 0xCB, 0xE4)]
 
 
+# Floating pads (terrain-v117), placeholders on Decoration Library 01's floating subjects: a pad
+# ramp dark to light, and each species' flower (petal, centre) or None, and pad count and size.
+PAD_GREENS = [(0x2E, 0x45, 0x40), (0x3D, 0x63, 0x4E), (0x5C, 0x85, 0x5F), (0x79, 0x91, 0x71)]
+PADS = {
+    "blush_waterlily": (((0xE6, 0xC4, 0xCE), (0x7D, 0x53, 0x65)), 2, 5.2),
+    "ivory_waterstar": (((0xED, 0xE3, 0xC5), (0xA6, 0x8C, 0x79)), 3, 3.8),
+    "water_shield": (((0xD1, 0xBE, 0x85), (0x7E, 0xA0, 0x6E)), 1, 6.6),
+}
+
+
+def pad(species: str, form: int) -> Image:
+    """Round pads seen from above, each notched to its centre, with a flower on some."""
+    image = blank()
+    flower, count, size = PADS[species]
+    salt = 150 + len(species) + 17 * form
+    n = 1 + int(noise(form, 0, salt) * count)
+    centres = []
+    for k in range(n):
+        r = size * (0.8 + 0.3 * noise(k, 3, salt))
+        cx = r + noise(k, 1, salt) * max(0.0, SIZE - 2 * r)
+        cy = r + noise(k, 2, salt) * max(0.0, SIZE - 2 * r)
+        notch = noise(k, 4, salt) * 6.283
+        centres.append((cx, cy, r))
+        for y in range(SIZE):
+            for x in range(SIZE):
+                dx, dy = x + 0.5 - cx, y + 0.5 - cy
+                d = (dx * dx + dy * dy) ** 0.5
+                if d > r:
+                    continue
+                # The notch: a thin wedge from the rim to the centre.
+                a = math.atan2(dy, dx) - notch
+                if d > 0.8 and abs(math.atan2(math.sin(a), math.cos(a))) < 0.22:
+                    continue
+                level = 0 if d > r - 0.9 else 2 if dx < 0 and dy < 0 else 1
+                if noise(x, y, salt + 5) > 0.88 and level == 1:
+                    level = 3
+                image[y][x] = opaque(PAD_GREENS[level])
+    # A flower on the first pad of every other form.
+    if form % 2 == 0:
+        cx, cy, _ = centres[0]
+        x, y = int(cx), int(cy)
+        petal, centre = flower
+        for dx, dy in ((0, -1), (1, 0), (0, 1), (-1, 0)):
+            if 0 <= x + dx < SIZE and 0 <= y + dy < SIZE:
+                image[y + dy][x + dx] = opaque(petal)
+        image[y][x] = opaque(centre)
+    return image
+
+
 def opaque(rgb: tuple[int, int, int]) -> Pixel:
     return (rgb[0], rgb[1], rgb[2], 255)
 
@@ -440,4 +490,5 @@ PAINTERS: dict[str, Callable[..., Image]] = {
     "roots": roots,
     "biofilm": biofilm,
     "stonebell": stonebell,
+    "pad": pad,
 }

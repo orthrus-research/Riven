@@ -1,0 +1,6 @@
+[
+  {"label": "river-shallows", "x": -492.5, "y": 150, "z": -1311.5, "yaw": 45, "pitch": 45, "commands": []},
+  {"label": "wetland-shallows", "x": -1259.5, "y": 118, "z": -1167.5, "yaw": 45, "pitch": 45, "commands": ["execute {player} -492.5 150 -1311.5 riven cover 48", "execute {player} -492.5 150 -1311.5 riven"]},
+  {"label": "taiga-lake-shallows", "x": 3157.5, "y": 128, "z": 1280.5, "yaw": 45, "pitch": 45, "commands": ["execute {player} -1259.5 118 -1167.5 riven cover 48", "execute {player} -1259.5 118 -1167.5 riven"]},
+  {"label": "return", "x": 3157.5, "y": 148, "z": 1280.5, "yaw": 0, "pitch": 30, "commands": ["execute {player} 3157.5 128 1280.5 riven cover 48", "execute {player} 3157.5 128 1280.5 riven"]}
+]

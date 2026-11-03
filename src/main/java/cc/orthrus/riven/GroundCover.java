@@ -34,8 +34,10 @@ import java.util.function.IntPredicate;
  * drifts by its patch noise, decides. A plant stands on the column's surface (the top of its highest
  * non-air run) where native generation, boulders and trees leave air; a two-block plant or a cane
  * needs all its blocks clear of terrain and trees, and a cane also water beside its ground in the
- * native blocks of a neighbouring column. Each cube writes the blocks inside itself after its trees,
- * and the preview draws the same blocks, so distant ground keeps the colour the plants give it.
+ * native blocks of a neighbouring column. A column under still water is decided as well: its ground
+ * is the water, which only floating plants fit, and an entry may name the water depths it takes.
+ * Each cube writes the blocks inside itself after its trees, and the preview draws the same blocks,
+ * so distant ground keeps the colour the plants give it.
  */
 final class GroundCover {
     private static final Rules RULES = Rules.load("riven-ground-cover.json", 1);
@@ -50,7 +52,7 @@ final class GroundCover {
         final IBlockState state;
         final GroundPlant.Tall tall;
         final GroundPlant.Cane cane;
-        final int ground, shortest, tallest;
+        final int ground, shortest, tallest, shallowest, deepest;
         final GroundPlant plant;
         final double density, patch, share;
         final long seed;
@@ -83,6 +85,11 @@ final class GroundCover {
             density = Rules.number(j, "density", 0, 1) * scale;
             patch = j.has("patch") ? Rules.number(j, "patch", 0, 512) : 0;
             share = j.has("share") ? Rules.number(j, "share", 0.05, 1) : 0.35;
+            // Water depth an entry takes, in blocks of water over the bed (any by default).
+            JsonObject depth = j.getAsJsonObject("depth");
+            shallowest = depth == null ? 0 : count(depth, "min", 0, MAXIMUM_DEPTH);
+            deepest =
+                    depth == null ? MAXIMUM_DEPTH : count(depth, "max", shallowest, MAXIMUM_DEPTH);
             this.seed = seed;
         }
 
@@ -104,6 +111,9 @@ final class GroundCover {
             return Math.min(1, density * ramp / share);
         }
     }
+
+    /** The deepest water a column's depth is counted to. */
+    static final int MAXIMUM_DEPTH = 32;
 
     private final long seed;
     private final Map<Biome, Entry[]> biomes = new IdentityHashMap<>();
@@ -164,14 +174,16 @@ final class GroundCover {
     }
 
     /**
-     * The entry that decides a column whose surface is s, or null. canes says whether a cane may
-     * decide; without it, cane entries pass as if no water lay beside the ground.
+     * The entry that decides a column whose surface is s, or null; depth is the water over its bed
+     * (0 on dry ground). canes says whether a cane may decide; without it, cane entries pass as if
+     * no water lay beside the ground.
      */
-    private Entry decide(Biome biome, IBlockState ground, int x, int s, int z, boolean canes) {
+    private Entry decide(
+            Biome biome, IBlockState ground, int depth, int x, int s, int z, boolean canes) {
         Entry[] entries = biomes.get(biome);
         if (entries == null || ground.getMaterial() == Material.AIR) return null;
         for (Entry e : entries) {
-            if (!e.fits(ground)) continue;
+            if (!e.fits(ground) || depth < e.shallowest || depth > e.deepest) continue;
             if (SeededNoise.unit(SeededNoise.cell(e.seed, x, z)) >= e.threshold(x, z)) continue;
             if (e.cane != null && !(canes && waterBeside(x, s - 1, z))) continue;
             return e;
@@ -229,14 +241,13 @@ final class GroundCover {
                 if (s < y0 - reach || s >= y0 + 16) continue;
                 int x = (cubeX << 4) + lx, z = (cubeZ << 4) + lz;
                 if (boulders.at(x, z) != null) continue;
-                Entry e =
-                        decide(
-                                provider.biome(column, index, x, z),
-                                ground.at(index, x, s - 1, z),
-                                x,
-                                s,
-                                z,
-                                true);
+                IBlockState top = ground.at(index, x, s - 1, z);
+                int depth = 0;
+                if (top.getMaterial() == Material.WATER)
+                    while (depth < MAXIMUM_DEPTH
+                            && ground.at(index, x, s - 1 - depth, z).getMaterial()
+                                    == Material.WATER) depth++;
+                Entry e = decide(provider.biome(column, index, x, z), top, depth, x, s, z, true);
                 if (e == null) continue;
                 int n = height(e, x, z);
                 if (n == 1) {
@@ -270,6 +281,7 @@ final class GroundCover {
     IBlockState[] preview(
             Biome reported,
             IBlockState groundBlock,
+            int depth,
             int x,
             int s,
             int z,
@@ -277,7 +289,7 @@ final class GroundCover {
             IntPredicate taken) {
         if (footprint < TerrainColumn.BOULDER_FOOTPRINT && provider.maps.boulders.at(x, z) != null)
             return null;
-        Entry e = decide(reported, groundBlock, x, s, z, footprint <= 2);
+        Entry e = decide(reported, groundBlock, depth, x, s, z, footprint <= 2);
         if (e == null) return null;
         int n = height(e, x, z);
         for (int y = s; y < s + n; y++) if (taken.test(y)) return null;

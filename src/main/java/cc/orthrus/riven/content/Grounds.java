@@ -13,11 +13,12 @@ import net.minecraft.block.state.IBlockState;
 /**
  * The grounds a decoration stands on, as a bit mask over named kinds: grass, dirt (any ground
  * material, so mud and the provider's dirts), sand (with Riven's sediments), gravel, snow (a snow
- * block), stone (any rock material) and sandstone (either colour).
+ * block), stone (any rock material), sandstone (either colour) and water (still water, for what
+ * floats on it).
  */
 public final class Grounds {
     private static final String[] KINDS = {
-        "grass", "dirt", "sand", "gravel", "snow", "stone", "sandstone"
+        "grass", "dirt", "sand", "gravel", "snow", "stone", "sandstone", "water"
     };
 
     private Grounds() {}
@@ -45,6 +46,7 @@ public final class Grounds {
                 || ((mask & 16) != 0 && m == Material.CRAFTED_SNOW)
                 || ((mask & 32) != 0 && m == Material.ROCK)
                 || ((mask & 64) != 0
-                        && (block instanceof BlockSandStone || block instanceof BlockRedSandstone));
+                        && (block instanceof BlockSandStone || block instanceof BlockRedSandstone))
+                || ((mask & 128) != 0 && m == Material.WATER);
     }
 }

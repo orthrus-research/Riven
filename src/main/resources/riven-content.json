@@ -2061,7 +2061,7 @@
     }
   },
   "decorations": {
-    "about": "Ground decorations from Riven Resources (Decoration Library 01, Art Requisitions 02 and 03; see each folder's PROVENANCE.md), textures unchanged, and Riven's cave decorations (fungi, hanging roots, stonebells, green biofilm), whose four forms are painted placeholders (painter, args, forms) until the art pack fills their slots. Each subject registers one block: plant_<id> (crossed planes, offset within its block like vanilla flowers), decal_<id> (a thin plane on the ground like leaf litter), hanging_<id> (crossed planes hanging under a ceiling of its grounds, like roots under a root mat), submerged_<id> (a plane on a floor under water, of water's material and level, so the water around it stays whole; broken it leaves water), tall_<id> (a two-block plant whose bottom and top pieces join, its form chosen where it grows) or cane_<id> (stem pieces stacked under a top piece like sugar cane, standing only where water lies beside its ground; each piece drops a sugar cane). A plant or decal shows one of its four forms by position. ground names what it stands on (what a hanging one hangs from) (grass, dirt including mud, sand, gravel, snow, stone, sandstone of either colour); without that ground it drops. replaceable ones give way to placed blocks, like tall grass. light, where given, is the light a decoration gives (0-15). None has collision; all burn like vanilla plants but those marked flammable false. riven-ground-cover.json places them.",
+    "about": "Ground decorations from Riven Resources (Decoration Library 01, Art Requisitions 02 and 03; see each folder's PROVENANCE.md), textures unchanged, and Riven's cave decorations (fungi, hanging roots, stonebells, green biofilm), whose four forms are painted placeholders (painter, args, forms) until the art pack fills their slots. Each subject registers one block: plant_<id> (crossed planes, offset within its block like vanilla flowers), decal_<id> (a thin plane on the ground like leaf litter), hanging_<id> (crossed planes hanging under a ceiling of its grounds, like roots under a root mat), floating_<id> (on still water: a pad lying on the surface that can be stood on, as a lily pad can, or reeds standing in the shallows (model cross); boats break it, and its item sets it on the water looked at), submerged_<id> (a plane on a floor under water, of water's material and level, so the water around it stays whole; broken it leaves water), tall_<id> (a two-block plant whose bottom and top pieces join, its form chosen where it grows) or cane_<id> (stem pieces stacked under a top piece like sugar cane, standing only where water lies beside its ground; each piece drops a sugar cane). A plant or decal shows one of its four forms by position. ground names what it stands on (what a hanging one hangs from; a floating one needs still water); texturesOf draws another subject's textures (grass, dirt including mud, sand, gravel, snow, stone, sandstone of either colour); without that ground it drops. replaceable ones give way to placed blocks, like tall grass. light, where given, is the light a decoration gives (0-15). None has collision; all burn like vanilla plants but those marked flammable false. riven-ground-cover.json places them.",
     "subjects": {
       "pebbles": {
         "name": "Pebbles",
@@ -4842,6 +4842,74 @@
         ],
         "replaceable": false,
         "flammable": false
+      },
+      "blush_waterlily": {
+        "name": "Blush Waterlily",
+        "kind": "floating",
+        "model": "pad",
+        "painter": "pad",
+        "args": {
+          "species": "blush_waterlily"
+        },
+        "forms": 4,
+        "ground": [],
+        "replaceable": false
+      },
+      "ivory_waterstar": {
+        "name": "Ivory Waterstar",
+        "kind": "floating",
+        "model": "pad",
+        "painter": "pad",
+        "args": {
+          "species": "ivory_waterstar"
+        },
+        "forms": 4,
+        "ground": [],
+        "replaceable": false
+      },
+      "water_shield": {
+        "name": "Water Shield",
+        "kind": "floating",
+        "model": "pad",
+        "painter": "pad",
+        "args": {
+          "species": "water_shield"
+        },
+        "forms": 4,
+        "ground": [],
+        "replaceable": false
+      },
+      "shallow_bent_reed": {
+        "name": "Shallow Bent Reed",
+        "kind": "floating",
+        "model": "cross",
+        "texturesOf": "bent_reed",
+        "ground": [],
+        "replaceable": true
+      },
+      "shallow_bronze_rush": {
+        "name": "Shallow Bronze Rush",
+        "kind": "floating",
+        "model": "cross",
+        "texturesOf": "bronze_rush",
+        "ground": [],
+        "replaceable": true
+      },
+      "shallow_velvet_cattail": {
+        "name": "Shallow Velvet Cattail",
+        "kind": "floating",
+        "model": "cross",
+        "texturesOf": "velvet_cattail",
+        "ground": [],
+        "replaceable": true
+      },
+      "shallow_arrow_waterleaf": {
+        "name": "Shallow Arrow Waterleaf",
+        "kind": "floating",
+        "model": "cross",
+        "texturesOf": "arrow_waterleaf",
+        "ground": [],
+        "replaceable": true
       }
     }
   },

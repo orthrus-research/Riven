@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:floating_water_shield_0"
+      },
+      {
+        "model": "riven:floating_water_shield_1"
+      },
+      {
+        "model": "riven:floating_water_shield_2"
+      },
+      {
+        "model": "riven:floating_water_shield_3"
+      }
+    ]
+  }
+}
