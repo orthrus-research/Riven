@@ -835,14 +835,14 @@ hold even where a void cuts down to the formation below; rock tests (solubility,
   seed 8675309 over 8 km (`DescentCheck`), the Broken Basement holds 867 stalactite runs (none
   before), Lava Shores 1,081 basalt stalactites and 164 spires, and Salt Halls 39 salt stalactites
   where they had calcite.
-- Floors: litter (dirt) with toadstools and portobellos, sand, salt sand, packed ice, gravel, ash
+- Floors: litter (dirt) with ink caps and pale cave mushrooms, sand, salt sand, packed ice, gravel, ash
   (or gravel) or magma by depth biome; salt sand on every evaporite floor; mud within 14 blocks
   above the water table (and below it) in the layered deep. Gravel pockets (balls of 2-4 blocks radius on an 18-block
   grid) fill rock below Y-150, never an unstable floor, and fall when a cave opens under them.
 - Ceilings: hanging roots under root mats in Root Hollows, cobwebs in the Broken Basement and Dust
   Hollows.
 - Life, where the depth biome holds it: Miner's Delight on bare stone, vanilla mushrooms,
-  glowshrooms in clusters above Y-213 and algae on flooded floors. Salt, frost, dust and the root
+  glowing mushrooms in clusters above Y-213 and algae on flooded floors. Salt, frost, dust and the root
   stay lifeless, and nothing decorates lava (magma-chamber pools carried dirt and mud patches
   before terrain-v87).
 - Pools (terrain-v88, `CavePools`, `riven-cave-decor.json` pools): now and then a small still
@@ -884,8 +884,8 @@ hold even where a void cuts down to the formation below; rock tests (solubility,
   planners immediately outside it that neighboring chunks would otherwise wake later. A carve over a few
   heights builds only the cave lattice levels it reads, and `CellMemo` gives each cell two slots
   (a pair of cells that shared one slot recomputed on every alternate read).
-- Mud, salt sand and ash are Riven content (below). The fungi, roots, Miner's Delight and algae
-  are still Biomes O' Plenty's blocks; without it, vanilla stand-ins replace them.
+- Mud, salt sand, ash and the cave fungi are Riven content (below). Roots, Miner's Delight and
+  algae are still Biomes O' Plenty's blocks; without it, vanilla stand-ins replace them.
 
 On seed 8675309 (4 km, 32-block grid) 81% of land columns carry some decoration (84% before
 terrain-v87, when dry, frozen and wet skins also took roots and litter; `GeologySection decor`
@@ -941,11 +941,11 @@ in), so a biome holds across thin beds:
 | Skin | Salt Halls | evaporite | salt sand floors, pointed salt; lifeless |
 | Skin | Frost Hollows | under FROZEN land | pools frozen to ice, packed ice floors and seeps, pointed ice; lifeless |
 | Skin | Dust Hollows | under DRY land | sand floors, cobwebs, dripstone; lifeless |
-| Skin | Root Hollows | other land | hanging roots, litter with toadstools, mud near the water table, dripstone, fungi |
+| Skin | Root Hollows | other land | hanging roots, litter with ink caps, mud near the water table, dripstone, fungi |
 | Layered deep | Drowned Galleries | a flooded cell's band (see Caves) | flooded passages, algae, mud |
 | Layered deep | Salt Halls | evaporite | as in the skin |
-| Layered deep | Karst Galleries | rock at least 0.5 soluble | dripstone, mud, mushrooms, glowshrooms |
-| Layered deep | The Layered Deep | other sediment | mud, litter, mushrooms, glowshrooms |
+| Layered deep | Karst Galleries | rock at least 0.5 soluble | dripstone, mud, mushrooms, glowing mushrooms |
+| Layered deep | The Layered Deep | other sediment | mud, litter, mushrooms, glowing mushrooms |
 | Basement | The Broken Basement | crystalline rock | gravel floors, cobwebs, sparse fungi, calcite along faults |
 | Root | Lava Shores | magma chambers, and up to 8 blocks above the lava level | magma floors, lava lakes, pointed basalt; lifeless |
 | Root | The Molten Root | the rest below the deep surface | ash and gravel floors; lifeless |
@@ -1154,6 +1154,12 @@ from cave decoration, ore blocks, and unstable stone on the floors cave decorati
   placed blocks like tall grass; none has collision; all but the stone props burn. Underwater
   plants, floating pads, lianas, epiphytes and picked berry shrubs wait for the blocks that hold
   them.
+- **Cave fungi** (`decorations`, kind plant): ink cap, pale cave mushroom and glowing mushroom
+  (light 6), the catalogue's `plant.ink_cap`, `plant.pale_cave_mushroom` and
+  `plant.glowing_mushroom`, which were Biomes O' Plenty's toadstool, portobello and glowshroom.
+  Cave decoration places them (above); they stand on grass, dirt, sand (Riven's sediments
+  included), gravel and stone, and do not burn or give way. Their four forms are placeholders
+  painted on Requisition 07's tones (`painters.py` fungus) until the art pack fills their slots.
 - **Unstable stone** (terrain-v88, `unstable`): one block per host rock, 19 in all (stone, granite,
   diorite, andesite, sandstone, red sandstone and the 13 host stones), named Unstable <host> and
   drawn as the host's own faces under a painted crack network that crosses every edge, so a floor

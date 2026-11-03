@@ -211,12 +211,12 @@ public final class DescentCheck {
             RealmMap.Depth floor = RealmMap.cell(lo, s), under = RealmMap.cell(hi, s);
             RealmMap.Depth ceiling = RealmMap.cell(hi - 1L, s);
             switch (b.id) {
-                case "plant.toadstool":
-                case "plant.portobello":
+                case "plant.ink_cap":
+                case "plant.pale_cave_mushroom":
                 case "plant.brown_mushroom":
                 case "plant.red_mushroom":
                 case "plant.miners_delight":
-                case "plant.glowshroom":
+                case "plant.glowing_mushroom":
                 case "plant.algae":
                     require(floor.life, b + " in lifeless " + floor.biome + at);
                     decor.incrementAndGet(floor.index * n + b.index());

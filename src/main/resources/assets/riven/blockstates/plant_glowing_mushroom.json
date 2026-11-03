@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:plant_glowing_mushroom_0"
+      },
+      {
+        "model": "riven:plant_glowing_mushroom_1"
+      },
+      {
+        "model": "riven:plant_glowing_mushroom_2"
+      },
+      {
+        "model": "riven:plant_glowing_mushroom_3"
+      }
+    ]
+  }
+}

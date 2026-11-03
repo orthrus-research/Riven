@@ -1985,7 +1985,7 @@
     }
   },
   "decorations": {
-    "about": "Ground decorations from Riven Resources (Decoration Library 01, Art Requisitions 02 and 03; see each folder's PROVENANCE.md), textures unchanged. Each subject registers one block: plant_<id> (crossed planes, offset within its block like vanilla flowers), decal_<id> (a thin plane on the ground like leaf litter), tall_<id> (a two-block plant whose bottom and top pieces join, its form chosen where it grows) or cane_<id> (stem pieces stacked under a top piece like sugar cane, standing only where water lies beside its ground; each piece drops a sugar cane). A plant or decal shows one of its four forms by position. ground names what it stands on (grass, dirt including mud, sand, gravel, snow, stone, sandstone of either colour); without that ground it drops. replaceable ones give way to placed blocks, like tall grass. None has collision; all burn like vanilla plants but those marked flammable false. riven-ground-cover.json places them.",
+    "about": "Ground decorations from Riven Resources (Decoration Library 01, Art Requisitions 02 and 03; see each folder's PROVENANCE.md), textures unchanged, and Riven's cave fungi, whose four forms are painted placeholders (painter, args, forms) until the art pack fills their slots. Each subject registers one block: plant_<id> (crossed planes, offset within its block like vanilla flowers), decal_<id> (a thin plane on the ground like leaf litter), tall_<id> (a two-block plant whose bottom and top pieces join, its form chosen where it grows) or cane_<id> (stem pieces stacked under a top piece like sugar cane, standing only where water lies beside its ground; each piece drops a sugar cane). A plant or decal shows one of its four forms by position. ground names what it stands on (grass, dirt including mud, sand, gravel, snow, stone, sandstone of either colour); without that ground it drops. replaceable ones give way to placed blocks, like tall grass. light, where given, is the light a decoration gives (0-15). None has collision; all burn like vanilla plants but those marked flammable false. riven-ground-cover.json places them.",
     "subjects": {
       "pebbles": {
         "name": "Pebbles",
@@ -4671,6 +4671,61 @@
           "dirt"
         ],
         "replaceable": false
+      },
+      "ink_cap": {
+        "name": "Ink Cap",
+        "kind": "plant",
+        "painter": "fungus",
+        "args": {
+          "species": "ink_cap"
+        },
+        "forms": 4,
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false,
+        "flammable": false
+      },
+      "pale_cave_mushroom": {
+        "name": "Pale Cave Mushroom",
+        "kind": "plant",
+        "painter": "fungus",
+        "args": {
+          "species": "pale_cave_mushroom"
+        },
+        "forms": 4,
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false,
+        "flammable": false
+      },
+      "glowing_mushroom": {
+        "name": "Glowing Mushroom",
+        "kind": "plant",
+        "painter": "fungus",
+        "args": {
+          "species": "glowing_mushroom"
+        },
+        "forms": 4,
+        "ground": [
+          "grass",
+          "dirt",
+          "sand",
+          "gravel",
+          "stone"
+        ],
+        "replaceable": false,
+        "flammable": false,
+        "light": 6
       }
     }
   },

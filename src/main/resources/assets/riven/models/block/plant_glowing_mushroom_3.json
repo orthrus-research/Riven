@@ -1,0 +1,6 @@
+{
+  "parent": "block/cross",
+  "textures": {
+    "cross": "riven:blocks/decor/glowing_mushroom_3"
+  }
+}

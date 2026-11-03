@@ -359,19 +359,28 @@ PIECES = {
 }
 
 
+def form_faces(subject: dict[str, Any]) -> list[bytes]:
+    """A plant or decal's face per form: Riven Resources files unchanged, or a painted placeholder."""
+    if "painter" in subject:
+        painter = PAINTERS[subject["painter"]]
+        return [png(painter(form=n, **subject["args"])) for n in range(subject["forms"])]
+    source = Path(__file__).parent / subject["source"]
+    return [(source / f"{stem}.png").read_bytes() for stem in subject["textures"]]
+
+
 def decoration_assets(decorations: dict[str, Any]) -> tuple[dict[str, bytes], dict[str, str]]:
-    """Each ground decoration's block: textures copied unchanged, four forms by position."""
+    """Each ground decoration's block: textures copied unchanged or painted, forms by position."""
     out: dict[str, bytes] = {}
     lang: dict[str, str] = {}
     here = Path(__file__).parent
     for id_, subject in decorations["subjects"].items():
-        source = here / subject["source"]
         kind = subject["kind"]
         block = f"{kind}_{id_}"
         tex = f"riven:blocks/decor/{id_}"
         if kind in PIECES:
             # A two-block plant's bottom and top, or a cane's stem and top, in each form.
             prop, pieces = PIECES[kind]
+            source = here / subject["source"]
             for n, files in enumerate(subject["textures"]):
                 for part, stem in zip(pieces.values(), files, strict=True):
                     out[f"textures/blocks/decor/{id_}_{n}_{part}.png"] = (
@@ -393,8 +402,9 @@ def decoration_assets(decorations: dict[str, Any]) -> tuple[dict[str, bytes], di
                 {"parent": "item/generated", "textures": {"layer0": f"{tex}_0_top"}}
             )
         else:
-            for n, stem in enumerate(subject["textures"]):
-                out[f"textures/blocks/decor/{id_}_{n}.png"] = (source / f"{stem}.png").read_bytes()
+            faces = form_faces(subject)
+            for n, png_bytes in enumerate(faces):
+                out[f"textures/blocks/decor/{id_}_{n}.png"] = png_bytes
                 if kind == "plant":
                     model: dict[str, Any] = {
                         "parent": "block/cross",
@@ -419,9 +429,7 @@ def decoration_assets(decorations: dict[str, Any]) -> tuple[dict[str, bytes], di
             out[f"blockstates/{block}.json"] = text(
                 {
                     "variants": {
-                        "normal": [
-                            {"model": f"riven:{block}_{n}"} for n in range(len(subject["textures"]))
-                        ]
+                        "normal": [{"model": f"riven:{block}_{n}"} for n in range(len(faces))]
                     }
                 }
             )

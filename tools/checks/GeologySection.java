@@ -657,13 +657,13 @@ public final class GeologySection {
             TerrainBlock.VOLCANIC_ASH,
             TerrainBlock.MAGMA,
             TerrainBlock.DIRT,
-            TerrainBlock.TOADSTOOL,
-            TerrainBlock.PORTOBELLO,
+            TerrainBlock.INK_CAP,
+            TerrainBlock.PALE_CAVE_MUSHROOM,
             TerrainBlock.ROOT,
             TerrainBlock.MINERS_DELIGHT,
             TerrainBlock.BROWN_MUSHROOM,
             TerrainBlock.RED_MUSHROOM,
-            TerrainBlock.GLOWSHROOM,
+            TerrainBlock.GLOWING_MUSHROOM,
             TerrainBlock.ALGAE,
             TerrainBlock.COBWEB
         };

@@ -1,0 +1,6 @@
+{
+  "parent": "block/cross",
+  "textures": {
+    "cross": "riven:blocks/decor/ink_cap_3"
+  }
+}

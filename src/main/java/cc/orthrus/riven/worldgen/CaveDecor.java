@@ -9,7 +9,7 @@ import com.google.gson.JsonObject;
  * ice, salt and basalt where the depth biome names them, more in humid caves), gravel floors and
  * pockets, mud,
  * salt, sand, packed ice, ash and magma floors, litter with mushrooms, hanging roots, Miner's
- * Delight, glowshrooms above the world's lowest third, algae in flooded caves and cobwebs.
+ * Delight, glowing mushrooms above the world's lowest third, algae in flooded caves and cobwebs.
  * Placed on each native column's cave floors and ceilings as runs, so column runs stay exact.
  * Every choice is a pure function of seed, definitions and the column.
  */
@@ -380,7 +380,9 @@ final class CaveDecor {
                     v.addDecor(
                             lo,
                             lo + 1,
-                            unit(key, 6) < 0.5 ? TerrainBlock.TOADSTOOL : TerrainBlock.PORTOBELLO);
+                            unit(key, 6) < 0.5
+                                    ? TerrainBlock.INK_CAP
+                                    : TerrainBlock.PALE_CAVE_MUSHROOM);
                     below = 1;
                 }
             } else if (floor.floor == RealmMap.Floor.SAND && p > SAND)
@@ -394,7 +396,7 @@ final class CaveDecor {
         if (floorAir && below == 0 && height - above > 0 && floor.life) {
             TerrainBlock plant = null;
             if (lo > GLOW_MIN_Y && c > GLOW_CLUSTER && unit(key, 7) < GLOW_CHANCE)
-                plant = TerrainBlock.GLOWSHROOM;
+                plant = TerrainBlock.GLOWING_MUSHROOM;
             else if (floorBlock == null && bareStone(floorUnit) && unit(key, 8) < MINERS_DELIGHT)
                 plant = TerrainBlock.MINERS_DELIGHT;
             else if (unit(key, 9) < MUSHROOM)

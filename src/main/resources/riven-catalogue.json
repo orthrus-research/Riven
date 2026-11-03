@@ -739,25 +739,23 @@
         "minecraft:air"
       ]
     },
-    "plant.toadstool": {
+    "plant.ink_cap": {
       "kind": "plant",
       "tags": [
-        "provider",
         "fungus"
       ],
       "block": [
-        "biomesoplenty:mushroom[variant=toadstool]",
+        "riven:plant_ink_cap",
         "minecraft:red_mushroom"
       ]
     },
-    "plant.portobello": {
+    "plant.pale_cave_mushroom": {
       "kind": "plant",
       "tags": [
-        "provider",
         "fungus"
       ],
       "block": [
-        "biomesoplenty:mushroom[variant=portobello]",
+        "riven:plant_pale_cave_mushroom",
         "minecraft:brown_mushroom"
       ]
     },
@@ -789,15 +787,14 @@
         "minecraft:air"
       ]
     },
-    "plant.glowshroom": {
+    "plant.glowing_mushroom": {
       "kind": "plant",
       "tags": [
-        "provider",
         "fungus",
         "luminous"
       ],
       "block": [
-        "biomesoplenty:mushroom[variant=glowshroom]",
+        "riven:plant_glowing_mushroom",
         "minecraft:brown_mushroom"
       ]
     },

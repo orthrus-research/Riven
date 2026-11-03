@@ -45,12 +45,12 @@ public final class WaterCheck {
         return t == TerrainBlock.AIR
                 || t == TerrainBlock.COBWEB
                 || t == TerrainBlock.ROOT
-                || t == TerrainBlock.TOADSTOOL
-                || t == TerrainBlock.PORTOBELLO
+                || t == TerrainBlock.INK_CAP
+                || t == TerrainBlock.PALE_CAVE_MUSHROOM
                 || t == TerrainBlock.BROWN_MUSHROOM
                 || t == TerrainBlock.RED_MUSHROOM
                 || t == TerrainBlock.MINERS_DELIGHT
-                || t == TerrainBlock.GLOWSHROOM;
+                || t == TerrainBlock.GLOWING_MUSHROOM;
     }
 
     static Stats window(GenerationMaps maps, int x0, int z0, int size) {

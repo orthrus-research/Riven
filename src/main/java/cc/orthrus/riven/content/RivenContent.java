@@ -182,6 +182,7 @@ public final class RivenContent {
                                 !d.has("flammable") || d.get("flammable").getAsBoolean());
             else throw new IllegalStateException("Unknown decoration kind " + kind);
             block.setHardness(0);
+            if (d.has("light")) block.setLightLevel(d.get("light").getAsInt() / 15f);
             register(event, block, kind + "_" + e.getKey(), CreativeTabs.DECORATIONS);
         }
     }

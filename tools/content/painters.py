@@ -67,6 +67,26 @@ PALETTES = {
     ],
 }
 
+# Cave fungi placeholders, dark to light, on Requisition 07's tones: (stem ramp, cap ramp, cap
+# shape). A dome is broader than tall; a bell is tall and narrow with an inky rim (ink cap).
+FUNGI = {
+    "glowing_mushroom": (
+        [(0x6E, 0x89, 0x70), (0x8B, 0xA6, 0x89), (0xAC, 0xC5, 0xA4)],
+        [(0x6E, 0x89, 0x70), (0x8B, 0xA6, 0x89), (0xAC, 0xC5, 0xA4), (0xC9, 0xDA, 0xBD)],
+        "dome",
+    ),
+    "pale_cave_mushroom": (
+        [(0x8A, 0x82, 0x79), (0xAA, 0xA2, 0x96), (0xC5, 0xBD, 0xB0)],
+        [(0x62, 0x5C, 0x58), (0xAA, 0xA2, 0x96), (0xC5, 0xBD, 0xB0), (0xDD, 0xD5, 0xC5)],
+        "dome",
+    ),
+    "ink_cap": (
+        [(0x70, 0x6A, 0x67), (0x96, 0x8C, 0x82), (0xB8, 0xAA, 0x9B)],
+        [(0x4D, 0x48, 0x48), (0x70, 0x6A, 0x67), (0x96, 0x8C, 0x82), (0xB8, 0xAA, 0x9B)],
+        "bell",
+    ),
+}
+
 # Sediment faces: how much grains vary, how often a grain stands out, and whether the face is
 # smeared into flat bands (wet mud) rather than speckled.
 SEDIMENTS = {
@@ -124,6 +144,47 @@ def sediment(material: str) -> Image:
             if noise(x, y, salt + 2) < grains:
                 level += 0.3 if noise(x, y, salt + 3) < 0.5 else -0.3
             image[y][x] = shade(level, material)
+    return image
+
+
+def fungus(species: str, form: int) -> Image:
+    """A crossed-plane cluster of one to three mushrooms, lit from the left; one image per form."""
+    image = blank()
+    stems, caps, shape = FUNGI[species]
+    salt = 70 + len(species) + 13 * form
+    count = 1 + int(noise(form, 0, salt) * 3)
+    # Each mushroom keeps its own slot across the face, so no cap grows through another's stem.
+    slots = {1: [7], 2: [4, 10], 3: [2, 7, 11]}[count]
+    shrooms = []
+    for k in range(count):
+        cx = slots[k] + int(noise(k, 1, salt) * 3) - 1
+        cap = 5 if shape == "bell" else 2 + int(noise(k, 4, salt) * 2)
+        height = 5 + int(noise(k, 2, salt) * (8 if shape == "bell" else 6)) - 2 * (k > 0)
+        height = max(height, cap + 2)
+        half = (1.9 if shape == "bell" else 1.6) + noise(k, 3, salt) * (1.0 if count > 2 else 1.6)
+        shrooms.append((cx, SIZE - 1 - height, half, cap))
+    for cx, top, _, cap in shrooms:
+        for y in range(top + cap, SIZE):
+            for x in (cx, cx + 1):
+                r, g, b = stems[2 if x == cx else 0]
+                image[y][x] = (r, g, b, 255)
+    # Taller caps first, so the shorter ones in front overlap them.
+    for cx, top, half, cap in sorted(shrooms, key=lambda m: m[1]):
+        for j in range(cap):
+            y = top + j
+            # A dome widens toward its rim; a bell is near its full width from the top, and its
+            # lower edge runs with ink.
+            t = (j + 1) / cap
+            w = half * (0.55 + 0.45 * t) if shape == "dome" else half * (0.75 + 0.25 * t)
+            for x in range(SIZE):
+                d = x + 0.5 - (cx + 1)
+                if abs(d) > w:
+                    continue
+                level = 2 + (d < 0) - (abs(d) > w - 0.9)
+                if shape == "bell" and j >= cap - 2 and (abs(d) > w - 0.9 or j == cap - 1):
+                    level = 0
+                r, g, b = caps[max(0, min(len(caps) - 1, level))]
+                image[y][x] = (r, g, b, 255)
     return image
 
 
@@ -266,4 +327,5 @@ PAINTERS: dict[str, Callable[..., Image]] = {
     "pointed": pointed,
     "pointed_item": pointed_item,
     "sediment": sediment,
+    "fungus": fungus,
 }

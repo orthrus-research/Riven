@@ -134,20 +134,16 @@ final class TerrainColumn {
         result[at("formation.basalt_down")] =
                 named("riven:pointed_basalt", "direction", "down", air);
         result[at("plant.root")] = named("biomesoplenty:plant_1", "variant", "root", air);
-        result[at("plant.toadstool")] =
-                named(
-                        "biomesoplenty:mushroom",
-                        "variant",
-                        "toadstool",
-                        Blocks.RED_MUSHROOM.getDefaultState());
-        result[at("plant.portobello")] =
-                named("biomesoplenty:mushroom", "variant", "portobello", brown);
+        result[at("plant.ink_cap")] =
+                named("riven:plant_ink_cap", null, null, Blocks.RED_MUSHROOM.getDefaultState());
+        result[at("plant.pale_cave_mushroom")] =
+                named("riven:plant_pale_cave_mushroom", null, null, brown);
         result[at("plant.brown_mushroom")] = brown;
         result[at("plant.red_mushroom")] = Blocks.RED_MUSHROOM.getDefaultState();
         result[at("plant.miners_delight")] =
                 named("biomesoplenty:flower_1", "variant", "miners_delight", air);
-        result[at("plant.glowshroom")] =
-                named("biomesoplenty:mushroom", "variant", "glowshroom", brown);
+        result[at("plant.glowing_mushroom")] =
+                named("riven:plant_glowing_mushroom", null, null, brown);
         result[at("plant.algae")] =
                 named("biomesoplenty:coral", "variant", "algae", Blocks.WATER.getDefaultState());
         // Riven host stones, with vanilla stand-ins should a block be missing.

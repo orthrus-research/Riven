@@ -6,7 +6,7 @@
   {"label": "bedding-plane", "x": -352, "y": 82, "z": -1184, "yaw": 0, "pitch": 10},
   {"label": "dripstone-cave", "x": -1184, "y": 137, "z": -2016, "yaw": 0, "pitch": -15},
   {"label": "dripstone-gallery", "x": -1143.5, "y": 137, "z": -1979.5, "yaw": 345, "pitch": -10},
-  {"label": "glowshroom-grotto", "x": -2029.5, "y": 49, "z": -2051.5, "yaw": 105, "pitch": 20},
+  {"label": "glowing-mushroom-grotto", "x": -2029.5, "y": 49, "z": -2051.5, "yaw": 105, "pitch": 20},
   {"label": "great-cavern", "x": -271.5, "y": -54, "z": -1263.5, "yaw": 345, "pitch": 20},
   {"label": "great-cavern-floor", "x": -311.5, "y": -74, "z": -1263.5, "yaw": 300, "pitch": -10},
   {"label": "tunnel", "x": -935.5, "y": -77, "z": -1177.5, "yaw": 30, "pitch": 5},

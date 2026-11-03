@@ -1,0 +1,7 @@
+[
+  {"label": "glowing-mushrooms-unlit", "x": -127.5, "y": -9, "z": -575.5, "yaw": 45, "pitch": 35, "commands": ["effect {player} clear"]},
+  {"label": "glowing-mushrooms", "x": -118.5, "y": -9, "z": -575.5, "yaw": 90, "pitch": 25, "commands": ["execute {player} -127.5 -9 -575.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "ink-caps", "x": -1336.5, "y": -29, "z": -511.5, "yaw": 45, "pitch": 35, "commands": ["effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "pale-cave-mushrooms", "x": -957.5, "y": -183, "z": -1471.5, "yaw": 45, "pitch": 35, "commands": ["execute {player} -1336.5 -29 -511.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "return", "x": -957.5, "y": -163, "z": -1471.5, "yaw": 45, "pitch": 35, "commands": ["execute {player} -957.5 -183 -1471.5 riven"]}
+]
