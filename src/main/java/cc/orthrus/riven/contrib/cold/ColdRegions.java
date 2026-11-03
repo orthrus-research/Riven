@@ -2,6 +2,8 @@
 // Riven integration, 2026-10-20: added explicit-anchor proposals and a configured
 // support bound. Shape arithmetic and the original standalone grid remain unchanged.
 // The host declares integer-column certificates; they do not prove the continuous plane.
+// Riven modification (2026-11-03): the standalone grid proposal, its reason names and the
+// diagnostic tributary and bound queries removed; candidates come from the host's anchors only.
 package cc.orthrus.riven.contrib.cold;
 
 import java.util.Properties;
@@ -29,15 +31,6 @@ public final class ColdRegions {
             SLOPE = 16,
             HEADROOM = 32,
             OCCURRENCE = 64;
-    private static final String[] REASONS = {
-        "warm", "marine", "reservation", "relief", "slope", "headroom", "occurrence"
-    };
-
-    public static String reasonName(int index) {
-        if (index < 0 || index >= REASONS.length)
-            throw new IllegalArgumentException("reason index");
-        return REASONS[index];
-    }
 
     /** Values supplied from WorldGenerationContext.terrainHeights and TerrainScale.HORIZONTAL.
      * Widths below are already physical blocks; vertical values are never horizontally scaled. */
@@ -168,10 +161,6 @@ public final class ColdRegions {
         private final Reference reference;
         private final Tuning tuning;
 
-        private Candidate(Family f, long seed, long cellX, long cellZ, Reference r, Tuning t) {
-            this(f, seed, cellX, cellZ, r, t, 0, 0, false);
-        }
-
         private Candidate(
                 Family f,
                 long seed,
@@ -180,11 +169,10 @@ public final class ColdRegions {
                 Reference r,
                 Tuning t,
                 double anchorX,
-                double anchorZ,
-                boolean suppliedAnchor) {
+                double anchorZ) {
             if (Math.abs((double) cellX) > 100000000 || Math.abs((double) cellZ) > 100000000)
                 throw new IllegalArgumentException("site coordinate range");
-            if (suppliedAnchor && (!Double.isFinite(anchorX) || !Double.isFinite(anchorZ)))
+            if (!Double.isFinite(anchorX) || !Double.isFinite(anchorZ))
                 throw new IllegalArgumentException("finite anchor");
             family = f;
             reference = r;
@@ -216,14 +204,9 @@ public final class ColdRegions {
                                     : f == Family.DRUMLINS ? width * 8.0 : width * 4.6;
             double maxRadius = maximumRadius(f, r, t);
             cellSize = Math.max(r.regionWidth * 2, maxRadius * 3.0);
-            x = suppliedAnchor ? anchorX : (cellX + .5 + (unit(key, 4) - .5) * .30) * cellSize;
-            z = suppliedAnchor ? anchorZ : (cellZ + .5 + (unit(key, 5) - .5) * .30) * cellSize;
+            x = anchorX;
+            z = anchorZ;
         }
-    }
-
-    public static Candidate propose(
-            Family f, long seed, long cellX, long cellZ, Reference r, Tuning t) {
-        return new Candidate(f, seed, cellX, cellZ, r, t);
     }
 
     /** The host supplies its shared owner's absolute anchor; this does not query the isolated grid. */
@@ -236,7 +219,7 @@ public final class ColdRegions {
             double z,
             Reference r,
             Tuning t) {
-        return new Candidate(f, seed, cellX, cellZ, r, t, x, z, true);
+        return new Candidate(f, seed, cellX, cellZ, r, t, x, z);
     }
 
     /** Maximum support for every seeded proposal with this exact reference and tuning. */
@@ -385,12 +368,6 @@ public final class ColdRegions {
                     * StrictMath.sin(u / candidate.length * StrictMath.PI * 2 + phase);
         }
 
-        /** Diagnostic cross-section along the center of the hanging tributary. */
-        public double hangingU(double v) {
-            double along = branchSide * (v - troughCenter(-candidate.length * .10));
-            return -candidate.length * .10 + curve * along * .7;
-        }
-
         private double trough(double u, double v) {
             double w = candidate.width, d = candidate.depth, l = candidate.length;
             double end = 1 - smooth((Math.abs(u) / l - .36) / .14);
@@ -453,14 +430,6 @@ public final class ColdRegions {
             double sideDistance = Math.abs(Math.abs(v) - w * (2.1 + .09 * u / w)) / (w * .16);
             if (sideDistance < 1) result = Math.max(result, d * .46 * sq(1 - sideDistance) * end);
             return result;
-        }
-
-        public int primitiveBound() {
-            return candidate.family == Family.DRUMLINS
-                    ? bx.length
-                    : candidate.family == Family.MORAINES
-                            ? offset.length + 2
-                            : candidate.family == Family.TROUGH ? 2 : 2;
         }
 
         /** Per-column defense in depth. parent is pre-feature and immutable; marine/water/shore

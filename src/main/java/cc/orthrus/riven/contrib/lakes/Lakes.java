@@ -4,6 +4,8 @@
  * syntax lowered without changing geometry arithmetic. Optional aligned entry points
  * let an earlier river supply the basin/outlet axis. MIT remains applicable.
  * Packaged license: META-INF/licenses/lakes/MIT.txt.
+ * Riven modification (2026-11-03): the seed-oriented support query removed; Riven never
+ * called it.
  */
 package cc.orthrus.riven.contrib.lakes;
 
@@ -361,17 +363,6 @@ public final class Lakes {
         public double terminalRadius() {
             return terminalRadius;
         }
-    }
-
-    public static Support support(
-            long worldSeed, double anchorX, double anchorZ, long siteId, Family family, Tuning t) {
-        long key = seedKey(worldSeed, anchorX, anchorZ, siteId, family);
-        double angle = 2 * StrictMath.PI * unit(key, 1), end = 1.30 * t.width * t.aspect * .5;
-        return new Support(
-                radius(t),
-                t.outletWidth > 0 ? anchorX + end * waveCos(angle) : Double.NaN,
-                t.outletWidth > 0 ? anchorZ + end * waveSin(angle) : Double.NaN,
-                t.outletWidth > 0 ? t.outletWidth * .5 + t.width * .5 * t.skirtFraction : 0);
     }
 
     /** The caller's immutable earlier receiver supplies this axis, in radians.

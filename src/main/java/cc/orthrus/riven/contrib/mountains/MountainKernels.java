@@ -1,3 +1,4 @@
+// Riven modification (2026-11-03): the unused default tuning and edge queries removed.
 package cc.orthrus.riven.contrib.mountains;
 
 import java.util.Objects;
@@ -166,10 +167,6 @@ public final strictfp class MountainKernels {
             this.minMountainIntent = minMountainIntent;
             this.minUplift = minUplift;
         }
-
-        public static Tuning defaults(Reference r) {
-            return new Tuning(r, 1, 2.2, r.reliefMax, 1.15, 0.72, 0.12, 0.45, 0.68, 0.55, 0.25);
-        }
     }
 
     /** Earlier immutable admission facts at the anchor, never computed from shaped terrain. */
@@ -271,24 +268,12 @@ public final strictfp class MountainKernels {
             return x.length;
         }
 
-        public int edgeCount() {
-            return edgeA.length;
-        }
-
         public double nodeX(int n) {
             return anchorX + x[n] * cos - z[n] * sin;
         }
 
         public double nodeZ(int n) {
             return anchorZ + x[n] * sin + z[n] * cos;
-        }
-
-        public int edgeStart(int e) {
-            return edgeA[e];
-        }
-
-        public int edgeEnd(int e) {
-            return edgeB[e];
         }
 
         public double passLocalU(double v) {

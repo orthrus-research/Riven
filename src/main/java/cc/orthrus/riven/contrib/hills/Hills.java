@@ -1,7 +1,9 @@
 /* SPDX-License-Identifier: MIT
  * Riven integration: added shared-owner preparation at an explicit anchor.
- * Original synthetic-grid preparation and authored geometry remain available.
+ * Authored geometry remains.
  * Packaged license: META-INF/licenses/hills/MIT.txt.
+ * Riven modification (2026-11-03): the original synthetic-grid preparation, the default
+ * tuning and the segment count removed; Riven never called them.
  */
 package cc.orthrus.riven.contrib.hills;
 
@@ -138,10 +140,6 @@ public final class Hills {
             this.roughness = roughness;
             this.skirt = skirt;
         }
-
-        public static Tuning defaults(Family f) {
-            return new Tuning(1, f.gain, f.aspect, 0.85, 0.65, 0.07, 0.28);
-        }
     }
 
     /** Earlier immutable anchor facts. Parent min/max MUST bound the entire requested disk
@@ -231,24 +229,6 @@ public final class Hills {
 
     public static double spacing(Reference r, Tuning p) {
         return maxRadius(r, p) * 1.35;
-    }
-
-    /** One candidate per absolute cell; an ineligible candidate remains empty. No retry/neighbor recursion. */
-    public static Selection prepare(
-            long seed,
-            long cellX,
-            long cellZ,
-            Family family,
-            Reference r,
-            Tuning p,
-            Earlier earlier) {
-        if (StrictMath.abs((double) cellX) > 100000000
-                || StrictMath.abs((double) cellZ) > 100000000)
-            return rejected(Reason.INVALID_INPUT);
-        long key = key(seed ^ family.salt, cellX, cellZ);
-        double cell = spacing(r, p), x = (cellX + 0.5 + 0.80 * (unit(key, 1) - 0.5)) * cell;
-        double z = (cellZ + 0.5 + 0.80 * (unit(key, 2) - 0.5)) * cell;
-        return prepareAt(key, x, z, family, r, p, earlier);
     }
 
     /** Riven integration entry: one family chosen by the shared Sites owner.
@@ -462,10 +442,6 @@ public final class Hills {
             // Roughening multiplies the family shape and cannot exceed the declared amplitude.
             double detail = 1 - roughness * (0.5 + 0.5 * noise(key ^ 41, u * 13.7, v * 11.3));
             return amplitude * skirtWeight * h * detail;
-        }
-
-        public int segmentCount() {
-            return segments.length / 6;
         }
     }
 

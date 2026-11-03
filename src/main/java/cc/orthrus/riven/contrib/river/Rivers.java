@@ -1,9 +1,11 @@
 /* SPDX-License-Identifier: MIT
  * Copyright (c) 2026 Riven contributors.
- * Adapted from contributions/rivers-streams-20261019. The original continuous API
- * remains; native columns use separate bound admission/plan types, physical width
+ * Adapted from contributions/rivers-streams-20261019. Native columns use separate
+ * bound admission/plan types, physical width
  * scaling and a foundation reservation for dry banks/braid bars. Geometry is retained.
  * Packaged license: META-INF/licenses/rivers/MIT.txt.
+ * Riven modification (2026-11-03): the original continuous preparation entry point and
+ * the default tuning removed; Riven never called them.
  */
 package cc.orthrus.riven.contrib.river;
 
@@ -281,10 +283,6 @@ public final class Rivers {
             this.splitWidths = splitWidths;
             this.bankSkirt = bankSkirt;
         }
-
-        public static Tuning defaults() {
-            return new Tuning(1.6, .16, .28, .65, 1.1, 4);
-        }
     }
 
     public static final class Result {
@@ -534,17 +532,6 @@ public final class Rivers {
             this.lowestSurface = lowestSurface;
             this.highestSurface = highestSurface;
         }
-    }
-
-    public static Result prepare(
-            Family f,
-            long seed,
-            Route main,
-            Route tributary,
-            Admission a,
-            Tuning tune,
-            Reference heights) {
-        return prepareGeometry(f, seed, main, tributary, a, tune, heights, 1);
     }
 
     public static ColumnResult prepareColumns(

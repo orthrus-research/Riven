@@ -29,7 +29,6 @@ import java.util.Arrays;
 public final class CaveMap {
     static final Rules RULES = Rules.load("riven-caves.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;
-    public static final String DECOR_FINGERPRINT = CaveDecor.FINGERPRINT;
 
     /** Cave families, as diagnostics report them (index 0 is solid rock). */
     public static final String[] FAMILIES = {
@@ -1153,16 +1152,6 @@ public final class CaveMap {
                 if (y >= p.domeLo[i] && y <= p.domeHi[i]) return DOME;
         if (allows(forms, F_SALT) && unit == EVAPORITE && p.salt > SALT_THRESHOLD) return SALT_HALL;
         return 0;
-    }
-
-    /** For checks: pool cell (i, j)'s pool as {x, z, level}, or null (CavePools). */
-    int[] poolSite(int i, int j) {
-        return pools.site(i, j);
-    }
-
-    /** For checks: seep cell (i, j)'s seep as {x, z, band bottom, wet blocks}, or null. */
-    int[] seepSite(int i, int j) {
-        return seeps.site(i, j);
     }
 
     /** The skin depth below the surface (riven-caves.json realms). */

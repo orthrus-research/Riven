@@ -8,6 +8,9 @@
  * Riven modification (2026-11-02): a spit's drift is the caller's argument, plans sample from
  * primitives without a Column, and the proposal-bound column admission of 2026-10-20 is removed
  * (Riven places sediment by construction).
+ * Riven modification (2026-11-03): the barrier family, the Column sampling API, reservation
+ * masks, the whole-body admission and the unread sample outputs are removed; Riven's caller
+ * places each form where its facts already hold and leaves reserved water alone itself.
  */
 package cc.orthrus.riven.contrib.coast;
 
@@ -15,13 +18,9 @@ package cc.orthrus.riven.contrib.coast;
 public final class SedimentaryCoasts {
     private SedimentaryCoasts() {}
 
-    /** Whole-body admission: least sediment supply, steepest slope, greatest exposure. */
-    public static final double MINIMUM_SEDIMENT = .25, MAXIMUM_SLOPE = .32, MAXIMUM_EXPOSURE = .88;
-
     public enum Family {
         BEACH_BENCH(0x5343445F42454131L),
         SPIT(0x5343445F53504931L),
-        BARRIER(0x5343445F42415231L),
         TOMBOLO(0x5343445F544F4D31L);
         public final long salt;
 
@@ -35,22 +34,16 @@ public final class SedimentaryCoasts {
         OUTSIDE_SUPPORT,
         WATER_RESERVED,
         MARINE_UNAUTHORIZED,
-        NO_SEDIMENT,
-        TOO_STEEP,
-        TOO_EXPOSED,
         FOUNDATION_TOO_DEEP,
         PARENT_TOO_HIGH,
         BAD_INPUT,
-        BAD_ATTACHMENT,
-        BLOCKED_CONNECTION,
-        UNKNOWN_COLUMNS
+        BAD_ATTACHMENT
     }
 
     /** Copy values from WorldGenerationContext.terrainHeights; no second elevation datum. */
     public static final class Reference {
         public final double sea, beachMin, beachMean, beachMax, widthMin, widthMean, widthMax;
         public final double beachRelief, plainWidth, shoalDepth;
-        public final String fingerprint;
 
         public Reference(
                 double sea,
@@ -62,8 +55,7 @@ public final class SedimentaryCoasts {
                 double widthMax,
                 double beachRelief,
                 double plainWidth,
-                double shoalDepth,
-                String fingerprint) {
+                double shoalDepth) {
             if (!finite(
                             sea,
                             beachMin,
@@ -84,8 +76,7 @@ public final class SedimentaryCoasts {
                     || widthMean > widthMax
                     || beachRelief < 0
                     || plainWidth <= widthMax
-                    || shoalDepth <= 0
-                    || fingerprint == null)
+                    || shoalDepth <= 0)
                 throw new IllegalArgumentException("Invalid height reference");
             this.sea = sea;
             this.beachMin = beachMin;
@@ -97,7 +88,6 @@ public final class SedimentaryCoasts {
             this.beachRelief = beachRelief;
             this.plainWidth = plainWidth;
             this.shoalDepth = shoalDepth;
-            this.fingerprint = fingerprint;
         }
     }
 
@@ -133,10 +123,6 @@ public final class SedimentaryCoasts {
             this.roughness = roughness;
             this.bench = bench;
         }
-
-        public static Tuning defaults() {
-            return new Tuning(1, .68, .23, .42, .55, .65);
-        }
     }
 
     /** Immutable earlier facts at a certified attachment, not a query of finished terrain. */
@@ -157,82 +143,21 @@ public final class SedimentaryCoasts {
         }
     }
 
-    /** Exact protected capsule, including caller-specified channel banks. Never writes water. */
-    public static final class Reservation {
-        public final double ax, az, bx, bz, radius, skirt;
-
-        public Reservation(
-                double ax, double az, double bx, double bz, double radius, double skirt) {
-            if (!finite(ax, az, bx, bz, radius, skirt) || radius <= 0 || skirt <= 0)
-                throw new IllegalArgumentException("Bad reservation");
-            this.ax = ax;
-            this.az = az;
-            this.bx = bx;
-            this.bz = bz;
-            this.radius = radius;
-            this.skirt = skirt;
-        }
-    }
-
-    /** Earlier candidate-wide supply/exposure/foundation certificate. No dynamic simulation. */
-    public static final class Admission {
-        public final double sediment, slope, exposure;
-        public final boolean foundationCertified;
-
-        public Admission(
-                double sediment, double slope, double exposure, boolean foundationCertified) {
-            if (!finite(sediment, slope, exposure)
-                    || sediment < 0
-                    || sediment > 1
-                    || slope < 0
-                    || exposure < 0
-                    || exposure > 1) throw new IllegalArgumentException("Bad admission");
-            this.sediment = sediment;
-            this.slope = slope;
-            this.exposure = exposure;
-            this.foundationCertified = foundationCertified;
-        }
-    }
-
-    /** Supplied column facts. Marine permission is explicit and distinct from marine ownership. */
-    public static final class Column {
-        public final double x, z, parentY;
-        public final boolean marine, sedimentPermission, waterReserved;
-
-        public Column(
-                double x,
-                double z,
-                double parentY,
-                boolean marine,
-                boolean permission,
-                boolean waterReserved) {
-            this.x = x;
-            this.z = z;
-            this.parentY = parentY;
-            this.marine = marine;
-            sedimentPermission = permission;
-            this.waterReserved = waterReserved;
-        }
-    }
-
     /** Caller-owned scratch/output. Never share this across simultaneous calls. */
     public static final class Sample {
-        public double heightY, weight, proposedWeight, coreTargetY, distance, along;
+        public double heightY, weight, distance, along;
         public Reason reason;
-        public boolean inheritedMarine, emergentSediment;
         private double px, pz, tx, tz;
 
-        private void reset(double parent, boolean marine) {
-            heightY = coreTargetY = parent;
-            weight = proposedWeight = 0;
+        private void reset(double parent) {
+            heightY = parent;
+            weight = 0;
             distance = along = 0;
             reason = Reason.OUTSIDE_SUPPORT;
-            inheritedMarine = marine;
-            emergentSediment = false;
         }
     }
 
-    /** Immutable after construction, arrays private and defensively copied. Max 64 nodes/16 masks. */
+    /** Immutable after construction, arrays private and defensively copied. Max 64 nodes. */
     public static final class Plan {
         public final Family family;
         public final long key;
@@ -241,7 +166,6 @@ public final class SedimentaryCoasts {
         public final Reason admission;
         public final double minX, minZ, maxX, maxZ, maxRadius, length;
         private final double[] x, z, s;
-        private final Reservation[] reservations;
         private final double startY, endY;
 
         private Plan(
@@ -250,15 +174,12 @@ public final class SedimentaryCoasts {
                 long featureId,
                 Reference r,
                 Tuning t,
-                Admission facts,
                 double[] xs,
                 double[] zs,
-                Reservation[] masks,
                 Anchor a,
                 Anchor b) {
-            if (xs.length < 2 || xs.length > 64 || xs.length != zs.length || masks.length > 16)
-                throw new IllegalArgumentException(
-                        "Bounded plan requires 2..64 nodes, <=16 reservations");
+            if (xs.length < 2 || xs.length > 64 || xs.length != zs.length)
+                throw new IllegalArgumentException("Bounded plan requires 2..64 nodes");
             family = f;
             key = mix(seed ^ f.salt ^ mix(featureId));
             reference = r;
@@ -266,7 +187,6 @@ public final class SedimentaryCoasts {
             x = xs.clone();
             z = zs.clone();
             s = new double[x.length];
-            reservations = masks.clone();
             double loX = Double.POSITIVE_INFINITY, loZ = loX, hiX = -loX, hiZ = -loX;
             for (int i = 0; i < x.length; i++) {
                 if (!finite(x[i], z[i])
@@ -284,8 +204,6 @@ public final class SedimentaryCoasts {
                 hiX = StrictMath.max(hiX, x[i]);
                 hiZ = StrictMath.max(hiZ, z[i]);
             }
-            for (Reservation m : reservations)
-                if (m == null) throw new IllegalArgumentException("Null reservation");
             length = s[s.length - 1];
             if (length > r.plainWidth * 8)
                 throw new IllegalArgumentException("Plan length exceeds 8 plain widths");
@@ -297,21 +215,9 @@ public final class SedimentaryCoasts {
             startY = a == null ? r.sea + r.beachMean : a.topY;
             endY = b == null ? r.sea + r.beachMean : b.topY;
             Reason why = Reason.ACCEPTED;
-            if (facts.sediment < MINIMUM_SEDIMENT) why = Reason.NO_SEDIMENT;
-            else if (facts.slope > MAXIMUM_SLOPE) why = Reason.TOO_STEEP;
-            else if (facts.exposure > MAXIMUM_EXPOSURE) why = Reason.TOO_EXPOSED;
-            else if (!facts.foundationCertified) why = Reason.FOUNDATION_TOO_DEEP;
-            else if ((f == Family.SPIT || f == Family.TOMBOLO) && !validAnchor(a, r))
+            if ((f == Family.SPIT || f == Family.TOMBOLO) && !validAnchor(a, r))
                 why = Reason.BAD_ATTACHMENT;
             else if (f == Family.TOMBOLO && !validAnchor(b, r)) why = Reason.BAD_ATTACHMENT;
-            // Conservative capsule intersection at planning: reject a tying bar rather than sever
-            // its neck.
-            if (why == Reason.ACCEPTED && f == Family.TOMBOLO) {
-                for (int i = 0; i < x.length - 1; i++)
-                    for (Reservation m : reservations)
-                        if (segmentDistance(x[i], z[i], x[i + 1], z[i + 1], m.ax, m.az, m.bx, m.bz)
-                                <= m.radius + m.skirt + maxRadius) why = Reason.BLOCKED_CONNECTION;
-            }
             admission = why;
         }
 
@@ -329,33 +235,17 @@ public final class SedimentaryCoasts {
     }
 
     public static Plan beach(
-            long seed,
-            long id,
-            Reference r,
-            Tuning t,
-            Admission facts,
-            double[] shoreX,
-            double[] shoreZ,
-            Reservation[] masks) {
+            long seed, long id, Reference r, Tuning t, double[] shoreX, double[] shoreZ) {
         // Shore guide tangent must have land on its left. Sampling never queries neighboring
         // terrain.
-        return new Plan(
-                Family.BEACH_BENCH, seed, id, r, t, facts, shoreX, shoreZ, masks, null, null);
+        return new Plan(Family.BEACH_BENCH, seed, id, r, t, shoreX, shoreZ, null, null);
     }
 
     /**
      * Recurved spit: two cubic lobes, fixed 40 segments, rooted at an earlier shore attachment,
      * growing along its tangent (drift 1) or against it (drift -1).
      */
-    public static Plan spit(
-            long seed,
-            long id,
-            Reference r,
-            Tuning t,
-            Admission facts,
-            Anchor root,
-            Reservation[] masks,
-            int drift) {
+    public static Plan spit(long seed, long id, Reference r, Tuning t, Anchor root, int drift) {
         if (drift != 1 && drift != -1) throw new IllegalArgumentException("Drift is 1 or -1");
         long k = mix(seed ^ Family.SPIT.salt ^ mix(id));
         double len = r.plainWidth * t.lengthScale * (.78 + .26 * unit(k));
@@ -384,54 +274,12 @@ public final class SedimentaryCoasts {
             xx[i] = root.x + tx * u + nx * v;
             zz[i] = root.z + tz * u + nz * v;
         }
-        return new Plan(Family.SPIT, seed, id, r, t, facts, xx, zz, masks, root, null);
-    }
-
-    /** Shore-following offshore ribbon. Caller supplies shoreline nodes with land to the left. */
-    public static Plan barrier(
-            long seed,
-            long id,
-            Reference r,
-            Tuning t,
-            Admission facts,
-            double[] shoreX,
-            double[] shoreZ,
-            Reservation[] masks) {
-        if (shoreX.length != shoreZ.length || shoreX.length < 2 || shoreX.length > 64)
-            throw new IllegalArgumentException("Bad shoreline guide");
-        double[] xx = new double[shoreX.length], zz = new double[shoreZ.length];
-        long k = mix(seed ^ Family.BARRIER.salt ^ mix(id));
-        for (int i = 0; i < xx.length; i++) {
-            int a = StrictMath.max(0, i - 1), b = StrictMath.min(xx.length - 1, i + 1);
-            double dx = shoreX[b] - shoreX[a],
-                    dz = shoreZ[b] - shoreZ[a],
-                    n = StrictMath.hypot(dx, dz);
-            if (n < .001) throw new IllegalArgumentException("Degenerate shoreline");
-            double offset =
-                    r.plainWidth
-                            * t.offsetScale
-                            * (1
-                                    + .14
-                                            * noise(
-                                                    k,
-                                                    shoreX[i] / r.plainWidth,
-                                                    shoreZ[i] / r.plainWidth));
-            xx[i] = shoreX[i] + dz / n * offset;
-            zz[i] = shoreZ[i] - dx / n * offset;
-        }
-        return new Plan(Family.BARRIER, seed, id, r, t, facts, xx, zz, masks, null, null);
+        return new Plan(Family.SPIT, seed, id, r, t, xx, zz, root, null);
     }
 
     /** Dual-ended bowed tie: fixed 32 segments, no island discovery or wave simulation. */
     public static Plan tombolo(
-            long seed,
-            long id,
-            Reference r,
-            Tuning t,
-            Admission facts,
-            Anchor mainland,
-            Anchor island,
-            Reservation[] masks) {
+            long seed, long id, Reference r, Tuning t, Anchor mainland, Anchor island) {
         long k = mix(seed ^ Family.TOMBOLO.salt ^ mix(id));
         double dx = island.x - mainland.x, dz = island.z - mainland.z, d = StrictMath.hypot(dx, dz);
         if (d < r.widthMean * 2 || d > r.plainWidth * 1.5)
@@ -443,15 +291,14 @@ public final class SedimentaryCoasts {
             xx[i] = mainland.x + q * dx - dz / d * b;
             zz[i] = mainland.z + q * dz + dx / d * b;
         }
-        return new Plan(Family.TOMBOLO, seed, id, r, t, facts, xx, zz, masks, mainland, island);
+        return new Plan(Family.TOMBOLO, seed, id, r, t, xx, zz, mainland, island);
     }
 
-    /** O(63+16), no allocation, no mutable shared state, no callbacks or recursive terrain reads. */
-    public static void sample(Plan p, Column c, Sample out) {
-        sample(p, c.x, c.z, c.parentY, c.marine, c.sedimentPermission, c.waterReserved, true, out);
-    }
-
-    /** As {@link #sample(Plan, Column, Sample)}, from the column's facts directly. */
+    /**
+     * One column from its facts: marine permission is explicit and distinct from marine
+     * ownership. O(63), no allocation, no mutable shared state, no callbacks or recursive terrain
+     * reads.
+     */
     public static void sample(
             Plan p,
             double x,
@@ -461,25 +308,12 @@ public final class SedimentaryCoasts {
             boolean permission,
             boolean reserved,
             Sample out) {
-        sample(p, x, z, parent, marine, permission, reserved, true, out);
-    }
-
-    private static void sample(
-            Plan p,
-            double x,
-            double z,
-            double parent,
-            boolean marine,
-            boolean permission,
-            boolean reserved,
-            boolean admitted,
-            Sample out) {
-        out.reset(parent, marine);
+        out.reset(parent);
         if (!finite3(x, z, parent)) {
             out.reason = Reason.BAD_INPUT;
             return;
         }
-        if (admitted && p.admission != Reason.ACCEPTED) {
+        if (p.admission != Reason.ACCEPTED) {
             out.reason = p.admission;
             return;
         }
@@ -532,19 +366,9 @@ public final class SedimentaryCoasts {
             double u = radial / half;
             weight = 1 - smooth(u);
             // Rounded finite ends. Ties retain their endpoint attachment disks.
-            if (p.family == Family.BARRIER)
-                weight *=
-                        smooth(out.along / (width * 1.2))
-                                * smooth((p.length - out.along) / (width * 1.2));
             if (p.family == Family.SPIT) weight *= 1 - smooth((q - .965) / .035) * smooth(u / .4);
             double crest = r.beachMean + t.roughness * r.beachRelief * .34 * n;
-            if (p.family == Family.BARRIER) {
-                // Asymmetric ocean/lagoon faces; centerline crest never receives random breaches.
-                double shape = smooth(1 - u);
-                double lateral = signed < 0 ? -radial : radial;
-                double asym = 1 - .12 * smooth((lateral / half + .2) / .4);
-                crest = r.beachMin + (crest - r.beachMin) * shape * asym;
-            } else if (p.family == Family.TOMBOLO) {
+            if (p.family == Family.TOMBOLO) {
                 double ends = p.startY + (p.endY - p.startY) * smooth(q) - r.sea;
                 crest = ends + (crest - ends) * smooth(q / .22) * smooth((1 - q) / .22);
             } else {
@@ -554,18 +378,9 @@ public final class SedimentaryCoasts {
             target = r.sea + crest;
         }
         if (weight <= 0) return;
-        out.proposedWeight = weight;
         if (reserved) {
             out.reason = Reason.WATER_RESERVED;
             return;
-        }
-        for (Reservation m : p.reservations) {
-            double d = StrictMath.sqrt(pointDistance2(x, z, m.ax, m.az, m.bx, m.bz));
-            if (d <= m.radius) {
-                out.reason = Reason.WATER_RESERVED;
-                return;
-            }
-            weight *= smooth((d - m.radius) / m.skirt);
         }
         if (marine && !permission) {
             out.reason = Reason.MARINE_UNAUTHORIZED;
@@ -584,11 +399,9 @@ public final class SedimentaryCoasts {
         target = clamp(target, r.sea + r.beachMin, r.sea + r.beachMax);
         // Beach may cut/fill the earlier low shore; offshore bodies are deposition only.
         if (p.family != Family.BEACH_BENCH) target = StrictMath.max(parent, target);
-        out.coreTargetY = target;
         out.weight = weight;
         out.heightY = parent + (target - parent) * weight;
         out.reason = Reason.ACCEPTED;
-        out.emergentSediment = marine && out.heightY >= r.sea;
     }
 
     private static void nearest(Plan p, double x, double z, Sample out) {
@@ -624,41 +437,6 @@ public final class SedimentaryCoasts {
     private static double cubic(double a, double b, double c, double d, double t) {
         double u = 1 - t;
         return u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d;
-    }
-
-    private static double pointDistance2(
-            double x, double z, double ax, double az, double bx, double bz) {
-        double dx = bx - ax, dz = bz - az, den = dx * dx + dz * dz;
-        double q = den == 0 ? 0 : clamp(((x - ax) * dx + (z - az) * dz) / den, 0, 1);
-        double ex = x - ax - q * dx, ez = z - az - q * dz;
-        return ex * ex + ez * ez;
-    }
-
-    private static double cross(double ax, double az, double bx, double bz, double cx, double cz) {
-        return (bx - ax) * (cz - az) - (bz - az) * (cx - ax);
-    }
-
-    private static double segmentDistance(
-            double ax,
-            double az,
-            double bx,
-            double bz,
-            double cx,
-            double cz,
-            double dx,
-            double dz) {
-        double p = cross(ax, az, bx, bz, cx, cz), q = cross(ax, az, bx, bz, dx, dz);
-        double u = cross(cx, cz, dx, dz, ax, az), v = cross(cx, cz, dx, dz, bx, bz);
-        if (((p > 0 && q < 0) || (p < 0 && q > 0)) && ((u > 0 && v < 0) || (u < 0 && v > 0)))
-            return 0;
-        return StrictMath.sqrt(
-                StrictMath.min(
-                        StrictMath.min(
-                                pointDistance2(ax, az, cx, cz, dx, dz),
-                                pointDistance2(bx, bz, cx, cz, dx, dz)),
-                        StrictMath.min(
-                                pointDistance2(cx, cz, ax, az, bx, bz),
-                                pointDistance2(dx, dz, ax, az, bx, bz))));
     }
 
     private static long mix(long z) {

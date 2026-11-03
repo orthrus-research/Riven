@@ -52,15 +52,6 @@ public final class CoastSediment {
 
     private static final Rules RULES = Rules.load("riven-coasts.json", 1);
     private static final Placed[] NONE = new Placed[0];
-    private static final SedimentaryCoasts.Reservation[] NO_MASKS =
-            new SedimentaryCoasts.Reservation[0];
-
-    /**
-     * The segment's type is the admission: a beach has supply and a gentle berm by its profile, so
-     * the kernel's whole-body facts pass and placement alone decides.
-     */
-    private static final SedimentaryCoasts.Admission ADMITTED =
-            new SedimentaryCoasts.Admission(1, 0, 0, true);
 
     /** How many coast cells from its segment's cell a sediment form may reach. */
     private static final int SEARCH = 2;
@@ -214,8 +205,7 @@ public final class CoastSediment {
                         beach.width.max * scale,
                         beach.relief.targetAverage,
                         plain.width.targetAverage * scale,
-                        -shoal.elevationOffset.min,
-                        heights.fingerprint);
+                        -shoal.elevationOffset.min);
         JsonObject t = j.getAsJsonObject("tuning");
         tuning =
                 new SedimentaryCoasts.Tuning(
@@ -371,8 +361,7 @@ public final class CoastSediment {
                 new Placed(
                         Form.BEACH_BENCH,
                         h,
-                        SedimentaryCoasts.beach(
-                                seed, h, reference, tuning, ADMITTED, s.x, s.z, NO_MASKS)));
+                        SedimentaryCoasts.beach(seed, h, reference, tuning, s.x, s.z)));
     }
 
     /**
@@ -387,15 +376,7 @@ public final class CoastSediment {
             if (root == null) continue;
             long id = SeededNoise.mix(h + end + 1);
             SedimentaryCoasts.Plan plan =
-                    SedimentaryCoasts.spit(
-                            seed,
-                            id,
-                            reference,
-                            tuning,
-                            ADMITTED,
-                            root,
-                            NO_MASKS,
-                            end == 0 ? 1 : -1);
+                    SedimentaryCoasts.spit(seed, id, reference, tuning, root, end == 0 ? 1 : -1);
             if (plan.admission == SedimentaryCoasts.Reason.ACCEPTED && shallow(plan, 1, probe))
                 out.add(new Placed(Form.SPIT, id, plan));
         }
@@ -419,8 +400,7 @@ public final class CoastSediment {
             if (tie < reference.widthMean * 2 || tie > reference.plainWidth * 1.5) continue;
             long id = SeededNoise.mix(h + i);
             SedimentaryCoasts.Plan plan =
-                    SedimentaryCoasts.tombolo(
-                            seed, id, reference, tuning, ADMITTED, mainland, island, NO_MASKS);
+                    SedimentaryCoasts.tombolo(seed, id, reference, tuning, mainland, island);
             if (plan.admission != SedimentaryCoasts.Reason.ACCEPTED || !shallow(plan, 1, probe))
                 continue;
             out.add(new Placed(Form.TOMBOLO, id, plan));

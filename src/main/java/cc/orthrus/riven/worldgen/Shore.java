@@ -536,6 +536,7 @@ public final class Shore {
                 low = sea + 2 * Rules.smooth(d / (.1 * w));
                 r = Rules.smooth((d - .25 * w) / (.75 * w));
                 break;
+            case SHAPE_MARSH:
             default:
                 low = sea + Rules.smooth(d / 8);
                 r = Rules.smooth((d - .7 * w) / (.3 * w));

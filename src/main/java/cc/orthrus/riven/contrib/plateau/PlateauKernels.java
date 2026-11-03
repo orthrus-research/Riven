@@ -2,6 +2,7 @@
  * Riven integration: read-only support/identity queries and an early eligibility
  * entry point for shared ownership. Geometry and ordered admission are retained.
  * Packaged license: META-INF/licenses/plateaus/MIT.txt.
+ * Riven modification (2026-11-03): the unused default tuning removed.
  */
 package cc.orthrus.riven.contrib.plateau;
 
@@ -120,10 +121,6 @@ public final strictfp class PlateauKernels {
             this.warp = warp;
             this.dissection = dissection;
             this.aridityFloor = aridityFloor;
-        }
-
-        public static Tuning defaults() {
-            return new Tuning(1, 1, 0.18, 0.10, 0.75, 0.35);
         }
     }
 

@@ -112,12 +112,6 @@ public final class Shape {
         column.write(bottom, top, (short) entry.index(), Role.DEPOSIT, Pass.LAY, 0, OPEN);
     }
 
-    /** Lays a deposit of the bed's own rock, its depth counted from depthTop. */
-    public void layBed(int bottom, int top, int depthTop) {
-        column.write(
-                bottom, top, AssembledColumn.BED_ENTRY, Role.DEPOSIT, Pass.LAY, depthTop, OPEN);
-    }
-
     /** Builds solid bed rock over [bottom, top), its depth counted from depthTop. */
     public void build(int bottom, int top, int depthTop) {
         column.write(bottom, top, AssembledColumn.BED_ENTRY, Role.BED, Pass.BUILD, depthTop, ANY);

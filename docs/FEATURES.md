@@ -189,7 +189,7 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
   shoal floor (Y47) over 48 blocks on reflective coasts to 176 on dissipative ones, blended back to
   the shelf by that reach, and never lowered. On 2 seeds, the share of coasts at most 5 blocks
   deep 32 blocks out went from 20% to 62%; before, most coasts passed the shoal floor within 16-24
-  blocks, too steep for any spit, barrier or tombolo.
+  blocks, too steep for any spit or tombolo.
 - **Coast plan** (`Shore`, `riven-coasts.json`, terrain-v105): the coast comes in segments.
   Sites sit on a jittered 500-block grid (times the layout); a site within half a cell of the
   coast is kept and moved onto the shore along the outline's normal, the rest are dropped, and
@@ -243,8 +243,7 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
     the cave opens. Neither opens an aquifer.
   - Within a segment no stack, arch or sea cave overlaps another's body (the form listed first
     keeps its place), and a body claims only the columns it builds. Forms leave protected, wet and
-    banked water alone. The rocky coast lane, `RockyTerrain` and `riven-rocky-coasts.json`
-    (v25-v109) are retired.
+    banked water alone.
   - **Sediment** (S3b-2, terrain-v113; `sediment` in `riven-coasts.json`) comes from the MIT
     sedimentary kernels (`contrib.coast`), placed by a type's `sediment` list (beach: bench, spit,
     tombolo) against the ground the forms left. A segment's stretch is its own shore walked from

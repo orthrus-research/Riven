@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Riven integration, 2026-10-20: added a separate shared-anchor native-column
-// proposal/facts/plan API. Original planning contracts and geometry remain.
+// proposal/facts/plan API. Original geometry remains.
+// Riven modification (2026-11-03): the original grid planning entry point, its
+// earlier-facts callback and decision type, and the default tuning removed; Riven
+// never called them.
 package cc.orthrus.riven.contrib.carvers;
 
 /** Independently authored, finite dry surface cuts. No game, noise or loader dependencies. */
@@ -117,19 +120,6 @@ public final strictfp class SurfaceCuts {
             this.coastGuard = coastGuard;
             this.waterGuard = waterGuard;
         }
-
-        public static Tuning defaults(Family f) {
-            switch (f) {
-                case RIBBON_RAVINE:
-                    return new Tuning(.13, 1, 1, 5.8, .65, 64, 32);
-                case BRANCH_GULLY:
-                    return new Tuning(.11, 1, 1.5, 2.5, .35, 64, 32);
-                case PINCHED_SLOT:
-                    return new Tuning(.08, .80, 1.1, 7, .75, 64, 32);
-                default:
-                    return new Tuning(.09, 1, 1.8, 2.6, .50, 64, 32);
-            }
-        }
     }
 
     /**
@@ -185,20 +175,6 @@ public final strictfp class SurfaceCuts {
             this.aridity = aridity;
             this.saddleFit = saddleFit;
             this.saddleAxis = saddleAxis;
-        }
-    }
-
-    public interface Earlier {
-        Facts at(double absoluteX, double absoluteZ, double supportRadius);
-    }
-
-    public static final class Decision {
-        public final Reason reason;
-        public final Plan plan;
-
-        Decision(Reason reason, Plan plan) {
-            this.reason = reason;
-            this.plan = plan;
         }
     }
 
@@ -413,77 +389,6 @@ public final strictfp class SurfaceCuts {
             // Full-plan headroom admission normally leaves this feather inactive.
             return Math.min(room, rawCut(absoluteX, absoluteZ) * mask * smooth(room / depth));
         }
-    }
-
-    /**
-     * One candidate per absolute grid cell per family. Candidate support must fit spacing/2.
-     * Anchors jitter by <=.18 spacing; a column therefore needs only the surrounding 3x3 cells.
-     * Earlier.at is called exactly once for every valid candidate, before occurrence selection.
-     */
-    public static Decision plan(
-            long seed,
-            long cellX,
-            long cellZ,
-            double spacing,
-            Family family,
-            Reference reference,
-            Tuning tuning,
-            Earlier earlier) {
-        if (family == null || reference == null || tuning == null || earlier == null)
-            throw new IllegalArgumentException("Missing planning input");
-        if (!finite(spacing)
-                || spacing <= 0
-                || Math.abs((double) cellX) > 1e9
-                || Math.abs((double) cellZ) > 1e9)
-            throw new IllegalArgumentException("Invalid owner grid");
-        long id =
-                mix(
-                        seed
-                                ^ family.salt
-                                ^ mix(cellX + 0x6a09e667f3bcc909L)
-                                ^ Long.rotateLeft(mix(cellZ), 29));
-        double x = (cellX + .5 + (unit(id, 1) - .5) * .36) * spacing;
-        double z = (cellZ + .5 + (unit(id, 2) - .5) * .36) * spacing;
-        boolean gorge = family == Family.RIBBON_RAVINE || family == Family.PINCHED_SLOT;
-        Range wr = gorge ? reference.gorgeWidth : reference.hollowWidth;
-        Range dr = gorge ? reference.gorgeDepth : reference.hollowDepth;
-        double width = wr.varied(tuning.widthScale, unit(id, 3));
-        double length = width * tuning.lengthRatio * (.82 + .36 * unit(id, 4));
-        double radius = .5 * StrictMath.hypot(width, length);
-        if (radius > spacing * .5)
-            throw new IllegalArgumentException("Increase spacing to contain configured support");
-        Facts facts = earlier.at(x, z, radius);
-        if (facts == null) throw new IllegalArgumentException("Missing immutable facts");
-        if (facts.marine) return new Decision(Reason.MARINE, null);
-        if (facts.shoreDistance < radius + tuning.coastGuard + Math.max(1, tuning.coastGuard))
-            return new Decision(Reason.SHORE, null);
-        if (facts.waterDistance < radius + tuning.waterGuard + Math.max(1, tuning.waterGuard))
-            return new Decision(Reason.WATER, null);
-        double depth = dr.varied(tuning.depthScale, unit(id, 5));
-        // Resize before evaluation; reject if it cannot meet the reference minimum.
-        depth =
-                Math.min(
-                        depth,
-                        Math.min(
-                                facts.relief * tuning.reliefShare,
-                                (facts.minSurface - reference.lowestSurface) * .8));
-        if (facts.relief * tuning.reliefShare < dr.min) return new Decision(Reason.RELIEF, null);
-        if (depth < dr.min) return new Decision(Reason.HEADROOM, null);
-        if (facts.erodibility < .25) return new Decision(Reason.MATERIAL, null);
-        if (family == Family.PINCHED_SLOT && facts.aridity < .55
-                || family == Family.BREACH_SADDLE && facts.saddleFit < .6)
-            return new Decision(Reason.OPPORTUNITY, null);
-        double fit = .55 + .45 * facts.erodibility;
-        if (unit(id, 6) >= tuning.occurrence * fit) return new Decision(Reason.OCCURRENCE, null);
-        double gradient = StrictMath.hypot(facts.gradientX, facts.gradientZ);
-        double angle =
-                gradient > .015
-                        ? StrictMath.atan2(facts.gradientZ, facts.gradientX) + Math.PI * .5
-                        : unit(id, 7) * Math.PI * 2;
-        if (family == Family.BREACH_SADDLE) angle = facts.saddleAxis - Math.PI * .5;
-        else angle += (unit(id, 7) - .5) * .5;
-        return new Decision(
-                Reason.ACCEPTED, new Plan(family, id, x, z, angle, width, length, depth, tuning));
     }
 
     /** Native-column proposal; the shared owner supplies its anchor and support budget. */

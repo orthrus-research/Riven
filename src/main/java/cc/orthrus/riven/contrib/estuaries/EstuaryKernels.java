@@ -3,8 +3,10 @@
  * Adapted from contributions/lagoons-estuaries-15-20261019 (reviewed second pass).
  * Native additions: explicit proposal/column certificate/plan domain, physical
  * footprint scaling, actual earlier marine ownership and bank foundation feathers.
- * Original continuous entry points and shape arithmetic remain.
+ * Original shape arithmetic remains.
  * Packaged license: META-INF/licenses/estuaries/MIT.txt.
+ * Riven modification (2026-11-03): the continuous planning entry point, its admission
+ * and decision type, and the barrier axis diagnostic removed; Riven never called them.
  */
 package cc.orthrus.riven.contrib.estuaries;
 
@@ -193,21 +195,6 @@ public final class EstuaryKernels {
             this.routeU = routeU == null ? new double[0] : routeU.clone();
             this.routeV = routeV == null ? new double[0] : routeV.clone();
         }
-    }
-
-    public static final class Decision {
-        public final Reason reason;
-        public final Plan plan;
-
-        private Decision(Reason r, Plan p) {
-            reason = r;
-            plan = p;
-        }
-    }
-
-    public static Decision plan(Family family, Heights h, Tuning t, Inputs i) {
-        Reason reason = admit(family, h, t, i);
-        return new Decision(reason, reason == Reason.ACCEPTED ? new Plan(family, h, t, i) : null);
     }
 
     /** Cheap earlier opportunity gate, shared by continuous/native admission and callers. */
@@ -451,75 +438,6 @@ public final class EstuaryKernels {
         return Reason.ACCEPTED;
     }
 
-    private static Reason admit(Family f, Heights h, Tuning t, Inputs i) {
-        if (f == null || h == null || t == null || i == null) return Reason.INVALID_INPUT;
-        if (t.reference != h || t.columnScale != 1) return Reason.INVALID_INPUT;
-        double norm = i.nx * i.nx + i.nz * i.nz;
-        double[] vals = {
-            i.x,
-            i.z,
-            i.nx,
-            i.nz,
-            i.curvature,
-            i.shelter,
-            i.sediment,
-            i.maximumSlope,
-            i.minimumParent,
-            i.maximumParent,
-            i.authorizedRadius,
-            i.receiverHalfWidth
-        };
-        for (double v : vals) if (!Double.isFinite(v)) return Reason.INVALID_INPUT;
-        if (Math.abs(norm - 1) > 1e-8
-                || Math.abs(i.x) > 30000000
-                || Math.abs(i.z) > 30000000
-                || !between(i.shelter, 0, 1)
-                || !between(i.sediment, 0, 1)
-                || i.maximumSlope < 0
-                || i.minimumParent > i.maximumParent
-                || Math.abs(i.curvature) * t.length > .12) return Reason.INVALID_INPUT;
-        if (!i.oceanSupplied) return Reason.UNSUPPLIED_OCEAN;
-        if (i.receiverWaterY != h.water || i.incomingWaterY != i.receiverWaterY)
-            return Reason.RECEIVER_LEVEL;
-        // Receiver certificate is centered at u=0, v=-0.25 L and covers all seeded mouths.
-        double requiredReceiver =
-                f.lagoon()
-                        ? .16 * t.length + t.inletHalfWidth
-                        : t.length * (f == Family.FUNNEL_ESTUARY ? .40 : .23);
-        if (i.receiverHalfWidth < requiredReceiver) return Reason.RECEIVER_TOO_NARROW;
-        if (!i.footprintAuthorized
-                || i.authorizedRadius < 1.5 * t.length
-                || Math.abs(i.x) + 1.5 * t.length > 30000000
-                || Math.abs(i.z) + 1.5 * t.length > 30000000
-                || (f.lagoon() && !i.barrierAuthorized)) return Reason.FOOTPRINT_UNAUTHORIZED;
-        if (i.conflict) return Reason.RESERVATION_CONFLICT;
-        if (i.minimumParent < h.minSurface
-                || i.maximumParent > h.maxSurface
-                || h.water - t.depth < h.minSurface
-                || h.water + t.crestAboveWater > h.maxSurface) return Reason.WORLD_HEADROOM;
-        if (i.maximumSlope > (f.lagoon() ? .13 : .28)) return Reason.TOO_STEEP;
-        Reason opportunity = opportunity(f, i.shelter, i.sediment);
-        if (opportunity != Reason.ACCEPTED) return opportunity;
-        if (t.length < h.lakeWidthMin || t.length > h.lakeWidthMax) return Reason.REFERENCE_SCALE;
-        if (!f.lagoon()) {
-            if (i.routeU.length < 3 || i.routeU.length > 9 || i.routeU.length != i.routeV.length)
-                return Reason.MISSING_ROUTE;
-            for (int n = 0; n < i.routeU.length; n++) {
-                if (!Double.isFinite(i.routeU[n])
-                        || !Double.isFinite(i.routeV[n])
-                        || Math.abs(i.routeU[n]) > .12
-                        || i.routeV[n] < -.25
-                        || i.routeV[n] > .85
-                        || (n > 0 && i.routeV[n] <= i.routeV[n - 1]))
-                    return Reason.ROUTE_OUTSIDE_SUPPORT;
-            }
-            if (Math.abs(i.routeV[0] + .25) > 1e-9
-                    || Math.abs(i.routeV[i.routeV.length - 1] - .85) > 1e-9)
-                return Reason.ROUTE_OUTSIDE_SUPPORT;
-        }
-        return Reason.ACCEPTED;
-    }
-
     /** Caller-owned result; a query allocates no arrays, objects, random generators or caches. */
     public static final class Sample {
         public double height, weight, depth;
@@ -641,15 +559,6 @@ public final class EstuaryKernels {
         public double localV(double x, double z) {
             double u = localU(x, z);
             return (x - i.x) * i.nx + (z - i.z) * i.nz - i.curvature * u * u;
-        }
-
-        /** Diagnostic/design curve, in blocks, before the earlier shoreline curvature. */
-        public double barrierAxisV(double uBlocks) {
-            double u = uBlocks / t.length;
-            return t.length
-                    * (family == Family.CRESCENT_LAGOON
-                            ? .105 + arc * (1 - square(u / .57)) + .022 * sine(4 * u + phase)
-                            : .055 + .022 * sine(5 * u + phase));
         }
 
         /**

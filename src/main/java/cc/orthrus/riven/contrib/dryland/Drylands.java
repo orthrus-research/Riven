@@ -1,3 +1,4 @@
+// Riven modification (2026-11-03): the unused default tuning removed.
 package cc.orthrus.riven.contrib.dryland;
 
 /** Independently authored, dependency-free dryland geometry. See CONTRACT.md. */
@@ -89,10 +90,6 @@ public final class Drylands {
             this.leeFraction = leeFraction;
             this.aridityStart = aridityStart;
             this.aridityFull = aridityFull;
-        }
-
-        public static Tuning defaults() {
-            return new Tuning(1, 1, 0.8, 0.2, 0.95, 0.25, 0.55, 0.82);
         }
     }
 

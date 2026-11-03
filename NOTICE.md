@@ -51,8 +51,9 @@ the MIT package `contributions/continental-outlines-20261019` revision 2.
 It preserves all four outline constructions, stable family salts, original
 point geometry, admission and reservation precedence. Adaptations replace
 Java records/switch expressions with Java-8 value classes/switches and add
-optional conservative region bounds, coordinate access and cape-intent
-metadata. These extensions remain MIT. Copyright (c) 2026 Riven contributors.
+coordinate access and cape-intent metadata; the family factory, default
+tunings and tuning copies, which Riven never used, are removed. These
+extensions remain MIT. Copyright (c) 2026 Riven contributors.
 Binary and source artifacts include the complete grant and research notices
 at `META-INF/licenses/continents/{MIT.txt,SOURCES.md}`. References in those
 notes are conceptual sources; their text, figures and implementations are
@@ -61,12 +62,12 @@ and the native water/reservation adapters remain original NRR material.
 
 `src/main/java/cc/orthrus/riven/contrib/rocky/RockyCoasts.java` adapts the MIT package
 `contributions/rocky-coasts-20261019`. It preserves the second-pass roof/detail corrections, geometric
-formulas, occurrence controls and family salts. Modifications add package
-placement, primitive sampling, explicit height targets, separate proposal-bound
-native column certificates, canonical shoreline blending and exact integer
-volume boundaries. Original continuous APIs remain; native certificates do
-not qualify them. Copyright (c) 2026 Riven contributors. Native extensions
-remain MIT. Binary and source artifacts include the full grant and research/
+formulas, occurrence controls and family salts of its three height families
+(cliff platform, stepped headland, joint coves). Modifications add package
+placement, primitive sampling and explicit height targets, and remove the
+package's stack and arch body family, whose stacks, arches and caves Riven's
+coast forms build as their own. Copyright (c) 2026 Riven contributors.
+Modifications remain MIT. Binary and source artifacts include the full grant and research/
 utility notices in `META-INF/licenses/rocky-coasts/{MIT.txt,SOURCES.md}`.
 The latter retains Sebastiano Vigna's SplitMix64 public-domain dedication,
 permission and disclaimer. `CoastForms` (which places the kernels as coast segment
@@ -77,20 +78,21 @@ illustrations and text are not included.
 
 `src/main/java/cc/orthrus/riven/contrib/coast/SedimentaryCoasts.java` adapts the MIT
 package `contributions/sedimentary-coasts-20261019`, retaining the reviewed
-barrier-centerline, convex-beach-vertex and spit-join corrections. Original
-continuous APIs, geometry and stable salts remain. Riven's modifications add
-primitive sampling and a caller-chosen spit drift; the proposal-bound column
-admission it once added is removed (terrain-v113). Copyright (c) 2026 Riven
+convex-beach-vertex and spit-join corrections and the geometry and stable salts
+of its beach bench, spit and tombolo families. Riven's modifications add
+primitive sampling and a caller-chosen spit drift, and remove the barrier
+family, the reservation masks and the whole-body admission, since Riven places
+each form where its facts already hold. Copyright (c) 2026 Riven
 contributors. The complete grant is packaged in
 `META-INF/licenses/sedimentary-coasts/MIT.txt` in binary and source artifacts.
 Modifications remain MIT. `CoastSediment` (which places the kernels as coast
-segment sediment), the common biome/material integration and the sediment in
+segment sediment), `TidalCreek` (marsh creeks), the common biome/material integration and the sediment in
 `riven-coasts.json` remain original NRR material.
 
 `src/main/java/cc/orthrus/riven/contrib/estuaries/EstuaryKernels.java` adapts the MIT
 package `contributions/lagoons-estuaries-15-20261019`, including its reviewed
-second-pass corrections. Original continuous APIs remain. Native additions
-provide separate geometry proposals, proposal-bound column facts/plans,
+second-pass corrections. Its continuous planning entry point, which Riven never
+called, is removed. Native additions provide separate geometry proposals, proposal-bound column facts/plans,
 scaled footprint envelopes, actual per-column marine ownership and outer
 foundation feathers. A shared opportunity gate retains the authored
 thresholds. Geometry formulas and stable salts remain. Copyright (c) 2026
@@ -100,8 +102,8 @@ the `CoastShape` adapter and `riven-estuaries.json` remain original NRR.
 
 `src/main/java/cc/orthrus/riven/contrib/river/Rivers.java` adapts the independently
 authored MIT package `contributions/rivers-streams-20261019`. Its original
-continuous API remains, alongside separate proposal-bound native column
-admission/plan types, physical reference-width scaling, bank/bar foundation
+continuous preparation entry point, which Riven never called, is removed;
+Riven adds separate proposal-bound native column admission/plan types, physical reference-width scaling, bank/bar foundation
 weights, dry-bank containment guards and shared finite-segment clearance
 helpers. The channel geometry, salts, grade, fold, junction-head and
 voxel-width checks are retained.
@@ -113,8 +115,9 @@ its native API extensions remain MIT.
 `src/main/java/cc/orthrus/riven/contrib/carvers/SurfaceCuts.java` adapts the independently
 authored MIT package `contributions/general-surface-carvers-20261019`. The
 production copy adds separate shared-anchor native-column proposal/facts/plan
-types; original planning contracts, dry-cut equations and plan-owned guards
-remain. Copyright (c) 2026 Riven contributors. The full MIT grant is bundled at
+types; the dry-cut equations and plan-owned guards remain, and the original
+grid planning entry point and its earlier-facts callback, which Riven never
+called, are removed. Copyright (c) 2026 Riven contributors. The full MIT grant is bundled at
 `META-INF/licenses/surface-cuts/MIT.txt` in binary and source artifacts. The
 standard public-domain SplitMix64 helper retains its Vigna credit in the source.
 `GeneralSurfaceCuts` and its original integration material use Riven's NRR;
@@ -124,7 +127,7 @@ imported kernels and their tuning provenance retain their applicable MIT grant.
 authored MIT package `contributions/volcanic-formations-20261019`. The production
 copy adds a separate shared-anchor native-column proposal/certificate/plan API.
 The original continuous-certificate contract, planner and shape arithmetic
-remain. Copyright (c) 2026 Riven contributors. Binary and source artifacts
+remain; an unused default tuning and revision string are removed. Copyright (c) 2026 Riven contributors. Binary and source artifacts
 retain the complete MIT grant at `META-INF/licenses/volcanic/MIT.txt`.
 `VolcanicTerrain` and its definition are original Riven NRR integration material;
 the adapted kernel retains MIT.
@@ -132,15 +135,17 @@ the adapted kernel retains MIT.
 `src/main/java/cc/orthrus/riven/contrib/cold/ColdRegions.java` adapts the independently
 authored MIT package `contributions/cold-regions-10`. The production copy adds
 explicit shared-owner anchors and a configured support-bound query, and declares
-the host's integer-column certificate domain. Authored shape arithmetic and
-the standalone grid remain. Copyright (c) 2026 Riven contributors. The complete
+the host's integer-column certificate domain. Authored shape arithmetic
+remains; the standalone grid proposal, its reason names and two diagnostic
+queries are removed, since Riven supplies every anchor. Copyright (c) 2026 Riven contributors. The complete
 MIT grant and the contribution's SplitMix64 provenance notice are packaged at
 `META-INF/licenses/cold-regions/MIT.txt` and `NOTICE.txt` in binary and source
 artifacts. `ColdTerrain` and its configuration are original Riven NRR material;
 the adapted kernel retains MIT.
 
-`src/main/java/cc/orthrus/riven/contrib/dryland/Drylands.java` is a copy, changed only in its package declaration, of the
-independently authored MIT package `contributions/dryland-formations-20261019`.
+`src/main/java/cc/orthrus/riven/contrib/dryland/Drylands.java` is a copy of the
+independently authored MIT package `contributions/dryland-formations-20261019`,
+changed in its package declaration and without its unused default tuning.
 Copyright (c) 2026 Riven contributors. Its complete license is packaged at
 `META-INF/licenses/drylands/MIT.txt` in binary and source artifacts.
 `DrylandTerrain`, its definition and the surface-cover integration are original
@@ -149,24 +154,27 @@ Riven NRR material; the imported dryland kernel retains MIT.
 `src/main/java/cc/orthrus/riven/contrib/plateau/PlateauKernels.java` adapts the independently
 authored MIT package `contributions/plateaus-badlands-20261019`. The production
 copy exposes read-only support/identity and early eligibility queries, retaining
-the authored geometry and ordered admission. Its integer-column certificate
+the authored geometry and ordered admission, without its unused default
+tuning. Its integer-column certificate
 domain is documented in the source. Copyright (c) 2026 Riven contributors.
 The full MIT grant is packaged at `META-INF/licenses/plateaus/MIT.txt` in binary
 and source artifacts. `PlateauTerrain` and its configuration are original NRR
 integration material; the adapted kernel retains MIT.
 
-`src/main/java/cc/orthrus/riven/contrib/mountains/MountainKernels.java` is a copy,
-changed only in its package declaration, of the independently authored MIT contribution in
-`contributions/mountain-systems-20261019`. Copyright (c) 2026 Riven contributors.
+`src/main/java/cc/orthrus/riven/contrib/mountains/MountainKernels.java` is a copy of
+the independently authored MIT contribution in
+`contributions/mountain-systems-20261019`, changed in its package declaration and
+without its unused default tuning and edge queries. Copyright (c) 2026 Riven contributors.
 Its complete grant is packaged at `META-INF/licenses/mountains/MIT.txt` in
 binary and source artifacts. `MountainTerrain` and its configuration are
 original Riven integration material under NRR; the imported kernel remains MIT.
 
 `src/main/java/cc/orthrus/riven/contrib/hills/Hills.java` adapts the independently authored
 MIT package `contributions/hills-uplands-20261019`. The production copy adds
-preparation at a shared-owner anchor, retaining the original standalone-grid
-entry point and authored geometry. Its host certification domain is documented
-as integer columns plus the anchor, rather than the standalone continuous fixture.
+preparation at a shared-owner anchor and retains the authored geometry; the
+original standalone-grid entry point, which Riven never called, and an unused
+default tuning are removed. Its host certification domain is documented as
+integer columns plus the anchor.
 Copyright (c) 2026 Riven contributors. The complete MIT license is packaged at
 `META-INF/licenses/hills/MIT.txt`. `HillTerrain` and `riven-hills.json` are
 original Riven integration material under NRR; the kernel remains MIT.
@@ -182,7 +190,8 @@ authored MIT package `contributions/lakes-ponds-20261019`. Records and switch
 syntax were converted for Java 8; geometry arithmetic is retained. Additional
 aligned entry points let an earlier river supply the basin/outlet orientation,
 using the same exact trigonometric axis for its support and plan. The original
-seed-oriented entry points remain. The sample also exposes its existing
+seed-oriented plan remains; its seed-oriented support query, which Riven never
+called, is removed. The sample also exposes its existing
 shoreline field for the integration's dry-bank blend. Copyright
 (c) 2026 Riven contributors. Binary and source artifacts include its full grant
 at `META-INF/licenses/lakes/MIT.txt`. The `LakeShape` integration is NRR material;

@@ -182,14 +182,6 @@ public final class Biomes {
         return id < INLAND;
     }
 
-    static int temperatureOf(int id) {
-        return id / (MOISTURE.positions() * ELEVATION.positions());
-    }
-
-    static int moistureOf(int id) {
-        return id / ELEVATION.positions() % MOISTURE.positions();
-    }
-
     static int elevationOf(int id) {
         return id % ELEVATION.positions();
     }

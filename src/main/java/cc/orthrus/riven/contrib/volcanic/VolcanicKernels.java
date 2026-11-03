@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Riven integration, 2026-10-20: added separate shared-anchor column proposals,
 // certificates and integer-only plans. The continuous API and shape arithmetic remain.
+// Riven modification (2026-11-03): the unused default tuning and revision string removed.
 package cc.orthrus.riven.contrib.volcanic;
 
 /** Independently authored, finite heightfield geometry. No Minecraft or loader dependencies. */
@@ -9,7 +10,6 @@ public final class VolcanicKernels {
 
     public static final double CELL = 1536.0;
     public static final double COORDINATE_LIMIT = 30000000.0;
-    public static final String REVISION = "volcanic-geometry-2";
     public static final long SELECT_SALT = 0x524956564F4C3031L;
 
     public enum Family {
@@ -139,10 +139,6 @@ public final class VolcanicKernels {
             this.irregularity = irregularity;
             this.occurrence = occurrence;
             this.minimumPotential = minimumPotential;
-        }
-
-        public static Tuning defaults() {
-            return new Tuning(1, 1, 1, .75, .65, .45);
         }
     }
 

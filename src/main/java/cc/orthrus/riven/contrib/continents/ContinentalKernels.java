@@ -6,6 +6,9 @@
  * bounds for native water admission were removed: nothing has read them since that was retired.
  * Geometry, salts and original point ownership remain. Extensions remain MIT.
  * Packaged grant/notices: META-INF/licenses/continents/{MIT.txt,SOURCES.md}.
+ * Riven modification (2026-11-03): the family factory, the kernels' default-style
+ * constructors, the default tuning and the tuning copies (withRadius, withDetail,
+ * withOccurrence) removed; Riven never called them.
  */
 package cc.orthrus.riven.contrib.continents;
 
@@ -392,85 +395,6 @@ public final class ContinentalKernels {
                     warpAmplitude,
                     warpWavelength,
                     occurrence,
-                    eligibilityFloor,
-                    bridgeHalfWidth,
-                    bayDepth,
-                    bayHalfWidth,
-                    corridorHalfWidth,
-                    transitionWidth,
-                    corridorOffset,
-                    corridorPeriod,
-                    stratifiedOccupancy);
-        }
-
-        public static Tuning defaults(Reference r) {
-            // 5700-block spacing is the current continent convention. Coastal reference affects
-            // skirts only.
-            return new Tuning(
-                    5700,
-                    1900,
-                    72,
-                    520,
-                    430,
-                    3800,
-                    .88,
-                    .27,
-                    180,
-                    1350,
-                    220,
-                    100,
-                    r.coastalPlainWidth * r.horizontalScale);
-        }
-
-        public Tuning withRadius(double v) {
-            return new Tuning(
-                    spacing,
-                    v,
-                    detailAmplitude,
-                    detailWavelength,
-                    warpAmplitude,
-                    warpWavelength,
-                    occurrence,
-                    eligibilityFloor,
-                    bridgeHalfWidth,
-                    bayDepth,
-                    bayHalfWidth,
-                    corridorHalfWidth,
-                    transitionWidth,
-                    corridorOffset,
-                    corridorPeriod,
-                    stratifiedOccupancy);
-        }
-
-        public Tuning withDetail(double amplitude, double wavelength) {
-            return new Tuning(
-                    spacing,
-                    radius,
-                    amplitude,
-                    wavelength,
-                    warpAmplitude,
-                    warpWavelength,
-                    occurrence,
-                    eligibilityFloor,
-                    bridgeHalfWidth,
-                    bayDepth,
-                    bayHalfWidth,
-                    corridorHalfWidth,
-                    transitionWidth,
-                    corridorOffset,
-                    corridorPeriod,
-                    stratifiedOccupancy);
-        }
-
-        public Tuning withOccurrence(double v) {
-            return new Tuning(
-                    spacing,
-                    radius,
-                    detailAmplitude,
-                    detailWavelength,
-                    warpAmplitude,
-                    warpWavelength,
-                    v,
                     eligibilityFloor,
                     bridgeHalfWidth,
                     bayDepth,
@@ -1865,10 +1789,6 @@ public final class ContinentalKernels {
     public static final class Harmonic extends Kernel {
         public final HarmonicStyle style;
 
-        public Harmonic(long seed, Tuning p, Reference r, Earlier e) {
-            this(seed, p, r, e, HarmonicStyle.defaults());
-        }
-
         public Harmonic(long seed, Tuning p, Reference r, Earlier e, HarmonicStyle style) {
             super(Family.HARMONIC, seed, p, r, e);
             this.style = java.util.Objects.requireNonNull(style);
@@ -1938,10 +1858,6 @@ public final class ContinentalKernels {
     /** F2: finite monotone six-node swept skeleton, variable-width necks and two terminal spurs. */
     public static final class Spine extends Kernel {
         public final SpineStyle style;
-
-        public Spine(long seed, Tuning p, Reference r, Earlier e) {
-            this(seed, p, r, e, SpineStyle.defaults());
-        }
 
         public Spine(long seed, Tuning p, Reference r, Earlier e, SpineStyle style) {
             super(Family.SPINE, seed, p, r, e);
@@ -2041,10 +1957,6 @@ public final class ContinentalKernels {
 
         /** Plan layout: sites, per-pair bisector terms, then bridge endpoints. */
         private static final int SITES = 0, PAIRS = 24, BRIDGES = PAIRS + 4 * 64;
-
-        public Cellular(long seed, Tuning p, Reference r, Earlier e) {
-            this(seed, p, r, e, CellularStyle.defaults());
-        }
 
         public Cellular(long seed, Tuning p, Reference r, Earlier e, CellularStyle style) {
             super(Family.CELLULAR, seed, p, r, e);
@@ -2165,10 +2077,6 @@ public final class ContinentalKernels {
     public static final class Potential extends Kernel {
         public final PotentialStyle style;
 
-        public Potential(long seed, Tuning p, Reference r, Earlier e) {
-            this(seed, p, r, e, PotentialStyle.defaults());
-        }
-
         public Potential(long seed, Tuning p, Reference r, Earlier e, PotentialStyle style) {
             super(Family.POTENTIAL, seed, p, r, e);
             this.style = java.util.Objects.requireNonNull(style);
@@ -2246,21 +2154,6 @@ public final class ContinentalKernels {
                 score = max(score, .27 * r - hypot(x - 1.15 * r, z));
             }
             return score;
-        }
-    }
-
-    public static Kernel create(Family family, long seed, Tuning p, Reference r, Earlier e) {
-        switch (family) {
-            case HARMONIC:
-                return new Harmonic(seed, p, r, e);
-            case SPINE:
-                return new Spine(seed, p, r, e);
-            case CELLULAR:
-                return new Cellular(seed, p, r, e);
-            case POTENTIAL:
-                return new Potential(seed, p, r, e);
-            default:
-                throw new IllegalArgumentException("family");
         }
     }
 

@@ -417,7 +417,6 @@ public final class CoastForms {
         put(t, "coveDepth", Rules.number(j, "coveDepth", .2, 1));
         put(t, "minimumRock", .1);
         put(t, "minimumExposure", minimumExposure);
-        put(t, "archFraction", 0);
         JsonObject families = j.getAsJsonObject("families");
         for (Family f : HEIGHT_FAMILIES) {
             JsonObject p = families.getAsJsonObject(f.name());
@@ -719,9 +718,7 @@ public final class CoastForms {
                 maximumParent,
                 reference.low,
                 1,
-                Math.max(0, Math.min(1, exposure)),
-                false,
-                true);
+                Math.max(0, Math.min(1, exposure)));
     }
 
     /**
@@ -864,8 +861,7 @@ public final class CoastForms {
                                     exposure,
                                     protection,
                                     marine,
-                                    reserved,
-                                    false),
+                                    reserved),
                             c);
                     if (c.reason != RockyCoasts.Reason.ACCEPTED || c.weight <= 0) continue;
                     if (owner == null) {
