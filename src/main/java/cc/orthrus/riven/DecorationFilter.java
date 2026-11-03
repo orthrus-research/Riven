@@ -11,16 +11,20 @@ import java.util.Set;
 
 /**
  * Keeps biome decorators off Riven's land shape (riven-bop.json contract). In Riven worlds the
- * vanilla decorator may place cactus, pumpkins, lily pads and the clay, sand and gravel patches
- * that swap surface blocks, but not trees or huge mushrooms (Riven's tree sites own them), grass,
- * flowers, dead bushes, small mushrooms or reeds (Riven's ground cover owns them), springs, wells,
- * fossils, ice spikes or boulders, and no ore or stone blob. Other world types are untouched. Registered on the terrain, ore and main buses:
+ * vanilla decorator may place cactus, pumpkins and lily pads, but not trees or huge mushrooms
+ * (Riven's tree sites own them), grass, flowers, dead bushes, small mushrooms or reeds (Riven's
+ * ground cover owns them), the clay, sand and gravel patches that swap surface blocks (Riven decides
+ * every soil, riven-surface.json), springs, wells, fossils, ice spikes or boulders, and no ore or
+ * stone blob. Other world types are untouched. Registered on the terrain, ore and main buses:
  * Cleanroom delivers these events to main-bus handlers, Forge to its own buses; a repeat changes
  * nothing.
  */
 public final class DecorationFilter {
     private static final Set<DecorateBiomeEvent.Decorate.EventType> DENIED =
             EnumSet.of(
+                    DecorateBiomeEvent.Decorate.EventType.SAND,
+                    DecorateBiomeEvent.Decorate.EventType.CLAY,
+                    DecorateBiomeEvent.Decorate.EventType.SAND_PASS2,
                     DecorateBiomeEvent.Decorate.EventType.LAKE_WATER,
                     DecorateBiomeEvent.Decorate.EventType.LAKE_LAVA,
                     DecorateBiomeEvent.Decorate.EventType.DESERT_WELL,

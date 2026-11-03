@@ -608,8 +608,8 @@ cover): since terrain-v116 no look's top, filler or surface routine changes it, 
 changed 60-69% of Riven's soil-topped columns (the census behind terrain-v115); the soils
 they had supplied are Riven's own crust rows.
 Population decorates each chunk column once, in the cube holding the surface at the center of its
-offset area: first the biome's own decorator, with springs, wells, fossils, ice spikes, boulders and
-every ore or stone blob denied in Riven worlds (`DecorationFilter`), then BoP's allow-listed
+offset area: first the biome's own decorator, with its sand, clay and gravel patches (since terrain-v118),
+springs, wells, fossils, ice spikes, boulders and every ore or stone blob denied in Riven worlds (`DecorationFilter`), then BoP's allow-listed
 generators (vegetation only: waterside, splatter and splotches left with terrain-v116; BoP's own
 event handler stands aside). The
 filter listens on the main event bus as well: Cleanroom delivers decoration and ore events there,
