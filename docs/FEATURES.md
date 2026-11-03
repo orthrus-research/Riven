@@ -214,38 +214,44 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
   - **Envelopes** are band rules: inside a band a raising feature (hills and the major features)
     may rise no higher than the sea plus the land weight times the highest surface, bent softly
     above half that room; past the band it is free.
-  - **Forms** (S3b-1, terrain-v110, `forms` in `riven-coasts.json`): each type lists its forms
-    with the blocks of shore per slot. Cliffs take joint coves every 240 blocks, sea caves every
-    120 and stacks or arches every 80; headlands take stepped headlands every 240 and stacks or
-    arches every 80; platforms take cliff platforms every 200 and stacks or arches every 80. A
-    segment's slots lie along its site's tangent across its cell, jittered, and each is moved
-    exactly onto the shore (the coast crossing along the outline's normal, found by bisection to
-    a quarter block) and kept only on the segment's own stretch. Coves, stepped headlands, cliff
-    platforms and stacks or arches are the MIT rocky kernels (`contrib.rocky`), placed rather
-    than certified: each reads its facts where the segment's profile put the ground, the cliff
-    top one and one and a half kernel widths inland and, for a stack or arch, the sea under its
-    centre or tunnel. A height form's drop is its cliff's own relief, so it never planes a tall
-    cliff down; it only lowers land, shares the segment's blend, fades over the band's last
-    fifth and never lowers a channel's levee below its water. A stack or arch keeps the kernel's
-    drop (29-50 blocks) no taller than its cliff and is built from each column's own ground at
-    any depth; a
-    stack needs open, supplied sea over every column within 2 blocks of its body, however
-    shallow, and `archFraction` (0.2) of them are arches, whose tunnel opens over the sea and
-    runs through body and ground. A sea cave is a tapering vault 16-40 blocks long, 2-4 half-wide
-    and 4-8 high from a block above the water, at least 8 blocks under the surface; nearer the
-    face, where its roof would be thinner, the ground is cut down to the vault's floor, a notch at
-    the waterline through which it opens. Neither opens an aquifer. Within a segment no stack,
-    arch or sea cave overlaps another's body (the form listed first keeps its place), and a body
-    claims only the columns it builds, so none walls another in. Forms leave protected, wet and banked water alone. The rocky coast lane,
-    `RockyTerrain` and `riven-rocky-coasts.json` (v25-v109) are retired.
-  - Forms measured with `CoastCheck` (8 seeds of 8 km): per world about 75 stacks, 11 arches,
-    49 sea caves, 36 stepped headlands, 24 cove sets and under one cliff platform (platforms
-    are mostly backed by land under 8 blocks above the sea, too low for a cliff form). Of stack
-    plans that reach the kernel, about one in eight met its old rule of 8 blocks of water at
-    its centre; most stand in 2-5. Sampled stacks are one solid run from their own ground in
-    open sea all round, arches have a roofed opening over the sea and feet on land and on the
-    sea floor with no solid over air, sea caves keep their water line and roof band and open through a notch, and
-    height forms only lower land inside their band.
+  - **Forms** (S3b-1, terrain-v110, shapes v111; `forms` in `riven-coasts.json`): each type
+    lists its forms with the blocks of shore per slot. Cliffs take joint coves every 240 blocks,
+    sea caves every 120 and stacks or arches every 140; headlands take stepped headlands every
+    240 and stacks or arches every 140; platforms take cliff platforms every 200 and stacks or
+    arches every 140. A segment's slots lie along its site's tangent across its cell, jittered,
+    and each is moved exactly onto the shore (the coast crossing along the outline's normal,
+    found by bisection to a quarter block) and kept only on the segment's own stretch.
+  - **Height forms** (coves, stepped headlands, cliff platforms) are the MIT rocky kernels
+    (`contrib.rocky`), placed rather than certified: each reads the cliff top one and one and a
+    half kernel widths inland, drops by that cliff's own relief (so it never planes a tall cliff
+    down), only lowers land, shares the segment's blend, fades over the band's last fifth and
+    never lowers a channel's levee below its water.
+  - **Stacks and arches** are Riven's own bodies, built from each column's own ground at any
+    depth, no taller than the cliff behind their shore point and only in exposed water. A slot
+    holds an arch one time in five, else a group of one to three stacks: the first 9-24 blocks out
+    to sea, companions smaller and lower beside it along the shore. A stack's outline is lobed and
+    slightly elongated (radius 4.5-8.5 blocks); its columns rise from the water at the outline to
+    its height (16-44 blocks) a taper's width in, under a rough top, so the sides stand steep and
+    the foot spreads into a ledge, and every column of its outline and a 2-block moat is open,
+    supplied sea. An arch is a fin from 4 blocks inside the cliff to 16-30 blocks out, 3-5.5
+    blocks half-thick, wandering and uneven, lowering toward its end, pierced by a ragged
+    half-ellipse rising from the water under at least 4 blocks of roof, so the sea runs under it;
+    its opening stands over open sea and its end in the sea.
+  - **Sea caves** are tapering vaults 16-40 blocks long, 2-4 half-wide and 4-8 high from a block
+    above the water, at least 8 blocks under the surface; nearer the face, where the roof would be
+    thinner, the ground is cut down to the vault's floor, a notch at the waterline through which
+    the cave opens. Neither opens an aquifer.
+  - Within a segment no stack, arch or sea cave overlaps another's body (the form listed first
+    keeps its place), and a body claims only the columns it builds. Forms leave protected, wet and
+    banked water alone. The rocky coast lane, `RockyTerrain` and `riven-rocky-coasts.json`
+    (v25-v109) are retired.
+  - Forms measured with `CoastCheck` (8 seeds of 8 km): per world about 108 stacks in groups, 12
+    arches, 52 sea caves, 36 stepped headlands, 24 cove sets and under one cliff platform
+    (platforms are mostly backed by land under 8 blocks above the sea, too low for a cliff form).
+    Sampled stacks are one solid run from their own ground in open sea all round; arches have a
+    roofed opening over the sea and feet on land and on the sea floor with no solid over air; sea
+    caves keep their water line and roof band and open through a notch; height forms only lower
+    land inside their band.
   - Measured with `CoastCheck` (8 seeds, 512 x 512 per 8 km world): 39% of land lies inside a
     band; of band columns, beach 61%, marsh 20%, bluff 12%, headland 3.9%, cliff 2.4%, platform
     1.6% (by segments, beach about 45% and the rocky types about 38%). Land past its band keeps its height exactly, and the coast's height has no seam (no jump

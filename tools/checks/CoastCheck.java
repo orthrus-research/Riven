@@ -166,7 +166,7 @@ public final class CoastCheck {
     /** A stack: one solid run per column from its own ground; open sea all round its base. */
     private static int stack(
             TerrainMap terrain, CoastForms.View v, TerrainMap.Sample s, int waterTop, long seed) {
-        double cx = v.x + v.nx * v.centerD, cz = v.z + v.nz * v.centerD;
+        double cx = v.cx, cz = v.cz;
         int r = (int) Math.ceil(v.radius) + 2;
         int x0 = (int) Math.floor(cx) - r, z0 = (int) Math.floor(cz) - r, side = 2 * r + 1;
         boolean[] body = new boolean[side * side], sea = new boolean[side * side];
@@ -208,12 +208,12 @@ public final class CoastCheck {
      * and a foot on the sea floor.
      */
     private static int arch(TerrainMap terrain, CoastForms.View v, TerrainMap.Sample s, long seed) {
-        int r = (int) Math.ceil(Math.max(v.extent, v.radius)) + 2;
+        int r = (int) Math.ceil(v.radius) + 2;
         int columns = 0;
         boolean roofed = false, land = false, sea = false;
         for (int dz = -r; dz <= r; dz++)
             for (int dx = -r; dx <= r; dx++) {
-                int x = (int) Math.floor(v.x) + dx, z = (int) Math.floor(v.z) + dz;
+                int x = (int) Math.floor(v.cx) + dx, z = (int) Math.floor(v.cz) + dz;
                 terrain.sample(x, z, s);
                 CoastForms.Result f = s.rocky;
                 if (f.id != v.id || !f.hasVolume()) continue;

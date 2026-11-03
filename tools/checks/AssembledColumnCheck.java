@@ -242,8 +242,7 @@ public final class AssembledColumnCheck {
                 if (v.form != CoastForms.Form.STACK_ARCH && v.form != CoastForms.Form.SEA_CAVE)
                     continue;
                 if (patches++ == 12) break;
-                int cx = (int) Math.floor(v.x + v.nx * v.centerD),
-                        cz = (int) Math.floor(v.z + v.nz * v.centerD);
+                int cx = (int) Math.floor(v.cx), cz = (int) Math.floor(v.cz);
                 for (int wz = cz - 24; wz < cz + 24; wz++)
                     for (int wx = cx - 24; wx < cx + 24; wx++) {
                         terrain.sample(wx, wz, s);
