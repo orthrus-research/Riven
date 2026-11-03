@@ -11,9 +11,8 @@ import cc.orthrus.riven.worldgen.engine.Shape;
  * The crust's shape operator: maps a terrain sample onto the engine's shape operations. The
  * ground is raised to the sky's floor; sediment is laid over it; a coast form's runs are built
  * and carved (a stack's or arch's solid over the ground as it was before it, which is the sky's
- * floor, and an arch's tunnel or a sea cave); a wonder's void is carved; an aquifer is a
- * pocket; and the column's caves are carved, entrances apart, under the sky's roof band, their
- * fill left to the engine's precedence.
+ * floor, and an arch's tunnel or a sea cave); an aquifer is a pocket; and the column's caves are
+ * carved, entrances apart, under the sky's roof band, their fill left to the engine's precedence.
  */
 final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
     /** Where the crust's horizons go: a shape, or an array for the cave walk. */
@@ -34,7 +33,7 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
                 heights.worldMinimumY,
                 new CrustShape(),
                 new CrustSettings(assembly.thresholds("crust"), rules, heights),
-                new CrustStrata(heights));
+                new CrustStrata());
     }
 
     /**
@@ -85,7 +84,6 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
         shape.raise(raised + 1);
         if (sediment) shape.lay(beforeDeposit + 1, ground + 1, TerrainBlock.SAND);
         if (volume) volume(s, shape, surface);
-        if (s.wonders.hasVoid()) shape.carve(s.wonders.voidBottom, s.wonders.voidTop);
         if (aquifer) shape.pocket(w.aquiferMin, w.aquiferMax + 1);
         caves(s, shape);
     }

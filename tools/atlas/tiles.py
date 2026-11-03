@@ -78,7 +78,7 @@ class Field:
 
 
 def bundles(atlas: Atlas) -> dict[str, list[Field]]:
-    """Each bundle's fields in byte order. Layers an older render lacks are left out."""
+    """Each bundle's fields in byte order."""
     fp = "fp_" if atlas.has(f"fp_delta_{atlas.stages[0]}.f32") else ""
     core = [
         Field("surface", "i16", "surface.i16", "<i2"),
@@ -95,8 +95,7 @@ def bundles(atlas: Atlas) -> dict[str, list[Field]]:
         Field(f"delta_{s}", "i16", f"{fp}delta_{s}.f32", "<f4", DELTA_UNITS) for s in atlas.stages
     ]
     stages += [Field(f"reason_{s}", "u8", f"reason_{s}.u8", "u1") for s in atlas.stages]
-    keep = {"core": core, "stages": stages}
-    return {k: [f for f in v if f.raw is None or atlas.has(f.raw)] for k, v in keep.items()}
+    return {"core": core, "stages": stages}
 
 
 def legend(names, color, counts, total):

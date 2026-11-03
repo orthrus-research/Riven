@@ -15,7 +15,7 @@ import java.util.TreeMap;
 
 /**
  * Assembled crust columns are well formed and pure. Usage: AssembledColumnCheck [seed ...].
- * Samples a coarse grid plus dense coastal and wonder strips per seed, every column around the
+ * Samples a coarse grid plus dense coastal strips per seed, every column around the
  * first 12 stacks, arches and sea caves (the coast forms that hold volumes), and every column of
  * chunk columns along a diagonal crossing land and coast (carved as native cubes carve them), and
  * requires: runs cover the crust without gaps or overlaps, and neighbours differ; at(y) and
@@ -206,16 +206,11 @@ public final class AssembledColumnCheck {
             for (int gz = 0, z = -8192; z < 8192; gz++, z += 37)
                 for (int gx = 0, x = -8192; x < 8192; gx++, x += 37) {
                     // Coarse grid everywhere; every column of a short strip where the coast is
-                    // near on every 37th grid line, and through wonders, which carry voids under
-                    // their surfaces.
+                    // near on every 37th grid line.
                     boolean dense = false;
                     if (gx % 37 == 0 || gz % 37 == 0) {
                         maps.continents.sample(x, z, probe);
                         dense = Math.abs(probe.coastCoordinate) < 96;
-                    }
-                    if (!dense && gx % 5 == 0) {
-                        terrain.sample(x, z, s);
-                        dense = s.wonders.family != null;
                     }
                     int strip = dense ? 37 : 1;
                     for (int dx = 0; dx < strip; dx++) {
@@ -324,9 +319,6 @@ public final class AssembledColumnCheck {
         if (s.sediment.weight > 0) coverage.merge("sediment", 1, Integer::sum);
         if (s.rocky.weight > 0) coverage.merge("rocky", 1, Integer::sum);
         if (s.rocky.hasVolume()) coverage.merge("rockyVolume", 1, Integer::sum);
-        if (s.wonders.family != null) coverage.merge("wonder", 1, Integer::sum);
-        if (s.wonders.palette != null) coverage.merge("wonderStrata", 1, Integer::sum);
-        if (s.wonders.hasVoid()) coverage.merge("wonderVoid", 1, Integer::sum);
         if (s.caves.count() > 0) coverage.merge("caveEntrance", 1, Integer::sum);
         if (c.subsoilSetting() != c.setting()) coverage.merge("inheritedSubsoil", 1, Integer::sum);
     }

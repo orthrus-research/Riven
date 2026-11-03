@@ -72,7 +72,7 @@ set holds and what it is for; open requests stay here until a set arrives.
   (acid brine, boiling mud, bitumen, heavy brine). None is imported yet. Riven would take them in
   order: 31 to 36 with the gem work, which retires the tinted overlay on every gem; 40 and 41
   first, since they retire Biomes O' Plenty's cave life and the last painted overlay; 37 to 39
-  with the cave formation work; 42 to 44 with the wonders and the surface; 45 when Riven builds
+  with the cave formation work; 42 to 44 with the surface; 45 when Riven builds
   fluids the distant preview can show. The production's own review leaves host comparisons,
   repetition, contrast and animation playback to be judged in game.
 
@@ -117,7 +117,7 @@ cobblestone and mossy cobblestone, bedrock, obsidian, dirt, coarse dirt, podzol,
 side, snowy side, tinted overlay), mycelium, farmland, grass path, sand, red sand, gravel, clay,
 the sandstones and red sandstones in all their faces, snow, ice, packed ice, frosted ice's four
 stages, and terracotta with its sixteen stained colors as fired clay strata (Riven bands seven of
-them in badlands and wonders). Granite, diorite and andesite join Riven's host family: Riven
+them in badlands). Granite, diorite and andesite join Riven's host family: Riven
 shows dolerite as andesite until Requisition 04's own face is imported. The two colormaps
 become the surface color script.
 

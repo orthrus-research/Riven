@@ -14,8 +14,6 @@ ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / ".local/terrain-atlas"
 SAMPLER = ROOT / "tools/checks/TerrainAtlas.java"
 PACKAGE = "cc.orthrus.riven"
-# Commits before 2026-10-28 keep Riven under these packages (new prefix, old prefix).
-LEGACY_PACKAGES = (("cc.orthrus.riven.contrib", "riven.contrib"), (PACKAGE, "supersymmetry.riven"))
 
 
 @dataclass(frozen=True)
@@ -73,39 +71,15 @@ def source_tree(ref):
     return target / "src/main"
 
 
-def package_of(source_dir):
-    """Riven's package in this tree: cc.orthrus.riven, or supersymmetry.riven before the rename."""
-    return PACKAGE if (source_dir / "java/cc/orthrus/riven").is_dir() else "supersymmetry.riven"
-
-
-def sampler_for(package, sampler=SAMPLER):
-    """The sampler source in the tree's package; older trees get a renamed copy."""
-    if package == PACKAGE:
-        return sampler
-    text = sampler.read_text(encoding="utf-8")
-    for new, old in LEGACY_PACKAGES:
-        text = text.replace(new, old)
-    target = (
-        CACHE / "legacy-sampler" / hashlib.sha256(text.encode()).hexdigest()[:16] / sampler.name
-    )
-    if not target.exists():
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(text, encoding="utf-8")
-    return target
-
-
 def compile_sampler(source_dir, check=SAMPLER):
     """Classes for these sources plus one tools/checks entry point (the sampler by default),
     cached by content hash."""
-    package = package_of(source_dir)
-    base = source_dir / "java" / package.replace(".", "/")
-    kernels = base if package == PACKAGE else source_dir / "java/riven"
-    # Worldgen and its subpackages (the column engine, worldgen/engine, since B1).
-    java_files = sorted((base / "worldgen").rglob("*.java"))
-    # Trees before 2026-10-29 keep the continents kernel under contribution/.
-    for name in ("contrib", "contribution"):
-        java_files += sorted((kernels / name).rglob("*.java"))
-    sampler = sampler_for(package, check)
+    base = source_dir / "java" / PACKAGE.replace(".", "/")
+    # Worldgen with its subpackages (the column engine), and the contributed kernels.
+    java_files = sorted((base / "worldgen").rglob("*.java")) + sorted(
+        (base / "contrib").rglob("*.java")
+    )
+    sampler = check
     resources = sorted((source_dir / "resources").glob("*.json"))
     digest = hashlib.sha256()
     for path in [*java_files, *resources, sampler]:
@@ -203,7 +177,7 @@ def run_sampler(source: Source, out: Path, options: dict, overrides_dir: Path):
         "-XX:+UseZGC",
         "-cp",
         os.pathsep.join(classpath),
-        package_of(tree) + ".worldgen.TerrainAtlas",
+        PACKAGE + ".worldgen.TerrainAtlas",
         f"out={out}",
     ] + [f"{k}={v}" for k, v in options.items() if v is not None]
     out.mkdir(parents=True, exist_ok=True)

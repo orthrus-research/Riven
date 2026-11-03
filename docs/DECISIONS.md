@@ -43,6 +43,17 @@ superseded instead of deleting it.
   anchor, and the cone fades toward cooler columns like cold forms do (terrain-v55), replacing the
   terrain-v37 rule that every support column be HOT. *Set aside 2026-11-01 (The surface).*
 
+## Adopted 2026-11-02
+
+- **Wonders removed.** At the user's direction the wonders (pillar forests, tepuis, hoodoos,
+  tower karst, sinkholes, fin arches, tsingy, ring structures, basalt columns) leave the
+  generator at terrain-v112, with their site lane, strata palettes (`riven-materials.json`) and
+  void carving. Supersedes "Novel terrain features" (2026-10-23); arches and stacks continue as
+  coast forms.
+- **No compatibility code.** Tools serve the current tree only: the atlas sampler compiles
+  against the present layout and stages, with no renamed-package copies, pre-catalogue
+  fallbacks or entries kept for retired stages and lanes.
+
 ## Adopted 2026-11-01
 
 - **A data-driven engine.** Riven is an engine in Java, and data configures it. Definitions choose
@@ -394,7 +405,8 @@ superseded instead of deleting it.
   stylized fantasy; some land features may carve through rock (arches, overhangs, bridges) with
   the same column-run machinery in native cubes and the DH preview; rare landmarks only, not
   provinces or common texture; existing carvers and landmarks are exaggerated as well. Implemented
-  on the prototype branch as `WonderTerrain` (terrain-v71).
+  on the prototype branch as `WonderTerrain` (terrain-v71). *Superseded 2026-11-02: wonders
+  removed (terrain-v112).*
 
 - **Biomes O' Plenty as decoration provider.** Biomes O' Plenty (1.12.2-7.0.1.2445,
   CC BY-NC-ND 4.0, pinned in `runtime.lock.json`, compiled against but never bundled or modified)

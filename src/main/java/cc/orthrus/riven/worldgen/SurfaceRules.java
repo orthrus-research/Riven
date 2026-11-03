@@ -21,8 +21,7 @@ public final class SurfaceRules {
         ROCKY_SHORE,
         HIGH_ALTITUDE,
         MOUNTAIN,
-        EXPOSED_CUT,
-        WONDER_ROCK
+        EXPOSED_CUT
     }
 
     public final int stoneAboveY;
@@ -42,7 +41,6 @@ public final class SurfaceRules {
     public CoverReason reason(TerrainMap.Sample sample) {
         if (sample.sediment.weight > 0) return CoverReason.SEDIMENT;
         if (sample.rocky.weight > 0) return CoverReason.ROCKY_FORMATION;
-        if (sample.wonders.bare && sample.wonders.family != null) return CoverReason.WONDER_ROCK;
         return earlierReason(sample, sample.blockY());
     }
 
@@ -136,7 +134,6 @@ public final class SurfaceRules {
             case HIGH_ALTITUDE:
             case MOUNTAIN:
             case EXPOSED_CUT:
-            case WONDER_ROCK:
                 return true;
             default:
                 return false;

@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 111;
+    public static final int VERSION = 112;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -24,7 +24,6 @@ public final class TerrainMap {
     public final CoastForms rocky;
     private final RegionalLandmarks landmarks;
     private final SurfaceCarvers carvers;
-    private final WonderTerrain wonders;
     private final GeologyMap geology;
     private final FloodMap floods;
     public final CaveMap caves;
@@ -132,7 +131,6 @@ public final class TerrainMap {
                         majorFeatureParent,
                         hydro,
                         hydro.cellBlocks);
-        wonders = new WonderTerrain(seed, heights, types.sites, majorFeatureParent, hydro);
         geology = new GeologyMap(seed, plates);
         floods = new FloodMap(seed, world, this::sampleGeology);
         caves = new CaveMap(seed, heights, this::sample, this::sampleWater);
@@ -271,7 +269,6 @@ public final class TerrainMap {
         public final SedimentTerrain.Result sediment =
                 stage(Phase.LATER, new SedimentTerrain.Result());
         public final CoastForms.Result rocky = stage(Phase.LATER, new CoastForms.Result());
-        public final WonderTerrain.Result wonders = stage(Phase.LATER, new WonderTerrain.Result());
         public final GeologyMap.Column geology = new GeologyMap.Column();
 
         /** The column's flood cell: its water level, band floor and the seals holding it. */
@@ -423,20 +420,9 @@ public final class TerrainMap {
                                             hydro.surfaceClearance(x, z, cutWaterSkirt)
                                                     / cutWaterSkirt);
         drylands.apply(x, z, out, hydro, cut, out.drylands);
-        // Wonders come last on land, so they rise above whatever earlier stages shaped.
-        double dry = out.drylands.height;
-        wonders.apply(x, z, out, dry, out.wonders);
-        out.wonders.height = shores.majorEnvelope(dry, out.wonders.height, out.shore);
-        out.wonders.delta = out.wonders.height - dry;
-        out.rockyParentHeight = out.wonders.height;
-        out.height = out.shore.shape(out.wonders.height);
+        out.rockyParentHeight = out.drylands.height;
+        out.height = out.shore.shape(out.drylands.height);
         out.height = hydro.constrain(out.height, out.water);
-        // A wonder's void stays under at least two solid blocks of the final surface.
-        if (out.wonders.hasVoid()) {
-            out.wonders.voidTop = Math.min(out.wonders.voidTop, out.blockY() - 1);
-            if (out.wonders.voidTop <= out.wonders.voidBottom)
-                out.wonders.voidBottom = out.wonders.voidTop = 0;
-        }
         seal(out);
     }
 

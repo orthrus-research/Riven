@@ -62,7 +62,6 @@ public final class TerrainAtlas {
         "carver",
         "cut",
         "dryland",
-        "wonder",
         "shore",
         "rocky",
         "sediment"
@@ -79,29 +78,10 @@ public final class TerrainAtlas {
         SurfaceCarvers.Kind.values(),
         SurfaceCuts.Family.values(),
         Drylands.Family.values(),
-        WonderTerrain.Family.values(),
         Shore.Kind.values(),
-        familiesOf("rocky"),
+        CoastForms.Form.values(),
         SedimentaryCoasts.Family.values()
     };
-
-    /**
-     * A stage's families, read from its result's family field: the rocky stage's are the coast's
-     * forms since terrain-v110 and the rocky kernel's before, so one sampler builds both trees.
-     */
-    private static Enum<?>[] familiesOf(String stage) {
-        try {
-            return (Enum<?>[])
-                    TerrainMap.Sample.class
-                            .getField(stage)
-                            .getType()
-                            .getField("family")
-                            .getType()
-                            .getEnumConstants();
-        } catch (NoSuchFieldException absent) {
-            throw new IllegalStateException("No families for stage " + stage, absent);
-        }
-    }
 
     /** Height after each stage, in pipeline order; index 0 is the eroded base. */
     private static double after(TerrainMap.Sample s, int stage) {
@@ -131,12 +111,10 @@ public final class TerrainAtlas {
             case 10:
                 return s.drylands.height;
             case 11:
-                return s.wonders.height;
-            case 12:
                 return s.rocky.parentHeight;
-            case 13:
+            case 12:
                 return s.rocky.height;
-            case 14:
+            case 13:
                 return s.sediment.height;
             default:
                 throw new IllegalArgumentException("stage " + stage);
@@ -145,7 +123,7 @@ public final class TerrainAtlas {
 
     private static double delta(TerrainMap.Sample s, int stage) {
         // Rocky and sediment record their own parent; earlier stages chain consecutively.
-        if (stage == 14) return s.sediment.height - s.sediment.parentHeight;
+        if (stage == 13) return s.sediment.height - s.sediment.parentHeight;
         return after(s, stage) - after(s, stage - 1);
     }
 
@@ -172,12 +150,10 @@ public final class TerrainAtlas {
             case 10:
                 return s.drylands.dominant;
             case 11:
-                return s.wonders.family;
-            case 12:
                 return s.shore.kind;
-            case 13:
+            case 12:
                 return s.rocky.family;
-            case 14:
+            case 13:
                 return s.sediment.family;
             default:
                 return null;
@@ -203,11 +179,9 @@ public final class TerrainAtlas {
                 return s.cuts.reason;
             case 10:
                 return s.drylands.reason;
-            case 11:
-                return s.wonders.reason;
-            case 13:
+            case 12:
                 return s.rocky.reason;
-            case 14:
+            case 13:
                 return s.sediment.reason;
             default:
                 return null;
@@ -717,72 +691,10 @@ public final class TerrainAtlas {
         System.out.printf("section %d columns every %d blocks%n", count, spacing);
     }
 
-    /**
-     * Fingerprints of every packaged definition this source tree has: its Definitions catalogue,
-     * read reflectively, or the owners' FINGERPRINT fields in trees from before it.
-     */
+    /** Fingerprints of every packaged definition, from the Definitions catalogue. */
     private static JsonObject fingerprints() {
         JsonObject f = new JsonObject();
-        String pkg = TerrainAtlas.class.getPackage().getName();
-        Class<?> catalogue = null;
-        try {
-            catalogue = Class.forName(pkg + ".Definitions");
-        } catch (ClassNotFoundException older) {
-            // Older source trees predate the catalogue.
-        }
-        if (catalogue != null) {
-            try {
-                for (Object rules : (List<?>) catalogue.getMethod("loadAll").invoke(null)) {
-                    Class<?> type = rules.getClass();
-                    f.addProperty(
-                            String.valueOf(type.getField("resource").get(rules)),
-                            String.valueOf(type.getField("fingerprint").get(rules)));
-                }
-            } catch (ReflectiveOperationException error) {
-                throw new IllegalStateException("Definitions catalogue unreadable", error);
-            }
-            return f;
-        }
-        f.addProperty("reference", TerrainHeightReference.DEFAULT.fingerprint);
-        String[] owners = {
-            "ContinentalMap",
-            "Terrain",
-            "Shore",
-            "Habitats",
-            "Hydro",
-            "OceanBed",
-            "LakeShape",
-            "RiverShape",
-            "CoastShape",
-            "SedimentTerrain",
-            "RockyTerrain",
-            "LowlandTerrain",
-            "HillTerrain",
-            "RegionalFabricMap",
-            "MountainTerrain",
-            "PlateauTerrain",
-            "DrylandTerrain",
-            "SubstrateMap",
-            "BaseTerrainMap",
-            "BaseElevationMap",
-            "ClimateForcingMap",
-            "RegionalProfileMap",
-            "ColdTerrain",
-            "VolcanicTerrain",
-            "GeneralSurfaceCuts",
-            "SurfaceRules",
-            "RegionalTerrainPasses",
-            "RegionalLandmarks",
-            "SurfaceCarvers"
-        };
-        for (String owner : owners) {
-            try {
-                Class<?> c = Class.forName(pkg + "." + owner);
-                f.addProperty(owner, String.valueOf(c.getField("FINGERPRINT").get(null)));
-            } catch (ReflectiveOperationException absent) {
-                // Older source trees predate some definitions.
-            }
-        }
+        for (Rules rules : Definitions.loadAll()) f.addProperty(rules.resource, rules.fingerprint);
         return f;
     }
 

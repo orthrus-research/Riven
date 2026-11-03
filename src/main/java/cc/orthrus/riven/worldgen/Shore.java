@@ -436,7 +436,7 @@ public final class Shore {
         return soften(parent, height, envelopeMaximum(shore));
     }
 
-    /** As {@link #envelope}: major features (volcanic, cold, plateau, mountain, wonder) too. */
+    /** As {@link #envelope}: major features (volcanic, cold, plateau, mountain) too. */
     public double majorEnvelope(double parent, double height, Sample shore) {
         return soften(parent, height, envelopeMaximum(shore));
     }

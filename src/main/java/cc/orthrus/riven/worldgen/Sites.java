@@ -5,26 +5,15 @@ import com.google.gson.JsonObject;
 /** Shared factory for sparse, exclusive major-feature sites, independent of terrain queries. */
 public final class Sites {
     public enum Lane {
-        LANDMARK(0),
-        CARVER(1),
-        HILLS(2),
-        MOUNTAINS(3),
-        PLATEAUS(4),
-        COLD(5),
-        VOLCANIC(6),
-        CUTS(7),
-        SEDIMENT(8),
-        WONDER(10);
-
-        /**
-         * The lane's permanent seed index, never its position: retiring a lane (ROCKY was 9 until
-         * terrain-v110) must not move another lane's anchors.
-         */
-        final int seedIndex;
-
-        Lane(int seedIndex) {
-            this.seedIndex = seedIndex;
-        }
+        LANDMARK,
+        CARVER,
+        HILLS,
+        MOUNTAINS,
+        PLATEAUS,
+        COLD,
+        VOLCANIC,
+        CUTS,
+        SEDIMENT
     }
 
     /** SHARED: any higher-priority raw neighbour vetoes. LANE: only same-lane neighbours do. */
@@ -64,7 +53,6 @@ public final class Sites {
             coldRadius,
             volcanicRadius,
             sedimentRadius,
-            wonderRadius,
             largestRadius;
 
     /**
@@ -129,24 +117,16 @@ public final class Sites {
                                 * Rules.number(
                                         json, "maximumSedimentRadiusInCoastalPlainWidths", 1, 8)
                         : maximumRadius;
-        // Wonders are rare set pieces, larger than a carver but sized in site cells.
-        wonderRadius =
-                json.has("maximumWonderRadiusInCells")
-                        ? spacing * Rules.number(json, "maximumWonderRadiusInCells", .5, 3)
-                        : maximumRadius;
         largestRadius =
                 Math.max(
-                        wonderRadius,
+                        sedimentRadius,
                         Math.max(
-                                sedimentRadius,
+                                volcanicRadius,
                                 Math.max(
-                                        volcanicRadius,
+                                        maximumRadius,
                                         Math.max(
-                                                maximumRadius,
-                                                Math.max(
-                                                        coldRadius,
-                                                        Math.max(
-                                                                mountainRadius, plateauRadius))))));
+                                                coldRadius,
+                                                Math.max(mountainRadius, plateauRadius)))));
         separation = spacing * Rules.number(json, "minimumSeparationInCells", 0.1, 4);
         if (separation < 2 * maximumRadius)
             throw new IllegalStateException("Major feature supports must not overlap");
@@ -175,7 +155,7 @@ public final class Sites {
         for (Lane lane : Lane.values())
             laneSeeds[lane.ordinal()] =
                     SeededNoise.mix(
-                            seed ^ (0x4c414e4553454544L + lane.seedIndex * 0x9e3779b97f4a7c15L));
+                            seed ^ (0x4c414e4553454544L + lane.ordinal() * 0x9e3779b97f4a7c15L));
     }
 
     /** The first lattice node at or above {@code min}. */
@@ -214,11 +194,7 @@ public final class Sites {
                                 ? coldRadius
                                 : lane == Lane.VOLCANIC
                                         ? volcanicRadius
-                                        : lane == Lane.SEDIMENT
-                                                ? sedimentRadius
-                                                : lane == Lane.WONDER
-                                                        ? wonderRadius
-                                                        : maximumRadius;
+                                        : lane == Lane.SEDIMENT ? sedimentRadius : maximumRadius;
     }
 
     public int searchRadius(Lane lane) {

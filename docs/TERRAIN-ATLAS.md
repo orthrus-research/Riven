@@ -48,7 +48,9 @@ Run with `.local/atlas-venv/Scripts/python tools/terrain_atlas.py <command>`:
 
 Window options: `--seed`, `--center X Z`, `--size` (blocks), `--step` (blocks/pixel), `--threads`
 (default half the logical cores, which sampled faster than all cores) and `--threshold` (blocks).
-Source options: `--ref` samples any commit from a cached `git archive`. `--set
+Source options: `--ref` samples a commit from a cached `git archive`, compiled with the working
+tree's sampler, so it must share the current layout and stages (the sampler keeps no support
+for older trees). `--set
 FILE.json:path.to.key=VALUE` patches a packaged definition for that render only. It must address
 an existing value, and the patched copy precedes the packaged one on the classpath. Values that are
 hard-coded in Java (for example the `1.5 x coastal_plain` shore reservation) need a reviewed move

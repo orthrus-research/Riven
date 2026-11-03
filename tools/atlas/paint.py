@@ -66,7 +66,6 @@ STAGE_HUES = {
     "carver": 0.95,
     "cut": 0.62,
     "dryland": 0.12,
-    "wonder": 0.82,
     "shore": 0.45,
     "rocky": 0.58,
     "sediment": 0.14,
@@ -81,9 +80,6 @@ LANE_STAGE = {
     "VOLCANIC": "volcanic",
     "CUTS": "cut",
     "SEDIMENT": "sediment",
-    # Retired at terrain-v110 (the coast's forms have no lane); renders of older trees keep it.
-    "ROCKY": "rocky",
-    "WONDER": "wonder",
 }
 
 Color = tuple[int, int, int]

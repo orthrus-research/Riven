@@ -32,7 +32,7 @@ def main() -> None:
         str(build.java()),
         "-cp",
         os.pathsep.join([str(classes), str(build.gson())]),
-        f"{build.package_of(tree)}.worldgen.{args.check}",
+        f"{build.PACKAGE}.worldgen.{args.check}",
         *args.arguments,
     ]
     sys.exit(subprocess.run(command).returncode)

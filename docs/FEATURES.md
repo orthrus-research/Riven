@@ -332,11 +332,10 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
 | Surface carvers (`SurfaceCarvers`) | 24 profiles (V ravine to en-echelon clefts) | `riven-surface-carvers.json` | 1.7% of land on seed 8675309, 1.5x deeper (prototype; 1.2% before) |
 | General cuts (`GeneralSurfaceCuts`) | ribbon ravine, branch gully, pinched slot, breach saddle | `riven-general-surface-cuts.json` | 1-2 cuts per 8 km world (prototype; 0 before) |
 | Drylands (`DrylandTerrain`) | crescents, crossing ridges, deflation pavement, yardangs | `riven-drylands.json` | 0% |
-| Wonders (`WonderTerrain`) | pillar forest, tepui, hoodoo field, tower karst, tiankeng, fin arches, tsingy, ring structure, basalt columns | `riven-wonders.json` | 2-8 per 8 km world on 4 seeds (prototype) |
 
 Shared rules for the land stages:
 
-- Volcanic, cold, plateau, hill, landmark, carver, cut, sediment and wonder features
+- Volcanic, cold, plateau, hill, landmark, carver, cut and sediment features
   are owned by `Sites` lanes ([ARCHITECTURE.md](ARCHITECTURE.md#feature-sites)). Lowlands,
   passes and drylands are continuous fields with no site.
 - Major forms certify their admitted site against `sampleBeforeMajorFeatures` over the support
@@ -699,23 +698,6 @@ provider's surface patches (splatter, splotches) still rework some ground during
 cover and preview decide (25 of 4,225 columns near seed 8675309's 0 -2880), until Riven owns those
 surfaces.
 
-**Wonders** (prototype, `riven-wonders.json`, `WonderTerrain`): rare exaggerated landforms, the
-last land stage before the shore, on their own WONDER lane (density 0.1, radius 1.5 site cells,
-432 blocks). A site decides once from earlier columns: land, inland, no river within 0.3 radii of
-its anchor, at most two of eight ring probes on sea or coast, a family weighted by the anchor's
-climate region, and headroom (the form shrinks as a whole). Families: sheer sandstone pillar
-forests with natural stone bridges (cool to warm, wet); tepuis with talus aprons and overhanging
-ledges (warm and hot wet); hoodoo amphitheatres of capped spires (dry); tower karst on a levelled
-plain (mild to hot); tiankeng sinkholes with undercut rims (mild to warm, moist); meandering fins
-pierced by arches (dry); tsingy blade mazes (warm and hot); concentric breached ring structures
-(dry); and hexagonal basalt column buttes (frozen and cool). A column takes one surface and at
-most one void below it, kept under two solid blocks of the final surface and filled with water
-under the water level, so native cubes and the DH preview share overhangs through the column runs.
-Each family brings a named strata palette banded from its floor up; dry and rock families, and
-tower-karst flanks, are bare. Relief eases out within 40 blocks of surface water. Strata runs now
-break only at band edges. Open: Distant Horizons samples one column per LOD cell, so thin pillars
-and towers alias into flat blocks in the near LOD ring until native chunks arrive.
-
 **Geology** (prototype, phase 1a of the subsurface design; `riven-geology.json`, `GeologyMap`): every
 block below the soil, and all exposed rock, comes from a geological history evaluated per column.
 Nine rock units (gneiss, schist, granite, limestone, dolostone, shale, sandstone, red beds,
@@ -728,7 +710,7 @@ lies above the smooth base elevation by the rock erosion removed. That depth var
 different levels and uplifted cores reach the basement. Folds from three blended orientations
 grow with compression; sequences thin under it. The base blends to Y100 across the coast, so beds
 continue under the sea. Within 24 blocks of the surface, arid climates recolour sedimentary units
-as terracotta bands. This retires the climate strata palettes; wonders keep their own rock.
+as terracotta bands. This retires the climate strata palettes.
 Phase 1b breaks and covers the sequence. Steep faults come from 1.5 km cells, denser near plate
 boundaries, with bigger throws at rifts and sideways slip at transforms; each side moves half,
 tapering at the tips. Thrust sheets in compressed ground lift older beds over younger. Granite
@@ -1060,8 +1042,7 @@ bare stone (riven-surface-rules.json), sandy shores (gravel on reflective coasts
 0.25), dryland pavement and sand, climate sand and snow follow; grass on the steepest soil (broad
 slope over 0.12, about 7% of soil) is coarse dirt, and gravel over 0.2. Sand Riven places as soil
 rests on three blocks of sandstone, and covers over it (bars, green margins, pavement, beach sand)
-keep it. Rock comes from the geology (above); the named strata palettes in `riven-materials.json`
-serve only wonders.
+keep it. Rock comes from the geology (above).
 
 ## Riven content
 

@@ -42,7 +42,6 @@ public final class Definitions {
                             "riven-landmarks.json",
                             "riven-lowlands.json",
                             "riven-mappings.json",
-                            "riven-materials.json",
                             "riven-mountains.json",
                             "riven-ocean-floors.json",
                             "riven-ores.json",
@@ -66,7 +65,6 @@ public final class Definitions {
                             "riven-terrain.json",
                             "riven-trees.json",
                             "riven-volcanic.json",
-                            "riven-wonders.json",
                             "riven-zones.json"));
 
     private Definitions() {}

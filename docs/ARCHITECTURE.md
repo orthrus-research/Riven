@@ -115,7 +115,7 @@ they never call `surfaceHabitat` or final `sample`.
 | --- | --- | --- |
 | `intent` | Outline, marine ownership and ocean water, climate and the province (effective climate), base terrain, shore intent | Local hydrology, all shaping |
 | `habitat` | Intent plus local surface-water and lens plans | Final terrain, coastal emergence |
-| `sampleBeforeMajorFeatures` | Habitat, erosion, lowlands, regional passes; constrained ocean bed on marine columns | Major forms, carvers, drylands, wonders, coastal formations |
+| `sampleBeforeMajorFeatures` | Habitat, erosion, lowlands, regional passes; constrained ocean bed on marine columns | Major forms, carvers, drylands, coastal formations |
 | `sampleBeforeRocky` | Complete earlier surface with shore/water constraints and roof seal | Coast forms and sedimentary formations |
 | `sampleBeforeSediment` | The above plus the coast's forms and roof seal | Sedimentary formations |
 
@@ -148,7 +148,7 @@ flowchart TD
 ## Composition order
 
 Land columns run, in order: erosion, lowlands, regional passes, volcanic, cold, plateaus,
-mountains, hills (capped by the coastal envelope), regional landmarks, surface carvers, general surface cuts, drylands, wonders (rare set pieces, with voids), shore
+mountains, hills (capped by the coastal envelope), regional landmarks, surface carvers, general surface cuts, drylands, shore
 shaping, hydrology constraint, coast forms, sedimentary coasts. Marine columns run ocean bed,
 hydrology constraint and roof seal, then the coastal stages. This order is part of the generator
 definition:
@@ -191,7 +191,7 @@ follows a column's transitions:
 
 1. **Shape** (`CrustShape` over the terrain sample): raise the ground to the sky's floor (for a
    coast form with a volume, the ground before it); lay sediment over it; build a stack's or
-   arch's solid and carve an arch's tunnel or a sea cave; carve wonder voids; open the aquifer as a pocket; then
+   arch's solid and carve an arch's tunnel or a sea cave; open the aquifer as a pocket; then
    the caves. `CaveMap` walks a native column bottom-up, each block taking the first of the carve
    forms its sub-zone allows that opens it (`CaveMap.FORMS`: chamber rooms in magma alone,
    fissures, lava tubes, the root's geodes, lava rivers, pillar halls and tunnels, the basement's
@@ -202,8 +202,8 @@ follows a column's transitions:
    cavity's table picks the first in its order, and its top, soil and subsoil layers are written
    over raised rock, counted down from the floor. A row without a subsoil takes the next holding
    row's.
-3. **Bed:** bed runs take their rock from the zone's bed source (`CrustStrata`: geology, tint
-   bands, wonder palettes).
+3. **Bed:** bed runs take their rock from the zone's bed source (`CrustStrata`: geology and its
+   tint bands).
 4. **Fills:** open space takes its cavity's fluid up to its level (water to the water horizon), a
    pocket its own level, and air above. Carved caves take theirs by a fixed precedence
    (`CaveFills`, D15): lava up to the lava horizon, then an aquifer's water to its level, then a
@@ -212,7 +212,7 @@ follows a column's transitions:
    assembly.
 
 What a pass may write over is the engine's rule (`Shape.Pass`): built rock is never carved, caves
-never cut a rocky or wonder void, a pocket only opens raised or laid ground, and materials touch
+never cut a coast form's void, a pocket only opens raised or laid ground, and materials touch
 raised rock only. `tools/checks/AssembledColumnCheck` proves runs cover the crust, `at` and `role`
 agree with them, columns are equal cold, from reused buffers and in reverse order, soil roles lie
 only in their layer and every role is legal for its pass, that every carved block's family comes
