@@ -235,7 +235,8 @@ final class RivenCommand extends CommandBase {
 
     /**
      * Ground cover parity around the sender: every ground cover block the preview draws against
-     * the world, near each loaded column's ground, and how many columns carry cover.
+     * the world, near each loaded column's ground, and how many columns carry cover. Submerged
+     * plants, which the preview draws as their water, are counted apart.
      */
     private static void cover(ICommandSender sender, World world, String[] args)
             throws CommandException {
@@ -246,6 +247,7 @@ final class RivenCommand extends CommandBase {
             throw new CommandException("Riven ground cover needs the decoration provider");
         BlockPos at = sender.getPosition();
         long matched = 0, previewOnly = 0, worldOnly = 0, columns = 0, covered = 0, grounds = 0;
+        long submerged = 0;
         String groundExample = null;
         java.util.Map<String, Integer> kinds = new java.util.TreeMap<>();
         // Each mismatched block kind with the first position it was seen at.
@@ -274,6 +276,10 @@ final class RivenCommand extends CommandBase {
                     net.minecraft.block.state.IBlockState found =
                             world.getBlockState(pos.setPos(x, y, z));
                     boolean p = preview != null && cover.places(preview.getBlock());
+                    if (found.getBlock() instanceof cc.orthrus.riven.content.SubmergedPlant) {
+                        submerged++;
+                        continue;
+                    }
                     boolean w = cover.places(found.getBlock());
                     if (p && preview.equals(found)) {
                         matched++;
@@ -315,7 +321,7 @@ final class RivenCommand extends CommandBase {
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Riven cover r=%d: columns=%d covered=%d matched=%d previewOnly=%d worldOnly=%d groundDiffers=%d (%s)",
+                                "Riven cover r=%d: columns=%d covered=%d matched=%d previewOnly=%d worldOnly=%d groundDiffers=%d submerged=%d (%s)",
                                 radius,
                                 columns,
                                 covered,
@@ -323,6 +329,7 @@ final class RivenCommand extends CommandBase {
                                 previewOnly,
                                 worldOnly,
                                 grounds,
+                                submerged,
                                 groundExample)));
         java.util.List<java.util.Map.Entry<String, Integer>> top =
                 new java.util.ArrayList<>(kinds.entrySet());

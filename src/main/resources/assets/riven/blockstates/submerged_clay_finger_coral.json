@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:submerged_clay_finger_coral_0"
+      },
+      {
+        "model": "riven:submerged_clay_finger_coral_1"
+      },
+      {
+        "model": "riven:submerged_clay_finger_coral_2"
+      },
+      {
+        "model": "riven:submerged_clay_finger_coral_3"
+      }
+    ]
+  }
+}

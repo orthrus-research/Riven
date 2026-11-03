@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:submerged_eel_ribbon_0"
+      },
+      {
+        "model": "riven:submerged_eel_ribbon_1"
+      },
+      {
+        "model": "riven:submerged_eel_ribbon_2"
+      },
+      {
+        "model": "riven:submerged_eel_ribbon_3"
+      }
+    ]
+  }
+}

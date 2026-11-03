@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:submerged_fork_kelp_top_0"
+      },
+      {
+        "model": "riven:submerged_fork_kelp_top_1"
+      },
+      {
+        "model": "riven:submerged_fork_kelp_top_2"
+      },
+      {
+        "model": "riven:submerged_fork_kelp_top_3"
+      }
+    ]
+  }
+}

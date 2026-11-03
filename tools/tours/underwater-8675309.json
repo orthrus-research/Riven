@@ -1,0 +1,7 @@
+[
+  {"label": "reef-underwater", "x": -3519.5, "y": 60, "z": -4095.5, "yaw": 45, "pitch": 25, "commands": ["effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "kelp-underwater", "x": -2303.5, "y": 56, "z": -1151.5, "yaw": 45, "pitch": 5, "commands": ["execute {player} -3519.5 60 -4095.5 riven cover 48", "execute {player} -3519.5 60 -4095.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "kelp-from-above", "x": -2289.5, "y": 72, "z": -1151.5, "yaw": 90, "pitch": 55, "commands": ["execute {player} -2303.5 56 -1151.5 riven cover 48", "execute {player} -2303.5 56 -1151.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "waterweed-underwater", "x": -575.5, "y": 88, "z": -2751.5, "yaw": 45, "pitch": 40, "commands": ["execute {player} -2289.5 72 -1151.5 riven cover 48", "execute {player} -2289.5 72 -1151.5 riven", "effect {player} minecraft:night_vision 1000000 0 true"]},
+  {"label": "return", "x": -575.5, "y": 118, "z": -2751.5, "yaw": 0, "pitch": 30, "commands": ["execute {player} -575.5 88 -2751.5 riven cover 48", "execute {player} -575.5 88 -2751.5 riven"]}
+]

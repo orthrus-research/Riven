@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "revision": 3,
+  "revision": 4,
   "variationSeed": "0x47524f554e44434f",
-  "about": "Ground cover (ground-cover-v1): the plants and decals on a column's ground, as pure functions of seed, definitions, the column's riven: biome and the block it stands on. A biome lists palettes (by name, or {palette, scale} at a scaled density) and entries in order; the first entry whose ground fits (a Riven decoration's own grounds, or ground for other blocks) and whose draw falls under its density decides the column. patch (blocks) gathers an entry into drifts covering share of the land (default 0.35) at the same mean density. A plant stands on the column's surface (the top of its highest non-air run) where terrain, boulders and trees leave air, and never on a boulder; a two-block plant needs both blocks clear, its form by position; a cane (height {min, max}, by position) needs all its blocks clear and water beside its ground in a neighbouring column's native blocks, and a preview cell over two blocks wide draws none. Each cube writes the blocks inside itself after its trees; the preview draws the same blocks, so distant ground takes their colour as Distant Horizons tints it. Water, the realms and biomes without an entry stay bare. A column under still water (its ground the water) is decided too: an entry's depth {min, max} names the blocks of water over the bed it takes (any by default), and only floating plants, or blocks with ground water, fit it (terrain-v117).",
+  "about": "Ground cover (ground-cover-v1): the plants and decals on a column's ground, as pure functions of seed, definitions, the column's riven: biome and the block it stands on. A biome lists palettes (by name, or {palette, scale} at a scaled density) and entries in order; the first entry whose ground fits (a Riven decoration's own grounds, or ground for other blocks) and whose draw falls under its density decides the column. patch (blocks) gathers an entry into drifts covering share of the land (default 0.35) at the same mean density. A plant stands on the column's surface (the top of its highest non-air run) where terrain, boulders and trees leave air, and never on a boulder; a two-block plant needs both blocks clear, its form by position; a cane (height {min, max}, by position) needs all its blocks clear and water beside its ground in a neighbouring column's native blocks, and a preview cell over two blocks wide draws none. Each cube writes the blocks inside itself after its trees; the preview draws the same blocks, so distant ground takes their colour as Distant Horizons tints it. Water, the realms and biomes without an entry stay bare. A column under still water (its ground the water) is decided too: an entry's depth {min, max} names the blocks of water over the bed it takes (any by default), and only floating plants, or blocks with ground water, fit it (terrain-v117). A submerged plant is decided by the bed it stands on, under at least two blocks of water, and stands from the bed up in place of water; an entry with top stacks its block under that top piece, height {min, max} blocks but no higher than the block below the surface (terrain-v119).",
   "palettes": {
     "temperate_meadow": [
       {"block": "riven:tall_meadow_grass", "density": 0.03, "patch": 18, "share": 0.4},
@@ -446,6 +446,81 @@
         "share": 0.3,
         "depth": {"min": 1, "max": 4}
       }
+    ],
+    "waterweeds": [
+      {
+        "block": "riven:submerged_whorled_waterweed",
+        "density": 0.1,
+        "patch": 18,
+        "share": 0.4,
+        "depth": {"min": 2, "max": 8}
+      },
+      {
+        "block": "riven:submerged_eel_ribbon",
+        "density": 0.06,
+        "patch": 22,
+        "depth": {"min": 2, "max": 10}
+      }
+    ],
+    "kelp_bed": [
+      {
+        "block": "riven:submerged_fork_kelp",
+        "top": "riven:submerged_fork_kelp_top",
+        "height": {"min": 3, "max": 14},
+        "density": 0.18,
+        "patch": 32,
+        "share": 0.35,
+        "depth": {"min": 5, "max": 30}
+      },
+      {
+        "block": "riven:submerged_ladder_kelp",
+        "top": "riven:submerged_ladder_kelp_top",
+        "height": {"min": 3, "max": 12},
+        "density": 0.1,
+        "patch": 28,
+        "share": 0.3,
+        "depth": {"min": 5, "max": 30}
+      },
+      {
+        "block": "riven:submerged_eel_ribbon",
+        "density": 0.1,
+        "patch": 26,
+        "share": 0.35,
+        "depth": {"min": 2, "max": 6}
+      }
+    ],
+    "reef": [
+      {
+        "block": "riven:submerged_clay_finger_coral",
+        "density": 0.1,
+        "patch": 14,
+        "share": 0.4,
+        "depth": {"min": 2, "max": 14}
+      },
+      {
+        "block": "riven:submerged_pebble_tower_coral",
+        "density": 0.08,
+        "patch": 16,
+        "depth": {"min": 2, "max": 14}
+      },
+      {
+        "block": "riven:submerged_tidal_lace_fan",
+        "density": 0.06,
+        "patch": 18,
+        "depth": {"min": 3, "max": 16}
+      },
+      {
+        "block": "riven:submerged_mauve_cup_anemone",
+        "density": 0.06,
+        "patch": 12,
+        "depth": {"min": 2, "max": 12}
+      },
+      {
+        "block": "riven:submerged_eel_ribbon",
+        "density": 0.05,
+        "patch": 22,
+        "depth": {"min": 2, "max": 6}
+      }
     ]
   },
   "biomes": {
@@ -453,17 +528,17 @@
     "riven:tundra": ["tundra"],
     "riven:snow_taiga": ["conifer_floor", {"palette": "tundra", "scale": 0.5}],
     "riven:cold_steppe": ["steppe", {"palette": "tundra", "scale": 0.3}],
-    "riven:boreal_forest": [{"palette": "shallows", "scale": 0.5}, "conifer_floor", {"palette": "woodland_floor", "scale": 0.3}],
-    "riven:cold_rainforest": [{"palette": "shallows", "scale": 0.5}, "cold_rainforest_floor"],
-    "riven:grassland": ["reed_margin", "shallows", "grassland", {"palette": "temperate_meadow", "scale": 0.4}],
-    "riven:temperate_woodland": ["reed_margin", "shallows", "woodland_floor", {"palette": "temperate_meadow", "scale": 0.3}],
-    "riven:temperate_rainforest": ["reed_margin", "shallows", "temperate_rainforest_floor"],
-    "riven:scrubland": ["reed_margin", "shallows", "scrub"],
-    "riven:warm_woodland": ["reed_margin", "shallows", "mediterranean"],
-    "riven:subtropical_forest": ["reed_margin", "shallows", {"palette": "tropical_floor", "scale": 0.7}, {"palette": "woodland_floor", "scale": 0.4}],
+    "riven:boreal_forest": [{"palette": "shallows", "scale": 0.5}, {"palette": "waterweeds", "scale": 0.5}, "conifer_floor", {"palette": "woodland_floor", "scale": 0.3}],
+    "riven:cold_rainforest": [{"palette": "shallows", "scale": 0.5}, {"palette": "waterweeds", "scale": 0.5}, "cold_rainforest_floor"],
+    "riven:grassland": ["reed_margin", "shallows", "waterweeds", "grassland", {"palette": "temperate_meadow", "scale": 0.4}],
+    "riven:temperate_woodland": ["reed_margin", "shallows", "waterweeds", "woodland_floor", {"palette": "temperate_meadow", "scale": 0.3}],
+    "riven:temperate_rainforest": ["reed_margin", "shallows", "waterweeds", "temperate_rainforest_floor"],
+    "riven:scrubland": ["reed_margin", "shallows", "waterweeds", "scrub"],
+    "riven:warm_woodland": ["reed_margin", "shallows", "waterweeds", "mediterranean"],
+    "riven:subtropical_forest": ["reed_margin", "shallows", "waterweeds", {"palette": "tropical_floor", "scale": 0.7}, {"palette": "woodland_floor", "scale": 0.4}],
     "riven:hot_desert": ["desert"],
-    "riven:savanna": ["reed_margin", "shallows", "savanna"],
-    "riven:tropical_rainforest": ["reed_margin", "shallows", "tropical_floor"],
+    "riven:savanna": ["reed_margin", "shallows", "waterweeds", "savanna"],
+    "riven:tropical_rainforest": ["reed_margin", "shallows", "waterweeds", "tropical_floor"],
     "riven:polar_plateau": ["polar"],
     "riven:tundra_highlands": ["tundra", "alpine_rock"],
     "riven:snow_taiga_highlands": ["conifer_floor", {"palette": "tundra", "scale": 0.6}],
@@ -471,44 +546,47 @@
     "riven:boreal_highlands": ["conifer_floor", {"palette": "heath", "scale": 0.4}],
     "riven:misty_highlands": ["heath", {"palette": "temperate_rainforest_floor", "scale": 0.4}],
     "riven:dry_uplands": ["steppe", {"palette": "scrub", "scale": 0.4}],
-    "riven:wooded_highlands": ["reed_margin", "shallows", "woodland_floor", {"palette": "temperate_meadow", "scale": 0.5}],
-    "riven:cloud_forest": ["reed_margin", "shallows", "cloud_forest_floor"],
-    "riven:scrub_plateau": ["reed_margin", "shallows", "scrub"],
-    "riven:warm_highlands": ["reed_margin", "shallows", "mediterranean", {"palette": "conifer_floor", "scale": 0.4}],
-    "riven:montane_forest": ["reed_margin", "shallows", {"palette": "conifer_floor", "scale": 0.7}, {"palette": "tropical_floor", "scale": 0.4}],
+    "riven:wooded_highlands": ["reed_margin", "shallows", "waterweeds", "woodland_floor", {"palette": "temperate_meadow", "scale": 0.5}],
+    "riven:cloud_forest": ["reed_margin", "shallows", "waterweeds", "cloud_forest_floor"],
+    "riven:scrub_plateau": ["reed_margin", "shallows", "waterweeds", "scrub"],
+    "riven:warm_highlands": ["reed_margin", "shallows", "waterweeds", "mediterranean", {"palette": "conifer_floor", "scale": 0.4}],
+    "riven:montane_forest": ["reed_margin", "shallows", "waterweeds", {"palette": "conifer_floor", "scale": 0.7}, {"palette": "tropical_floor", "scale": 0.4}],
     "riven:desert_plateau": ["desert", {"palette": "badlands", "scale": 0.6}],
-    "riven:savanna_plateau": ["reed_margin", "shallows", "savanna"],
-    "riven:tropical_highlands": ["reed_margin", "shallows", "tropical_floor"],
+    "riven:savanna_plateau": ["reed_margin", "shallows", "waterweeds", "savanna"],
+    "riven:tropical_highlands": ["reed_margin", "shallows", "waterweeds", "tropical_floor"],
     "riven:frozen_hills": ["tundra", "alpine_rock"],
     "riven:frozen_peaks": ["polar", {"palette": "alpine_rock", "scale": 0.6}],
     "riven:cold_hills": ["heath", "alpine_rock"],
     "riven:cold_peaks": ["alpine_rock"],
     "riven:rugged_hills": [
-      "reed_margin", "shallows",
+      "reed_margin", "shallows", "waterweeds",
       {"palette": "grassland", "scale": 0.6},
       "alpine_rock",
       {"palette": "woodland_floor", "scale": 0.3}
     ],
     "riven:mountain_peaks": ["alpine_rock"],
-    "riven:warm_hills": ["reed_margin", "shallows", "mediterranean", {"palette": "alpine_rock", "scale": 0.6}],
+    "riven:warm_hills": ["reed_margin", "shallows", "waterweeds", "mediterranean", {"palette": "alpine_rock", "scale": 0.6}],
     "riven:warm_peaks": ["alpine_rock"],
     "riven:badland_hills": ["badlands"],
     "riven:badland_peaks": [{"palette": "badlands", "scale": 0.6}, {"palette": "alpine_rock", "scale": 0.5}],
-    "riven:beach": [{"palette": "reed_margin", "scale": 0.5}, {"palette": "shallows", "scale": 0.5}, "beach"],
+    "riven:beach": [{"palette": "reed_margin", "scale": 0.5}, {"palette": "shallows", "scale": 0.5}, {"palette": "waterweeds", "scale": 0.5}, "beach"],
     "riven:snowy_beach": ["snowy_beach"],
     "riven:rocky_shore": ["rocky_shore"],
-    "riven:marsh": [{"palette": "reed_margin", "scale": 1.6}, {"palette": "shallows", "scale": 1.6}, "wetland"],
-    "riven:wetland": [{"palette": "reed_margin", "scale": 1.6}, {"palette": "shallows", "scale": 1.6}, "wetland"],
-    "riven:oasis": [{"palette": "reed_margin", "scale": 1.6}, {"palette": "shallows", "scale": 1.6}, {"palette": "wetland", "scale": 0.5}, {"palette": "savanna", "scale": 0.5}],
+    "riven:marsh": [{"palette": "reed_margin", "scale": 1.6}, {"palette": "shallows", "scale": 1.6}, {"palette": "waterweeds", "scale": 1.6}, "wetland"],
+    "riven:wetland": [{"palette": "reed_margin", "scale": 1.6}, {"palette": "shallows", "scale": 1.6}, {"palette": "waterweeds", "scale": 1.6}, "wetland"],
+    "riven:oasis": [{"palette": "reed_margin", "scale": 1.6}, {"palette": "shallows", "scale": 1.6}, {"palette": "waterweeds", "scale": 1.6}, {"palette": "wetland", "scale": 0.5}, {"palette": "savanna", "scale": 0.5}],
     "riven:frozen_delta": ["tundra"],
     "riven:fjord_mouth": [{"palette": "conifer_floor", "scale": 0.5}, "rocky_shore"],
-    "riven:salt_marsh": ["reed_margin", "shallows", "salt_marsh"],
-    "riven:tidal_flat": [{"palette": "reed_margin", "scale": 0.5}, {"palette": "shallows", "scale": 0.5}, "tidal_flat"],
-    "riven:delta_wetland": [{"palette": "reed_margin", "scale": 1.6}, {"palette": "shallows", "scale": 1.6}, "wetland"],
-    "riven:mangrove_coast": ["reed_margin", "shallows", "mangrove_floor"],
+    "riven:salt_marsh": ["reed_margin", "shallows", "waterweeds", "salt_marsh"],
+    "riven:tidal_flat": [{"palette": "reed_margin", "scale": 0.5}, {"palette": "shallows", "scale": 0.5}, {"palette": "waterweeds", "scale": 0.5}, "tidal_flat"],
+    "riven:delta_wetland": [{"palette": "reed_margin", "scale": 1.6}, {"palette": "shallows", "scale": 1.6}, {"palette": "waterweeds", "scale": 1.6}, "wetland"],
+    "riven:mangrove_coast": ["reed_margin", "shallows", "waterweeds", "mangrove_floor"],
     "riven:sabkha": [{"palette": "desert", "scale": 0.3}],
-    "riven:estuary": [{"palette": "reed_margin", "scale": 1.2}, {"palette": "shallows", "scale": 1.2}, {"palette": "wetland", "scale": 0.5}],
-    "riven:lake": ["shallows"],
-    "riven:river": [{"palette": "shallows", "scale": 0.5}]
+    "riven:estuary": [{"palette": "reed_margin", "scale": 1.2}, {"palette": "shallows", "scale": 1.2}, {"palette": "waterweeds", "scale": 1.2}, {"palette": "wetland", "scale": 0.5}],
+    "riven:lake": ["shallows", "waterweeds"],
+    "riven:river": [{"palette": "shallows", "scale": 0.5}, {"palette": "waterweeds", "scale": 0.5}],
+    "riven:ocean": ["kelp_bed"],
+    "riven:deep_ocean": ["kelp_bed"],
+    "riven:warm_shallows": ["reef"]
   }
 }

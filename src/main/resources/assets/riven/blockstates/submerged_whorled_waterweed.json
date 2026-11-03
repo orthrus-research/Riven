@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:submerged_whorled_waterweed_0"
+      },
+      {
+        "model": "riven:submerged_whorled_waterweed_1"
+      },
+      {
+        "model": "riven:submerged_whorled_waterweed_2"
+      },
+      {
+        "model": "riven:submerged_whorled_waterweed_3"
+      }
+    ]
+  }
+}

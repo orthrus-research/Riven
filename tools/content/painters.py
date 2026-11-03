@@ -281,6 +281,143 @@ def pad(species: str, form: int) -> Image:
     return image
 
 
+# Underwater plants (terrain-v119), placeholders on Decoration Library 01's underwater subjects:
+# each subject's shape and its ramp, dark to light.
+UNDERWATER = {
+    "whorled_waterweed": (
+        "whorl",
+        [(0x24, 0x3E, 0x3B), (0x2F, 0x58, 0x4C), (0x4C, 0x7B, 0x65), (0x83, 0xA1, 0x84)],
+    ),
+    "eel_ribbon": (
+        "ribbon",
+        [(0x24, 0x3E, 0x3B), (0x2F, 0x58, 0x4C), (0x4C, 0x7B, 0x65), (0x83, 0xA1, 0x84)],
+    ),
+    "fork_kelp": (
+        "kelp",
+        [(0x41, 0x5C, 0x3E), (0x5C, 0x53, 0x38), (0x68, 0x81, 0x4B), (0xA0, 0xAD, 0x6C)],
+    ),
+    "fork_kelp_top": (
+        "kelp_top",
+        [(0x41, 0x5C, 0x3E), (0x5C, 0x53, 0x38), (0x68, 0x81, 0x4B), (0xA0, 0xAD, 0x6C)],
+    ),
+    "ladder_kelp": (
+        "ladder",
+        [(0x33, 0x3E, 0x32), (0x41, 0x5C, 0x3E), (0x68, 0x81, 0x4B), (0xA0, 0xAD, 0x6C)],
+    ),
+    "ladder_kelp_top": (
+        "kelp_top",
+        [(0x33, 0x3E, 0x32), (0x41, 0x5C, 0x3E), (0x68, 0x81, 0x4B), (0xA0, 0xAD, 0x6C)],
+    ),
+    "clay_finger_coral": (
+        "fingers",
+        [(0x4D, 0x3C, 0x3D), (0x74, 0x53, 0x52), (0xAC, 0x7C, 0x6C), (0xD3, 0xAB, 0x8D)],
+    ),
+    "pebble_tower_coral": (
+        "tower",
+        [(0x4D, 0x3C, 0x3D), (0x77, 0x53, 0x56), (0x7F, 0x62, 0x50), (0xAC, 0x7C, 0x6C)],
+    ),
+    "tidal_lace_fan": (
+        "fan",
+        [(0x3F, 0x62, 0x64), (0x6C, 0x5D, 0x77), (0x96, 0xB0, 0xA0), (0xC6, 0xAC, 0xBE)],
+    ),
+    "mauve_cup_anemone": (
+        "anemone",
+        [(0x3C, 0x3C, 0x48), (0x70, 0x5A, 0x73), (0x9B, 0x7C, 0x9A), (0xC3, 0xA9, 0xB5)],
+    ),
+}
+
+
+def underwater(subject: str, form: int) -> Image:
+    """An underwater plant seen from the side, drawn by its shape, lit from the left."""
+    image = blank()
+    shape, ramp = UNDERWATER[subject]
+    salt = 170 + len(subject) * 3 + 19 * form
+
+    def put(x: int, y: int, level: int) -> None:
+        if 0 <= x < SIZE and 0 <= y < SIZE:
+            image[y][x] = opaque(ramp[max(0, min(len(ramp) - 1, level))])
+
+    if shape in ("whorl", "kelp", "ladder", "kelp_top"):
+        # A stem up the middle, wandering a little, with leaves by shape.
+        # Stack pieces keep their stem in one column, so stacked blocks join; a waterweed wanders.
+        stacked = shape != "whorl"
+        x = 7 if stacked else 7 + int(noise(form, 0, salt) * 3) - 1
+        top = 0 if shape != "kelp_top" else 4 + int(noise(form, 1, salt) * 4)
+        for y in range(SIZE - 1, top - 1, -1):
+            if not stacked and noise(y, form, salt) < 0.2:
+                x = max(3, min(12, x + (1 if noise(y, 1, salt) < 0.5 else -1)))
+            put(x, y, 1)
+            if shape == "whorl" and y % 4 == 1:
+                for d in (1, 2, 3):
+                    put(x - d, y + (d > 1), 2 if d < 3 else 1)
+                    put(x + d, y + (d > 1), 3 if d == 1 else 2)
+            if shape in ("kelp", "kelp_top") and y % 3 == 0:
+                side = 1 if (y // 3) % 2 else -1
+                for d in range(1, 5):
+                    put(x + side * d, y - d // 2, 2 if d < 4 else 3)
+            if shape == "ladder" and y % 2 == 0:
+                put(x - 1, y, 2)
+                put(x - 2, y, 3)
+                put(x + 1, y, 2)
+                put(x + 2, y, 2)
+        if shape == "kelp_top":
+            # A float at the tip, the blade beyond it.
+            for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+                put(x + dx, top - 1 + dy, 3)
+            for d in range(1, 4):
+                put(x + d, top - 1 - d, 2)
+    elif shape == "ribbon":
+        for k in range(3 + int(noise(form, 0, salt) * 3)):
+            x = 2 + int(noise(k, 1, salt) * 12)
+            height = 8 + int(noise(k, 2, salt) * 8)
+            for i in range(height):
+                sway = int(1.5 * math.sin((i + k * 2) / 2.5))
+                put(x + sway, SIZE - 1 - i, 2 if i % 5 else 3)
+    elif shape == "fingers":
+        for k in range(3 + int(noise(form, 0, salt) * 3)):
+            x = 2 + int(noise(k, 1, salt) * 12)
+            height = 4 + int(noise(k, 2, salt) * 9)
+            for i in range(height):
+                put(x, SIZE - 1 - i, 1 if i < height - 1 else 3)
+                put(x + 1, SIZE - 1 - i, 0 if i < height - 1 else 2)
+    elif shape == "tower":
+        y = SIZE - 1
+        for k in range(3 + int(noise(form, 0, salt) * 3)):
+            r = 3 - k // 2
+            cx = 7 + int(noise(k, 1, salt) * 3) - 1
+            for dy in range(-r, r + 1):
+                for dx in range(-r, r + 1):
+                    if dx * dx + dy * dy <= r * r:
+                        put(
+                            cx + dx,
+                            y - r + dy,
+                            2
+                            if dx < 0 and dy < 0
+                            else 1
+                            if dx * dx + dy * dy < (r - 1) ** 2
+                            else 0,
+                        )
+            y -= 2 * r
+    elif shape == "fan":
+        cx = 7 + int(noise(form, 0, salt) * 3) - 1
+        for i in range(SIZE):
+            spread = 1 + i * 6 // SIZE
+            y = SIZE - 1 - i
+            for dx in range(-spread, spread + 1):
+                if (dx + i) % 2 == 0 or abs(dx) == spread:
+                    put(cx + dx, y, 3 if abs(dx) == spread else 1 + (dx < 0))
+    elif shape == "anemone":
+        cx = 7 + int(noise(form, 0, salt) * 3) - 1
+        for y in range(SIZE - 1, SIZE - 6, -1):
+            for dx in range(-2, 3):
+                put(cx + dx, y, 0 if abs(dx) == 2 else 1)
+        for k in range(7):
+            dx = k - 3
+            for i in range(2 + int(noise(k, 1, salt) * 4)):
+                put(cx + dx + (dx * i) // 4, SIZE - 6 - i, 2 if i < 2 else 3)
+    return image
+
+
 def opaque(rgb: tuple[int, int, int]) -> Pixel:
     return (rgb[0], rgb[1], rgb[2], 255)
 
@@ -491,4 +628,5 @@ PAINTERS: dict[str, Callable[..., Image]] = {
     "biofilm": biofilm,
     "stonebell": stonebell,
     "pad": pad,
+    "underwater": underwater,
 }

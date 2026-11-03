@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "normal": [
+      {
+        "model": "riven:submerged_pebble_tower_coral_0"
+      },
+      {
+        "model": "riven:submerged_pebble_tower_coral_1"
+      },
+      {
+        "model": "riven:submerged_pebble_tower_coral_2"
+      },
+      {
+        "model": "riven:submerged_pebble_tower_coral_3"
+      }
+    ]
+  }
+}

@@ -716,6 +716,18 @@ the reed margins in 26 biomes at their scale, at half strength in boreal forests
 rainforests, and alone on lakes (rivers at half). The preview counts the same depth down its own
 runs and draws the same pads and reeds.
 
+Underwater (terrain-v119, the `waterweeds`, `kelp_bed` and `reef` palettes): a submerged plant is
+decided by the bed it stands on, under at least two blocks of water, and stands from the bed up in
+place of the water, so the surface stays whole. Whorled waterweed and eel ribbon grow wherever the
+shallows do, two to ten blocks deep; `riven:ocean` and `riven:deep_ocean` grow kelp beds (fork
+kelp 3 to 14 blocks and ladder kelp 3 to 12, each a stack of stems under its top piece, no higher
+than the block below the surface, five to thirty deep, with eel ribbon in the shallows), and
+`riven:warm_shallows` reefs (clay finger and pebble tower corals, tidal lace fans and mauve cup
+anemones). Cubes below a surface cube decide their columns too, so a deep bed is written in its own
+cube. The preview draws them as the water they stand in: its lighting takes no decoration of
+water's material, and nothing under water shows from a preview's distance; `/riven cover` counts
+them apart (submerged).
+
 **Geology** (prototype, phase 1a of the subsurface design; `riven-geology.json`, `GeologyMap`): every
 block below the soil, and all exposed rock, comes from a geological history evaluated per column.
 Nine rock units (gneiss, schist, granite, limestone, dolostone, shale, sandstone, red beds,
@@ -1168,8 +1180,14 @@ from cave decoration, ore blocks, and unstable stone on the floors cave decorati
   tall plant (bottom and top pieces that join), showing one of four forms by position (a tall plant
   keeps its form in its state). Each stands only on its grounds (grass; dirt, mud included; sand;
   gravel; snow; stone) and drops without them; grasses, litter, moss, lichen and props give way to
-  placed blocks like tall grass; none has collision; all but the stone props burn. Underwater
-  plants, lianas, epiphytes and picked berry shrubs wait for the blocks that hold them.
+  placed blocks like tall grass; none has collision; all but the stone props burn. Lianas,
+  epiphytes and picked berry shrubs wait for the blocks that hold them.
+- **Underwater plants** (`decorations`, kind submerged, model cross, terrain-v119): whorled
+  waterweed, eel ribbon, fork and ladder kelp with their top pieces, clay finger and pebble tower
+  coral, tidal lace fan and mauve cup anemone, Decoration Library 01's underwater subjects as
+  painted placeholders. They are of water's material and level like green biofilm, stand on sand,
+  gravel or stone (the freshwater ones on grass and dirt too), and a kelp piece stands on the piece
+  below it; broken, they leave water.
 - **Floating plants** (`decorations`, kind floating, terrain-v117): blush waterlily, ivory
   waterstar and water shield (pads; painted placeholders on Decoration Library 01's tones) and
   shallow bent reed, bronze rush, velvet cattail and arrow waterleaf (crossed, drawn with the land

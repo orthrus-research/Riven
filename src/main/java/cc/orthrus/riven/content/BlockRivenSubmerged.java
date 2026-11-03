@@ -17,19 +17,23 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 /**
- * A decal on the floor under water (riven-content.json decorations, kind submerged), such as a
- * biofilm, in one of four forms by position. It is of water's material and carries water's level as
+ * A plant under water (riven-content.json decorations, kind submerged): a decal on the floor, such
+ * as a biofilm, or an upright plant (model cross), such as a waterweed, a coral or a piece of a kelp
+ * stack, in one of four forms by position. It is of water's material and carries water's level as
  * a still source, so the water around it neither flows into it nor draws a face against it, and
  * swimmers treat it as water. Broken, or once its ground goes, it leaves still water.
  */
-final class BlockRivenSubmerged extends Block implements GroundPlant {
-    private static final AxisAlignedBB BOX = new AxisAlignedBB(0, 0, 0, 1, 1 / 16.0, 1);
+final class BlockRivenSubmerged extends Block implements SubmergedPlant {
+    private static final AxisAlignedBB DECAL = new AxisAlignedBB(0, 0, 0, 1, 1 / 16.0, 1),
+            UPRIGHT = new AxisAlignedBB(0.125, 0, 0.125, 0.875, 0.875, 0.875);
 
     private final int ground;
+    private final boolean upright;
 
-    BlockRivenSubmerged(int ground) {
+    BlockRivenSubmerged(int ground, boolean upright) {
         super(Material.WATER);
         this.ground = ground;
+        this.upright = upright;
         setSoundType(SoundType.PLANT);
         setLightOpacity(3);
         setDefaultState(blockState.getBaseState().withProperty(BlockLiquid.LEVEL, 0));
@@ -59,7 +63,7 @@ final class BlockRivenSubmerged extends Block implements GroundPlant {
     @SuppressWarnings("deprecation")
     @Override
     public AxisAlignedBB getBoundingBox(IBlockState state, IBlockAccess world, BlockPos pos) {
-        return BOX;
+        return upright ? UPRIGHT : DECAL;
     }
 
     @SuppressWarnings("deprecation")
@@ -93,14 +97,19 @@ final class BlockRivenSubmerged extends Block implements GroundPlant {
         return BlockRenderLayer.CUTOUT;
     }
 
-    /** Placed only into still water, on its own ground. */
+    /** Placed only into still water, on its own ground or on an upright piece of a stack. */
     @Override
     public boolean canPlaceBlockAt(World world, BlockPos pos) {
+        return world.getBlockState(pos) == Blocks.WATER.getDefaultState() && supported(world, pos);
+    }
+
+    /** Its ground below, or for an upright plant the upright piece it stacks on. */
+    private boolean supported(World world, BlockPos pos) {
         BlockPos below = pos.down();
         IBlockState floor = world.getBlockState(below);
-        return world.getBlockState(pos) == Blocks.WATER.getDefaultState()
-                && floor.isSideSolid(world, below, EnumFacing.UP)
-                && growsOn(floor);
+        if (upright && floor.getBlock() instanceof BlockRivenSubmerged)
+            return ((BlockRivenSubmerged) floor.getBlock()).upright;
+        return floor.isSideSolid(world, below, EnumFacing.UP) && growsOn(floor);
     }
 
     @Override
@@ -114,9 +123,7 @@ final class BlockRivenSubmerged extends Block implements GroundPlant {
     @Override
     public void neighborChanged(
             IBlockState state, World world, BlockPos pos, Block block, BlockPos from) {
-        BlockPos below = pos.down();
-        IBlockState floor = world.getBlockState(below);
-        if (!floor.isSideSolid(world, below, EnumFacing.UP) || !growsOn(floor)) {
+        if (!supported(world, pos)) {
             dropBlockAsItem(world, pos, state, 0);
             world.setBlockState(pos, Blocks.WATER.getDefaultState());
         }

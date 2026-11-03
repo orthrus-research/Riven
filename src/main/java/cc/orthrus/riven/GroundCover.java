@@ -35,7 +35,9 @@ import java.util.function.IntPredicate;
  * non-air run) where native generation, boulders and trees leave air; a two-block plant or a cane
  * needs all its blocks clear of terrain and trees, and a cane also water beside its ground in the
  * native blocks of a neighbouring column. A column under still water is decided as well: its ground
- * is the water, which only floating plants fit, and an entry may name the water depths it takes.
+ * is the water, which only floating plants fit, and an entry may name the water depths it takes;
+ * a submerged plant stands on the bed instead, under at least one block of water, a stack of
+ * stems under its top piece reaching at most to the block below the surface.
  * Each cube writes the blocks inside itself after its trees, and the preview draws the same blocks,
  * so distant ground keeps the colour the plants give it.
  */
@@ -49,7 +51,8 @@ final class GroundCover {
     }
 
     private static final class Entry {
-        final IBlockState state;
+        final IBlockState state, top;
+        final boolean submerged;
         final GroundPlant.Tall tall;
         final GroundPlant.Cane cane;
         final int ground, shortest, tallest, shallowest, deepest;
@@ -66,15 +69,20 @@ final class GroundCover {
             plant = block instanceof GroundPlant ? (GroundPlant) block : null;
             tall = block instanceof GroundPlant.Tall ? (GroundPlant.Tall) block : null;
             cane = block instanceof GroundPlant.Cane ? (GroundPlant.Cane) block : null;
-            // A cane's entry gives its stack's height; other plants have their own.
-            if (cane != null) {
+            submerged = block instanceof cc.orthrus.riven.content.SubmergedPlant;
+            // A submerged stack ends in its own top piece.
+            top = j.has("top") ? Mappings.parse(j.get("top").getAsString()) : null;
+            if (j.has("top") && (top == null || !submerged))
+                throw new IllegalStateException("Only a submerged stack has a top: " + text);
+            // A cane's or a submerged stack's entry gives its height; other plants have their own.
+            if (cane != null || top != null) {
                 JsonObject height = j.getAsJsonObject("height");
                 if (height == null)
-                    throw new IllegalStateException("A cane needs its height: " + text);
-                shortest = count(height, "min", 1, 8);
-                tallest = count(height, "max", shortest, 8);
+                    throw new IllegalStateException("A stack needs its height: " + text);
+                shortest = count(height, "min", 1, MAXIMUM_DEPTH);
+                tallest = count(height, "max", shortest, MAXIMUM_DEPTH);
             } else if (j.has("height")) {
-                throw new IllegalStateException("Only a cane has a height: " + text);
+                throw new IllegalStateException("Only a stack has a height: " + text);
             } else shortest = tallest = tall != null ? 2 : 1;
             List<String> kinds = new ArrayList<>();
             if (j.has("ground"))
@@ -179,11 +187,20 @@ final class GroundCover {
      * no water lay beside the ground.
      */
     private Entry decide(
-            Biome biome, IBlockState ground, int depth, int x, int s, int z, boolean canes) {
+            Biome biome,
+            IBlockState ground,
+            IBlockState bed,
+            int depth,
+            int x,
+            int s,
+            int z,
+            boolean canes) {
         Entry[] entries = biomes.get(biome);
         if (entries == null || ground.getMaterial() == Material.AIR) return null;
         for (Entry e : entries) {
-            if (!e.fits(ground) || depth < e.shallowest || depth > e.deepest) continue;
+            if (depth < e.shallowest || depth > e.deepest) continue;
+            // A submerged plant stands on the bed, under at least one block of water.
+            if (e.submerged ? depth < 2 || bed == null || !e.fits(bed) : !e.fits(ground)) continue;
             if (SeededNoise.unit(SeededNoise.cell(e.seed, x, z)) >= e.threshold(x, z)) continue;
             if (e.cane != null && !(canes && waterBeside(x, s - 1, z))) continue;
             return e;
@@ -204,7 +221,15 @@ final class GroundCover {
         return false;
     }
 
-    /** How many blocks an entry's plant stands at a column: a cane's height by position. */
+    /**
+     * How many blocks an entry's plant stands at a column: a stack's height by position, a
+     * submerged stack's no higher than the block below the surface.
+     */
+    private int height(Entry e, int x, int z, int depth) {
+        int n = height(e, x, z);
+        return e.submerged ? Math.min(n, depth - 1) : n;
+    }
+
     private int height(Entry e, int x, int z) {
         if (e.shortest == e.tallest) return e.shortest;
         long heightSeed = SeededNoise.mix(e.seed ^ 0x3c6ef372fe94f82bL);
@@ -214,6 +239,7 @@ final class GroundCover {
 
     /** Block i (from 0 at the surface) of an entry's n-block plant at a column. */
     private IBlockState block(Entry e, int i, int n, int x, int z) {
+        if (e.top != null) return i == n - 1 ? e.top : e.state;
         if (n == 1) return e.state;
         // A two-block plant or a cane takes its form by position.
         long formSeed = SeededNoise.mix(e.seed ^ 0xbb67ae8584caa73bL);
@@ -238,7 +264,9 @@ final class GroundCover {
         for (int lz = 0; lz < 16; lz++)
             for (int lx = 0; lx < 16; lx++) {
                 int index = (lz << 4) | lx, s = column.surface(index);
-                if (s < y0 - reach || s >= y0 + 16) continue;
+                // Cover on the surface reaches up from it; a submerged plant stands below it.
+                boolean surface = s >= y0 - reach && s < y0 + 16;
+                if (!surface && (s < y0 + 16 || s >= y0 + 16 + MAXIMUM_DEPTH)) continue;
                 int x = (cubeX << 4) + lx, z = (cubeZ << 4) + lz;
                 if (boulders.at(x, z) != null) continue;
                 IBlockState top = ground.at(index, x, s - 1, z);
@@ -247,9 +275,20 @@ final class GroundCover {
                     while (depth < MAXIMUM_DEPTH
                             && ground.at(index, x, s - 1 - depth, z).getMaterial()
                                     == Material.WATER) depth++;
-                Entry e = decide(provider.biome(column, index, x, z), top, depth, x, s, z, true);
+                IBlockState bed = depth > 0 ? ground.at(index, x, s - 1 - depth, z) : null;
+                Entry e =
+                        decide(provider.biome(column, index, x, z), top, bed, depth, x, s, z, true);
                 if (e == null) continue;
-                int n = height(e, x, z);
+                int n = height(e, x, z, depth);
+                if (e.submerged) {
+                    // From the bed up, in place of the water.
+                    int base = s - depth;
+                    for (int i = 0; i < n; i++)
+                        if (base + i >= y0 && base + i < y0 + 16)
+                            primer.setBlockState(lx, base + i - y0, lz, block(e, i, n, x, z));
+                    continue;
+                }
+                if (!surface) continue;
                 if (n == 1) {
                     if (s >= y0
                             && primer.getBlockState(lx, s - y0, lz).getMaterial() == Material.AIR)
@@ -278,9 +317,10 @@ final class GroundCover {
      * neighbours' native blocks. From the footprint where the preview leaves boulders out, cover no longer
      * avoids them either, so a coarse cell asks no boulder lookup.
      */
-    IBlockState[] preview(
+    Placement preview(
             Biome reported,
             IBlockState groundBlock,
+            IBlockState bed,
             int depth,
             int x,
             int s,
@@ -289,13 +329,25 @@ final class GroundCover {
             IntPredicate taken) {
         if (footprint < TerrainColumn.BOULDER_FOOTPRINT && provider.maps.boulders.at(x, z) != null)
             return null;
-        Entry e = decide(reported, groundBlock, depth, x, s, z, footprint <= 2);
+        Entry e = decide(reported, groundBlock, bed, depth, x, s, z, footprint <= 2);
         if (e == null) return null;
-        int n = height(e, x, z);
-        for (int y = s; y < s + n; y++) if (taken.test(y)) return null;
+        int n = height(e, x, z, depth);
+        int base = e.submerged ? s - depth : s;
+        if (!e.submerged) for (int y = s; y < s + n; y++) if (taken.test(y)) return null;
         IBlockState[] out = new IBlockState[n];
         for (int i = 0; i < n; i++) out[i] = block(e, i, n, x, z);
-        return out;
+        return new Placement(base, out);
+    }
+
+    /** A preview column's cover: its blocks from base up (under the surface when submerged). */
+    static final class Placement {
+        final int base;
+        final IBlockState[] states;
+
+        Placement(int base, IBlockState[] states) {
+            this.base = base;
+            this.states = states;
+        }
     }
 
     private static double noise(long seed, double x, double z) {

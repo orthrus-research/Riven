@@ -176,7 +176,11 @@ public final class RivenContent {
             Block block;
             if (kind.equals("plant")) block = new BlockRivenPlant(ground, replaceable, flammable);
             else if (kind.equals("hanging")) block = new BlockRivenHanging(ground, flammable);
-            else if (kind.equals("submerged")) block = new BlockRivenSubmerged(ground);
+            else if (kind.equals("submerged"))
+                block =
+                        new BlockRivenSubmerged(
+                                ground,
+                                d.has("model") && d.get("model").getAsString().equals("cross"));
             else if (kind.equals("floating"))
                 block = new BlockRivenFloating(d.get("model").getAsString().equals("pad"));
             else if (kind.equals("tall")) block = new BlockRivenTallPlant(ground, replaceable);

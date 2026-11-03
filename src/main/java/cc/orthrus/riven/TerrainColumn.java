@@ -372,16 +372,22 @@ final class TerrainColumn {
                 while (depth < GroundCover.MAXIMUM_DEPTH
                         && r.at(surfaceY - 1 - depth) != null
                         && r.at(surfaceY - 1 - depth).getMaterial() == Material.WATER) depth++;
-            plants =
+            IBlockState bed = depth > 0 ? r.at(surfaceY - 1 - depth) : null;
+            GroundCover.Placement placed =
                     cover.preview(
                             reported,
                             ground,
+                            bed,
                             depth,
                             x,
                             surfaceY,
                             z,
                             footprint,
                             y -> taken(r, canopy, y));
+            // Cover on the surface previews as the cube writes it. A submerged plant previews as
+            // the water it stands in: the preview's lighting takes no decoration of water's
+            // material, and no plant under water shows from a preview's distance.
+            if (placed != null && placed.base >= surfaceY) plants = placed.states;
         }
         if (canopy.count == 0 && plants == null) {
             for (int i = 0; i < r.count; i++) target.addRun(r.bottoms[i], r.tops[i], r.states[i]);
