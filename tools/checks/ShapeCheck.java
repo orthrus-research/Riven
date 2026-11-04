@@ -1,5 +1,8 @@
 package cc.orthrus.riven.worldgen;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,12 +27,17 @@ import java.util.concurrent.Future;
  *   <li><b>Clark-Evans R</b>: mean nearest-neighbour distance between mass centroids over that of
  *       random points at the same density; 1 is random, above 1 regular (2.15 a hexagonal grid),
  *       below 1 clustered.
+ *   <li><b>coast gradient</b>: the median and 90th percentile of the outline score's gradient at
+ *       coast pixels (16-block central differences); the score is read as coast distance, so it
+ *       should stay near 1.
  *   <li><b>plate margin ratio</b>: the share of coast within {@code 256 x layout} blocks of a plate
  *       boundary over the share of the whole square there; 1 means coasts ignore plates.
  * </ul>
  *
  * <p>It measures; it does not fail. Arguments: {@code [seeds=16] [first=1] [scale=4]
- * [side=512]}; seeds are first, first + 1, ...
+ * [side=512] [masks]}; seeds are first, first + 1, ... With a masks directory, each seed's land
+ * also goes to {@code shape-<seed>.pgm} there (sea 0, land 170; the plate margin band 60 at sea
+ * and 230 on land), north up.
  */
 public final class ShapeCheck {
     private ShapeCheck() {}
@@ -42,6 +50,8 @@ public final class ShapeCheck {
         long first = args.length > 1 ? Long.parseLong(args[1]) : 1;
         double layout = args.length > 2 ? Double.parseDouble(args[2]) : 4;
         int side = args.length > 3 ? Integer.parseInt(args[3]) : 512;
+        Path masks = args.length > 4 ? Path.of(args[4]) : null;
+        if (masks != null) Files.createDirectories(masks);
         if (side % BOXES[BOXES.length - 1] != 0) throw new IllegalArgumentException("side");
         WorldScale world = layout == 1 ? WorldScale.DEFAULT : new WorldScale(layout);
         TerrainHeightReference heights = TerrainHeightReference.DEFAULT;
@@ -61,7 +71,7 @@ public final class ShapeCheck {
         try {
             for (int i = 0; i < count; i++) {
                 long seed = first + i;
-                rows.add(pool.submit(() -> measure(seed, heights, world, side)));
+                rows.add(pool.submit(() -> measure(seed, heights, world, side, masks)));
             }
             report(rows, count <= 8);
         } finally {
@@ -70,8 +80,10 @@ public final class ShapeCheck {
         System.out.println("OK");
     }
 
-    /** seed, land, masses, largest, slope, solidity, dimension, R, margin ratio. */
-    static double[] measure(long seed, TerrainHeightReference heights, WorldScale world, int side) {
+    /** seed, land, masses, largest, slope, solidity, dimension, R, margin ratio, gradient p50, p90. */
+    static double[] measure(
+            long seed, TerrainHeightReference heights, WorldScale world, int side, Path masks)
+            throws IOException {
         ContinentalOutlineMap outline = LandShare.choose(seed, heights, world).outline;
         PlateMap plates = new PlateMap(seed, world);
         double step = world.side() / side, origin = -world.side() / 2 + step / 2;
@@ -89,6 +101,22 @@ public final class ShapeCheck {
                         plates.sample((int) Math.floor(x), (int) Math.floor(z)).boundaryDistance
                                 < near;
             }
+
+        if (masks != null) {
+            byte[] image = new byte[side * side];
+            for (int i = 0; i < side; i++)
+                for (int k = 0; k < side; k++) {
+                    int c = i * side + k;
+                    image[k * side + i] =
+                            (byte) (land[c] ? (margin[c] ? 230 : 170) : margin[c] ? 60 : 0);
+                }
+            byte[] header =
+                    ("P5\n" + side + " " + side + "\n255\n")
+                            .getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+            byte[] file = Arrays.copyOf(header, header.length + image.length);
+            System.arraycopy(image, 0, file, header.length, image.length);
+            Files.write(masks.resolve("shape-" + seed + ".pgm"), file);
+        }
 
         // Coast pixels: land with a sea 4-neighbour inside the square.
         boolean[] coast = new boolean[side * side];
@@ -195,6 +223,28 @@ public final class ShapeCheck {
             r = (sum / masses.size()) / (.5 / Math.sqrt(density));
         }
 
+        // The score is read as coast distance (v65): its gradient at the coast should stay near 1.
+        double[] gradients = new double[coastCount];
+        int g = 0;
+        double h = 16;
+        ContinentalOutlineMap.Sample probe = new ContinentalOutlineMap.Sample();
+        for (int c = 0; c < coast.length; c++) {
+            if (!coast[c]) continue;
+            double x = origin + (c / side) * step, z = origin + (c % side) * step;
+            outline.sample(x + h, z, probe);
+            double east = probe.coastCoordinate();
+            outline.sample(x - h, z, probe);
+            double dx = (east - probe.coastCoordinate()) / (2 * h);
+            outline.sample(x, z + h, probe);
+            double south = probe.coastCoordinate();
+            outline.sample(x, z - h, probe);
+            double dz = (south - probe.coastCoordinate()) / (2 * h);
+            gradients[g++] = Math.hypot(dx, dz);
+        }
+        Arrays.sort(gradients);
+        double p50 = g == 0 ? Double.NaN : gradients[g / 2];
+        double p90 = g == 0 ? Double.NaN : gradients[Math.min(g - 1, (int) (.9 * g))];
+
         double ratio =
                 coastCount == 0 || allNear == 0
                         ? Double.NaN
@@ -208,7 +258,9 @@ public final class ShapeCheck {
             solidity,
             dimension,
             r,
-            ratio
+            ratio,
+            p50,
+            p90
         };
     }
 
@@ -271,7 +323,9 @@ public final class ShapeCheck {
         "solidity",
         "coast dimension",
         "Clark-Evans R",
-        "plate margin ratio"
+        "plate margin ratio",
+        "coast gradient p50",
+        "coast gradient p90"
     };
 
     private static void report(List<Future<double[]>> rows, boolean each) throws Exception {
@@ -289,7 +343,8 @@ public final class ShapeCheck {
                 System.out.printf(
                         Locale.ROOT,
                         "  seed %d: land %.1f%%, %d masses, largest %.0f%%, slope %.2f,"
-                                + " solidity %.2f, dimension %.3f, R %.2f, margin %.2f%n",
+                                + " solidity %.2f, dimension %.3f, R %.2f, margin %.2f,"
+                                + " gradient %.2f / %.2f%n",
                         (long) v[0],
                         v[1],
                         (int) v[2],
@@ -298,7 +353,9 @@ public final class ShapeCheck {
                         v[5],
                         v[6],
                         v[7],
-                        v[8]);
+                        v[8],
+                        v[9],
+                        v[10]);
             for (int m = 0; m < metrics; m++) {
                 double x = v[m + 1];
                 if (Double.isNaN(x)) continue;
