@@ -743,7 +743,8 @@ public final class Hydro
                                         maxFill,
                                         cellX,
                                         cellZ,
-                                        cellBlocks));
+                                        cellBlocks,
+                                        pool));
             basins.add(basin);
             break;
         }
@@ -1180,7 +1181,8 @@ public final class Hydro
                                                     levels[1],
                                                     widths[0],
                                                     widths[1],
-                                                    river.magnitude.min))
+                                                    river.magnitude.min),
+                                            pool)
                                     : LakeShape.reject("OUTLET_HEAD", 0);
                     // A lake that cannot take a natural shape on its own ground (a slope it would
                     // cut or fill past the limits, or a sandy or rocky shore) is not taken: the

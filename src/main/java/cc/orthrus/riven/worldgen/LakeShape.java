@@ -160,6 +160,59 @@ public final class LakeShape {
         return result;
     }
 
+    /** Rows per item of the parallel full scan. */
+    private static final int SCAN_ROWS = 4;
+
+    /**
+     * The first column of the box, in row order, that fails the lake's column rules, as
+     * (index in row order) * 2 + (0 for a protected shore, 1 for earlier earthwork), or -1 when
+     * every column passes. Rows go out in items across the pool; an item stops at its own first
+     * failure, and items after a known earlier failure stop at once, since only the earliest
+     * failure can decide. Every earlier item still finishes, so the answer is the serial scan's.
+     */
+    private static int firstFailure(
+            BuildPool pool,
+            IntentSampler intent,
+            int minX,
+            int minZ,
+            int width,
+            int rows,
+            double foundation,
+            double maxFill,
+            double maxCut,
+            double floor) {
+        int items = (rows + SCAN_ROWS - 1) / SCAN_ROWS;
+        java.util.concurrent.atomic.AtomicIntegerArray found =
+                new java.util.concurrent.atomic.AtomicIntegerArray(items);
+        java.util.concurrent.atomic.AtomicInteger earliest =
+                new java.util.concurrent.atomic.AtomicInteger(items);
+        for (int i = 0; i < items; i++) found.set(i, -1);
+        pool.forEach(
+                items,
+                item -> {
+                    TerrainMap.BaseSample scratch = new TerrainMap.BaseSample();
+                    int last = Math.min(rows, (item + 1) * SCAN_ROWS);
+                    for (int r = item * SCAN_ROWS; r < last; r++)
+                        for (int c = 0; c < width; c++) {
+                            if (earliest.get() < item) return;
+                            intent.sample(minX + c, minZ + r, scratch);
+                            int code = -1;
+                            if (scratch.ocean.marine
+                                    || scratch.shore.sandy
+                                    || scratch.shore.rocky()) code = 0;
+                            else if (foundation - scratch.shore.height > maxFill
+                                    || scratch.shore.height - floor > maxCut) code = 1;
+                            if (code >= 0) {
+                                found.set(item, (r * width + c) * 2 + code);
+                                earliest.accumulateAndGet(item, Math::min);
+                                return;
+                            }
+                        }
+                });
+        for (int i = 0; i < items; i++) if (found.get(i) >= 0) return found.get(i);
+        return -1;
+    }
+
     private static double unit(long key, long salt) {
         return SeededNoise.unit(SeededNoise.mix(key ^ salt));
     }
@@ -182,7 +235,8 @@ public final class LakeShape {
             double maxFill,
             int cellX,
             int cellZ,
-            int cellBlocks) {
+            int cellBlocks,
+            BuildPool pool) {
         return prepare(
                 seed,
                 id,
@@ -202,7 +256,8 @@ public final class LakeShape {
                 cellZ,
                 cellBlocks,
                 0,
-                null);
+                null,
+                pool);
     }
 
     /** Certify all native columns in the bounded owner box against earlier intent.
@@ -228,7 +283,8 @@ public final class LakeShape {
             int cellZ,
             int cellBlocks,
             double supply,
-            Receiver receiver) {
+            Receiver receiver,
+            BuildPool pool) {
         if (kind != Hydro.Kind.LAKE && kind != Hydro.Kind.POND) return reject("KIND", 0);
         boolean open = kind == Hydro.Kind.LAKE;
         if (open && (receiver == null || !receiver.supplied(x, z, waterY)))
@@ -330,16 +386,26 @@ public final class LakeShape {
                         || scratch.shore.height - (waterY - wholeDepth) > maxCut)
                     return reject("EARLIER_EARTHWORK", probes);
             }
-        for (int pz = minZ; pz <= maxZ; pz++)
-            for (int px = minX; px <= maxX; px++) {
-                intent.sample(px, pz, scratch);
-                probes++;
-                if (scratch.ocean.marine || scratch.shore.sandy || scratch.shore.rocky())
-                    return reject("PROTECTED_SHORE", probes);
-                if (foundation - scratch.shore.height > maxFill
-                        || scratch.shore.height - (waterY - wholeDepth) > maxCut)
-                    return reject("EARLIER_EARTHWORK", probes);
-            }
+        // The full scan, across the build pool: the first failing column in row order decides,
+        // exactly as the serial scan would, probes included.
+        int boxWidth = maxX - minX + 1, boxRows = maxZ - minZ + 1;
+        int failure =
+                firstFailure(
+                        pool,
+                        intent,
+                        minX,
+                        minZ,
+                        boxWidth,
+                        boxRows,
+                        foundation,
+                        maxFill,
+                        maxCut,
+                        waterY - wholeDepth);
+        if (failure >= 0)
+            return reject(
+                    (failure & 1) == 0 ? "PROTECTED_SHORE" : "EARLIER_EARTHWORK",
+                    probes + (failure >>> 1) + 1);
+        probes += boxWidth * boxRows;
         // Ownership excludes unrelated bodies; only this matching river may share the outlet.
         // The native solid fill and final aquifer roof seal supply the floor seal.
         Lakes.Earlier earlier =

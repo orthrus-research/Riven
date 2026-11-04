@@ -1595,6 +1595,20 @@ public final class ContinentalKernels {
                     // Shelter's probes read the same shape (body, peninsulas and islands), so
                     // island rims read as capes, as satellites' did.
                     shaped = body;
+                    // The support bound's pruning again, with the tighter bound the body gives:
+                    // detail is at most detailCap and cuts only lower, so a candidate whose body
+                    // plus detailCap cannot reach the union changes nothing (the same proof as
+                    // above), and its coast detail is never computed.
+                    if (variation != null) {
+                        double most = body + c.detailCap;
+                        if (out.score > 0
+                                ? most
+                                        <= out.score
+                                                - (out.score < variation.shelterReach
+                                                        ? traitBlend
+                                                        : 0)
+                                : most <= out.score - variation.straitBlend) continue;
+                    }
                     // Bounded coastal detail, independent wavelength and amplitude; never
                     // changes site admission.
                     double detail =
@@ -1667,7 +1681,7 @@ public final class ContinentalKernels {
                     out.reason = reason;
                     out.headland = reason == Reason.LAND ? scratch.headland : 0;
                     if (variation != null) {
-                        out.family = geometryOf(c.id).family;
+                        out.family = c.shape.family;
                         out.size = c.size;
                         out.elongation = c.elongation;
                         out.roughness = c.rough;
@@ -2375,7 +2389,7 @@ public final class ContinentalKernels {
             for (int at = 0; at < c.featureLength; ) {
                 int points = (int) f[at + 1];
                 int next = at + 5 + 3 * points;
-                if ((int) f[at] == kind && hypot(x - f[at + 2], z - f[at + 3]) - f[at + 4] < best) {
+                if ((int) f[at] == kind && reaches(x - f[at + 2], z - f[at + 3], f[at + 4], best)) {
                     if (points == 1)
                         best = min(best, hypot(x - f[at + 5], z - f[at + 6]) - f[at + 7]);
                     else
@@ -2408,9 +2422,30 @@ public final class ContinentalKernels {
                 double ix = wx - c.islands[at], iz = wz - c.islands[at + 1];
                 double ca = c.islands[at + 3], sa = c.islands[at + 4], e = c.islands[at + 5];
                 double along = ca * ix + sa * iz, across = -sa * ix + ca * iz;
-                body = max(body, c.islands[at + 2] - hypot(along / e, across * e));
+                double r = c.islands[at + 2];
+                // Exact skips (see reaches): an island no larger than the body cannot raise it,
+                // and one clearly out of reach (q >= distance / e) leaves it too.
+                if (r <= body) continue;
+                double limit = (r - body) * e, margin = 1e-6 * (1 + Math.abs(r) + Math.abs(body));
+                if (limit > 0 && ix * ix + iz * iz > (limit + margin) * e * (limit + margin) * e)
+                    continue;
+                body = max(body, r - hypot(along / e, across * e));
             }
             return body;
+        }
+
+        /**
+         * Whether a feature's bounding circle (centre at offset (dx, dz), reach) can beat best:
+         * exactly hypot(dx, dz) - reach < best. Clear misses skip the hypot: best <= -reach can
+         * never hold it (the distance is never negative, rounding is monotonic and negation
+         * exact), and a squared distance past (reach + best) by a margin far above rounding error
+         * cannot either; the rest take the exact expression, so results are bit-identical.
+         */
+        private static boolean reaches(double dx, double dz, double reach, double best) {
+            if (best <= -reach) return false;
+            double limit = reach + best + 1e-6 * (1 + Math.abs(reach) + Math.abs(best));
+            if (dx * dx + dz * dz > limit * limit) return false;
+            return hypot(dx, dz) - reach < best;
         }
 
         /** The body joined with its peninsulas. */

@@ -341,8 +341,19 @@ public final class TerrainAtlas {
 
         List<String> habitats = new ArrayList<>(Habitats.paths());
         Raster r = new Raster(width, height, footprint);
+        com.sun.management.OperatingSystemMXBean os =
+                (com.sun.management.OperatingSystemMXBean)
+                        java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+        long cpuStarted = os.getProcessCpuTime();
         long started = System.nanoTime();
         ExecutorService pool = Executors.newFixedThreadPool(threads);
+        // Work goes out in tiles about one hydrology cell wide, spread across the window, so
+        // concurrent threads build different regional plans instead of queueing on one (rows put
+        // every thread on the same cell at once). Pixels are independent: order changes timing,
+        // never a sample.
+        int tile = Math.max(1, (int) Math.ceil(maps.terrain.hydro.cellBlocks / (double) step));
+        int tilesX = (width + tile - 1) / tile, tilesZ = (height + tile - 1) / tile;
+        int[] order = spread(tilesX * tilesZ);
         AtomicInteger next = new AtomicInteger(), done = new AtomicInteger();
         List<Future<?>> work = new ArrayList<>();
         for (int t = 0; t < threads; t++)
@@ -351,21 +362,36 @@ public final class TerrainAtlas {
                             () -> {
                                 TerrainMap.Sample s = new TerrainMap.Sample();
                                 TerrainMap.Sample sub = new TerrainMap.Sample();
-                                for (int n; (n = next.getAndIncrement()) < height; ) {
-                                    int row = reverse ? height - 1 - n : n;
-                                    for (int c = 0; c < width; c++) {
-                                        int col = reverse ? width - 1 - c : c;
-                                        fill(maps, habitats, r, row, col, minX, minZ, step, s, sub);
+                                for (int n; (n = next.getAndIncrement()) < order.length; ) {
+                                    int k = order[reverse ? order.length - 1 - n : n];
+                                    int row0 = k / tilesX * tile, col0 = k % tilesX * tile;
+                                    int rows = Math.min(tile, height - row0);
+                                    int cols = Math.min(tile, width - col0);
+                                    for (int i = 0; i < rows * cols; i++) {
+                                        int j = reverse ? rows * cols - 1 - i : i;
+                                        fill(
+                                                maps,
+                                                habitats,
+                                                r,
+                                                row0 + j / cols,
+                                                col0 + j % cols,
+                                                minX,
+                                                minZ,
+                                                step,
+                                                s,
+                                                sub);
                                     }
                                     int d = done.incrementAndGet();
-                                    if (d % Math.max(1, height / 10) == 0)
-                                        System.out.printf("rows %d/%d%n", d, height);
+                                    if (d % Math.max(1, order.length / 10) == 0)
+                                        System.out.printf("tiles %d/%d%n", d, order.length);
                                 }
                                 return null;
                             }));
         for (Future<?> f : work) f.get();
         pool.shutdown();
         double sampleSeconds = (System.nanoTime() - started) / 1e9;
+        // Cores busy while sampling: process CPU over wall time (the log only, never the digest).
+        double busyCores = (os.getProcessCpuTime() - cpuStarted) / 1e9 / sampleSeconds;
 
         List<List<String>> reasonNames = new ArrayList<>();
         for (int k = 0; k < STAGE_NAMES.length; k++) {
@@ -466,7 +492,7 @@ public final class TerrainAtlas {
         System.out.printf(
                 Locale.ROOT,
                 "atlas %dx%d step %d footprint %d at [%d,%d) x [%d,%d): sampling %.1fs on %d"
-                        + " threads (%s); digest %s%n",
+                        + " threads (%s, %.1f cores busy); digest %s%n",
                 width,
                 height,
                 step,
@@ -478,6 +504,7 @@ public final class TerrainAtlas {
                 sampleSeconds,
                 threads,
                 reverse ? "reverse" : "forward",
+                busyCores,
                 j.get("digest").getAsString());
     }
 
@@ -609,6 +636,22 @@ public final class TerrainAtlas {
                 list.add(site);
             }
         return list;
+    }
+
+    /**
+     * The tiles 0..n-1 in an order that spreads consecutive ones apart: a stride coprime with n
+     * near n times the golden ratio's fractional part.
+     */
+    private static int[] spread(int n) {
+        int stride = Math.max(1, (int) Math.round(n * 0.6180339887));
+        while (gcd(stride, n) != 1) stride++;
+        int[] order = new int[n];
+        for (int i = 0; i < n; i++) order[i] = (int) ((long) i * stride % n);
+        return order;
+    }
+
+    private static int gcd(int a, int b) {
+        return b == 0 ? a : gcd(b, a % b);
     }
 
     private static int stageOf(Sites.Lane lane) {
