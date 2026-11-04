@@ -61,19 +61,6 @@
       "sourcePin": "dev/dh.lock.json"
     },
     {
-      "file": "dev/pins/BiomesOPlenty-1.12.2-7.0.1.2445-universal.jar",
-      "version": "1.12.2-7.0.1.2445",
-      "sha256": "1c53d3ee39f557162591f618c58b79dc6861d24522ef785794ee4a815f8a3908",
-      "download": "https://mediafilez.forgecdn.net/files/3558/882/BiomesOPlenty-1.12.2-7.0.1.2445-universal.jar",
-      "url": "https://www.curseforge.com/minecraft/mc-mods/biomes-o-plenty/files/3558882",
-      "distribution": "unmodified-upstream",
-      "sides": [
-        "server",
-        "client"
-      ],
-      "reason": "Optional decoration provider and block library (DECISIONS 2026-10-25, Full worldgen ownership): legacy looks rework Riven's soil and decorate the stages Riven does not own yet; BoP never shapes terrain. CC BY-NC-ND 4.0; not redistributed or modified"
-    },
-    {
       "file": "dev/pins/CodeChickenLib-1.12.2-3.2.3.358-universal.jar",
       "version": "1.12.2-3.2.3.358",
       "sha256": "5f8499f7ee2590e45110bbf296b2bf101aec15897e28d5e9759cf8f2387d8a74",

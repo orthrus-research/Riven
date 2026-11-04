@@ -13,7 +13,6 @@
 | Distant Horizons | 3.3.3-1.12.2, official upstream (`dev/dh.lock.json`) | Distant terrain renderer and delivery, both sides |
 | Fugue | 0.25.5 | Modern-Java compatibility layer |
 | Scalar Legacy | 1.0.1 | Scala 2.11 provider |
-| Biomes O' Plenty | 1.12.2-7.0.1.2445, official upstream (`runtime.lock.json`) | Optional provider of legacy looks, mapped from Riven habitats (`riven-bop.json`); no BoP generator or block is used and Riven's content is the same without it (terrain-v122); compiled against, never bundled |
 | GregTech CE Unofficial | 1.12.2-2.8.10-beta, official upstream (`runtime.lock.json`), with CodeChickenLib 1.12.2-3.2.3.358 | Optional ore provider (prototype): `riven-ores.json` transcribes its overworld vein catalog, Riven places the bodies, and GTCEu supplies the ore block for each mineral and host stone type; GTCEu's own world generator never runs |
 | Demonica | 0.9.0, official release (`runtime.lock.json`, optional `shaders`) | Client shader stack: Iris on its bundled Celeritas d94ec1e5; installed only by `prepare --shaders` |
 | Shader packs | BSL 10.1.8, Complementary Reimagined r5.9.3, Complementary Unbound r5.9.3, official Modrinth releases (`runtime.lock.json` `shaderPacks`) | The targeted packs under Demonica (docs/DECISIONS.md, Shader packs); local zips in `dev/pins/shaderpacks`, never committed or redistributed |
@@ -158,17 +157,18 @@ the riven: biomes whose vanilla twin it lists. Riven biomes using IDs the pack l
 biomes (BSL's 48 and 49 under `isJungle`) leave those lists. Rules and twins are in
 `riven-shaderprops.json`, and the copy carries a `riven-shaderprops.txt` report. Rain hills, taiga
 and stone beaches have no twin, because BSL marks their vanilla twins cold above Y93 and Y123.
-On BSL 10.1.8 the export adds 414 block names (2026-10-27): BoP and Riven plants, flowers, double
-plants, leaves, vines, lily pads, saplings and ground cover, GTCEu rubber trees and ores, and every
-full cube that gives light, which joins glowstone (`lightAtLeast`): the deep realms' moonstone,
-molten seams, soul ash and heat-cracked eclogite, GTCEu's 32 lamps and BoP's crystal. BSL lights an
+On BSL 10.1.8 the export maps Riven's plants, flowers, double plants, leaves, vines, lily pads,
+saplings and ground cover, GTCEu's rubber trees and ores, and every full cube that gives light,
+which joins glowstone (`lightAtLeast`): the deep realms' moonstone, molten seams, soul ash and
+heat-cracked eclogite, and GTCEu's 32 lamps (414 block names on 2026-10-27, when Biomes O'
+Plenty's blocks were installed too). BSL lights an
 emissive pixel by its brightness and saturation, so those rocks glow along their streaks and cracks
 while the rock around them stays dark (`tools/tours/lighting-8675309.json`, night and sealed-chamber
 views). It adds 32 biome IDs, and Demonica gives all 73 riven: biomes their intended
 `biome_category`. Leaves wave: on the woodland view of
 `tools/tours/shaders-8675309.json`, two frames from one camera differ only on leaf canopies and
 plant tufts (0.8% of pixels), while terrain, trunks and shadows stay identical. With the
-`-riven` copy active, BoP's flowers and plants on that view wave too (1.0%), and the copy loads
+`-riven` copy active, the modded flowers and plants on that view wave too (1.0%), and the copy loads
 without block-name warnings. `prepare` gives Riven clients fancy graphics (the lab's benchmark
 default is fast): fast leaves are opaque cubes, so the faces beneath them are culled and waving
 leaves open holes to nothing. `tools/tours/render-check-8675309.json` builds a grass platform with

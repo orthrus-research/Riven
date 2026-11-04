@@ -332,8 +332,8 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   and composable resource mappings that bind features to any installed mod's blocks, so the DH
   preview draws the same models without extra LOD cost. Riven depends on no other mod for content:
   it places every soil, tree, plant, reed, water plant, cactus and pumpkin itself, and Biomes O'
-  Plenty, which had lent decoration and blocks while Riven's own were made, has no role and no
-  code in Riven (terrain-v124). No biome decorator runs (terrain-v123): population is Riven's own, a chunk's first animals
+  Plenty, which had lent decoration and blocks while Riven's own were made, has no role, no code
+  in Riven (terrain-v124) and no pin: no prepared instance or CI run installs it. No biome decorator runs (terrain-v123): population is Riven's own, a chunk's first animals
   (`riven-population.json`), which writes no block and reads only the cube it spawns into and the
   cubes above and below, so no content depends on the order cubes populate in; terrain, water and
   biome identity stay pure, and Distant Horizons previews draw the same boulders, trees and ground cover as native cubes.
