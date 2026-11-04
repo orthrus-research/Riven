@@ -49,6 +49,22 @@ public final class BaseElevationMap {
         regional = new SeededNoise(SeededNoise.mix(seed ^ Rules.seed(json, "regionalSeed")));
     }
 
+    /**
+     * The landform position (0 plain to 3 mountains) a ground height reads as: piecewise linear
+     * through the four reference forms' mean heights, clamped to 0..3. Elevation classes (low,
+     * middle, high) read the ground through it.
+     */
+    public double position(double height) {
+        double previous = heights.seaLevel + forms[0].elevationOffset.targetAverage;
+        if (height <= previous) return 0;
+        for (int i = 1; i < forms.length; i++) {
+            double next = heights.seaLevel + forms[i].elevationOffset.targetAverage;
+            if (height <= next) return i - 1 + (height - previous) / (next - previous);
+            previous = next;
+        }
+        return forms.length - 1;
+    }
+
     /** Read-only observations in caller-owned scratch; allocation is not a final-terrain bound. */
     public static final class Sample {
         private final HeightSample regional = new HeightSample(), upliftSample = new HeightSample();

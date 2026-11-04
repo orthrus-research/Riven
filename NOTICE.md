@@ -151,16 +151,6 @@ Copyright (c) 2026 Riven contributors. Its complete license is packaged at
 `DrylandTerrain`, its definition and the surface-cover integration are original
 Riven NRR material; the imported dryland kernel retains MIT.
 
-`src/main/java/cc/orthrus/riven/contrib/plateau/PlateauKernels.java` adapts the independently
-authored MIT package `contributions/plateaus-badlands-20261019`. The production
-copy exposes read-only support/identity and early eligibility queries, retaining
-the authored geometry and ordered admission, without its unused default
-tuning. Its integer-column certificate
-domain is documented in the source. Copyright (c) 2026 Riven contributors.
-The full MIT grant is packaged at `META-INF/licenses/plateaus/MIT.txt` in binary
-and source artifacts. `PlateauTerrain` and its configuration are original NRR
-integration material; the adapted kernel retains MIT.
-
 `src/main/java/cc/orthrus/riven/contrib/mountains/MountainKernels.java` is a copy of
 the independently authored MIT contribution in
 `contributions/mountain-systems-20261019`, changed in its package declaration and

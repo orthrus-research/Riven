@@ -75,7 +75,6 @@ LANE_STAGE = {
     "CARVER": "carver",
     "HILLS": "hill",
     "MOUNTAINS": "mountain",
-    "PLATEAUS": "plateau",
     "COLD": "cold",
     "VOLCANIC": "volcanic",
     "CUTS": "cut",

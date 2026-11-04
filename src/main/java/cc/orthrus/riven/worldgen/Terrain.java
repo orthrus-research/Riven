@@ -148,8 +148,8 @@ public final class Terrain {
             out.character = Character.FLOOR;
             return;
         }
-        // One compatibility projection preserves existing elevation-class admission semantics.
-        double position = base.base.legacyPosition();
+        // Elevation classes read the ground's landform position (the province band's, S4).
+        double position = base.base.position();
         out.low = 1 - Rules.smooth((position - lowStart) / (lowEnd - lowStart));
         out.high = Rules.smooth((position - highStart) / (highEnd - highStart));
         out.middle = Math.max(0, 1 - out.low - out.high);

@@ -171,14 +171,24 @@ public final class RegionalReliefCheck {
         TerrainHeightReference heights = TerrainHeightReference.DEFAULT;
         int observed = 0;
         for (long seed : new long[] {8675309, 7, -918273645}) {
-            PlateMap plates = new PlateMap(seed);
+            GenerationMaps maps = new GenerationMaps(seed);
             RegionalProfileMap regions = new RegionalProfileMap(seed, heights);
             BaseTerrainMap map =
                     new BaseTerrainMap(
-                            seed, plates, heights, regions, BaseTerrainMap.Policy.REGIONAL);
+                            seed,
+                            maps.baseElevation,
+                            maps.provinces,
+                            heights,
+                            regions,
+                            BaseTerrainMap.Policy.REGIONAL);
             BaseTerrainMap legacy =
                     new BaseTerrainMap(
-                            seed, plates, heights, regions, BaseTerrainMap.Policy.LEGACY);
+                            seed,
+                            maps.baseElevation,
+                            maps.provinces,
+                            heights,
+                            regions,
+                            BaseTerrainMap.Policy.LEGACY);
             BaseTerrainMap.Sample sample = new BaseTerrainMap.Sample(),
                     old = new BaseTerrainMap.Sample();
             List<String> expected = new ArrayList<>();
@@ -187,11 +197,13 @@ public final class RegionalReliefCheck {
                 map.sample(x, z, sample);
                 legacy.sample(x, z, old);
                 partition(sample.region());
+                // S4: the province bands set the level, so heights leave the tectonic intent's
+                // envelope by design and stay inside the allocation.
                 require(
                         Double.isFinite(sample.height())
-                                && sample.height() >= sample.minimumY() - 1e-10
-                                && sample.height() <= sample.maximumY() + 1e-10,
-                        "Legal height envelope");
+                                && sample.height() >= heights.lowestSurface
+                                && sample.height() <= heights.highestSurface,
+                        "Height inside the allocation");
                 require(
                         Double.doubleToLongBits(sample.meanHeight())
                                         == Double.doubleToLongBits(old.meanHeight())
@@ -199,13 +211,7 @@ public final class RegionalReliefCheck {
                                 && sample.maximumY() == old.maximumY()
                                 && sample.legacyPosition() == old.legacyPosition(),
                         "Elevation policy changed");
-                require(
-                        sample.amplitude()
-                                <= Math.min(
-                                                sample.meanHeight() - sample.minimumY(),
-                                                sample.maximumY() - sample.meanHeight())
-                                        + 1e-10,
-                        "Amplitude exceeds signed envelope");
+                require(sample.amplitude() >= 0, "Negative relief amplitude");
                 expected.add(snapshot(sample));
                 if ((i & 15) == 0) gradients(map, x, z);
                 observed++;

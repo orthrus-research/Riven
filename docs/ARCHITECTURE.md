@@ -146,7 +146,7 @@ flowchart TD
 
 ## Composition order
 
-Land columns run, in order: erosion, lowlands, regional passes, volcanic, cold, plateaus,
+Land columns run, in order: erosion, lowlands, regional passes, volcanic, cold,
 mountains, hills (capped by the coastal envelope), regional landmarks, surface carvers, general surface cuts, drylands, shore
 shaping, hydrology constraint, coast forms, coast sediment. Marine columns run ocean bed,
 hydrology constraint and roof seal, then the coastal stages. This order is part of the generator
@@ -225,15 +225,15 @@ their own cube path below the crust floor.
 
 `Sites` (configured in `riven-terrain.json`) places sparse major features on a 288-block cell
 grid. Every cell is a raw anchor (`anchorProbability` 1.0, v42); a sequential lottery assigns its
-lane (carver/cut 40%, hills 30%, mountains 15%, plateaus 7.5%, cold 3.75%, volcanic 1.9%, then
+lane (carver/cut 40%, hills 30%, mountains 15%, cold 3.75%, volcanic 1.9%, then
 landmark under 1%). With `competition` LANE (v42) an anchor is admitted
 only if no higher-priority raw anchor of the same lane lies within twice that lane's radius;
-supports of different lanes may overlap and compose in stage order. Since v52, mountain, plateau, volcanic and
+supports of different lanes may overlap and compose in stage order. Since v52, mountain, volcanic and
 cold neighbors veto only if their own anchor passes the stage's anchor-local admission
 (earlier intent, climate, water and marine tests, memoized per cell); other raw neighbors veto
 whether or not they would build. (SHARED, the rule until v41, also let every other lane veto within the
 larger of the 518-block separation and the sum of both radii; it vetoed about 90% of anchors.) Per-lane maximum radii: carver, cut, hills,
-landmark 259; plateau and volcanic 288; mountains 576; cold 816
+landmark 259; volcanic 288; mountains 576; cold 816
 blocks.
 
 Each family's terrain adapter then certifies its admitted site against the earlier parent and
@@ -255,7 +255,7 @@ Terrain-v39, 64 km windows on seeds 8675309, 101, 1, 42, 7 and -991 (atlas and `
   nearest lines fall 18 km from the origin, outside a 32 km world.
 - Every marine column holds water to Y62; enclosed marine areas are inland seas.
 - Raising features no longer exclude the shore (v50): hills and the major features (volcanic,
-  cold, plateaus, mountains) keep the coast with the band envelope in `Shore` (v105: capped only
+  cold, mountains) keep the coast with the band envelope in `Shore` (v105: capped only
   inside a coast segment's band), and only water, marine
   anchors and marine footprints still exclude them. Cuts, lowlands and drylands keep the shore
   reservation (0.5 coastal-plain widths), since lowering near the sea could open dry basins.
@@ -301,7 +301,7 @@ substitutes for the integer, canonical native/DH path when checking parity.
 | `riven-base-elevation.json`, `riven-base-terrain.json`, `riven-terrain-regions.json` | Inland elevation, relief composition and regional profiles |
 | `riven-regional-fabric.json`, `riven-climate-forcing.json`, `riven-substrate.json` | Earlier regional axis, moisture forcing, material permissions |
 | `riven-terrain-passes.json`, `riven-landmarks.json`, `riven-surface-carvers.json` | Regional passes, landmarks, legacy carvers |
-| `riven-lowlands.json`, `riven-hills.json`, `riven-mountains.json`, `riven-plateaus.json`, `riven-drylands.json`, `riven-cold-regions.json`, `riven-volcanic.json`, `riven-general-surface-cuts.json` | Contributed land families |
+| `riven-lowlands.json`, `riven-hills.json`, `riven-mountains.json`, `riven-drylands.json`, `riven-cold-regions.json`, `riven-volcanic.json`, `riven-general-surface-cuts.json` | Contributed land families |
 | `riven-coasts.json`, `riven-ocean-floors.json`, `riven-estuaries.json` | Coast and seabed |
 | `riven-hydrology.json`, `riven-lakes.json`, `riven-rivers.json` | Water |
 | `riven-habitats.json`, `riven-surface-rules.json` | Biome palettes; why a column's ground shows rock |

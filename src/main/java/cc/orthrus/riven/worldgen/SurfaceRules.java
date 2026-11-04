@@ -58,8 +58,6 @@ public final class SurfaceRules {
             return CoverReason.MOUNTAIN;
         double cut = cutDepth(sample.climate);
         if (sample.carvers.appliedCut >= cut) return CoverReason.EXPOSED_CUT;
-        if (DEFINITION.exposePlateauCuts && sample.plateaus.delta <= -cut)
-            return CoverReason.EXPOSED_CUT;
         if (DEFINITION.exposeDrylandCuts && sample.drylands.yardangCut >= cut)
             return CoverReason.EXPOSED_CUT;
         if (DEFINITION.exposeColdCuts && sample.cold.delta <= -cut) return CoverReason.EXPOSED_CUT;
@@ -142,11 +140,7 @@ public final class SurfaceRules {
 
     private static final class Definition {
         final String fingerprint, reference;
-        final boolean exposePlateauCuts,
-                exposeDrylandCuts,
-                exposeColdCuts,
-                exposeVolcanicCuts,
-                exposeGeneralCuts;
+        final boolean exposeDrylandCuts, exposeColdCuts, exposeVolcanicCuts, exposeGeneralCuts;
         final double mountainBlend, exposedCut;
         final double splash, capeSplash, cliffFace;
         final double treelineCelsius, treelinePerDegree, treelineBelow, treelineAbove;
@@ -159,8 +153,6 @@ public final class SurfaceRules {
                 throw new IllegalStateException("Surface rule schema");
             this.fingerprint = fingerprint;
             reference = json.get("stoneAboveReference").getAsString();
-            exposePlateauCuts =
-                    json.has("exposePlateauCuts") && json.get("exposePlateauCuts").getAsBoolean();
             exposeDrylandCuts =
                     json.has("exposeDrylandCuts") && json.get("exposeDrylandCuts").getAsBoolean();
             exposeColdCuts =

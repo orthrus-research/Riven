@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 125;
+    public static final int VERSION = 126;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -15,7 +15,6 @@ public final class TerrainMap {
     private final LowlandTerrain lowlands;
     private final HillTerrain hills;
     private final MountainTerrain mountains;
-    private final PlateauTerrain plateaus;
     private final DrylandTerrain drylands;
     private final ColdTerrain cold;
     private final VolcanicTerrain volcanic;
@@ -79,7 +78,7 @@ public final class TerrainMap {
                         Math.min(
                                 oceanBed.minimumSurfaceY,
                                 Math.min(continents.minimumSurfaceY, baseTerrain.minimumSurfaceY)));
-        // Relative plateau/mesa envelopes can exceed the broad mountain band's top.
+        // Province bands and ridged ranges reach the allocation's top.
         maximumSurfaceY = heights.highestSurface;
         erosion = new ErosionFilter(seed, heights);
         groundwater = new Head(seed, heights);
@@ -107,9 +106,6 @@ public final class TerrainMap {
         mountains =
                 new MountainTerrain(
                         seed, heights, continents.outline, intentSampler, hydro, hydro.cellBlocks);
-        plateaus =
-                new PlateauTerrain(
-                        seed, heights, types.sites, majorFeatureParent, hydro, hydro.cellBlocks);
         cold =
                 new ColdTerrain(
                         seed, heights, types.sites, majorFeatureParent, hydro, hydro.cellBlocks);
@@ -247,8 +243,6 @@ public final class TerrainMap {
         public final HillTerrain.Result hills = stage(Phase.LATER, new HillTerrain.Result());
         public final MountainTerrain.Result mountains =
                 stage(Phase.LATER, new MountainTerrain.Result());
-        public final PlateauTerrain.Result plateaus =
-                stage(Phase.LATER, new PlateauTerrain.Result());
         public final DrylandTerrain.Result drylands =
                 stage(Phase.LATER, new DrylandTerrain.Result());
         public final ColdTerrain.Result cold = stage(Phase.LATER, new ColdTerrain.Result());
@@ -375,10 +369,6 @@ public final class TerrainMap {
         out.cold.height = shores.majorEnvelope(parent, out.cold.height, out.shore);
         out.cold.delta = out.cold.height - parent;
         parent = out.cold.height;
-        plateaus.apply(x, z, out, parent, out.plateaus);
-        out.plateaus.height = shores.majorEnvelope(parent, out.plateaus.height, out.shore);
-        out.plateaus.delta = out.plateaus.height - parent;
-        parent = out.plateaus.height;
         mountains.apply(x, z, out, parent, out.mountains);
         out.mountains.height = shores.majorEnvelope(parent, out.mountains.height, out.shore);
         out.mountains.delta = out.mountains.height - parent;

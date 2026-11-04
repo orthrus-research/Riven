@@ -104,7 +104,7 @@ and kept out of search indexes (`X-Robots-Tag`, `robots.txt`).
   `PROTECTED_SHORE` or `SHORE_RESERVED`). The shared predicate rejects columns within
   `1.5 x coastal_plain` width (768 blocks) of the coast; this seed's landmasses are a few kilometres
   across. The few admitted land sites are rejected there, and one landmark is built.
-- Volcanic, cold, plateau, mountain, hill, general-cut, dryland, rocky and sediment stages change
+- Volcanic, cold, mountain, hill, general-cut, dryland, rocky and sediment stages change
   no sampled land column. Regional passes and shore shaping are the active stages.
 - Raising `sites.anchorProbability` to 1.0 changes 0.016% of feature pixels. Raising
   `minimumSeparationInCells` from 1.8 to 3.5 cuts admitted sites from 15 to 5 with no terrain

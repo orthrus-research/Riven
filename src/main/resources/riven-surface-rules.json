@@ -1,10 +1,9 @@
 {
   "schema": 1,
-  "revision": 10,
+  "revision": 11,
   "stoneAboveReference": "mountains",
   "minimumMountainBlend": 0.5,
   "exposedCutDepthBlocks": 3,
-  "exposePlateauCuts": true,
   "exposeDrylandCuts": true,
   "exposeColdCuts": true,
   "exposeVolcanicCuts": true,

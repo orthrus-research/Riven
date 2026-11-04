@@ -5,7 +5,6 @@ import cc.orthrus.riven.contrib.cold.ColdRegions;
 import cc.orthrus.riven.contrib.dryland.Drylands;
 import cc.orthrus.riven.contrib.hills.Hills;
 import cc.orthrus.riven.contrib.mountains.MountainKernels;
-import cc.orthrus.riven.contrib.plateau.PlateauKernels;
 import cc.orthrus.riven.contrib.volcanic.VolcanicKernels;
 
 import com.google.gson.GsonBuilder;
@@ -54,7 +53,6 @@ public final class TerrainAtlas {
         "passes",
         "volcanic",
         "cold",
-        "plateau",
         "mountain",
         "hill",
         "landmark",
@@ -70,7 +68,6 @@ public final class TerrainAtlas {
         RegionalTerrainPasses.Formation.values(),
         VolcanicKernels.Family.values(),
         ColdRegions.Family.values(),
-        PlateauKernels.Family.values(),
         MountainKernels.Family.values(),
         Hills.Family.values(),
         RegionalLandmarks.Family.values(),
@@ -96,24 +93,22 @@ public final class TerrainAtlas {
             case 3:
                 return s.cold.height;
             case 4:
-                return s.plateaus.height;
-            case 5:
                 return s.mountains.height;
-            case 6:
+            case 5:
                 return s.hills.height;
-            case 7:
+            case 6:
                 return s.landmarks.height;
-            case 8:
+            case 7:
                 return s.carvers.height;
-            case 9:
+            case 8:
                 return s.cuts.height;
-            case 10:
+            case 9:
                 return s.drylands.height;
-            case 11:
+            case 10:
                 return s.rocky.parentHeight;
-            case 12:
+            case 11:
                 return s.rocky.height;
-            case 13:
+            case 12:
                 return s.sediment.height;
             default:
                 throw new IllegalArgumentException("stage " + stage);
@@ -122,7 +117,7 @@ public final class TerrainAtlas {
 
     private static double delta(TerrainMap.Sample s, int stage) {
         // Rocky and sediment record their own parent; earlier stages chain consecutively.
-        if (stage == 13) return s.sediment.height - s.sediment.parentHeight;
+        if (stage == 12) return s.sediment.height - s.sediment.parentHeight;
         return after(s, stage) - after(s, stage - 1);
     }
 
@@ -135,24 +130,22 @@ public final class TerrainAtlas {
             case 3:
                 return s.cold.dominant;
             case 4:
-                return s.plateaus.dominant;
-            case 5:
                 return s.mountains.dominant;
-            case 6:
+            case 5:
                 return s.hills.dominant;
-            case 7:
+            case 6:
                 return s.landmarks.dominant;
-            case 8:
+            case 7:
                 return s.carvers.dominant;
-            case 9:
+            case 8:
                 return s.cuts.dominant;
-            case 10:
+            case 9:
                 return s.drylands.dominant;
-            case 11:
+            case 10:
                 return s.shore.kind;
-            case 12:
+            case 11:
                 return s.rocky.family;
-            case 13:
+            case 12:
                 return s.sediment.family;
             default:
                 return null;
@@ -169,18 +162,16 @@ public final class TerrainAtlas {
             case 3:
                 return s.cold.reason;
             case 4:
-                return s.plateaus.reason;
-            case 5:
                 return s.mountains.reason;
-            case 6:
+            case 5:
                 return s.hills.reason;
-            case 9:
+            case 8:
                 return s.cuts.reason;
-            case 10:
+            case 9:
                 return s.drylands.reason;
-            case 12:
+            case 11:
                 return s.rocky.reason;
-            case 13:
+            case 12:
                 return s.sediment.reason;
             default:
                 return null;
@@ -657,21 +648,19 @@ public final class TerrainAtlas {
     private static int stageOf(Sites.Lane lane) {
         switch (lane) {
             case LANDMARK:
-                return 7;
-            case CARVER:
-                return 8;
-            case HILLS:
                 return 6;
-            case MOUNTAINS:
+            case CARVER:
+                return 7;
+            case HILLS:
                 return 5;
-            case PLATEAUS:
+            case MOUNTAINS:
                 return 4;
             case COLD:
                 return 3;
             case VOLCANIC:
                 return 2;
             case CUTS:
-                return 9;
+                return 8;
             default:
                 throw new IllegalArgumentException(lane.name());
         }

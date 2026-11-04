@@ -18,7 +18,6 @@ the original delivery.
 | Lowlands | `cc/orthrus/riven/contrib/lowland/Lowlands.java` | `LowlandTerrain` | `lowland/MIT.txt` | `lowland-terrain-20261019` | Unchanged except package |
 | Hills and uplands | `cc/orthrus/riven/contrib/hills/Hills.java` | `HillTerrain` | `hills/MIT.txt` | `hills-uplands-20261019` | Adapted |
 | Mountains | `cc/orthrus/riven/contrib/mountains/MountainKernels.java` | `MountainTerrain` | `mountains/MIT.txt` | `mountain-systems-20261019` | Adapted |
-| Plateaus and badlands | `cc/orthrus/riven/contrib/plateau/PlateauKernels.java` | `PlateauTerrain` | `plateaus/MIT.txt` | `plateaus-badlands-20261019` | Adapted |
 | Drylands | `cc/orthrus/riven/contrib/dryland/Drylands.java` | `DrylandTerrain` | `drylands/MIT.txt` | `dryland-formations-20261019` | Adapted |
 | Cold regions | `cc/orthrus/riven/contrib/cold/ColdRegions.java` | `ColdTerrain` | `cold-regions/MIT.txt`, `NOTICE.txt` | `cold-regions-10` | Adapted |
 | Volcanic | `cc/orthrus/riven/contrib/volcanic/VolcanicKernels.java` | `VolcanicTerrain` | `volcanic/MIT.txt` | `volcanic-formations-20261019` | Adapted |

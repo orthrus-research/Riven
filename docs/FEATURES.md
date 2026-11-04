@@ -139,7 +139,26 @@ reader sees effective climate.
 - At terrain-v103, against terrain-v102: land unchanged, heights changed at 3.4% of an 8 km
   atlas's pixels, through stages that read climate.
 
-Province types shape nothing yet: relief recipes come with S4 of the engine design.
+**Ground (S4, terrain-v126).** Every land type has a band of ground heights above sea and a
+relief recipe in `riven-provinces.json`: plain 5-35 blocks, basin 2-25, upland 60-130, tableland
+90-170, range 110-280, rift 10-50 and foreland 30-90, with a relief height and ridged and
+terraced shares. Each province draws one level inside its band; levels, relief and shares blend
+across the 500-block edge with smooth weights. `ProvinceGround` holds these fields as a bounded
+regional plan: a Catmull-Rom raster at a fifth of the edge width, with exact derivatives.
+
+`BaseTerrainMap` (REGIONAL) builds the ground from the province level:
+- A slow character field (700 blocks) leaves most of a province calm and makes patches rugged.
+- Rolling relief carries the unridged share of the province's relief.
+- Ridges carry the ridged share: three gradient-noise octaves (1,100, 524 and 250 blocks), each
+  rotated by its own angle and read through a 450-block domain warp at 2,400 blocks, so crests
+  curve and branch with no lattice axis. Smaller octaves ride on high first-octave crests.
+  Ranges are never calm: they keep at least their ridged share of strength.
+- Terraces step the terraced share into 14-block treads with short risers.
+- A soft ceiling eases the top 48 blocks below the highest legal surface.
+
+Every term carries its exact derivative (`RegionalReliefCheck`). Elevation classes read the
+ground's landform position (`BaseElevationMap.position`), not intent. Plateau buttes
+(`PlateauTerrain`) were retired in v126; tableland provinces carry that ground.
 
 ## Continents and oceans
 
@@ -371,7 +390,8 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
   1.4 s vs 0.7 s on the new highland, where mountains and plateaus now build.
 - **Regional relief** (`RegionalProfileMap`, `BaseTerrainMap`, v31; `riven-terrain-regions.json`,
   `riven-base-terrain.json`): bounded regional amplitude and spectral profiles. REGIONAL is
-  packaged; LEGACY is the exact earlier comparator.
+  packaged and builds on province ground ([Provinces](#provinces)); LEGACY is the exact earlier
+  comparator.
 - **Broad intent** (`Terrain`, `riven-terrain.json`): low/middle/high level and ruggedness
   character, read by every selector.
 - **Erosion** (`ErosionFilter`, MPL-2.0): three directional octaves at 64, 32 and 16 blocks.
@@ -388,7 +408,6 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
 | Regional passes (`RegionalTerrainPasses`) | hummocks, knolls, ridges, benches, dunes | `riven-terrain-passes.json` | 6.4% |
 | Volcanic (`VolcanicTerrain`) | cone, caldera, fissure, lobe plateau | `riven-volcanic.json` | About 1 per 4 seeds (prototype): hot anchors only; support slope within 2x the family limit, potential 0.3 |
 | Cold regions (`ColdTerrain`) | cirque, trough, drumlins, moraines | `riven-cold-regions.json` | 0.19% of land on seed 8675309 (prototype; a warm seed) |
-| Plateaus (`PlateauTerrain`) | warped cap, mesa remnants, broken scarp, branch badlands | `riven-plateaus.json` | 5.3% of land on seed 8675309 (prototype; 1.7% before) |
 | Mountains (`MountainTerrain`) | ridge tree, folded belts, summit graph, warped ridges; crest massif | `riven-mountains.json` | 12% |
 | Hills (`HillTerrain`) | skew hills, branch spurs, dissected upland, warped shoulders | `riven-hills.json` | 0% |
 | Landmarks (`RegionalLandmarks`) | capped hill, curved ridge, rimmed basin, fan apron, branching ravine, sculpted dune | `riven-landmarks.json` | 0.8% of land on seed 8675309 at step 16, 1.4x taller (prototype; 0.7% before) |
@@ -398,7 +417,7 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
 
 Shared rules for the land stages:
 
-- Volcanic, cold, plateau, hill, landmark, carver, cut and sediment features
+- Volcanic, cold, hill, landmark, carver, cut and sediment features
   are owned by `Sites` lanes ([ARCHITECTURE.md](ARCHITECTURE.md#feature-sites)). Lowlands,
   passes and drylands are continuous fields with no site.
 - Major forms certify their admitted site against `sampleBeforeMajorFeatures` over the support

@@ -73,7 +73,7 @@ public final class GenerationMaps {
         substrate = new SubstrateMap();
         regions = new RegionalProfileMap(seed, heights);
         fabric = new RegionalFabricMap(seed, heights);
-        baseTerrain = new BaseTerrainMap(seed, baseElevation, heights, regions, policy);
+        baseTerrain = new BaseTerrainMap(seed, baseElevation, provinces, heights, regions, policy);
         terrain =
                 new TerrainMap(
                         seed,

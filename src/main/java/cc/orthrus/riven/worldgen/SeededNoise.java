@@ -43,6 +43,53 @@ public final class SeededNoise {
         return value;
     }
 
+    /** Unit gradient directions for {@link #gradient}, evenly spaced around the circle. */
+    private static final double[] GX = new double[64], GZ = new double[64];
+
+    static {
+        for (int i = 0; i < 64; i++) {
+            double a = (i + .5) * Math.PI / 32;
+            GX[i] = Math.cos(a);
+            GZ[i] = Math.sin(a);
+        }
+    }
+
+    /**
+     * Gradient (Perlin) noise in [-1, 1] with its exact derivatives: zero at every lattice node,
+     * shaped by a random unit slope there, so its zero lines curve through the nodes in every
+     * direction instead of following the cell edges as value noise's do. Scaled by sqrt(2), the
+     * bound of unit-gradient noise in two dimensions.
+     */
+    void gradient(double x, double z, HeightSample out) {
+        int ix = (int) Math.floor(x), iz = (int) Math.floor(z);
+        double fx = x - ix, fz = z - iz;
+        double u = fade(fx), v = fade(fz);
+        int ga = (int) (cell(seed, ix, iz) >>> 58), gb = (int) (cell(seed, ix + 1, iz) >>> 58);
+        int gc = (int) (cell(seed, ix, iz + 1) >>> 58);
+        int gd = (int) (cell(seed, ix + 1, iz + 1) >>> 58);
+        double a = GX[ga] * fx + GZ[ga] * fz;
+        double b = GX[gb] * (fx - 1) + GZ[gb] * fz;
+        double c = GX[gc] * fx + GZ[gc] * (fz - 1);
+        double d = GX[gd] * (fx - 1) + GZ[gd] * (fz - 1);
+        double k = a - b - c + d;
+        double value = a + u * (b - a) + v * (c - a) + u * v * k;
+        double kx = GX[ga] - GX[gb] - GX[gc] + GX[gd], kz = GZ[ga] - GZ[gb] - GZ[gc] + GZ[gd];
+        double dx =
+                GX[ga]
+                        + u * (GX[gb] - GX[ga])
+                        + v * (GX[gc] - GX[ga])
+                        + u * v * kx
+                        + derivative(fx) * (b - a + v * k);
+        double dz =
+                GZ[ga]
+                        + u * (GZ[gb] - GZ[ga])
+                        + v * (GZ[gc] - GZ[ga])
+                        + u * v * kz
+                        + derivative(fz) * (c - a + u * k);
+        double s = Math.sqrt(2);
+        out.set(Math.max(-1, Math.min(1, value * s)), dx * s, dz * s);
+    }
+
     private static double fade(double t) {
         return t * t * t * (t * (t * 6 - 15) + 10);
     }

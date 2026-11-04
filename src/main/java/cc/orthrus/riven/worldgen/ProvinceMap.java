@@ -39,13 +39,38 @@ public final class ProvinceMap {
         final boolean enabled;
         final double min, max;
 
-        Type(String id, int index, boolean land, boolean enabled, double min, double max) {
+        /** A land type's ground band, in blocks above the sea (0 for ocean classes). */
+        final double bandLow, bandHigh;
+
+        /**
+         * A land type's relief: amplitude in blocks, and the shares of it that are ridged
+         * (mountain crests) and terraced (tableland steps); 0 for ocean classes.
+         */
+        final double relief, ridged, terraced;
+
+        Type(
+                String id,
+                int index,
+                boolean land,
+                boolean enabled,
+                double min,
+                double max,
+                double bandLow,
+                double bandHigh,
+                double relief,
+                double ridged,
+                double terraced) {
             this.id = id;
             this.index = index;
             this.land = land;
             this.enabled = enabled;
             this.min = min;
             this.max = max;
+            this.bandLow = bandLow;
+            this.bandHigh = bandHigh;
+            this.relief = relief;
+            this.ridged = ridged;
+            this.terraced = terraced;
         }
 
         /** Whether the budget may give this type any land. */
@@ -93,10 +118,31 @@ public final class ProvinceMap {
                 for (Type other : list)
                     if (other.id.equals(id))
                         throw new IllegalStateException("riven-provinces.json: duplicate " + id);
-                list.add(new Type(id, list.size(), true, t.get("enabled").getAsBoolean(), lo, hi));
+                JsonArray band = t.getAsJsonArray("band");
+                double low = band.get(0).getAsDouble(), high = band.get(1).getAsDouble();
+                if (!(low >= 1 && low <= high && high <= 288))
+                    throw new IllegalStateException("riven-provinces.json " + id + ": band 1..288");
+                JsonObject r = t.getAsJsonObject("relief");
+                double blocks = Rules.number(r, "blocks", 0, 200);
+                double ridged = Rules.number(r, "ridged", 0, 1);
+                double terraced = Rules.number(r, "terraced", 0, 1);
+                list.add(
+                        new Type(
+                                id,
+                                list.size(),
+                                true,
+                                t.get("enabled").getAsBoolean(),
+                                lo,
+                                hi,
+                                low,
+                                high,
+                                blocks,
+                                ridged,
+                                terraced));
             }
             landTypes = list.size();
-            for (String ocean : OCEANS) list.add(new Type(ocean, list.size(), false, true, 0, 1));
+            for (String ocean : OCEANS)
+                list.add(new Type(ocean, list.size(), false, true, 0, 1, 0, 0, 0, 0, 0));
             types = list.toArray(new Type[0]);
             JsonObject tectonic = j.getAsJsonObject("tectonic");
             convergent = landType(tectonic.get("convergent").getAsString());
@@ -148,6 +194,12 @@ public final class ProvinceMap {
     public static final class Sample {
         public Type type, neighbour;
         public double intensity, celsiusOffset, moistureOffset;
+
+        /**
+         * The land ground's level here, in blocks above the sea: the cells' levels blended within
+         * edgeBlocks of the nearest, like the climate offsets, so it never jumps at an edge.
+         */
+        public double ground;
 
         /** The province cell's grid index (i, j packed), for identity. */
         public long cell;
@@ -204,11 +256,15 @@ public final class ProvinceMap {
         final double celsius, moisture;
         final Type land, ocean;
 
-        Cell(Type land, Type ocean, double celsius, double moisture) {
+        /** The land face's ground level, in blocks above the sea, drawn inside its band. */
+        final double ground;
+
+        Cell(Type land, Type ocean, double celsius, double moisture, double ground) {
             this.land = land;
             this.ocean = ocean;
             this.celsius = celsius;
             this.moisture = moisture;
+            this.ground = ground;
         }
 
         Type face(boolean marine) {
@@ -675,7 +731,10 @@ public final class ProvinceMap {
         double celsius = def.maritimePull * seaward * (def.mildCelsius - f.celsius);
         moisture = Math.max(-def.maxMoisture, Math.min(def.maxMoisture, moisture));
         celsius = Math.max(-def.maxCelsius, Math.min(def.maxCelsius, celsius));
-        return new Cell(land, ocean, celsius, moisture);
+        // The land face's level inside its band: a pure draw from the cell's grid key.
+        double u = SeededNoise.unit(SeededNoise.mix(seed ^ 0x47524f554e44L ^ key(f.i, f.j)));
+        double ground = land.bandLow + (land.bandHigh - land.bandLow) * u;
+        return new Cell(land, ocean, celsius, moisture, ground);
     }
 
     private Type ocean(Facts f) {
@@ -784,7 +843,7 @@ public final class ProvinceMap {
         out.intensity = Math.max(0, Math.min(1, (d[second] - d[first]) / edge));
         // Offsets blend over the cells within edge of the nearest, each weighted down smoothly by
         // how much farther it lies, so they never jump where the nearest cell changes.
-        double celsius = 0, moisture = 0, weights = 0;
+        double celsius = 0, moisture = 0, ground = 0, weights = 0;
         for (int k = 0; k < 25; k++) {
             double t = (d[k] - d[first]) / edge;
             if (t >= 1) continue;
@@ -792,10 +851,51 @@ public final class ProvinceMap {
             Cell c = k == first ? a : k == second ? b : cellAt(ci + k / 5 - 2, cj + k % 5 - 2);
             celsius += w * c.celsius;
             moisture += w * c.moisture;
+            ground += w * c.ground;
             weights += w;
         }
         out.celsiusOffset = celsius / weights;
         out.moistureOffset = moisture / weights;
+        out.ground = ground / weights;
+    }
+
+    /**
+     * The land ground at a column, blended like its level: {level, relief blocks, ridged share,
+     * terraced share} into out (see Sample.ground), without the faces.
+     */
+    public void ground(double x, double z, double[] out) {
+        double[] warped = new double[2];
+        warp(x, z, warped);
+        double wx = warped[0], wz = warped[1];
+        int ci = (int) Math.floor(wx / size), cj = (int) Math.floor(wz / size);
+        double[] d = new double[25];
+        int first = 0;
+        for (int k = 0; k < 25; k++) {
+            double[] p = seedPoint(ci + k / 5 - 2, cj + k % 5 - 2);
+            d[k] = Math.hypot(wx - p[0], wz - p[1]);
+            if (d[k] < d[first]) first = k;
+        }
+        double ground = 0, relief = 0, ridged = 0, terraced = 0, weights = 0;
+        for (int k = 0; k < 25; k++) {
+            double t = (d[k] - d[first]) / edge;
+            if (t >= 1) continue;
+            double w = 1 - Rules.smooth(t);
+            Cell c = cellAt(ci + k / 5 - 2, cj + k % 5 - 2);
+            ground += w * c.ground;
+            relief += w * c.land.relief;
+            ridged += w * c.land.ridged;
+            terraced += w * c.land.terraced;
+            weights += w;
+        }
+        out[0] = ground / weights;
+        out[1] = relief / weights;
+        out[2] = ridged / weights;
+        out[3] = terraced / weights;
+    }
+
+    /** The width over which neighbouring provinces blend, in blocks (scaled with the layout). */
+    public double edgeBlocks() {
+        return edge;
     }
 
     /** For checks: {x, z, belt} of the world square's land-bearing provinces of a type. */

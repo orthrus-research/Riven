@@ -341,20 +341,6 @@ final class ColumnReport {
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Plateaus=%s reason=%s id=%s anchor=(%.1f,%.1f) | candidates=%d contributors=%d delta=%+.3f retainedCertificateColumns=%d",
-                                terrain.plateaus.dominant,
-                                terrain.plateaus.reason,
-                                Long.toUnsignedString(terrain.plateaus.id, 16),
-                                terrain.plateaus.anchorX,
-                                terrain.plateaus.anchorZ,
-                                terrain.plateaus.candidates,
-                                terrain.plateaus.contributors,
-                                terrain.plateaus.delta,
-                                terrain.plateaus.certificateColumns)));
-        sender.sendMessage(
-                new TextComponentString(
-                        String.format(
-                                Locale.ROOT,
                                 "Mountains=%s reason=%s id=%s anchor=(%.1f,%.1f) | candidates=%d contributors=%d delta=%+.3f ridge=%.3f pass=%.3f",
                                 terrain.mountains.dominant,
                                 terrain.mountains.reason,

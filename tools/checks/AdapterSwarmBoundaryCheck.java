@@ -172,8 +172,6 @@ public final class AdapterSwarmBoundaryCheck {
                         + '|'
                         + bits(s.maximumY)
                         + '|'
-                        + bits(s.plateaus.height)
-                        + '|'
                         + bits(s.mountains.height)
                         + '|'
                         + bits(s.carvers.height)

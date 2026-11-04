@@ -97,7 +97,7 @@ public final class MountainBoundaryCheck {
                         "Mountain observed:",
                         q.row(),
                         "marine=" + s.ocean.marine,
-                        "parent=" + s.plateaus.height,
+                        "parent=" + s.cold.height,
                         "delta=" + r.delta,
                         "candidates=" + r.candidates,
                         "contributors=" + r.contributors));
@@ -170,7 +170,7 @@ public final class MountainBoundaryCheck {
                         r.contributors > 0 && r.delta > 0 && r.dominant != null,
                         "Applied owner disappeared");
             require(
-                    bits(r.height).equals(bits(s.plateaus.height + r.delta)),
+                    bits(r.height).equals(bits(s.cold.height + r.delta)),
                     "Mountain parent/application relation changed");
         }
     }
@@ -183,7 +183,7 @@ public final class MountainBoundaryCheck {
                         ",",
                         stage,
                         bits(s.height),
-                        bits(s.plateaus.height),
+                        bits(s.cold.height),
                         bits(r.height),
                         bits(r.delta),
                         bits(r.weight),
@@ -231,8 +231,6 @@ public final class MountainBoundaryCheck {
                         bits(s.cold.height),
                         bits(s.cold.delta),
                         s.cold.reason,
-                        bits(s.plateaus.delta),
-                        s.plateaus.reason,
                         bits(s.hills.height),
                         bits(s.landmarks.height),
                         bits(s.carvers.height),

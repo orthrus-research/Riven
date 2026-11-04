@@ -242,7 +242,6 @@ public final class ColdBoundaryCheck {
                                 Long.toHexString(s.water.aquiferId)),
                         bits(s.volcanic.delta),
                         s.volcanic.reason,
-                        bits(s.plateaus.height),
                         bits(s.mountains.height),
                         bits(s.hills.height),
                         bits(s.landmarks.height),

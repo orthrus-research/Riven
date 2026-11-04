@@ -199,7 +199,6 @@ public final class DrylandTerrain {
         // those values are earlier facts, never queries into this stage's output.
         out.fit =
                 unit(base.land.fit(1, 1, 0, Terrain.Fit.CALM))
-                        * (1 - unit(base.plateaus.weight))
                         * (1 - unit(base.mountains.weight))
                         * (1 - unit(base.hills.weight))
                         * (1 - Drylands.smooth(Math.abs(base.cold.delta) / featureFeather))

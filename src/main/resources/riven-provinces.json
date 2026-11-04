@@ -1,16 +1,16 @@
 {
   "schema": 1,
-  "revision": 2,
+  "revision": 3,
   "variationSeed": "0x50524f56494e4331",
-  "cells": {"sizeBlocks": 1400, "jitter": 0.85, "warpBlocks": 220, "warpWavelengthBlocks": 1800, "edgeBlocks": 350},
+  "cells": {"sizeBlocks": 1400, "jitter": 0.85, "warpBlocks": 900, "warpWavelengthBlocks": 3600, "edgeBlocks": 500},
   "types": [
-    {"id": "plain", "enabled": true, "share": [0.15, 0.35]},
-    {"id": "basin", "enabled": true, "share": [0.0, 0.15]},
-    {"id": "upland", "enabled": true, "share": [0.15, 0.35]},
-    {"id": "tableland", "enabled": true, "share": [0.0, 0.20]},
-    {"id": "range", "enabled": true, "share": [0.08, 0.25]},
-    {"id": "rift", "enabled": true, "share": [0.0, 0.10]},
-    {"id": "foreland", "enabled": true, "share": [0.05, 0.15]}
+    {"id": "plain", "enabled": true, "share": [0.15, 0.35], "band": [5, 35], "relief": {"blocks": 8, "ridged": 0, "terraced": 0}},
+    {"id": "basin", "enabled": true, "share": [0.0, 0.15], "band": [2, 25], "relief": {"blocks": 6, "ridged": 0, "terraced": 0}},
+    {"id": "upland", "enabled": true, "share": [0.15, 0.35], "band": [60, 130], "relief": {"blocks": 45, "ridged": 0.25, "terraced": 0}},
+    {"id": "tableland", "enabled": true, "share": [0.0, 0.20], "band": [90, 170], "relief": {"blocks": 30, "ridged": 0, "terraced": 0.8}},
+    {"id": "range", "enabled": true, "share": [0.08, 0.25], "band": [110, 280], "relief": {"blocks": 110, "ridged": 0.85, "terraced": 0}},
+    {"id": "rift", "enabled": true, "share": [0.0, 0.10], "band": [10, 50], "relief": {"blocks": 30, "ridged": 0.3, "terraced": 0}},
+    {"id": "foreland", "enabled": true, "share": [0.05, 0.15], "band": [30, 90], "relief": {"blocks": 35, "ridged": 0.2, "terraced": 0}}
   ],
   "tectonic": {"convergent": "range", "divergent": "rift", "reachBlocks": 700, "threshold": 0.35, "beltThreshold": 0.15},
   "stable": {"low": {"coastal": "plain", "interior": "basin"}, "high": {"rest": "upland", "top": "tableland"}, "levelWavelengthCells": 3.0},

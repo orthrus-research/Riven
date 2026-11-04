@@ -343,7 +343,6 @@ public final class VolcanicBoundaryCheck {
                                 s.water.aquiferRoof,
                                 Long.toHexString(s.water.aquiferId)),
                         bits(s.cold.height),
-                        bits(s.plateaus.height),
                         bits(s.mountains.height),
                         bits(s.hills.height),
                         bits(s.drylands.height),
