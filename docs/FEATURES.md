@@ -168,6 +168,20 @@ from the spine cells carrying their half width.
 - Terraces step the terraced share into 14-block treads with short risers.
 - A soft ceiling eases the top 48 blocks below the highest legal surface.
 
+**Plateaus and palettes (terrain-v128).** A type's `plateau` share makes its level a cap: where
+the blended plateau share, warped by a two-octave edge field (900 and 300 blocks, amplitude 0.3),
+passes one half, the ground stands on the plateau's level, and elsewhere on the blend of the other
+types, joined by a scarp 0.06 of the share wide (about 100 blocks at 32 km) with terraced steps
+(`riven-base-terrain.json` `plateau`). The edge field leaves outlying mesas and notches canyons
+into the rim; the cap keeps a tenth of the ground's amplitude and no ridges, and mountains fade
+on it. Each type also carries a landform palette in blocks (`palette`): rounded hills (two
+gradient octaves shaped into domes, 420 blocks), spurs (a ridged octave, 260 blocks), broad
+swells (1,600 blocks) and hollows (a flat floor with dips below zero, 180 blocks); the character
+varies hills and spurs by 0.6. Uplands carry hills 28 and spurs 8, foreland hills 14 and spurs
+14, ranges spurs 15 on their flanks, plains swells 6, basins hollows 5. They replace the retired
+hill and lowland kernels (`HillTerrain`, `LowlandTerrain`, `RegionalFabricMap`), which at 32 km
+acted on 0% and 0.3% of land.
+
 Every term carries its exact derivative (`RegionalReliefCheck`). Elevation classes read the
 ground's landform position (`BaseElevationMap.position`), not intent. Plateau buttes
 (`PlateauTerrain`) were retired in v126; tableland provinces carry that ground.
@@ -407,8 +421,6 @@ ground's landform position (`BaseElevationMap.position`), not intent. Plateau bu
 - **Broad intent** (`Terrain`, `riven-terrain.json`): low/middle/high level and ruggedness
   character, read by every selector.
 - **Erosion** (`ErosionFilter`, MPL-2.0): three directional octaves at 64, 32 and 16 blocks.
-- **Regional fabric** (`RegionalFabricMap`, v33, `riven-regional-fabric.json`): a seed-owned
-  axis preference used only for SKEW_HILLS headings.
 - **Substrate** (`SubstrateMap`, v30, `riven-substrate.json`): three material permissions, all
   0.9, read by drylands.
 
@@ -416,12 +428,10 @@ ground's landform position (`BaseElevationMap.position`), not intent. Plateau bu
 
 | Stage | Families | Definition | Activity |
 | --- | --- | --- | --- |
-| Lowlands (`LowlandTerrain`) | warped plain, compact patches, cellular hummocks, low terraces | `riven-lowlands.json` | 0% (72% of land not lowland, 26% shore-reserved) |
 | Regional passes (`RegionalTerrainPasses`) | hummocks, knolls, ridges, benches, dunes | `riven-terrain-passes.json` | 6.4% |
 | Volcanic (`VolcanicTerrain`) | cone, caldera, fissure, lobe plateau | `riven-volcanic.json` | About 1 per 4 seeds (prototype): hot anchors only; support slope within 2x the family limit, potential 0.3 |
 | Cold regions (`ColdTerrain`) | cirque, trough, drumlins, moraines | `riven-cold-regions.json` | 0.19% of land on seed 8675309 (prototype; a warm seed) |
-| Mountains (`MountainTerrain`) | ridge tree, folded belts, summit graph, warped ridges; crest massif | `riven-mountains.json` | 12% |
-| Hills (`HillTerrain`) | skew hills, branch spurs, dissected upland, warped shoulders | `riven-hills.json` | 0% |
+| Mountains (`MountainTerrain`) | ridge tree, folded belts, summit graph, warped ridges; spine massif | `riven-mountains.json` | 2-6% of land (v128: the massif rises by spine weight, not plate belt, and the stage fades on plateau caps) |
 | Landmarks (`RegionalLandmarks`) | capped hill, curved ridge, rimmed basin, fan apron, branching ravine, sculpted dune | `riven-landmarks.json` | 0.8% of land on seed 8675309 at step 16, 1.4x taller (prototype; 0.7% before) |
 | Surface carvers (`SurfaceCarvers`) | 24 profiles (V ravine to en-echelon clefts) | `riven-surface-carvers.json` | 1.7% of land on seed 8675309, 1.5x deeper (prototype; 1.2% before) |
 | General cuts (`GeneralSurfaceCuts`) | ribbon ravine, branch gully, pinched slot, breach saddle | `riven-general-surface-cuts.json` | 1-2 cuts per 8 km world (prototype; 0 before) |
@@ -429,9 +439,10 @@ ground's landform position (`BaseElevationMap.position`), not intent. Plateau bu
 
 Shared rules for the land stages:
 
-- Volcanic, cold, hill, landmark, carver, cut and sediment features
-  are owned by `Sites` lanes ([ARCHITECTURE.md](ARCHITECTURE.md#feature-sites)). Lowlands,
-  passes and drylands are continuous fields with no site.
+- Volcanic, cold, landmark, carver, cut and sediment features
+  are owned by `Sites` lanes ([ARCHITECTURE.md](ARCHITECTURE.md#feature-sites)). Passes and
+  drylands are continuous fields with no site; hills and lowland forms are the provinces'
+  landform palettes ([Provinces](#provinces)).
 - Major forms certify their admitted site against `sampleBeforeMajorFeatures` over the support
   plus an anchor and halo: headroom, water reservations, family-specific fit. Since v56 the
   certificate reads the parent on a shared world-aligned lattice every 8 blocks
@@ -470,7 +481,7 @@ Shared rules for the land stages:
   caps each raise with `Shore.majorEnvelope`, the same band rule since v105, and they keep water,
   marine-anchor and marine-footprint exclusions. Since v65 carver and general-cut lowering eases to nothing within
   48 blocks of surface water (`cutWaterSkirtBlocks` in `riven-terrain.json`); a cut beside a river
-  left the river's bank, held up so it cannot spill, standing as a fin. Cuts, lowlands and
+  left the river's bank, held up so it cannot spill, standing as a fin. Cuts and
   drylands keep the shore reservation,
   `shoreReservationInCoastalPlainWidths` (0.5) coastal-plain widths in `riven-terrain.json`.
 - Drylands require hot dry climate and attenuate around earlier major relief. Dunes in regional
@@ -541,7 +552,7 @@ its own land first, builds exactly the plans those cells read, one task per plan
 reads receiving water: no row waits for another row's plan build (timing only). A network keeps
 each channel's points (an array that is +0.0 along the whole course is left out, riffles as bytes)
 and a bin index stored as runs of consecutive segments behind a bitmap: about 0.2 MB a continent
-at 8 km and 6.6 MB at 32 km on seed 8675309 (`tools/checks/DrainageFootprint`). Rain-weighted area accumulates downstream, a channel begins where it drains 18
+at 8 km and 6.6 MB at 32 km on seed 8675309 (`tools/checks/DrainageFootprint`). Rain-weighted area accumulates downstream, a channel begins where it drains 60 (18 until v128, when parallel streams on even slopes cut a washboard of valleys)
 cells, and every channel continues the upstream channel that brings it the most water: heads join
 into creeks, creeks into rivers. Width grows with the square root of the area drained (1.5 blocks
 at a head, 14 blocks more per extra root square kilometre, at most 48), so rivers widen below every

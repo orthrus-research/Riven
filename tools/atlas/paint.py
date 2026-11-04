@@ -55,13 +55,10 @@ WATER_COLORS = {
     "POND": (150, 200, 255),
 }
 STAGE_HUES = {
-    "lowland": 0.30,
     "passes": 0.17,
     "volcanic": 0.00,
     "cold": 0.53,
-    "plateau": 0.07,
     "mountain": 0.75,
-    "hill": 0.36,
     "landmark": 0.88,
     "carver": 0.95,
     "cut": 0.62,
@@ -73,7 +70,6 @@ STAGE_HUES = {
 LANE_STAGE = {
     "LANDMARK": "landmark",
     "CARVER": "carver",
-    "HILLS": "hill",
     "MOUNTAINS": "mountain",
     "COLD": "cold",
     "VOLCANIC": "volcanic",

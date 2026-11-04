@@ -96,7 +96,6 @@ flowchart TD
   PR --> BT
   RP[RegionalProfileMap] --> BT[BaseTerrainMap]
   BE --> BT
-  F[RegionalFabricMap] --> TM[TerrainMap]
   S[SubstrateMap] --> TM
   C --> TM
   CM --> TM
@@ -117,7 +116,7 @@ they never call `surfaceHabitat` or final `sample`.
 | --- | --- | --- |
 | `intent` | Outline, marine ownership and ocean water, climate and the province (effective climate), base terrain, shore intent | Local hydrology, all shaping |
 | `habitat` | Intent plus local surface-water and lens plans | Final terrain, coastal emergence |
-| `sampleBeforeMajorFeatures` | Habitat, erosion, lowlands, regional passes; constrained ocean bed on marine columns | Major forms, carvers, drylands, coastal formations |
+| `sampleBeforeMajorFeatures` | Habitat, erosion, regional passes; constrained ocean bed on marine columns | Major forms, carvers, drylands, coastal formations |
 | `sampleBeforeRocky` | Complete earlier surface with shore/water constraints and roof seal | Coast forms |
 | `sampleBeforeSediment` | The above plus the coast's forms and roof seal | Coast sediment |
 
@@ -136,7 +135,7 @@ flowchart TD
   I --> H[Hydro plans]
   I --> B[Ocean-bed geometry]
   B --> H
-  H --> L[Land: erosion, lowlands, regional passes]
+  H --> L[Land: erosion, regional passes]
   H --> Q[Marine: ocean bed, water constraint, roof seal]
   L --> A[Major forms, landmarks, carvers, cuts]
   A --> D[Drylands]
@@ -149,8 +148,8 @@ flowchart TD
 
 ## Composition order
 
-Land columns run, in order: erosion, lowlands, regional passes, volcanic, cold,
-mountains, hills (capped by the coastal envelope), regional landmarks, surface carvers, general surface cuts, drylands, shore
+Land columns run, in order: erosion, regional passes, volcanic, cold,
+mountains, regional landmarks, surface carvers, general surface cuts, drylands, shore
 shaping, hydrology constraint, coast forms, coast sediment. Marine columns run ocean bed,
 hydrology constraint and roof seal, then the coastal stages. This order is part of the generator
 definition:
@@ -257,10 +256,10 @@ Terrain-v39, 64 km windows on seeds 8675309, 101, 1, 42, 7 and -991 (atlas and `
   continent and never deepen sea. Ocean corridors run every 12 cells (36 km), shifted 6, so the
   nearest lines fall 18 km from the origin, outside a 32 km world.
 - Every marine column holds water to Y62; enclosed marine areas are inland seas.
-- Raising features no longer exclude the shore (v50): hills and the major features (volcanic,
+- Raising features no longer exclude the shore (v50): the major features (volcanic,
   cold, mountains) keep the coast with the band envelope in `Shore` (v105: capped only
   inside a coast segment's band), and only water, marine
-  anchors and marine footprints still exclude them. Cuts, lowlands and drylands keep the shore
+  anchors and marine footprints still exclude them. Cuts and drylands keep the shore
   reservation (0.5 coastal-plain widths), since lowering near the sea could open dry basins.
   Since v52 a site competes only against same-lane anchors whose own earlier facts admit the
   feature (`Sites.admits` with an eligibility test, memoized per cell), mountain footprints may
@@ -276,7 +275,7 @@ Terrain-v39, 64 km windows on seeds 8675309, 101, 1, 42, 7 and -991 (atlas and `
   most volcanic candidates then failing the all-HOT footprint; v55 is unmeasured. Coastal
   formations still build none.
   Regional passes (about 47% of land) and shore shaping (22-24%) are the main active stages;
-  drylands reach 2.0-2.4%, lowlands 1.4-1.5%.
+  drylands reach 2.0-2.4%.
 - Median warm sample cost is 39 µs on land and 14 µs over ocean. Full-support certificates now
   run on many more sites: a cold site can cost about 0.2 s on the first sample that reaches it,
   and a 64 km atlas window takes 110-156 s on 16 threads. Native cubes read the `NativeColumns`
@@ -302,9 +301,9 @@ substitutes for the integer, canonical native/DH path when checking parity.
 | `riven-terrain.json` | Broad intent blends and `Sites` |
 | `riven-continents.json` | Outline family, tuning, shelf and native water admission |
 | `riven-base-elevation.json`, `riven-base-terrain.json`, `riven-terrain-regions.json` | Inland elevation, relief composition and regional profiles |
-| `riven-regional-fabric.json`, `riven-climate-forcing.json`, `riven-substrate.json` | Earlier regional axis, moisture forcing, material permissions |
+| `riven-climate-forcing.json`, `riven-substrate.json` | Earlier regional axis, moisture forcing, material permissions |
 | `riven-terrain-passes.json`, `riven-landmarks.json`, `riven-surface-carvers.json` | Regional passes, landmarks, legacy carvers |
-| `riven-lowlands.json`, `riven-hills.json`, `riven-mountains.json`, `riven-drylands.json`, `riven-cold-regions.json`, `riven-volcanic.json`, `riven-general-surface-cuts.json` | Contributed land families |
+| `riven-mountains.json`, `riven-drylands.json`, `riven-cold-regions.json`, `riven-volcanic.json`, `riven-general-surface-cuts.json` | Contributed land families |
 | `riven-coasts.json`, `riven-ocean-floors.json`, `riven-estuaries.json` | Coast and seabed |
 | `riven-hydrology.json`, `riven-lakes.json`, `riven-rivers.json` | Water |
 | `riven-habitats.json`, `riven-surface-rules.json` | Biome palettes; why a column's ground shows rock |

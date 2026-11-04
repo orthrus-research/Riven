@@ -5,15 +5,13 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 127;
+    public static final int VERSION = 128;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
     private final ClimateMap climate;
     private final ProvinceMap provinces;
     private final RegionalTerrainPasses passes;
-    private final LowlandTerrain lowlands;
-    private final HillTerrain hills;
     private final MountainTerrain mountains;
     private final DrylandTerrain drylands;
     private final ColdTerrain cold;
@@ -50,14 +48,10 @@ public final class TerrainMap {
             ContinentalMap continents,
             SubstrateMap substrate,
             BaseTerrainMap baseTerrain,
-            RegionalFabricMap fabric,
             WorldScale world,
             BuildPool pool) {
-        if (climate == null
-                || provinces == null
-                || continents == null
-                || baseTerrain == null
-                || fabric == null) throw new NullPointerException();
+        if (climate == null || provinces == null || continents == null || baseTerrain == null)
+            throw new NullPointerException();
         this.provinces = provinces;
         this.baseTerrain = baseTerrain;
         this.pool = pool;
@@ -67,7 +61,6 @@ public final class TerrainMap {
         types = new Terrain(seed, heights);
         shores = new Shore(seed, heights, world, this::intentBeforeShore);
         passes = new RegionalTerrainPasses(seed, heights);
-        lowlands = new LowlandTerrain(seed, heights);
         drylands = new DrylandTerrain(seed, heights, substrate);
         landmarks = new RegionalLandmarks(seed, heights, types.sites);
         carvers = new SurfaceCarvers(seed, heights, types.sites, plates);
@@ -94,15 +87,6 @@ public final class TerrainMap {
                         world,
                         pool);
         majorFeatureParent = this::sampleBeforeMajorFeatures;
-        hills =
-                new HillTerrain(
-                        seed,
-                        heights,
-                        types.sites,
-                        intentSampler,
-                        majorFeatureParent,
-                        hydro,
-                        fabric);
         mountains =
                 new MountainTerrain(
                         seed, heights, continents.outline, intentSampler, hydro, hydro.cellBlocks);
@@ -239,8 +223,6 @@ public final class TerrainMap {
         public final SurfaceCarvers.Result carvers =
                 stage(Phase.LATER, new SurfaceCarvers.Result());
         public final OceanBed.Result oceanFloor = stage(Phase.MARINE, new OceanBed.Result());
-        public final LowlandTerrain.Result lowland = stage(Phase.LAND, new LowlandTerrain.Result());
-        public final HillTerrain.Result hills = stage(Phase.LATER, new HillTerrain.Result());
         public final MountainTerrain.Result mountains =
                 stage(Phase.LATER, new MountainTerrain.Result());
         public final DrylandTerrain.Result drylands =
@@ -372,16 +354,12 @@ public final class TerrainMap {
         mountains.apply(x, z, out, parent, out.mountains);
         out.mountains.height = shores.majorEnvelope(parent, out.mountains.height, out.shore);
         out.mountains.delta = out.mountains.height - parent;
-        hills.apply(x, z, out.mountains.height, out.hills);
-        // Hills keep the coast by composition: their raise is softly capped by the envelope.
-        out.hills.height = shores.envelope(out.mountains.height, out.hills.height, out.shore);
-        out.hills.delta = out.hills.height - out.mountains.height;
         landmarks.apply(
                 x,
                 z,
                 intentSampler,
                 out,
-                out.hills.height,
+                out.mountains.height,
                 out.minimumY,
                 out.maximumY,
                 out.landmarks);
@@ -439,7 +417,6 @@ public final class TerrainMap {
                 octaves,
                 out.erosion);
         out.originalHeight = out.baseHeight + out.erosion.displacement;
-        lowlands.apply(x, z, out, hydro, out.originalHeight, out.lowland);
         double fine =
                 out.base.fineContribution()
                         + out.erosion.displacement
@@ -449,7 +426,7 @@ public final class TerrainMap {
                 z,
                 out.climate,
                 out.land,
-                out.lowland.height,
+                out.originalHeight,
                 fine,
                 out.minimumY,
                 out.maximumY,

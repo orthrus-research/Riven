@@ -44,10 +44,14 @@ public final class ProvinceMap {
         final double bandLow, bandHigh;
 
         /**
-         * A land type's relief: amplitude in blocks, and the shares of it that are ridged
-         * (mountain crests) and terraced (tableland steps); 0 for ocean classes.
+         * A land type's relief: amplitude in blocks, the share of it that is ridged (mountain
+         * crests), and how much of a plateau it is (1: its level is a cap with a scarp at its
+         * edge); 0 for ocean classes.
          */
-        final double relief, ridged, terraced;
+        final double relief, ridged, plateau;
+
+        /** A land type's landform palette, in blocks: rounded hills, spurs, broad swells, hollows. */
+        final double hills, spurs, swells, hollows;
 
         Type(
                 String id,
@@ -60,7 +64,11 @@ public final class ProvinceMap {
                 double bandHigh,
                 double relief,
                 double ridged,
-                double terraced) {
+                double plateau,
+                double hills,
+                double spurs,
+                double swells,
+                double hollows) {
             this.id = id;
             this.index = index;
             this.land = land;
@@ -71,7 +79,11 @@ public final class ProvinceMap {
             this.bandHigh = bandHigh;
             this.relief = relief;
             this.ridged = ridged;
-            this.terraced = terraced;
+            this.plateau = plateau;
+            this.hills = hills;
+            this.spurs = spurs;
+            this.swells = swells;
+            this.hollows = hollows;
         }
 
         /** Whether the budget may give this type any land. */
@@ -126,7 +138,12 @@ public final class ProvinceMap {
                 JsonObject r = t.getAsJsonObject("relief");
                 double blocks = Rules.number(r, "blocks", 0, 200);
                 double ridged = Rules.number(r, "ridged", 0, 1);
-                double terraced = Rules.number(r, "terraced", 0, 1);
+                double plateau = Rules.number(r, "plateau", 0, 1);
+                JsonObject pal = t.getAsJsonObject("palette");
+                double hills = Rules.number(pal, "hills", 0, 128);
+                double spurs = Rules.number(pal, "spurs", 0, 128);
+                double swells = Rules.number(pal, "swells", 0, 64);
+                double hollows = Rules.number(pal, "hollows", 0, 64);
                 list.add(
                         new Type(
                                 id,
@@ -139,11 +156,16 @@ public final class ProvinceMap {
                                 high,
                                 blocks,
                                 ridged,
-                                terraced));
+                                plateau,
+                                hills,
+                                spurs,
+                                swells,
+                                hollows));
             }
             landTypes = list.size();
             for (String ocean : OCEANS)
-                list.add(new Type(ocean, list.size(), false, true, 0, 1, 0, 0, 0, 0, 0));
+                list.add(
+                        new Type(ocean, list.size(), false, true, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0));
             types = list.toArray(new Type[0]);
             JsonObject spine = j.getAsJsonObject("spine");
             spined = landType(spine.get("type").getAsString());
@@ -859,7 +881,9 @@ public final class ProvinceMap {
 
     /**
      * The land ground at a column, blended like its level: {level, relief blocks, ridged share,
-     * terraced share} into out (see Sample.ground), without the faces.
+     * plateau share} in out[0..3], the plateau's cap level and the other ground's level in out[5]
+     * and out[6], and the landform palette (hills, spurs, swells, hollows) in out[7..10] (see
+     * Sample.ground), without the faces.
      */
     public void ground(double x, double z, double[] out) {
         double[] warped = new double[2];
@@ -873,7 +897,9 @@ public final class ProvinceMap {
             d[k] = Math.hypot(wx - p[0], wz - p[1]);
             if (d[k] < d[first]) first = k;
         }
-        double ground = 0, relief = 0, ridged = 0, terraced = 0, weights = 0;
+        double ground = 0, relief = 0, ridged = 0, plateau = 0, weights = 0;
+        double capSum = 0, capWeight = 0, belowSum = 0, belowWeight = 0;
+        double hills = 0, spurs = 0, swells = 0, hollows = 0;
         for (int k = 0; k < 25; k++) {
             double t = (d[k] - d[first]) / edge;
             if (t >= 1) continue;
@@ -882,13 +908,28 @@ public final class ProvinceMap {
             ground += w * c.ground;
             relief += w * c.land.relief;
             ridged += w * c.land.ridged;
-            terraced += w * c.land.terraced;
+            plateau += w * c.land.plateau;
+            hills += w * c.land.hills;
+            spurs += w * c.land.spurs;
+            swells += w * c.land.swells;
+            hollows += w * c.land.hollows;
+            capSum += w * c.land.plateau * c.ground;
+            capWeight += w * c.land.plateau;
+            belowSum += w * (1 - c.land.plateau) * c.ground;
+            belowWeight += w * (1 - c.land.plateau);
             weights += w;
         }
         out[0] = ground / weights;
         out[1] = relief / weights;
         out[2] = ridged / weights;
-        out[3] = terraced / weights;
+        out[3] = plateau / weights;
+        // A plateau's cap level, and the level of the blend's other ground below it.
+        out[5] = capWeight > 0 ? capSum / capWeight : out[0];
+        out[6] = belowWeight > 0 ? belowSum / belowWeight : out[5];
+        out[7] = hills / weights;
+        out[8] = spurs / weights;
+        out[9] = swells / weights;
+        out[10] = hollows / weights;
     }
 
     /** The width over which neighbouring provinces blend, in blocks (scaled with the layout). */

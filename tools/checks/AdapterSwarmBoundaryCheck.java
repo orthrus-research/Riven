@@ -23,7 +23,7 @@ public final class AdapterSwarmBoundaryCheck {
     private static final String MANIFEST = "seed,role,cellX,cellZ,x,z";
     private static final String HEADER =
             MANIFEST
-                    + ",stage,heightBits,rockyParentBits,landFacts,waterFacts,hills,cuts,rocky,sediment,volume,cutBoundaries,editObservations,cover,bareStone";
+                    + ",stage,heightBits,rockyParentBits,landFacts,waterFacts,cuts,rocky,sediment,volume,cutBoundaries,editObservations,cover,bareStone";
 
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
@@ -88,7 +88,7 @@ public final class AdapterSwarmBoundaryCheck {
                     {7124, 3179}, {8102, 4552}, {75891, 3626}, {-1, -1}, {-17, -16}, {0, 0}
                 }) points.add(new Point("CONTROL", 0, 0, xy[0], xy[1]));
         Sites sites = maps.terrain.types.sites;
-        for (Sites.Lane lane : new Sites.Lane[] {Sites.Lane.HILLS, Sites.Lane.CUTS}) {
+        for (Sites.Lane lane : new Sites.Lane[] {Sites.Lane.CUTS}) {
             int owners = 0;
             search:
             for (int z = 0; z <= LAST_CELL; z++)
@@ -121,8 +121,6 @@ public final class AdapterSwarmBoundaryCheck {
                     point.row()
                             + " marine="
                             + sample.ocean.marine
-                            + " hills="
-                            + sample.hills.reason
                             + " cuts="
                             + sample.cuts.reason
                             + " rocky="
@@ -200,8 +198,6 @@ public final class AdapterSwarmBoundaryCheck {
                 + land
                 + ','
                 + scalarFields(s.water)
-                + ','
-                + scalarFields(s.hills)
                 + ','
                 + scalarFields(s.cuts)
                 + ','

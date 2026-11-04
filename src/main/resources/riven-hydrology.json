@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": "bounded-water-layers-v12",
+  "revision": "bounded-water-layers-v13",
   "oceanReceiverPolicy": "Require independent native marine supply; preserve the earlier connected ocean scaffold before local beds, banks, basins and lenses.",
   "variationSeed": "0x485944524f303031",
   "cellBlocks": 2048,
@@ -36,7 +36,7 @@
     "upliftWeight": 0.5
   },
   "mouthRadiusBlocks": 192,
-  "drainage": {"cellBlocks": 32, "maximumCellsPerSide": 256, "routingRelief": {"amplitudeBlocks": 12, "wavelengthBlocks": [800, 400, 200], "weights": [1.0, 0.5, 0.25]}, "runoff": {"dryMoisture": 0.12, "moistureSpan": 0.5, "minimum": 0.1, "maximum": 1.5}, "channelAreaCells": 18, "widthBlocks": {"head": 1.5, "perRootSquareKilometre": 14, "maximum": 48}, "depthBlocks": {"head": 1, "perRootSquareKilometre": 4, "maximum": 8}, "riverWidthBlocks": 6, "valleyInCutDepths": 2.5, "streamValleyMaximumBlocks": 48, "smoothingPasses": 2, "meanders": {"wavelengthInWidths": 11, "minimumWavelengthBlocks": 24, "amplitudeInWavelengths": 0.3, "flatGradient": 0.004, "steepGradient": 0.03, "skew": 0.15, "stepBlocks": 3, "wanderBlocks": 300}, "pools": {"dropBlocks": 3, "minimumInWidths": 5, "minimumBlocks": 16, "riffleBlocksPerDrop": 3}, "bars": {"sandBelowGradient": 0.01, "pointBarStrength": 0.6}, "braids": {"fromWidthBlocks": 4, "fullWidthBlocks": 8, "bedInWidths": 3, "coldBelowCelsius": 2, "dryBelowMoisture": 0.3, "gradientRange": [0.003, 0.06], "channels": 3, "wavelengthInBeds": 5}, "binBlocks": 64, "continentMemo": 256, "lakes": {"outletCutBlocks": 12, "minimumCells": 6, "bankBlocks": 3, "holdBlocks": 6}},
+  "drainage": {"cellBlocks": 32, "maximumCellsPerSide": 256, "routingRelief": {"amplitudeBlocks": 12, "wavelengthBlocks": [800, 400, 200], "weights": [1.0, 0.5, 0.25]}, "runoff": {"dryMoisture": 0.12, "moistureSpan": 0.5, "minimum": 0.1, "maximum": 1.5}, "channelAreaCells": 60, "widthBlocks": {"head": 1.5, "perRootSquareKilometre": 14, "maximum": 48}, "depthBlocks": {"head": 1, "perRootSquareKilometre": 4, "maximum": 8}, "riverWidthBlocks": 6, "valleyInCutDepths": 2.5, "streamValleyMaximumBlocks": 48, "smoothingPasses": 2, "meanders": {"wavelengthInWidths": 11, "minimumWavelengthBlocks": 24, "amplitudeInWavelengths": 0.3, "flatGradient": 0.004, "steepGradient": 0.03, "skew": 0.15, "stepBlocks": 3, "wanderBlocks": 300}, "pools": {"dropBlocks": 3, "minimumInWidths": 5, "minimumBlocks": 16, "riffleBlocksPerDrop": 3}, "bars": {"sandBelowGradient": 0.01, "pointBarStrength": 0.6}, "braids": {"fromWidthBlocks": 4, "fullWidthBlocks": 8, "bedInWidths": 3, "coldBelowCelsius": 2, "dryBelowMoisture": 0.3, "gradientRange": [0.003, 0.06], "channels": 3, "wavelengthInBeds": 5}, "binBlocks": 64, "continentMemo": 256, "lakes": {"outletCutBlocks": 12, "minimumCells": 6, "bankBlocks": 3, "holdBlocks": 6}},
   "estuary": {
     "lengthBlocks": 320,
     "flareInWidths": 3.5

@@ -14,7 +14,6 @@ public final class GenerationMaps {
     public final ProvinceMap provinces;
     public final SubstrateMap substrate;
     public final RegionalProfileMap regions;
-    public final RegionalFabricMap fabric;
     public final BaseElevationMap baseElevation;
     public final BaseTerrainMap baseTerrain;
     public final TerrainMap terrain;
@@ -74,7 +73,6 @@ public final class GenerationMaps {
         provinces = new ProvinceMap(seed, world, plates, continents, spines, climate);
         substrate = new SubstrateMap();
         regions = new RegionalProfileMap(seed, heights);
-        fabric = new RegionalFabricMap(seed, heights);
         baseTerrain = new BaseTerrainMap(seed, baseElevation, provinces, heights, regions, policy);
         terrain =
                 new TerrainMap(
@@ -86,7 +84,6 @@ public final class GenerationMaps {
                         continents,
                         substrate,
                         baseTerrain,
-                        fabric,
                         world,
                         pool);
         surfaces = new SurfaceRules(heights);

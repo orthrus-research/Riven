@@ -25,7 +25,7 @@ public final class MountainBoundaryCheck {
                     + "anchorXBits,anchorZBits,candidates,contributors,mountainId,dominant,reason,temperatureBits,moistureBits,"
                     + "baseHeightBits,minBits,maxBits,landHighBits,upliftBits,broadDxBits,broadDzBits,marine,supplied,shoreKind,"
                     + "shoreHeightBits,waterFacts,volcanicHeightBits,volcanicDeltaBits,volcanicReason,coldHeightBits,coldDeltaBits,"
-                    + "coldReason,plateauDeltaBits,plateauReason,hillHeightBits,landmarkHeightBits,carverHeightBits,"
+                    + "coldReason,landmarkHeightBits,carverHeightBits,"
                     + "drylandHeightBits,drylandDeltaBits,drylandWeightBits,drylandReason,coverReason,bareStone";
 
     private static final class Point {
@@ -231,7 +231,6 @@ public final class MountainBoundaryCheck {
                         bits(s.cold.height),
                         bits(s.cold.delta),
                         s.cold.reason,
-                        bits(s.hills.height),
                         bits(s.landmarks.height),
                         bits(s.carvers.height),
                         bits(s.drylands.height),

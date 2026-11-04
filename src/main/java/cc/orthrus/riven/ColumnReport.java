@@ -251,21 +251,6 @@ final class ColumnReport {
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Lowlands=%s weights=%.3f/%.3f/%.3f/%.3f | applied=%+.3f weight=%.3f candidates=%d shoreClearance=%.2f waterClearance=%.2f",
-                                terrain.lowland.reason,
-                                terrain.lowland.weights[0],
-                                terrain.lowland.weights[1],
-                                terrain.lowland.weights[2],
-                                terrain.lowland.weights[3],
-                                terrain.lowland.delta,
-                                terrain.lowland.weight,
-                                terrain.lowland.candidateVisits,
-                                terrain.lowland.shoreClearance,
-                                terrain.lowland.waterClearance)));
-        sender.sendMessage(
-                new TextComponentString(
-                        String.format(
-                                Locale.ROOT,
                                 "Terrain top=%d base=%.2f erosion=%+.2f | %s/%s blend=%.3f uplift=%.3f | above=%s below=%s",
                                 terrain.blockY(),
                                 terrain.baseHeight,
@@ -352,20 +337,6 @@ final class ColumnReport {
                                 terrain.mountains.delta,
                                 terrain.mountains.ridge,
                                 terrain.mountains.pass)));
-        sender.sendMessage(
-                new TextComponentString(
-                        String.format(
-                                Locale.ROOT,
-                                "Hills=%s reason=%s id=%s anchor=(%.1f,%.1f) | candidates=%d contributors=%d delta=%+.3f retainedCertificateColumns=%d",
-                                terrain.hills.dominant,
-                                terrain.hills.reason,
-                                Long.toUnsignedString(terrain.hills.id, 16),
-                                terrain.hills.anchorX,
-                                terrain.hills.anchorZ,
-                                terrain.hills.candidates,
-                                terrain.hills.contributors,
-                                terrain.hills.delta,
-                                terrain.hills.certificateColumns)));
         sender.sendMessage(
                 new TextComponentString(
                         String.format(

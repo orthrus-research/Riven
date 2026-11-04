@@ -28,7 +28,7 @@ public final class VolcanicBoundaryCheck {
                     + ",stage,heightBits,parentHeightBits,volcanicHeightBits,deltaBits,weightBits,anchorXBits,anchorZBits,"
                     + "minPotentialBits,maxColumnSlopeBits,candidates,contributors,certificateColumns,stencilColumns,"
                     + "volcanicId,dominant,reason,baseHeightBits,minBits,maxBits,marine,supplied,shoreKind,shoreHeightBits,"
-                    + "waterFacts,coldHeightBits,plateauHeightBits,mountainHeightBits,hillHeightBits,drylandHeightBits,"
+                    + "waterFacts,coldHeightBits,mountainHeightBits,drylandHeightBits,"
                     + "drylandDeltaBits,drylandWeightBits,drylandFitBits,drylandReason,coverReason,bareStone";
 
     private static final class Point {
@@ -214,7 +214,7 @@ public final class VolcanicBoundaryCheck {
             }
         d.report();
         require(d.rejection != null, "Missing internal earlier-reading volcanic rejection");
-        // As in the cold, plateau and mountain checks, absent production relief is a reported
+        // As in the cold and mountain checks, absent production relief is a reported
         // coverage gap (docs/FEATURES.md); the manifest then fits capture-rejections.
         if (d.raise == null) {
             require(d.dryProtected != null, "Missing protected dry control");
@@ -344,7 +344,6 @@ public final class VolcanicBoundaryCheck {
                                 Long.toHexString(s.water.aquiferId)),
                         bits(s.cold.height),
                         bits(s.mountains.height),
-                        bits(s.hills.height),
                         bits(s.drylands.height),
                         bits(s.drylands.delta),
                         bits(s.drylands.weight),

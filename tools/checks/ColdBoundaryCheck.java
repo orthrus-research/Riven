@@ -24,8 +24,8 @@ public final class ColdBoundaryCheck {
                     + ",stage,heightBits,parentHeightBits,coldHeightBits,deltaBits,weightBits,anchorXBits,anchorZBits,"
                     + "coldBits,reliefBits,slopeBits,candidates,contributors,certificateColumns,diagnosticColumns,rejectionBits,"
                     + "coldId,dominant,reason,temperatureBits,baseHeightBits,minBits,maxBits,marine,supplied,shoreKind,"
-                    + "shoreHeightBits,waterFacts,volcanicDeltaBits,volcanicReason,plateauHeightBits,mountainHeightBits,"
-                    + "hillHeightBits,landmarkHeightBits,carverHeightBits,drylandHeightBits,drylandDeltaBits,drylandWeightBits,"
+                    + "shoreHeightBits,waterFacts,volcanicDeltaBits,volcanicReason,mountainHeightBits,"
+                    + "landmarkHeightBits,carverHeightBits,drylandHeightBits,drylandDeltaBits,drylandWeightBits,"
                     + "drylandReason,coverReason,bareStone";
 
     private static final class Point {
@@ -243,7 +243,6 @@ public final class ColdBoundaryCheck {
                         bits(s.volcanic.delta),
                         s.volcanic.reason,
                         bits(s.mountains.height),
-                        bits(s.hills.height),
                         bits(s.landmarks.height),
                         bits(s.carvers.height),
                         bits(s.drylands.height),

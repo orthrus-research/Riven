@@ -200,7 +200,6 @@ public final class DrylandTerrain {
         out.fit =
                 unit(base.land.fit(1, 1, 0, Terrain.Fit.CALM))
                         * (1 - unit(base.mountains.weight))
-                        * (1 - unit(base.hills.weight))
                         * (1 - Drylands.smooth(Math.abs(base.cold.delta) / featureFeather))
                         * (1 - Drylands.smooth(Math.abs(base.volcanic.delta) / featureFeather))
                         * (1 - Drylands.smooth(base.cuts.cut / featureFeather))

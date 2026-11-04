@@ -213,7 +213,20 @@ public final class MountainTerrain {
         }
     }
 
+    /**
+     * Mountains follow the continents' spines (terrain-v128): the massif rises by the spine
+     * weight, and the whole stage fades on a plateau's cap, which stays flat.
+     */
     public void apply(double x, double z, TerrainMap.BaseSample base, double parent, Result out) {
+        build(x, z, base, parent, out);
+        double keep = 1 - base.base.plateau();
+        if (keep < 1) {
+            out.delta *= keep;
+            out.height = parent + out.delta;
+        }
+    }
+
+    private void build(double x, double z, TerrainMap.BaseSample base, double parent, Result out) {
         out.clear(parent);
         if (!legalParent(base, parent)) {
             out.reason = "INVALID_PARENT";
@@ -230,7 +243,9 @@ public final class MountainTerrain {
         BaseElevationMap.Sample e = base.base.elevation();
         double room = Math.max(0, reference.maxY - parent);
         double massifDelta =
-                base.ocean.marine ? 0 : Math.min(room, massif(x, z, e.belt())) * massifKeep;
+                base.ocean.marine
+                        ? 0
+                        : Math.min(room, massif(x, z, base.base.spine())) * massifKeep;
         out.massif = massifDelta;
         if (massifDelta > 0) {
             out.delta = massifDelta;

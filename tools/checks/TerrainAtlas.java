@@ -3,7 +3,6 @@ package cc.orthrus.riven.worldgen;
 import cc.orthrus.riven.contrib.carvers.SurfaceCuts;
 import cc.orthrus.riven.contrib.cold.ColdRegions;
 import cc.orthrus.riven.contrib.dryland.Drylands;
-import cc.orthrus.riven.contrib.hills.Hills;
 import cc.orthrus.riven.contrib.mountains.MountainKernels;
 import cc.orthrus.riven.contrib.volcanic.VolcanicKernels;
 
@@ -49,12 +48,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class TerrainAtlas {
     private static final String[] STAGE_NAMES = {
-        "lowland",
         "passes",
         "volcanic",
         "cold",
         "mountain",
-        "hill",
         "landmark",
         "carver",
         "cut",
@@ -64,12 +61,10 @@ public final class TerrainAtlas {
         "sediment"
     };
     private static final Enum<?>[][] STAGE_FAMILIES = {
-        {},
         RegionalTerrainPasses.Formation.values(),
         VolcanicKernels.Family.values(),
         ColdRegions.Family.values(),
         MountainKernels.Family.values(),
-        Hills.Family.values(),
         RegionalLandmarks.Family.values(),
         SurfaceCarvers.Kind.values(),
         SurfaceCuts.Family.values(),
@@ -79,36 +74,32 @@ public final class TerrainAtlas {
         CoastSediment.Form.values()
     };
 
-    /** Height after each stage, in pipeline order; index 0 is the eroded base. */
+    /** Height after each stage, in pipeline order; index -1 is the eroded base. */
     private static double after(TerrainMap.Sample s, int stage) {
         switch (stage) {
             case -1:
                 return s.originalHeight;
             case 0:
-                return s.lowland.height;
-            case 1:
                 return s.passes.height;
-            case 2:
+            case 1:
                 return s.volcanic.height;
-            case 3:
+            case 2:
                 return s.cold.height;
-            case 4:
+            case 3:
                 return s.mountains.height;
-            case 5:
-                return s.hills.height;
-            case 6:
+            case 4:
                 return s.landmarks.height;
-            case 7:
+            case 5:
                 return s.carvers.height;
-            case 8:
+            case 6:
                 return s.cuts.height;
-            case 9:
+            case 7:
                 return s.drylands.height;
-            case 10:
+            case 8:
                 return s.rocky.parentHeight;
-            case 11:
+            case 9:
                 return s.rocky.height;
-            case 12:
+            case 10:
                 return s.sediment.height;
             default:
                 throw new IllegalArgumentException("stage " + stage);
@@ -117,35 +108,33 @@ public final class TerrainAtlas {
 
     private static double delta(TerrainMap.Sample s, int stage) {
         // Rocky and sediment record their own parent; earlier stages chain consecutively.
-        if (stage == 12) return s.sediment.height - s.sediment.parentHeight;
+        if (stage == 10) return s.sediment.height - s.sediment.parentHeight;
         return after(s, stage) - after(s, stage - 1);
     }
 
     private static Enum<?> family(TerrainMap.Sample s, int stage) {
         switch (stage) {
-            case 1:
+            case 0:
                 return s.passes.dominant;
-            case 2:
+            case 1:
                 return s.volcanic.dominant;
-            case 3:
+            case 2:
                 return s.cold.dominant;
-            case 4:
+            case 3:
                 return s.mountains.dominant;
-            case 5:
-                return s.hills.dominant;
-            case 6:
+            case 4:
                 return s.landmarks.dominant;
-            case 7:
+            case 5:
                 return s.carvers.dominant;
-            case 8:
+            case 6:
                 return s.cuts.dominant;
-            case 9:
+            case 7:
                 return s.drylands.dominant;
-            case 10:
+            case 8:
                 return s.shore.kind;
-            case 11:
+            case 9:
                 return s.rocky.family;
-            case 12:
+            case 10:
                 return s.sediment.family;
             default:
                 return null;
@@ -155,23 +144,19 @@ public final class TerrainAtlas {
     /** The stage's own recorded selection/rejection reason, where it keeps one. */
     private static String reason(TerrainMap.Sample s, int stage) {
         switch (stage) {
-            case 0:
-                return s.lowland.reason == null ? null : s.lowland.reason.name();
-            case 2:
+            case 1:
                 return s.volcanic.reason;
-            case 3:
+            case 2:
                 return s.cold.reason;
-            case 4:
+            case 3:
                 return s.mountains.reason;
-            case 5:
-                return s.hills.reason;
-            case 8:
+            case 6:
                 return s.cuts.reason;
-            case 9:
+            case 7:
                 return s.drylands.reason;
-            case 11:
+            case 9:
                 return s.rocky.reason;
-            case 12:
+            case 10:
                 return s.sediment.reason;
             default:
                 return null;
@@ -648,19 +633,17 @@ public final class TerrainAtlas {
     private static int stageOf(Sites.Lane lane) {
         switch (lane) {
             case LANDMARK:
-                return 6;
+                return 4;
             case CARVER:
-                return 7;
-            case HILLS:
                 return 5;
             case MOUNTAINS:
-                return 4;
-            case COLD:
                 return 3;
-            case VOLCANIC:
+            case COLD:
                 return 2;
+            case VOLCANIC:
+                return 1;
             case CUTS:
-                return 8;
+                return 6;
             default:
                 throw new IllegalArgumentException(lane.name());
         }

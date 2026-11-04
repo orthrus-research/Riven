@@ -5,13 +5,19 @@ import com.google.gson.JsonObject;
 /** Shared factory for sparse, exclusive major-feature sites, independent of terrain queries. */
 public final class Sites {
     public enum Lane {
-        LANDMARK,
-        CARVER,
-        HILLS,
-        MOUNTAINS,
-        COLD,
-        VOLCANIC,
-        CUTS
+        LANDMARK(0),
+        CARVER(1),
+        MOUNTAINS(3),
+        COLD(4),
+        VOLCANIC(5),
+        CUTS(6);
+
+        /** A stable salt for the lane's independent anchors, kept when lanes come and go. */
+        final int salt;
+
+        Lane(int salt) {
+            this.salt = salt;
+        }
     }
 
     /** SHARED: any higher-priority raw neighbour vetoes. LANE: only same-lane neighbours do. */
@@ -39,7 +45,6 @@ public final class Sites {
     private final double probability,
             carverShare,
             cutsShare,
-            hillsShare,
             mountainShare,
             coldShare,
             volcanicShare,
@@ -71,7 +76,6 @@ public final class Sites {
         probability = Rules.number(json, "anchorProbability", 0, 1);
         carverShare = Rules.number(json, "carverShare", 0, 1);
         cutsShare = json.has("cutsShare") ? Rules.number(json, "cutsShare", 0, 1) : 0;
-        hillsShare = json.has("hillsShare") ? Rules.number(json, "hillsShare", 0, 1) : 0;
         mountainShare = json.has("mountainShare") ? Rules.number(json, "mountainShare", 0, 1) : 0;
         coldShare = json.has("coldShare") ? Rules.number(json, "coldShare", 0, 1) : 0;
         volcanicShare = json.has("volcanicShare") ? Rules.number(json, "volcanicShare", 0, 1) : 0;
@@ -126,8 +130,7 @@ public final class Sites {
         } else density = null;
         for (Lane lane : Lane.values())
             laneSeeds[lane.ordinal()] =
-                    SeededNoise.mix(
-                            seed ^ (0x4c414e4553454544L + lane.ordinal() * 0x9e3779b97f4a7c15L));
+                    SeededNoise.mix(seed ^ (0x4c414e4553454544L + lane.salt * 0x9e3779b97f4a7c15L));
     }
 
     /** The first lattice node at or above {@code min}. */
@@ -172,7 +175,6 @@ public final class Sites {
     private Lane laneOf(long key) {
         if (random(key, 4) < carverShare)
             return random(key, 0x43555453) < cutsShare ? Lane.CUTS : Lane.CARVER;
-        if (random(key, 0x48494c4c) < hillsShare) return Lane.HILLS;
         if (random(key, 0x4d544e53) < mountainShare) return Lane.MOUNTAINS;
         if (random(key, 0x434f4c44) < coldShare) return Lane.COLD;
         if (random(key, 0x564f4c43) < volcanicShare) return Lane.VOLCANIC;

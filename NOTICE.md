@@ -159,22 +159,6 @@ Its complete grant is packaged at `META-INF/licenses/mountains/MIT.txt` in
 binary and source artifacts. `MountainTerrain` and its configuration are
 original Riven integration material under NRR; the imported kernel remains MIT.
 
-`src/main/java/cc/orthrus/riven/contrib/hills/Hills.java` adapts the independently authored
-MIT package `contributions/hills-uplands-20261019`. The production copy adds
-preparation at a shared-owner anchor and retains the authored geometry; the
-original standalone-grid entry point, which Riven never called, and an unused
-default tuning are removed. Its host certification domain is documented as
-integer columns plus the anchor.
-Copyright (c) 2026 Riven contributors. The complete MIT license is packaged at
-`META-INF/licenses/hills/MIT.txt`. `HillTerrain` and `riven-hills.json` are
-original Riven integration material under NRR; the kernel remains MIT.
-
-`src/main/java/cc/orthrus/riven/contrib/lowland/Lowlands.java` is a copy, changed only in its package declaration, of the
-independently authored MIT package `contributions/lowland-terrain-20261019`.
-Copyright (c) 2026 Riven contributors. Binary and source artifacts include its
-full license at `META-INF/licenses/lowland/MIT.txt`. The `LowlandTerrain`
-adapter and `riven-lowlands.json` are original NRR material; the kernel retains MIT.
-
 `src/main/java/cc/orthrus/riven/contrib/lakes/Lakes.java` is adapted from the independently
 authored MIT package `contributions/lakes-ponds-20261019`. Records and switch
 syntax were converted for Java 8; geometry arithmetic is retained. Additional

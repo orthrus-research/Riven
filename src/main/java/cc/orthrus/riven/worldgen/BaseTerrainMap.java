@@ -15,7 +15,7 @@ public final class BaseTerrainMap {
     private final BaseElevationMap elevation;
     private final RegionalProfileMap profiles;
 
-    /** The province fields (level, relief, ridged, terraced) as a regional plan (S4). */
+    /** The province fields (level, relief, ridged, plateau, spine, cap, below) as a plan (S4). */
     private final ProvinceGround ground;
 
     private final double seaLevel, groundAmplitude, groundAmplitudePerBlock;
@@ -29,13 +29,34 @@ public final class BaseTerrainMap {
     /** What a full spine weight brings: lift in blocks, and the relief and ridged share it pulls to. */
     private final double spineLift, spineRelief, spineRidged;
 
+    /**
+     * Plateaus: the scarp's width in plateau share, the edge field's amplitude (share) and
+     * wavelength, how much of the ground's amplitude a cap loses, and the scarp's terraced share.
+     */
+    private final double scarpWidth, plateauEdge, plateauEdgeScale, plateauFlatten, scarpTerrace;
+
+    /** Landform palettes: each field's wavelength in blocks, and how much the character varies them. */
+    private final double hillScale, spurScale, swellScale, hollowScale, variety;
+
     /** Terrace step height, and the share of a step that is riser. */
     private final double terraceBlocks, terraceRiser;
 
     /** The soft ceiling: heights above the start bend toward the allocation's top. */
     private final double ceilingStart, ceiling;
 
-    private final SeededNoise character, ridge1, ridge2, ridge3, warpX, warpZ;
+    private final SeededNoise character,
+            ridge1,
+            ridge2,
+            ridge3,
+            warpX,
+            warpZ,
+            edge1,
+            edge2,
+            hillA,
+            hillB,
+            spurN,
+            swellN,
+            hollowN;
 
     /** The ridged sum's scale and offset (see the ridges in sample). */
     private static final double RIDGE_SPREAD = 1.421, RIDGE_CENTRE = .622;
@@ -105,6 +126,18 @@ public final class BaseTerrainMap {
         spineLift = Rules.number(sp, "liftBlocks", 0, 320);
         spineRelief = Rules.number(sp, "reliefBlocks", 0, 320);
         spineRidged = Rules.number(sp, "ridged", 0, 1);
+        JsonObject pl = j.getAsJsonObject("plateau");
+        scarpWidth = Rules.number(pl, "scarpWidth", .01, .5);
+        plateauEdge = Rules.number(pl, "edgeAmplitude", 0, .45);
+        plateauEdgeScale = Rules.number(pl, "edgeWavelengthBlocks", 64, 8192);
+        plateauFlatten = Rules.number(pl, "flatten", 0, 1);
+        scarpTerrace = Rules.number(pl, "scarpTerrace", 0, 1);
+        JsonObject lf = j.getAsJsonObject("palette");
+        hillScale = Rules.number(lf, "hillWavelengthBlocks", 32, 4096);
+        spurScale = Rules.number(lf, "spurWavelengthBlocks", 32, 4096);
+        swellScale = Rules.number(lf, "swellWavelengthBlocks", 64, 16384);
+        hollowScale = Rules.number(lf, "hollowWavelengthBlocks", 16, 4096);
+        variety = Rules.number(lf, "variety", 0, 1);
         JsonObject t = j.getAsJsonObject("terraces");
         terraceBlocks = Rules.number(t, "stepBlocks", 2, 64);
         terraceRiser = Rules.number(t, "riserShare", .05, .9);
@@ -116,6 +149,13 @@ public final class BaseTerrainMap {
         ridge3 = new SeededNoise(SeededNoise.mix(seed ^ 0x5249444745303333L));
         warpX = new SeededNoise(SeededNoise.mix(seed ^ 0x5249444745575858L));
         warpZ = new SeededNoise(SeededNoise.mix(seed ^ 0x52494447455f575aL));
+        edge1 = new SeededNoise(SeededNoise.mix(seed ^ 0x504c4154454131L));
+        edge2 = new SeededNoise(SeededNoise.mix(seed ^ 0x504c4154454132L));
+        hillA = new SeededNoise(SeededNoise.mix(seed ^ 0x48494c4c41L));
+        hillB = new SeededNoise(SeededNoise.mix(seed ^ 0x48494c4c42L));
+        spurN = new SeededNoise(SeededNoise.mix(seed ^ 0x53505552L));
+        swellN = new SeededNoise(SeededNoise.mix(seed ^ 0x5357454c4cL));
+        hollowN = new SeededNoise(SeededNoise.mix(seed ^ 0x484f4c4c4f57L));
         legacyAmplitude = Rules.number(j, "legacyAmplitudeFraction", 0, 1);
         legacyBody = Rules.number(j, "legacyBodyShare", 0, 1);
         legacyFine = Rules.number(j, "legacyFineShare", 0, 1);
@@ -138,6 +178,9 @@ public final class BaseTerrainMap {
         /** The province ground (blocks above the sea) and its landform position (0..3). */
         private double ground, position;
 
+        /** The continents' spine weight and a plateau's cap weight here (REGIONAL), else 0. */
+        private double spine, plateau;
+
         /** Province fields and their x and z derivatives (ProvinceGround.sample). */
         private final double[] fields = new double[3 * ProvinceGround.FIELDS];
 
@@ -146,7 +189,11 @@ public final class BaseTerrainMap {
                 ridgeB = new HeightSample(),
                 ridgeC = new HeightSample(),
                 warpA = new HeightSample(),
-                warpB = new HeightSample();
+                warpB = new HeightSample(),
+                edgeA = new HeightSample(),
+                edgeB = new HeightSample(),
+                landA = new HeightSample(),
+                landB = new HeightSample();
 
         public double ground() {
             return ground;
@@ -155,6 +202,14 @@ public final class BaseTerrainMap {
         /** The landform position elevation classes read: the ground's (REGIONAL), else intent's. */
         public double position() {
             return position;
+        }
+
+        public double spine() {
+            return spine;
+        }
+
+        public double plateau() {
+            return plateau;
         }
 
         public double height() {
@@ -295,6 +350,7 @@ public final class BaseTerrainMap {
             out.coarseHeight = e.meanHeight() + amplitude * out.body.height * legacyBody;
             out.ground = e.meanHeight() - seaLevel;
             out.position = e.legacyPosition();
+            out.spine = out.plateau = 0;
         } else {
             profiles.sample(x, z, out.region);
             wide.sample(x / wideScale + .53, z / wideScale + .17, out.wide);
@@ -303,9 +359,35 @@ public final class BaseTerrainMap {
             double[] f = out.fields;
             ground.sample(x, z, f);
             int fx = ProvinceGround.FIELDS, fz = 2 * ProvinceGround.FIELDS;
+            // Plateaus: the level stands on the cap where the plateau share, warped by an edge
+            // field that leaves mesas outside the rim and notches canyons into it, passes one
+            // half, and on the ground below elsewhere, joined by a scarp; the cap loses its ridges.
+            double cap = 0, capDx = 0, capDz = 0;
+            if (f[3] > 0) {
+                double ps = plateauEdgeScale;
+                edge1.gradient(x / ps + .17, z / ps + .61, out.edgeA);
+                edge2.gradient(3 * x / ps + .44, 3 * z / ps + .29, out.edgeB);
+                double rim = plateauEdge * (out.edgeA.height + .5 * out.edgeB.height) / 1.5;
+                double ex = plateauEdge * (out.edgeA.dx + 1.5 * out.edgeB.dx) / (1.5 * ps);
+                double ez = plateauEdge * (out.edgeA.dz + 1.5 * out.edgeB.dz) / (1.5 * ps);
+                double q = (f[3] + rim - .5) / scarpWidth + .5;
+                cap = Rules.smooth(q);
+                double slope = smoothSlope(q) / scarpWidth;
+                capDx = slope * (f[fx + 3] + ex);
+                capDz = slope * (f[fz + 3] + ez);
+                double gap = f[5] - f[6];
+                f[0] = f[6] + gap * cap;
+                f[fx] = f[fx + 6] + (f[fx + 5] - f[fx + 6]) * cap + gap * capDx;
+                f[fz] = f[fz + 6] + (f[fz + 5] - f[fz + 6]) * cap + gap * capDz;
+                f[fx + 2] = f[fx + 2] * (1 - cap) - f[2] * capDx;
+                f[fz + 2] = f[fz + 2] * (1 - cap) - f[2] * capDz;
+                f[2] *= 1 - cap;
+            }
             // The continents' spines raise ranges along the land's own axis: the weight lifts the
             // level and pulls relief and ridged share toward a range's, wherever the province.
             double spine = f[4];
+            out.spine = Math.max(0, Math.min(1, spine));
+            out.plateau = cap;
             if (spine > 0) {
                 double sx = f[fx + 4], sz = f[fz + 4];
                 f[0] += spineLift * spine;
@@ -353,6 +435,13 @@ public final class BaseTerrainMap {
             double amplitude = envelope * fraction;
             double amplitudeDx = envelopeDx * fraction + envelope * out.region.amplitudeDx();
             double amplitudeDz = envelopeDz * fraction + envelope * out.region.amplitudeDz();
+            // A plateau's cap is calm: it keeps a share of the ground's amplitude.
+            if (cap > 0) {
+                double flat = 1 - plateauFlatten * cap;
+                amplitudeDx = amplitudeDx * flat - amplitude * plateauFlatten * capDx;
+                amplitudeDz = amplitudeDz * flat - amplitude * plateauFlatten * capDz;
+                amplitude *= flat;
+            }
             double w = out.region.wideShare(), fineShare = out.region.fineShare();
             double c = 1 - w - fineShare;
             double coarse = w * out.wide.height + c * out.body.height;
@@ -431,16 +520,91 @@ public final class BaseTerrainMap {
                 ridgesDx = ampDx * shape + ridgeAmplitude * rx / RIDGE_SPREAD;
                 ridgesDz = ampDz * shape + ridgeAmplitude * rz / RIDGE_SPREAD;
             }
+            // Landform palettes: the province type's rounded hills, spurs, broad swells and
+            // hollows. The character varies the hills and spurs; a plateau's cap stays calm.
+            double forms = 0, formsDx = 0, formsDz = 0;
+            {
+                double calm = 1 - cap, calmDx = -capDx, calmDz = -capDz;
+                double vary = 1 - variety + variety * strength;
+                double varyDx = variety * strengthDx, varyDz = variety * strengthDz;
+                if (f[7] > 0) {
+                    // Rounded hills: two octaves shaped into domes, u (1.5 - 0.5 u^2).
+                    octave(hillA, x, z, hillScale, 0, .21, .57, out.landA);
+                    octave(hillB, x, z, hillScale / 2.3, 1, .68, .12, out.landB);
+                    double u = (out.landA.height + .45 * out.landB.height) / 1.45;
+                    double hx = (out.landA.dx + .45 * out.landB.dx) / 1.45;
+                    double hz = (out.landA.dz + .45 * out.landB.dz) / 1.45;
+                    double s = u * (1.5 - .5 * u * u), ds = 1.5 - 1.5 * u * u;
+                    double a = f[7] * vary * calm;
+                    forms += a * s;
+                    formsDx +=
+                            a * ds * hx
+                                    + s
+                                            * (f[fx + 7] * vary * calm
+                                                    + f[7] * varyDx * calm
+                                                    + f[7] * vary * calmDx);
+                    formsDz +=
+                            a * ds * hz
+                                    + s
+                                            * (f[fz + 7] * vary * calm
+                                                    + f[7] * varyDz * calm
+                                                    + f[7] * vary * calmDz);
+                }
+                if (f[8] > 0) {
+                    // Spurs: small ridged crests and valleys, centred on their mean.
+                    octave(spurN, x, z, spurScale, 2, .35, .91, out.landA);
+                    double r = ridged(out.landA.height) - .45, dr = ridgedSlope(out.landA.height);
+                    double a = f[8] * vary * calm;
+                    forms += a * r;
+                    formsDx +=
+                            a * dr * out.landA.dx
+                                    + r
+                                            * (f[fx + 8] * vary * calm
+                                                    + f[8] * varyDx * calm
+                                                    + f[8] * vary * calmDx);
+                    formsDz +=
+                            a * dr * out.landA.dz
+                                    + r
+                                            * (f[fz + 8] * vary * calm
+                                                    + f[8] * varyDz * calm
+                                                    + f[8] * vary * calmDz);
+                }
+                if (f[9] > 0) {
+                    // Broad swells: one slow octave.
+                    octave(swellN, x, z, swellScale, 1, .84, .43, out.landB);
+                    forms += f[9] * out.landB.height;
+                    formsDx += f[9] * out.landB.dx + f[fx + 9] * out.landB.height;
+                    formsDz += f[9] * out.landB.dz + f[fz + 9] * out.landB.height;
+                }
+                if (f[10] > 0) {
+                    // Hollows: a flat floor with shallow dips where the field falls below zero.
+                    octave(hollowN, x, z, hollowScale, 0, .52, .26, out.landA);
+                    double u = out.landA.height;
+                    if (u < 0) {
+                        double dip = u * u, a = f[10] * calm;
+                        forms -= a * dip;
+                        formsDx -=
+                                a * 2 * u * out.landA.dx
+                                        + dip * (f[fx + 10] * calm + f[10] * calmDx);
+                        formsDz -=
+                                a * 2 * u * out.landA.dz
+                                        + dip * (f[fz + 10] * calm + f[10] * calmDz);
+                    }
+                }
+            }
+            ridges += forms;
+            ridgesDx += formsDx;
+            ridgesDz += formsDz;
             out.coarseHeight = mean + amplitude * coarse + ridges;
             out.fineContribution = amplitude * fineShare * out.detail.height;
             double height = mean + amplitude * n + ridges;
             double dx = meanDx + amplitudeDx * n + amplitude * nx + ridgesDx;
             double dz = meanDz + amplitudeDz * n + amplitude * nz + ridgesDz;
-            // Terraces: flat steps with short risers, by the terraced share and the character.
-            double steps = f[3] * strength;
+            // Terraces: flat steps with short risers on a plateau's scarp, a broken escarpment.
+            double steps = scarpTerrace * 4 * cap * (1 - cap);
             if (steps > 0) {
-                double stepsDx = f[fx + 3] * strength + f[3] * strengthDx;
-                double stepsDz = f[fz + 3] * strength + f[3] * strengthDz;
+                double stepsDx = scarpTerrace * 4 * (1 - 2 * cap) * capDx;
+                double stepsDz = scarpTerrace * 4 * (1 - 2 * cap) * capDz;
                 double q = (height - seaLevel) / terraceBlocks, floor = Math.floor(q);
                 double rise = Rules.smooth((q - floor - (1 - terraceRiser)) / terraceRiser);
                 double stepped = seaLevel + (floor + rise) * terraceBlocks;
@@ -513,6 +677,7 @@ public final class BaseTerrainMap {
         out.amplitude = out.noise = out.coarseHeight = out.fineContribution = 0;
         out.ground = 0;
         out.position = -1;
+        out.spine = out.plateau = 0;
         elevation.clear(out.elevation);
         profiles.clear(out.region);
     }

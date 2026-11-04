@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 19,
+  "revision": 20,
   "lowBlendStart": 0.45,
   "lowBlendEnd": 1.3,
   "highBlendStart": 1.6,
@@ -21,7 +21,6 @@
     "competition": "LANE",
     "carverShare": 0.4,
     "cutsShare": 0.5,
-    "hillsShare": 0.5,
     "mountainShare": 0.5,
     "coldShare": 0.5,
     "volcanicShare": 0.5,
@@ -36,7 +35,6 @@
       "LANDMARK": 0.35,
       "CARVER": 0.85,
       "CUTS": 1.0,
-      "HILLS": 0.3,
       "MOUNTAINS": 0.0,
       "COLD": 1.0,
       "VOLCANIC": 1.0
@@ -45,7 +43,7 @@
   "contract": [
     "Terrain weights read only broad intent, its analytic derivatives, continuous climate and continental fields.",
     "High/low transition and hot humid waterfall values describe opportunities, not water or adjacency proofs.",
-    "Major landmarks, hills, mountains, cold and volcanic formations and carvers share raw-owner priorities and non-overlapping support budgets. General surface cuts split the carver share at the same radius. After carvers, hills, mountains, cold and volcanic formations, landmarks take the remainder. Rejected sites stay empty. Coastal forms and sediment belong to the coast plan's segments (riven-coasts.json), not to a lane.",
+    "Major landmarks, mountains, cold and volcanic formations and carvers share raw-owner priorities and non-overlapping support budgets. General surface cuts split the carver share at the same radius. After carvers, mountains, cold and volcanic formations, landmarks take the remainder. Rejected sites stay empty. Coastal forms and sediment belong to the coast plan's segments (riven-coasts.json), not to a lane.",
     "competition LANE (v42): an anchor competes only with raw anchors of its own lane, within twice that lane's radius; supports of different lanes may overlap and compose in stage order. SHARED keeps the earlier rule: competition distance is at least the sum of both raw owners' lane radii.",
     "laneDensity (v54): every lane draws its own anchor in every cell from a lane-salted key with that density; the share cascade above applies only without laneDensity. Densities keep the earlier effective share of each lane except cold and volcanic (0.15, were 0.04 and 0.02).",
     "Site certificates (v56) read the earlier parent on a world-aligned lattice every certificateLatticeBlocks, the same for native cubes and the DH preview, so a decision costs the same at any requested resolution. Heights between nodes are covered by certificateHeightMarginBlocks on every headroom test and parent extreme, and water by the analytic surface clearance over half the node diagonal. 1 and 0 restore the exhaustive integer certificate.",

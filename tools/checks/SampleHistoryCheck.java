@@ -50,7 +50,6 @@ public final class SampleHistoryCheck {
         scratch("worldgen.RegionalLandmarks$Result", "anchorBase", "weights");
         scratch("worldgen.DrylandTerrain$Result", "sample", "substrate");
         scratch("worldgen.MountainTerrain$Result", "sample", "crest");
-        scratch("worldgen.LowlandTerrain$Result", "sample");
         scratch("worldgen.CoastSediment$Result", "geometry", "creek");
         // Kernel work buffers and noise samples behind the published base facts; marine columns
         // clear the facts and never read these.
@@ -66,7 +65,11 @@ public final class SampleHistoryCheck {
                 "ridgeB",
                 "ridgeC",
                 "warpA",
-                "warpB");
+                "warpB",
+                "edgeA",
+                "edgeB",
+                "landA",
+                "landB");
         scratch("worldgen.BaseElevationMap$Sample", "regional", "upliftSample");
         // Lake, river and coast kernel outputs, filled where each body is evaluated.
         scratch("worldgen.Hydro$Sample", "lakeGeometry", "riverGeometry", "coastGeometry");
