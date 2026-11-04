@@ -91,9 +91,9 @@ its own ground. Islands in a mostly sea province and bays in a land one keep the
 
 The land type is the ground's shape, chosen once per world from facts no later shaping changes,
 over every province's land:
-1. **Tectonic types:** provinces holding a mountain belt (its mean over the province's land at
-   0.15 or more, since terrain-v104) become range, the most belted first, up to range's share;
-   provinces within 700 blocks of a divergent boundary give rift the same way.
+1. **Spines and rifts:** provinces whose mean spine weight over their land reaches 0.15
+   (terrain-v127; plate belts until v126) become range, the strongest first, up to range's share;
+   provinces within 700 blocks of a divergent plate boundary give rift the same way.
 2. **Foreland:** provinces within 1.25 cells of a range take foreland next, nearest first, up to
    its share, so mountains step down through foothills.
 3. **Stable types:** the rest are placed by a seeded level field and their distance to the coast.
@@ -141,10 +141,22 @@ reader sees effective climate.
 
 **Ground (S4, terrain-v126).** Every land type has a band of ground heights above sea and a
 relief recipe in `riven-provinces.json`: plain 5-35 blocks, basin 2-25, upland 60-130, tableland
-90-170, range 110-280, rift 10-50 and foreland 30-90, with a relief height and ridged and
+90-170, range 50-110, rift 10-50 and foreland 30-90, with a relief height and ridged and
 terraced shares. Each province draws one level inside its band; levels, relief and shares blend
 across the 500-block edge with smooth weights. `ProvinceGround` holds these fields as a bounded
 regional plan: a Catmull-Rom raster at a fifth of the edge width, with exact derivatives.
+
+**Spines (terrain-v127).** Mountain ranges follow each landmass's own axis. `SpineMap`
+(`riven-provinces.json` `spines`) finds the land's medial axis: the ridge of the distance to the
+coast, where its smoothed slope falls below 0.35 (away from the axis it rises one block per
+block). A range is the band around the axis, half as wide as the land's half width there, and as
+strong as that half width allows: none below 600 blocks, full from 2,200 (32 km layout values).
+So broad continents carry long, high ranges, and narrow land low ridges or none. The weight lifts
+the ground by up to 170 blocks and pulls its relief and ridged share toward a range's
+(`riven-base-terrain.json` `spine`). It's a pure regional plan on a 256-block grid, in 32 km
+tiles with halos wide enough that every distance is exact: an exact Euclidean distance transform
+of the sea (Felzenszwalb and Huttenlocher), three box blurs, the slope, then a feature transform
+from the spine cells carrying their half width.
 
 `BaseTerrainMap` (REGIONAL) builds the ground from the province level:
 - A slow character field (700 blocks) leaves most of a province calm and makes patches rugged.
@@ -542,6 +554,17 @@ reserve nothing, so no landform site reads them, and they keep the land's biome.
 bank and valley is cut at the hydrology constraint from the column's own height: the valley widens
 by 2.5 blocks per block the ground stands above the water (at most 48). A river on a shoaling coast
 flares into a funnel estuary (up to 3.5 times its width over the last 320 blocks). Channel form:
+
+**Drainage lakes** (terrain-v127, `riven-hydrology.json` drainage.lakes): a second priority flood
+of each continent's own intent ground, from every outlet (the sea, receiving water, another
+continent's land), fills each hollow to its spill level. The outlet cuts the rim by 12 blocks, so a
+lake stands that far below its spill and only a hollow's deeper part stays wet; a shallow basin
+drains through its gorge. A lake needs 6 grid cells below its level and stands above the sea.
+Channels crossing a lake run at its level, so its outlet leaves at the spill. The shore is the
+contour where the ground, interpolated between the lake's cells, meets the level; a 3-block bank
+eases the ground to the water, and dry columns within 6 blocks of the level stand at least level
+with it. Lakes reserve their box (and two cells) from landforms. On the canonical world at 32 km
+they cover 4.0% of land (1.8-4.2% over eight seeds), most in the valleys and piedmonts of ranges.
 
 - **Meanders:** a wave 11 channel widths long (at least 24 blocks, drifting 30% along the course)
   moves the course sideways by 0.3 of its length on flat ground, easing to none where the channel

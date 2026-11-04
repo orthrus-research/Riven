@@ -194,7 +194,8 @@ final class Drainage {
      */
     private static final class Network {
         static final Network EMPTY =
-                new Network(new Channel[0], 0, 0, 1, 1, 1, Bins.NONE, Bins.NONE, new double[0]);
+                new Network(
+                        new Channel[0], 0, 0, 1, 1, 1, Bins.NONE, Bins.NONE, new double[0], null);
         final Channel[] channels;
         final double originX, originZ, bin;
         final int bins, binsZ;
@@ -202,6 +203,9 @@ final class Drainage {
 
         /** River mouths as (x, z) pairs. */
         final double[] mouths;
+
+        /** The continent's drainage lakes, or null. */
+        final Lakes lakes;
 
         /** Heap this network holds, as counted by {@link Channel#bytes} and {@link Bins#bytes}. */
         final long bytes;
@@ -215,8 +219,10 @@ final class Drainage {
                 int binsZ,
                 Bins refs,
                 Bins rivers,
-                double[] mouths) {
+                double[] mouths,
+                Lakes lakes) {
             this.channels = channels;
+            this.lakes = lakes;
             this.originX = originX;
             this.originZ = originZ;
             this.bin = bin;
@@ -231,7 +237,8 @@ final class Drainage {
                             + 16
                             + 8L * mouths.length
                             + refs.bytes()
-                            + rivers.bytes();
+                            + rivers.bytes()
+                            + (lakes == null ? 0 : lakes.bytes());
             for (Channel c : channels) b += c.bytes();
             bytes = b;
         }
@@ -242,6 +249,60 @@ final class Drainage {
                     bz = (int) Math.floor((z - originZ) / bin);
             if (bx < 0 || bz < 0 || bx >= bins || bz >= binsZ) return -1;
             return bz * bins + bx;
+        }
+    }
+
+    /**
+     * A continent's drainage lakes: hollows of its own ground filled to their spill level, on the
+     * drainage grid. Each lake cell and the two cells around it name their lake and keep their
+     * ground, so a column's ground between cell centres interpolates and the shore is the contour
+     * where it meets the lake's level.
+     */
+    private static final class Lakes {
+        final double originX, originZ, cell;
+        final int nx, nz;
+
+        /** Per grid cell: its lake's index (a lake cell or its ring), else -1. */
+        final int[] lakeOf;
+
+        final float[] ground;
+
+        /** Per lake: water level (the top water block), id, and {minX, minZ, maxX, maxZ} reserved. */
+        final int[] level;
+
+        final long[] id;
+        final double[] box;
+
+        Lakes(
+                double originX,
+                double originZ,
+                double cell,
+                int nx,
+                int nz,
+                int[] lakeOf,
+                float[] ground,
+                int[] level,
+                long[] id,
+                double[] box) {
+            this.originX = originX;
+            this.originZ = originZ;
+            this.cell = cell;
+            this.nx = nx;
+            this.nz = nz;
+            this.lakeOf = lakeOf;
+            this.ground = ground;
+            this.level = level;
+            this.id = id;
+            this.box = box;
+        }
+
+        long bytes() {
+            return 48
+                    + 4L * lakeOf.length
+                    + 4L * ground.length
+                    + 4L * level.length
+                    + 8L * id.length
+                    + 8L * box.length;
         }
     }
 
@@ -329,6 +390,11 @@ final class Drainage {
     private final long seed;
     private final TerrainHeightReference heights;
     private final IntentSampler intent;
+
+    /** Drainage lakes: the outlet's cut below the spill, and the bank and hold widths. */
+    final double lakeOutletCut, lakeBank, lakeHold;
+
+    final int lakeMinCells;
     private final ContinentalMap continents;
     private final ContinentalOutlineMap outline;
     private final DoubleBinaryOperator receiving;
@@ -438,6 +504,11 @@ final class Drainage {
         riverWidth = Rules.number(j, "riverWidthBlocks", widthHead, widthMax);
         valleyRatio = Rules.number(j, "valleyInCutDepths", 0, 8);
         valleyCap = Rules.number(j, "streamValleyMaximumBlocks", 0, 512);
+        JsonObject lk = j.getAsJsonObject("lakes");
+        lakeOutletCut = Rules.number(lk, "outletCutBlocks", 0, 64);
+        lakeMinCells = (int) Rules.number(lk, "minimumCells", 1, 4096);
+        lakeBank = Rules.number(lk, "bankBlocks", 0, 32);
+        lakeHold = Rules.number(lk, "holdBlocks", lakeBank, 64);
         passes = (int) Rules.number(j, "smoothingPasses", 0, 4);
         JsonObject m = j.getAsJsonObject("meanders");
         meanderWaves = Rules.number(m, "wavelengthInWidths", 2, 64);
@@ -619,6 +690,13 @@ final class Drainage {
         prepare(q, cells);
         for (int k = 0; k < cells; k++) {
             Network n = network(q.cells[2 * k], q.cells[2 * k + 1]);
+            if (n.lakes != null)
+                for (int l = 0; l < n.lakes.level.length; l++) {
+                    double[] b = n.lakes.box;
+                    double dx = Math.max(0, Math.max(b[4 * l] - x, x - b[4 * l + 2]));
+                    double dz = Math.max(0, Math.max(b[4 * l + 1] - z, z - b[4 * l + 3]));
+                    clearance = Math.min(clearance, Math.hypot(dx, dz));
+                }
             if (n.channels.length == 0) continue;
             // River segments are binned by their support; scan only the bins within reach.
             int ax = (int) Math.floor((x - clearance - n.originX) / n.bin);
@@ -916,6 +994,15 @@ final class Drainage {
                     queue.add(new long[] {Math.round(filled[m] * 1024), m});
                 }
         }
+        // Lakes: the hollows of the ground itself, filled to their spill level. A channel crossing
+        // a lake runs at its level, so its outlet leaves at the spill instead of cutting to the
+        // hollow's floor.
+        Lakes lakes = lakes(own, sink, ground, nx, nz, x0, z0, cell, water, owner);
+        if (lakes != null)
+            for (int k = 0; k < total; k++) {
+                int l = lakes.lakeOf[k];
+                if (l >= 0 && ground[k] < lakes.level[l]) ground[k] = lakes.level[l] + 1;
+            }
         // Rain-weighted area accumulates downstream, upstream cells first.
         double[] area = new double[total];
         for (int c = routed - 1; c >= 0; c--) {
@@ -1096,7 +1183,7 @@ final class Drainage {
                             mouthX,
                             mouthZ));
         }
-        return index(channels.toArray(new Channel[0]), box);
+        return index(channels.toArray(new Channel[0]), box, lakes);
     }
 
     /** Moves a line's last point onto the nearest point of a main centreline, at its level. */
@@ -1283,6 +1370,189 @@ final class Drainage {
         return a;
     }
 
+    /**
+     * The lakes of a continent's grid: a priority flood of its own ground from every outlet (cells
+     * beside the sea, receiving water, another continent's land or the grid's edge) fills each
+     * hollow to its spill level. Its outlet cuts the rim by lakeOutletCut, so the lake stands that
+     * far below the spill and only the hollow's deeper part stays wet: a shallow basin drains
+     * through its gorge. A lake needs lakeMinCells cells below its level, above the sea. Null for
+     * none.
+     */
+    private Lakes lakes(
+            boolean[] own,
+            boolean[] sink,
+            double[] ground,
+            int nx,
+            int nz,
+            int x0,
+            int z0,
+            double cell,
+            double water,
+            long owner) {
+        int total = nx * nz;
+        double[] fill = new double[total];
+        boolean[] seen = new boolean[total];
+        PriorityQueue<long[]> queue =
+                new PriorityQueue<>(
+                        (a, b) ->
+                                a[0] != b[0] ? Long.compare(a[0], b[0]) : Long.compare(a[1], b[1]));
+        for (int k = 0; k < total; k++) {
+            if (!own[k]) continue;
+            boolean outlet = sink[k];
+            int i = k % nx, j = k / nx;
+            for (int dj = -1; dj <= 1 && !outlet; dj++)
+                for (int di = -1; di <= 1 && !outlet; di++) {
+                    int ii = i + di, jj = j + dj;
+                    outlet = ii < 0 || jj < 0 || ii >= nx || jj >= nz || !own[jj * nx + ii];
+                }
+            if (!outlet) continue;
+            seen[k] = true;
+            fill[k] = ground[k];
+            queue.add(new long[] {Math.round(fill[k] * 1024), k});
+        }
+        while (!queue.isEmpty()) {
+            int k = (int) queue.poll()[1], i = k % nx, j = k / nx;
+            for (int dj = -1; dj <= 1; dj++)
+                for (int di = -1; di <= 1; di++) {
+                    int ii = i + di, jj = j + dj;
+                    if ((di | dj) == 0 || ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+                    int m = jj * nx + ii;
+                    if (seen[m] || !own[m]) continue;
+                    seen[m] = true;
+                    fill[m] = Math.max(ground[m], fill[k]);
+                    queue.add(new long[] {Math.round(fill[m] * 1024), m});
+                }
+        }
+        // Hollows: connected cells standing below their fill; each accepted one is a lake.
+        int[] lakeOf = new int[total], comp = new int[total], members = new int[total];
+        Arrays.fill(lakeOf, -1);
+        Arrays.fill(comp, -1);
+        List<Integer> levels = new ArrayList<>();
+        List<double[]> boxes = new ArrayList<>();
+        for (int k = 0; k < total; k++) {
+            if (!own[k] || sink[k] || comp[k] >= 0 || !(fill[k] > ground[k] + .5)) continue;
+            int top = 0;
+            members[top++] = k;
+            comp[k] = k;
+            double spill = Double.POSITIVE_INFINITY;
+            boolean drained = false;
+            for (int at = 0; at < top; at++) {
+                int c = members[at], i = c % nx, j = c / nx;
+                spill = Math.min(spill, fill[c]);
+                for (int dj = -1; dj <= 1; dj++)
+                    for (int di = -1; di <= 1; di++) {
+                        int ii = i + di, jj = j + dj;
+                        if ((di | dj) == 0 || ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+                        int m = jj * nx + ii;
+                        if (!own[m] || comp[m] >= 0 || !(fill[m] > ground[m] + .5)) continue;
+                        if (sink[m]) drained = true;
+                        comp[m] = k;
+                        members[top++] = m;
+                    }
+            }
+            int level = (int) Math.floor(spill - lakeOutletCut), wet = 0;
+            for (int at = 0; at < top; at++) if (ground[members[at]] < level) wet++;
+            if (wet < lakeMinCells || drained || level <= water + 1) continue;
+            int index = levels.size();
+            double minX = Double.POSITIVE_INFINITY, minZ = Double.POSITIVE_INFINITY;
+            double maxX = Double.NEGATIVE_INFINITY, maxZ = Double.NEGATIVE_INFINITY;
+            for (int at = 0; at < top; at++) {
+                int c = members[at];
+                if (!(ground[c] < level)) continue;
+                lakeOf[c] = index;
+                minX = Math.min(minX, (x0 + c % nx) * cell);
+                maxX = Math.max(maxX, (x0 + c % nx + 1) * cell);
+                minZ = Math.min(minZ, (z0 + c / nx) * cell);
+                maxZ = Math.max(maxZ, (z0 + c / nx + 1) * cell);
+            }
+            if (minX > maxX) continue;
+            levels.add(level);
+            boxes.add(
+                    new double[] {
+                        minX - 2 * cell, minZ - 2 * cell, maxX + 2 * cell, maxZ + 2 * cell
+                    });
+        }
+        if (levels.isEmpty()) return null;
+        // Each lake's ring: the two cells around it read the lake's ground too (the first lake
+        // in grid order keeps a shared cell).
+        int[] ring = lakeOf.clone();
+        for (int k = 0; k < total; k++) {
+            if (lakeOf[k] < 0) continue;
+            int i = k % nx, j = k / nx;
+            for (int dj = -2; dj <= 2; dj++)
+                for (int di = -2; di <= 2; di++) {
+                    int ii = i + di, jj = j + dj;
+                    if (ii < 0 || jj < 0 || ii >= nx || jj >= nz) continue;
+                    int m = jj * nx + ii;
+                    if (own[m] && ring[m] < 0) ring[m] = lakeOf[k];
+                }
+        }
+        float[] g = new float[total];
+        for (int k = 0; k < total; k++) if (ring[k] >= 0) g[k] = (float) ground[k];
+        int[] level = new int[levels.size()];
+        long[] id = new long[levels.size()];
+        double[] box = new double[4 * levels.size()];
+        for (int l = 0; l < level.length; l++) {
+            level[l] = levels.get(l);
+            id[l] = SeededNoise.mix(seed ^ owner ^ 0x4c414b45L ^ (l + 1) * 0x9e3779b97f4a7c15L);
+            System.arraycopy(boxes.get(l), 0, box, 4 * l, 4);
+        }
+        return new Lakes(x0 * cell, z0 * cell, cell, nx, nz, ring, g, level, id, box);
+    }
+
+    /**
+     * The drainage lake at a column: its id (0 for none) and {level, ground} in out, the ground
+     * interpolated between the lake's cells (cells of no lake read as dry, lakeHold above it). The
+     * column is wet where that ground lies below the level.
+     */
+    long lake(double x, double z, double[] out) {
+        ContinentalOutlineMap.CellScratch q = query.get();
+        int cells = outline.continentCells(x, z, reach, q);
+        prepare(q, cells);
+        long found = 0;
+        double best = Double.NEGATIVE_INFINITY;
+        for (int k = 0; k < cells; k++) {
+            Lakes l = network(q.cells[2 * k], q.cells[2 * k + 1]).lakes;
+            if (l == null) continue;
+            double u = (x - l.originX) / l.cell - .5, v = (z - l.originZ) / l.cell - .5;
+            int i = (int) Math.floor(u), j = (int) Math.floor(v);
+            double fu = u - i, fv = v - j;
+            int lake = -1;
+            double strongest = -1;
+            for (int c = 0; c < 4; c++) {
+                int ii = i + (c & 1), jj = j + (c >> 1);
+                if (ii < 0 || jj < 0 || ii >= l.nx || jj >= l.nz) continue;
+                int at = l.lakeOf[jj * l.nx + ii];
+                double w = ((c & 1) == 0 ? 1 - fu : fu) * ((c >> 1) == 0 ? 1 - fv : fv);
+                if (at >= 0 && w > strongest) {
+                    strongest = w;
+                    lake = at;
+                }
+            }
+            if (lake < 0) continue;
+            int level = l.level[lake];
+            double g = 0;
+            for (int c = 0; c < 4; c++) {
+                int ii = i + (c & 1), jj = j + (c >> 1);
+                double w = ((c & 1) == 0 ? 1 - fu : fu) * ((c >> 1) == 0 ? 1 - fv : fv);
+                boolean mine =
+                        ii >= 0
+                                && jj >= 0
+                                && ii < l.nx
+                                && jj < l.nz
+                                && l.lakeOf[jj * l.nx + ii] == lake;
+                g += w * (mine ? l.ground[jj * l.nx + ii] : level + lakeHold);
+            }
+            if (level - g > best) {
+                best = level - g;
+                found = l.id[lake];
+                out[0] = level;
+                out[1] = g;
+            }
+        }
+        return found;
+    }
+
     private static boolean touches(boolean[] own, int k, int nx, int nz) {
         int i = k % nx, j = k / nx;
         for (int dj = -1; dj <= 1; dj++)
@@ -1294,7 +1564,7 @@ final class Drainage {
     }
 
     /** Bins every segment by the reach of its water, bank and valley. */
-    private Network index(Channel[] channels, double[] box) {
+    private Network index(Channel[] channels, double[] box, Lakes lakes) {
         double originX = box[0] - reach, originZ = box[1] - reach;
         int bins = (int) Math.ceil((box[2] - box[0] + 2 * reach) / binBlocks) + 1;
         int binsZ = (int) Math.ceil((box[3] - box[1] + 2 * reach) / binBlocks) + 1;
@@ -1390,6 +1660,7 @@ final class Drainage {
                 binsZ,
                 Bins.of(lists),
                 Bins.of(riverLists),
-                mouthArray);
+                mouthArray,
+                lakes);
     }
 }

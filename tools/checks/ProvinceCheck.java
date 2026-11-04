@@ -37,7 +37,16 @@ public final class ProvinceCheck {
         ClimateForcingMap forcing = new ClimateForcingMap(structure, heights, world);
         ClimateMap climate = new ClimateMap(seed, temperature, forcing);
         ContinentalMap continents = new ContinentalMap(seed, heights, outline);
-        return new ProvinceMap(seed, world, plates, continents, climate, def);
+        BuildPool pool = new BuildPool();
+        pool.use(BuildPool.tools());
+        return new ProvinceMap(
+                seed,
+                world,
+                plates,
+                continents,
+                new SpineMap(continents, world, pool),
+                climate,
+                def);
     }
 
     public static void main(String[] args) throws Exception {
@@ -189,7 +198,7 @@ public final class ProvinceCheck {
     private static boolean jump(
             ProvinceMap.Definition def, ProvinceMap.Type a, ProvinceMap.Type b) {
         boolean low = a.index == def.coastal || a.index == def.interior;
-        return low && (b.index == def.top || b.index == def.convergent);
+        return low && (b.index == def.top || b.index == def.spined);
     }
 
     /** Whether the map logged a type past its maximum for want of room. */

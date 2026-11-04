@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 3,
+  "revision": 4,
   "variationSeed": "0x50524f56494e4331",
   "cells": {"sizeBlocks": 1400, "jitter": 0.85, "warpBlocks": 900, "warpWavelengthBlocks": 3600, "edgeBlocks": 500},
   "types": [
@@ -8,11 +8,13 @@
     {"id": "basin", "enabled": true, "share": [0.0, 0.15], "band": [2, 25], "relief": {"blocks": 6, "ridged": 0, "terraced": 0}},
     {"id": "upland", "enabled": true, "share": [0.15, 0.35], "band": [60, 130], "relief": {"blocks": 45, "ridged": 0.25, "terraced": 0}},
     {"id": "tableland", "enabled": true, "share": [0.0, 0.20], "band": [90, 170], "relief": {"blocks": 30, "ridged": 0, "terraced": 0.8}},
-    {"id": "range", "enabled": true, "share": [0.08, 0.25], "band": [110, 280], "relief": {"blocks": 110, "ridged": 0.85, "terraced": 0}},
+    {"id": "range", "enabled": true, "share": [0.08, 0.25], "band": [50, 110], "relief": {"blocks": 60, "ridged": 0.5, "terraced": 0}},
     {"id": "rift", "enabled": true, "share": [0.0, 0.10], "band": [10, 50], "relief": {"blocks": 30, "ridged": 0.3, "terraced": 0}},
     {"id": "foreland", "enabled": true, "share": [0.05, 0.15], "band": [30, 90], "relief": {"blocks": 35, "ridged": 0.2, "terraced": 0}}
   ],
-  "tectonic": {"convergent": "range", "divergent": "rift", "reachBlocks": 700, "threshold": 0.35, "beltThreshold": 0.15},
+  "spine": {"type": "range", "threshold": 0.15},
+  "spines": {"cellBlocks": 64, "tileCells": 128, "capBlocks": 2500, "blurBlocks": 80, "flatSlope": 0.35, "halfWidthFromBlocks": 150, "halfWidthFullBlocks": 550, "widthShare": 0.5, "minWidthBlocks": 125},
+  "tectonic": {"divergent": "rift", "reachBlocks": 700, "threshold": 0.35},
   "stable": {"low": {"coastal": "plain", "interior": "basin"}, "high": {"rest": "upland", "top": "tableland"}, "levelWavelengthCells": 3.0},
   "foreland": {"type": "foreland", "beside": "range", "reachCells": 1.25},
   "oceans": {"warmCelsius": 14, "frozenCelsius": -4},
@@ -21,7 +23,7 @@
   "contract": [
     "Provinces (S2 of the engine design): a seeded regional map that is the parent of biomes. Space splits into cells of about sizeBlocks (times the world's layout scale) on a jittered grid, read at coordinates warped by up to warpBlocks over warpWavelengthBlocks so edges wander; each column belongs to its nearest cell. Intensity runs from 0 at a province's edge to 1 once the second-nearest cell is edgeBlocks farther than the nearest.",
     "A land province's type is the ground's shape only, chosen from facts no later shaping changes: plate tectonics, the distance to the coast and a seeded field. Relief, drainage and landform palettes come in later steps; climate stays continuous. Every province has a land face and an ocean face, and each column takes the face of its own ground. Once per world, over the provinces whose seed point lies in the world square and that hold land (measured on measureSide samples per side), with every type's share counted in that land:",
-    "tectonic: a province whose mountain belt (riven-plates.json belts; its mean over the province's measured land, else over nine points around its seed point) reaches beltThreshold may be convergent's type, the most belted first; a province whose seed point lies within reachBlocks (times the layout) of a divergent boundary, nearer than threshold of that reach, may be divergent's, the nearest first. Each takes provinces while its share stays under its maximum (one province always may). A minimum the tectonics cannot meet is logged, never forced.",
+    "spine (revision 4): a province whose spine weight (spines; its mean over the province's measured land, else over nine points around its seed point) reaches threshold may be the spine type, the strongest first. spines: the land's medial axis, where the slope of the distance to the coast (exact, capped at capBlocks, box-blurred over blurBlocks) falls below flatSlope on land at least halfWidthFromBlocks from the coast; a range weight around it, falling to zero at widthShare of the axis cell's half width (at least minWidthBlocks), times the smoothstep of that half width from halfWidthFromBlocks to halfWidthFullBlocks. A pure plan on a cellBlocks grid in tiles of tileCells, block lengths times the layout. tectonic: a province whose seed point lies within reachBlocks (times the layout) of a divergent boundary, nearer than threshold of that reach, may be divergent's, the nearest first. Each takes provinces while its share stays under its maximum (one province always may). A minimum the tectonics cannot meet is logged, never forced.",
     "stable: every other land cell (after the tectonic types and foreland) takes a level from a seeded field (wavelength levelWavelengthCells cells, so neighbouring provinces share a level). The lowest cells, up to the low types' shares, are low: the most interior of them (farthest from the coast) take interior's type up to its share, the rest coastal's. The others are high: the highest take top's type up to its share, the rest rest's. Each stable type's share is the middle of its range, scaled so the stable types fill the land the tectonic types left, then held inside its range.",
     "foreland: next, a cell whose seed point lies within reachCells cell sizes of a beside-type province's may be type's, the nearest first while its share stays under its maximum, so mountains step down through foothills; a minimum the ranges cannot meet is logged. enabled false (or a maximum of 0) removes a type; a pack can widen or narrow any share.",
     "A province's ocean face is a class: shelf or deep by the seed point's sea floor, warm from warmCelsius, cold below, frozen at or below frozenCelsius. Provinces outside the world square, or holding no measured land, take their tectonic type where it applies, else foreland beside a range, else their level's type by the world's cuts, without the budget.",

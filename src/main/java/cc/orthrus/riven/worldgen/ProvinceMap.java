@@ -17,8 +17,9 @@ import java.util.Map;
  * an intensity from 0 at the province's edge to 1 inside. Every province has two faces, a land type
  * and an ocean class, and each column takes the face of its own ground, so islands in a mostly sea
  * province and bays in a land one keep their kind. The land type is the ground's shape, chosen once
- * per world from facts no later shaping changes: provinces near a convergent or divergent plate
- * boundary take the tectonic types, and the rest split by a seeded level field and their distance
+ * per world from facts no later shaping changes: provinces on a continent's spine ({@link
+ * SpineMap}) take the range type, provinces near a divergent plate boundary the rift type, and
+ * the rest split by a seeded level field and their distance
  * to the coast in the budget's proportions, counted over every province's land. Each cell
  * offsets climate by physical effects (continentality, the sea), blended between neighbouring
  * cells so effective climate changes smoothly across edges. Every answer is a pure function of
@@ -87,10 +88,10 @@ public final class ProvinceMap {
     /** The definitions, read once: the packaged ones, or a variant a check builds. */
     static final class Definition {
         final double size, jitter, warp, warpWavelength, edge;
-        final double reach, threshold, beltThreshold, levelWavelength, forelandReach;
+        final double reach, threshold, spineThreshold, levelWavelength, forelandReach;
         final int side;
         final Type[] types;
-        final int landTypes, foreland, convergent, divergent, coastal, interior, rest, top, beside;
+        final int landTypes, foreland, spined, divergent, coastal, interior, rest, top, beside;
         final double warmCelsius, frozenCelsius;
         final double interiorBlocks, continentality, maritimeMoisture, maritimePull, mildCelsius;
         final double maxCelsius, maxMoisture;
@@ -144,12 +145,13 @@ public final class ProvinceMap {
             for (String ocean : OCEANS)
                 list.add(new Type(ocean, list.size(), false, true, 0, 1, 0, 0, 0, 0, 0));
             types = list.toArray(new Type[0]);
+            JsonObject spine = j.getAsJsonObject("spine");
+            spined = landType(spine.get("type").getAsString());
+            spineThreshold = Rules.number(spine, "threshold", 0, 1);
             JsonObject tectonic = j.getAsJsonObject("tectonic");
-            convergent = landType(tectonic.get("convergent").getAsString());
             divergent = landType(tectonic.get("divergent").getAsString());
             reach = Rules.number(tectonic, "reachBlocks", 1, 16384);
             threshold = Rules.number(tectonic, "threshold", 0, 1);
-            beltThreshold = Rules.number(tectonic, "beltThreshold", 0, 1);
             JsonObject stable = j.getAsJsonObject("stable");
             coastal = landType(stable.getAsJsonObject("low").get("coastal").getAsString());
             interior = landType(stable.getAsJsonObject("low").get("interior").getAsString());
@@ -160,7 +162,7 @@ public final class ProvinceMap {
             foreland = landType(f.get("type").getAsString());
             beside = landType(f.get("beside").getAsString());
             forelandReach = Rules.number(f, "reachCells", 0.5, 3);
-            int[] all = {convergent, divergent, foreland, coastal, interior, rest, top};
+            int[] all = {spined, divergent, foreland, coastal, interior, rest, top};
             for (int a = 0; a < all.length; a++)
                 for (int b = 0; b < a; b++)
                     if (all[a] == all[b])
@@ -219,8 +221,8 @@ public final class ProvinceMap {
         final int i, j;
         final double x, z, coast, celsius, divergent, level;
 
-        /** The province's mountain belt: over its measured land, else at its seed point. */
-        double convergent;
+        /** The province's spine weight: its mean over its measured land, else around its seed point. */
+        double spine;
 
         final boolean marine, deep;
         double area;
@@ -232,7 +234,7 @@ public final class ProvinceMap {
                 double z,
                 double coast,
                 double celsius,
-                double convergent,
+                double spine,
                 double divergent,
                 double level,
                 boolean marine,
@@ -243,7 +245,7 @@ public final class ProvinceMap {
             this.z = z;
             this.coast = coast;
             this.celsius = celsius;
-            this.convergent = convergent;
+            this.spine = spine;
             this.divergent = divergent;
             this.level = level;
             this.marine = marine;
@@ -277,6 +279,7 @@ public final class ProvinceMap {
     private final double size, edge, reach, interiorBlocks, half;
     private final SeededNoise warpX, warpZ, level;
     private final PlateMap plates;
+    private final SpineMap spines;
     private final ContinentalMap continents;
     private final ClimateMap climate;
     private final Map<Long, Cell> world = new HashMap<>();
@@ -321,8 +324,9 @@ public final class ProvinceMap {
             WorldScale scale,
             PlateMap plates,
             ContinentalMap continents,
+            SpineMap spines,
             ClimateMap climate) {
-        this(worldSeed, scale, plates, continents, climate, PACKAGED);
+        this(worldSeed, scale, plates, continents, spines, climate, PACKAGED);
     }
 
     ProvinceMap(
@@ -330,11 +334,13 @@ public final class ProvinceMap {
             WorldScale scale,
             PlateMap plates,
             ContinentalMap continents,
+            SpineMap spines,
             ClimateMap climate,
             Definition def) {
         long started = System.nanoTime();
         this.def = def;
         this.plates = plates;
+        this.spines = spines;
         this.continents = continents;
         this.climate = climate;
         seed = SeededNoise.mix(worldSeed ^ def.variation);
@@ -355,11 +361,10 @@ public final class ProvinceMap {
                 if (Math.abs(p[0]) <= half && Math.abs(p[1]) <= half)
                     cells.put(key(i, j), facts(i, j));
             }
-        // Their land areas, on a grid over the world square.
-        // Their land areas and mountain belts, on a grid over the world square: a province's
-        // belt is the mean over its land, a province-scale fact rather than one point's.
+        // Their land areas and spine weights, on a grid over the world square: a province's
+        // spine is the mean over its land, a province-scale fact rather than one point's.
         Map<Long, int[]> area = new HashMap<>();
-        Map<Long, double[]> belts = new HashMap<>();
+        Map<Long, double[]> spineSums = new HashMap<>();
         double step = scale.side() / def.side, origin = -half + step / 2;
         ContinentalMap.Sample c = new ContinentalMap.Sample();
         for (int a = 0; a < def.side; a++)
@@ -370,8 +375,7 @@ public final class ProvinceMap {
                 int[] counts = area.computeIfAbsent(owner, k -> new int[2]);
                 counts[c.marine ? 1 : 0]++;
                 if (!c.marine)
-                    belts.computeIfAbsent(owner, k -> new double[1])[0] +=
-                            plates.sample((int) Math.floor(x), (int) Math.floor(z)).belt;
+                    spineSums.computeIfAbsent(owner, k -> new double[1])[0] += spines.weight(x, z);
             }
         // Every province holding measured land enters the budget, by its land area.
         List<Facts> land = new ArrayList<>();
@@ -379,7 +383,7 @@ public final class ProvinceMap {
             int[] counts = area.get(key(f.i, f.j));
             f.area = counts == null ? 0 : counts[0];
             if (f.area > 0) {
-                f.convergent = belts.get(key(f.i, f.j))[0] / f.area;
+                f.spine = spineSums.get(key(f.i, f.j))[0] / f.area;
                 land.add(f);
             }
         }
@@ -396,7 +400,7 @@ public final class ProvinceMap {
         double total = 0;
         for (Facts f : land) total += f.area;
         faces.putAll(base);
-        for (Facts f : land) centres.put(key(f.i, f.j), new double[] {f.x, f.z, f.convergent});
+        for (Facts f : land) centres.put(key(f.i, f.j), new double[] {f.x, f.z, f.spine});
         for (Facts f : cells.values()) {
             Type t = base.get(key(f.i, f.j));
             world.put(key(f.i, f.j), cell(f, t, ocean(f)));
@@ -417,7 +421,7 @@ public final class ProvinceMap {
         int[] count = new int[def.types.length];
         // Tectonic types, nearest the boundary first, while under their maximum (one may always).
         for (int pass = 0; pass < 2; pass++) {
-            int t = pass == 0 ? def.convergent : def.divergent;
+            int t = pass == 0 ? def.spined : def.divergent;
             Type type = def.types[t];
             if (!type.allowed()) continue;
             List<Facts> candidates = new ArrayList<>();
@@ -437,12 +441,12 @@ public final class ProvinceMap {
                 shortfalls.add(
                         String.format(
                                 Locale.ROOT,
-                                "%s %.1f%% of land, budget %.0f-%.0f%% (too few cells near %s boundaries)",
+                                "%s %.1f%% of land, budget %.0f-%.0f%% (too few cells %s)",
                                 type.id,
                                 100 * share[t],
                                 100 * type.min,
                                 100 * type.max,
-                                pass == 0 ? "convergent" : "divergent"));
+                                pass == 0 ? "on spines" : "near divergent boundaries"));
         }
         // Foreland: cells within reach of a range province's seed point, nearest first, while
         // under its maximum, so mountains step down through foothills.
@@ -485,7 +489,7 @@ public final class ProvinceMap {
         // inside the range.
         int[] stable = {def.coastal, def.interior, def.rest, def.top};
         double left =
-                Math.max(0, 1 - share[def.convergent] - share[def.divergent] - share[def.foreland]);
+                Math.max(0, 1 - share[def.spined] - share[def.divergent] - share[def.foreland]);
         double[] target = new double[def.types.length];
         boolean[] held = new boolean[def.types.length];
         for (int round = 0; round < 8; round++) {
@@ -627,14 +631,14 @@ public final class ProvinceMap {
         return cut;
     }
 
-    /** The level a tectonic fact must reach: the province belt for convergent, nearness for divergent. */
+    /** The level a fact must reach: the province spine for the range type, nearness for rift. */
     private double limit(int t) {
-        return t == def.convergent ? def.beltThreshold : def.threshold;
+        return t == def.spined ? def.spineThreshold : def.threshold;
     }
 
-    /** How near a cell lies to a boundary of the tectonic type's kind, 0 to 1. */
+    /** How strongly a cell carries the type's fact, 0 to 1: its spine, or divergent nearness. */
     private double near(Facts f, int t) {
-        return t == def.convergent ? f.convergent : f.divergent;
+        return t == def.spined ? f.spine : f.divergent;
     }
 
     private long tie(Facts f) {
@@ -663,36 +667,30 @@ public final class ProvinceMap {
         return best;
     }
 
-    /** The tectonic type a cell gives, from plates alone (its nine-point belt), or -1. */
+    /** The range or rift type a cell gives from its seed point's facts (nine-point spine), or -1. */
     private int tectonicAt(int i, int j) {
         double[] p = seedPoint(i, j);
         PlateMap.Sample plate = plates.sample((int) Math.floor(p[0]), (int) Math.floor(p[1]));
         double near = Math.max(0, 1 - plate.boundaryDistance / reach);
-        return tectonic(beltAround(p), plate.boundary == PlateMap.Boundary.DIVERGENT ? near : 0);
+        return tectonic(spineAround(p), plate.boundary == PlateMap.Boundary.DIVERGENT ? near : 0);
     }
 
-    /** The mean belt of nine points a third of a cell apart around a seed point. */
-    private double beltAround(double[] p) {
-        double belt = 0;
+    /** The mean spine weight of nine points a third of a cell apart around a seed point. */
+    private double spineAround(double[] p) {
+        double spine = 0;
         for (int a = -1; a <= 1; a++)
             for (int b = -1; b <= 1; b++)
-                belt +=
-                        plates.sample(
-                                                (int) Math.floor(p[0] + a * size / 3),
-                                                (int) Math.floor(p[1] + b * size / 3))
-                                        .belt
-                                / 9;
-        return belt;
+                spine += spines.weight(p[0] + a * size / 3, p[1] + b * size / 3) / 9;
+        return spine;
     }
 
     /** The tectonic type a cell's seed point gives, or -1. */
     private int tectonic(Facts f) {
-        return tectonic(f.convergent, f.divergent);
+        return tectonic(f.spine, f.divergent);
     }
 
-    private int tectonic(double convergent, double divergent) {
-        if (def.types[def.convergent].allowed() && convergent >= def.beltThreshold)
-            return def.convergent;
+    private int tectonic(double spine, double divergent) {
+        if (def.types[def.spined].allowed() && spine >= def.spineThreshold) return def.spined;
         if (def.types[def.divergent].allowed() && divergent >= def.threshold) return def.divergent;
         return -1;
     }
@@ -754,9 +752,9 @@ public final class ProvinceMap {
         PlateMap.Sample plate = plates.sample((int) Math.floor(p[0]), (int) Math.floor(p[1]));
         double near = Math.max(0, 1 - plate.boundaryDistance / reach);
         double w = def.levelWavelength * size;
-        // The province's belt where no grid measures it: the mean of nine points around the seed
+        // The province's spine where no grid measures it: the mean of nine points around the seed
         // point (a province-scale fact, like the grid's mean over its land).
-        double belt = beltAround(p);
+        double spine = spineAround(p);
         return new Facts(
                 i,
                 j,
@@ -764,7 +762,7 @@ public final class ProvinceMap {
                 p[1],
                 c.marine ? 0 : Math.max(0, c.distance),
                 s.celsius,
-                belt,
+                spine,
                 plate.boundary == PlateMap.Boundary.DIVERGENT ? near : 0,
                 level.sample(p[0] / w, p[1] / w),
                 c.marine,
@@ -898,7 +896,7 @@ public final class ProvinceMap {
         return edge;
     }
 
-    /** For checks: {x, z, belt} of the world square's land-bearing provinces of a type. */
+    /** For checks: {x, z, spine} of the world square's land-bearing provinces of a type. */
     List<double[]> centres(Type t) {
         List<double[]> out = new ArrayList<>();
         for (Map.Entry<Long, double[]> e : centres.entrySet())
@@ -906,9 +904,14 @@ public final class ProvinceMap {
         return out;
     }
 
-    /** The province belt (mean over its land) at or above which it may take the convergent type. */
-    double tectonicThreshold() {
-        return def.beltThreshold;
+    /** The province spine (mean over its land) at or above which it may take the range type. */
+    double spineThreshold() {
+        return def.spineThreshold;
+    }
+
+    /** The spine map the range type reads. */
+    SpineMap spines() {
+        return spines;
     }
 
     /** How many of the world square's land provinces have a type. */

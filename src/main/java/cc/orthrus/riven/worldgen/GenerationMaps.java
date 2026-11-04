@@ -10,6 +10,7 @@ public final class GenerationMaps {
     public final LandShare land;
     public final ContinentalOutlineMap outline;
     public final ContinentalMap continents;
+    public final SpineMap spines;
     public final ProvinceMap provinces;
     public final SubstrateMap substrate;
     public final RegionalProfileMap regions;
@@ -69,7 +70,8 @@ public final class GenerationMaps {
         climateForcing = new ClimateForcingMap(climateStructure, heights, world);
         climate = new ClimateMap(seed, temperature, climateForcing);
         continents = new ContinentalMap(seed, heights, outline);
-        provinces = new ProvinceMap(seed, world, plates, continents, climate);
+        spines = new SpineMap(continents, world, pool);
+        provinces = new ProvinceMap(seed, world, plates, continents, spines, climate);
         substrate = new SubstrateMap();
         regions = new RegionalProfileMap(seed, heights);
         fabric = new RegionalFabricMap(seed, heights);

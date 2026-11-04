@@ -4,13 +4,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The province ground as a pure regional plan (S4): the province map's blended land fields (level,
- * relief, ridged share, terraced share; {@link ProvinceMap#ground}) on a node grid, read with
+ * relief, ridged share, terraced share; {@link ProvinceMap#ground}) and the range weight of the
+ * continents' spines ({@link SpineMap}) on a node grid, read with
  * Catmull-Rom interpolation, so the fields are C1 and their derivatives exact. Nodes are computed a
  * tile at a time and held in a bounded cache cleared whole when full; every node is a pure function
  * of the seed, the definitions and its position, so eviction never changes a result.
  */
 final class ProvinceGround {
-    static final int FIELDS = 4;
+    static final int FIELDS = 5;
     private static final int TILE = 16, TILES = 2048;
 
     private final ProvinceMap provinces;
@@ -37,7 +38,7 @@ final class ProvinceGround {
     }
 
     /**
-     * The fields at (x, z) into out: values in 0..3, x derivatives in 4..7, z derivatives in 8..11
+     * The fields at (x, z) into out: values in 0..4, x derivatives in 5..9, z derivatives in 10..14
      * (per block).
      */
     void sample(double x, double z, double[] out) {
@@ -70,7 +71,7 @@ final class ProvinceGround {
     }
 
     /** Catmull-Rom weights and their derivatives for the four nodes around fraction t. */
-    private static void weights(double t, double[] w, double[] d) {
+    static void weights(double t, double[] w, double[] d) {
         double t2 = t * t, t3 = t2 * t;
         w[0] = (-t3 + 2 * t2 - t) / 2;
         w[1] = (3 * t3 - 5 * t2 + 2) / 2;
@@ -91,8 +92,9 @@ final class ProvinceGround {
             for (int m = 0; m < TILE; m++) {
                 // Nodes past the Minecraft range read the ground just inside it, where every
                 // province cell's seed point is still a legal coordinate.
-                provinces.ground(
-                        inside((ti * TILE + m) * step), inside((tj * TILE + n) * step), node);
+                double x = inside((ti * TILE + m) * step), z = inside((tj * TILE + n) * step);
+                provinces.ground(x, z, node);
+                node[4] = provinces.spines().weight(x, z);
                 System.arraycopy(node, 0, values, FIELDS * (n * TILE + m), FIELDS);
             }
         Tile fresh = new Tile(ti, tj, values);

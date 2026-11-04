@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 3,
+  "revision": 4,
   "policy": "REGIONAL",
   "bodySeed": "544552424f445931",
   "detailSeed": "5445524445544149",
@@ -13,6 +13,7 @@
   "groundAmplitudePerBlock": 0.06,
   "character": {"wavelengthBlocks": 700, "strongFrom": 0.55, "strongAt": 0.8, "calmStrength": 0.35, "rollingGain": 2.2},
   "ridges": {"wavelengthBlocks": 1100, "gain": 5, "warpBlocks": 450, "warpWavelengthBlocks": 2400},
+  "spine": {"liftBlocks": 170, "reliefBlocks": 110, "ridged": 0.85},
   "terraces": {"stepBlocks": 14, "riserShare": 0.3},
   "ceilingMarginBlocks": 4,
   "ceilingSoftBlocks": 48,

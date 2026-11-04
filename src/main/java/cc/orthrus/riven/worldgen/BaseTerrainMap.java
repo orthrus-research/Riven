@@ -26,6 +26,9 @@ public final class BaseTerrainMap {
     /** Ridged relief: base wavelength and its multiplier on the ridged share's amplitude. */
     private final double ridgeScale, ridgeGain, rollingGain, ridgeWarp, ridgeWarpScale;
 
+    /** What a full spine weight brings: lift in blocks, and the relief and ridged share it pulls to. */
+    private final double spineLift, spineRelief, spineRidged;
+
     /** Terrace step height, and the share of a step that is riser. */
     private final double terraceBlocks, terraceRiser;
 
@@ -98,6 +101,10 @@ public final class BaseTerrainMap {
         ridgeWarp = Rules.number(r, "warpBlocks", 0, 4096);
         ridgeWarpScale = Rules.number(r, "warpWavelengthBlocks", 64, 16384);
         rollingGain = Rules.number(c, "rollingGain", 0, 8);
+        JsonObject sp = j.getAsJsonObject("spine");
+        spineLift = Rules.number(sp, "liftBlocks", 0, 320);
+        spineRelief = Rules.number(sp, "reliefBlocks", 0, 320);
+        spineRidged = Rules.number(sp, "ridged", 0, 1);
         JsonObject t = j.getAsJsonObject("terraces");
         terraceBlocks = Rules.number(t, "stepBlocks", 2, 64);
         terraceRiser = Rules.number(t, "riserShare", .05, .9);
@@ -296,6 +303,21 @@ public final class BaseTerrainMap {
             double[] f = out.fields;
             ground.sample(x, z, f);
             int fx = ProvinceGround.FIELDS, fz = 2 * ProvinceGround.FIELDS;
+            // The continents' spines raise ranges along the land's own axis: the weight lifts the
+            // level and pulls relief and ridged share toward a range's, wherever the province.
+            double spine = f[4];
+            if (spine > 0) {
+                double sx = f[fx + 4], sz = f[fz + 4];
+                f[0] += spineLift * spine;
+                f[fx] += spineLift * sx;
+                f[fz] += spineLift * sz;
+                for (int k = 1; k <= 2; k++) {
+                    double target = k == 1 ? spineRelief : spineRidged, gap = target - f[k];
+                    f[fx + k] = f[fx + k] * (1 - spine) + gap * sx;
+                    f[fz + k] = f[fz + k] * (1 - spine) + gap * sz;
+                    f[k] += gap * spine;
+                }
+            }
             double level = f[0], groundDx = f[fx], groundDz = f[fz];
             // Character strength: a slow patch field, calm over most of a province.
             character.sample(x / characterScale + .11, z / characterScale + .83, out.patch);

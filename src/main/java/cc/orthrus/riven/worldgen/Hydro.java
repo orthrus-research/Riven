@@ -58,6 +58,9 @@ public final class Hydro
         /** The highest water beside a dry column within Drainage.LEVEE of a bed. */
         public double channelLevee;
 
+        /** A drainage lake's level a dry column near its shore must not stand below, or NaN. */
+        public double lakeHold = Double.NaN;
+
         /** A dry bar at a channel's water level (a braided bed's or a point bar), or null. */
         public Bed bar;
 
@@ -91,6 +94,7 @@ public final class Hydro
             stream = channel = false;
             bar = null;
             channelHead = channelBeyond = channelBank = channelLevee = 0;
+            lakeHold = Double.NaN;
             aquiferMin = Integer.MAX_VALUE;
             aquiferMax = Integer.MIN_VALUE;
             aquiferRoof = 0;
@@ -351,7 +355,7 @@ public final class Hydro
 
     private static final class DrainageQuery {
         final Drainage.Hit wet = new Drainage.Hit(), near = new Drainage.Hit();
-        final double[] mouth = new double[1];
+        final double[] mouth = new double[1], lake = new double[2];
         final Sample receiving = new Sample();
     }
 
@@ -1586,6 +1590,20 @@ public final class Hydro
      */
     private long drainageSample(double x, double z, Sample out) {
         DrainageQuery q = drainageQuery.get();
+        // A drainage lake: water where the ground lies below its level, a flush bank beside it
+        // and a hold that keeps every dry column near its shore at least level with it.
+        long lake = drainage.lake(x, z, q.lake);
+        if (lake != 0) {
+            double level = q.lake[0], ground = q.lake[1];
+            if (ground < level) {
+                wet(out, lake, Kind.LAKE, level, ground);
+                return 0;
+            }
+            double above = ground - level;
+            if (above < drainage.lakeBank)
+                bank(out, lake, level, 1 - Rules.smooth(above / drainage.lakeBank));
+            if (above < drainage.lakeHold) out.lakeHold = level;
+        }
         Drainage.Hit hit = drainage.nearest(x, z, q.wet, q.near, mouthRadius, q.mouth);
         out.mouth = Math.max(out.mouth, q.mouth[0]);
         if (hit == null) return 0;
@@ -1635,7 +1653,7 @@ public final class Hydro
     public double constrain(double height, Sample water) {
         if (water.wet) return water.floor;
         double h = height + (water.bank - height) * water.weight;
-        if (!water.channel) return h;
+        if (!water.channel) return holding(h, water);
         double span =
                 water.channelBank
                         + Math.min(
@@ -1656,6 +1674,8 @@ public final class Hydro
      * it too.
      */
     public static double holding(double height, Sample water) {
+        if (!Double.isNaN(water.lakeHold))
+            height = Math.max(height, Math.floor(water.lakeHold) + .5);
         if (!water.channel || water.channelBeyond > Drainage.LEVEE) return height;
         return Math.max(height, Math.floor(Math.max(water.channelHead, water.channelLevee)) + .5);
     }

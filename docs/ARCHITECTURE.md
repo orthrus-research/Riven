@@ -88,9 +88,12 @@ flowchart TD
   CF --> C
   O --> CM[ContinentalMap]
   P --> PR[ProvinceMap]
+  CM --> SP[SpineMap]
+  SP --> PR
   CM --> PR
   C --> PR
   PR --> TM
+  PR --> BT
   RP[RegionalProfileMap] --> BT[BaseTerrainMap]
   BE --> BT
   F[RegionalFabricMap] --> TM[TerrainMap]

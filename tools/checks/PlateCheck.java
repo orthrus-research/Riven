@@ -14,12 +14,10 @@ import java.util.concurrent.Future;
  * Plates own the mountain belts (P1). Usage: PlateCheck [seeds [scale ...]] (default 32 seeds at
  * layouts 1 and 4). Over a 128 x 128 grid of each world square, reports plates per world and how
  * much their sizes vary, the land in mountain belts, how much high ground (base elevation 100 or
- * more above the sea) and range-province land lies in belts, and the signed uplift's spread.
- * Requires: high ground in belts at least 70%, every range province holding a belt (its land's
- * mean belt at the provinces' belt threshold), uplift nonzero (|u| > 0.02) on at least 85% of land, a
- * fresh plate map equal to the first, and each belt gradient within 2% (of the steepest) of a finite
- * difference where one belt holds. Range-province land in belts is reported (provinces of about
- * 1,400 blocks are wider than belts; S4 raises ground inside them by belt strength).
+ * more above the sea) lies in belts, and the signed uplift's spread. Requires: high ground in belts
+ * at least 70%, uplift nonzero (|u| > 0.02) on at least 85% of land, a fresh plate map equal to the
+ * first, and each belt gradient within 2% (of the steepest) of a finite difference where one belt
+ * holds. Range provinces follow the continents' spines (SpineMap, ProvinceCheck), not belts.
  */
 public final class PlateCheck {
     private static void require(boolean value, String message) {
@@ -58,12 +56,10 @@ public final class PlateCheck {
                 "land in a mountain belt %",
                 "land in a strong belt (>= 0.35) %",
                 "high ground (base >= +100) in a belt %",
-                "range-province land in a belt %",
                 "land with nonzero uplift %",
                 "land raised (u > 0.02) %",
                 "land lowered (u < -0.02) %",
-                "high ground share of land %",
-                "range provinces holding a belt %"
+                "high ground share of land %"
             };
             System.out.printf(
                     Locale.ROOT,
@@ -86,8 +82,7 @@ public final class PlateCheck {
                         min,
                         max);
                 if (k == 4) require(mean >= 70, "High ground outside belts: " + mean + "%");
-                if (k == 10) require(mean >= 100, "A range province holds too little belt");
-                if (k == 6) require(mean >= 85, "Uplift zero on too much land: " + mean + "%");
+                if (k == 5) require(mean >= 85, "Uplift zero on too much land: " + mean + "%");
             }
         }
         // Determinism and the belt gradient on one world.
@@ -141,24 +136,14 @@ public final class PlateCheck {
         PlateMap plates = new PlateMap(seed, world);
         ContinentalOutlineMap outline = LandShare.choose(seed, heights, world).outline;
         BaseElevationMap elevation = new BaseElevationMap(seed, plates, heights);
-        ClimateMap climate =
-                new ClimateMap(
-                        seed,
-                        new TemperatureMap(seed, world),
-                        new ClimateForcingMap(
-                                new ClimateStructureMap(outline, elevation, heights),
-                                heights,
-                                world));
         ContinentalMap continents = new ContinentalMap(seed, heights, outline);
-        ProvinceMap provinces = new ProvinceMap(seed, world, plates, continents, climate);
         int side = 128;
         double half = world.side() / 2, step = world.side() / side;
         ContinentalMap.Sample c = new ContinentalMap.Sample();
         BaseElevationMap.Sample e = new BaseElevationMap.Sample();
         HeightSample u = new HeightSample();
-        ProvinceMap.Sample prov = new ProvinceMap.Sample();
         Map<Long, int[]> owned = new HashMap<>();
-        int land = 0, belt = 0, strong = 0, high = 0, highBelt = 0, range = 0, rangeBelt = 0;
+        int land = 0, belt = 0, strong = 0, high = 0, highBelt = 0;
         int nonzero = 0, raised = 0, lowered = 0;
         for (int i = 0; i < side; i++)
             for (int j = 0; j < side; j++) {
@@ -175,11 +160,6 @@ public final class PlateCheck {
                     high++;
                     if (p.belt > 0) highBelt++;
                 }
-                provinces.sample(x, z, false, prov);
-                if (prov.type.id.equals("range")) {
-                    range++;
-                    if (p.belt > 0) rangeBelt++;
-                }
                 plates.uplift(x, z, u);
                 if (Math.abs(u.height) > 0.02) nonzero++;
                 if (u.height > 0.02) raised++;
@@ -195,25 +175,16 @@ public final class PlateCheck {
         double mean = 0, sq = 0;
         for (double v : sizes) mean += v / sizes.size();
         for (double v : sizes) sq += (v - mean) * (v - mean) / sizes.size();
-        int centres = 0, centred = 0;
-        for (ProvinceMap.Type t : provinces.def.types)
-            if (t.id.equals("range"))
-                for (double[] p : provinces.centres(t)) {
-                    centres++;
-                    if (p[2] >= provinces.tectonicThreshold()) centred++;
-                }
         return new double[] {
             big,
             Math.sqrt(sq) / mean,
             100.0 * belt / land,
             100.0 * strong / land,
             high == 0 ? 100 : 100.0 * highBelt / high,
-            range == 0 ? 100 : 100.0 * rangeBelt / range,
             100.0 * nonzero / land,
             100.0 * raised / land,
             100.0 * lowered / land,
-            100.0 * high / land,
-            centres == 0 ? 100 : 100.0 * centred / centres
+            100.0 * high / land
         };
     }
 }
