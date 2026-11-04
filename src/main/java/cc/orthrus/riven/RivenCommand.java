@@ -59,11 +59,10 @@ final class RivenCommand extends CommandBase {
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Riven biomes: %d riven:, %d of 256 biome IDs used, %d free; provider overworld biomes withheld: %s",
+                                "Riven biomes: %d riven:, %d of 256 biome IDs used, %d free",
                                 RivenBiomes.list().size(),
                                 used,
-                                256 - used,
-                                Riven.withholdProviderBiomes && BiomeProvision.active())));
+                                256 - used)));
     }
 
     /** The world's recorded definitions against what the current layers would resolve. */
@@ -131,13 +130,9 @@ final class RivenCommand extends CommandBase {
                             }
                         continue;
                     }
-                    // A riven: biome, or a legacy look such as biomesoplenty:woodland.
                     net.minecraft.world.biome.Biome biome = provider.biome(sample, x, z);
-                    boolean reported =
-                            biome.getRegistryName() != null
-                                    && biome.getRegistryName().toString().equals(name);
-                    if (reported
-                            || BiomeProvision.lookName(provider.look(sample, x, z)).equals(name)) {
+                    if (biome.getRegistryName() != null
+                            && biome.getRegistryName().toString().equals(name)) {
                         sender.sendMessage(
                                 new TextComponentString(
                                         String.format(
@@ -157,7 +152,7 @@ final class RivenCommand extends CommandBase {
 
     /**
      * Tree parity around the sender: the preview's trunks and crowns against the logs and leaves
-     * native population placed, per block, over columns whose cubes are loaded; then each site,
+     * native cubes hold, per block, over columns whose cubes are loaded; then each site,
      * grown when every log of its tree stands in the world.
      */
     private static void trees(ICommandSender sender, World world, String[] args)
@@ -341,7 +336,7 @@ final class RivenCommand extends CommandBase {
     }
 
     /**
-     * One column through both generation paths: the native column's runs, habitat key and look
+     * One column through both generation paths: the native column's runs, habitat key and biome
      * against the preview sample's, and the preview against the world near the ground.
      */
     private static void column(ICommandSender sender, World world, int x, int z) {
@@ -357,16 +352,14 @@ final class RivenCommand extends CommandBase {
         out.append(
                 String.format(
                         Locale.ROOT,
-                        "Riven column %d %d: surface=%d key native=%s sample=%s; climate native=%d sample=%d; look native=%s sample=%s",
+                        "Riven column %d %d: surface=%d key native=%s sample=%s; biome native=%s sample=%s",
                         x,
                         z,
                         surface,
                         native_.key(index),
                         cc.orthrus.riven.worldgen.Habitats.key(sample),
-                        native_.climate(index),
-                        cc.orthrus.riven.worldgen.Habitats.climate(sample),
-                        provider.look(native_, index, x, z).getRegistryName(),
-                        provider.look(sample, x, z).getRegistryName()));
+                        provider.biome(native_, index, x, z).getRegistryName(),
+                        provider.biome(sample, x, z).getRegistryName()));
         sender.sendMessage(new TextComponentString(out.toString()));
         cc.orthrus.riven.worldgen.TerrainBlock[] line =
                 new cc.orthrus.riven.worldgen.TerrainBlock[16];
@@ -394,15 +387,6 @@ final class RivenCommand extends CommandBase {
                                                 assembled.subsoilSetting()))));
         TreeSites sites = RivenWorldType.trees(world);
         TreeSites.Recorder preview = sites == null ? null : sites.previewColumn(x, z);
-        net.minecraft.world.biome.Biome nativeLook = provider.look(native_, index, x, z),
-                sampleLook = provider.look(sample, x, z);
-        sender.sendMessage(
-                new TextComponentString(
-                        "  looks native="
-                                + BiomeProvision.lookName(nativeLook)
-                                + " sample="
-                                + BiomeProvision.lookName(sampleLook)
-                                + (nativeLook == sampleLook ? " (same)" : " (DIFFERENT)")));
         for (int y = surface - 5; y <= surface + 1; y++) {
             native_.cube(index, Math.floorDiv(y, 16) * 16, line);
             int run = assembled.run(y);

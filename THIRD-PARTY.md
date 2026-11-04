@@ -45,7 +45,6 @@ where used.
 | Runtime dependencies | `runtime.lock.json` | Cleanroom, Distant Horizons (LGPL), Fugue, Scalar Legacy and Minecraft keep their own terms |
 | GregTech CE Unofficial (optional runtime dependency, compile-only) | `dev/pins/gregtech-1.12.2-2.8.10-beta.jar`, called from `supersymmetry/riven/GregTechOres.java`; `riven-ores.json` names its overworld veins' minerals and layer roles (facts, no copied files or code) | LGPL-3.0; not bundled, redistributed or modified |
 | ZenScript 4.1.20.700 (CraftTweaker, compile-only) | `dev/pins/ZenScript-4.1.20.700.jar` (`CraftTweaker2:ZenScript` from maven.blamejared.com, the version GTCEu builds with); its annotations are on GTCEu's material classes, which `content/GregTechMaterials.java` builds | MIT; not bundled, redistributed or modified |
-| Biomes O' Plenty (optional runtime dependency, compile-only) | `dev/pins/BiomesOPlenty-1.12.2-7.0.1.2445-universal.jar`, called from `supersymmetry/riven/BopDecoration.java` | CC BY-NC-ND 4.0; not bundled, redistributed or modified |
 
 When distributing a Riven binary, ship the matching `*-sources.jar`; it carries the MPL-covered
 source and every packaged license.

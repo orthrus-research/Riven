@@ -121,9 +121,7 @@ final class ColumnReport {
                                 climate.moistureBand,
                                 climate.region,
                                 world.getBiome(surface).getRegistryName(),
-                                provider.biome(terrain, x, z).getRegistryName()
-                                        + " look="
-                                        + BiomeProvision.lookName(provider.look(terrain, x, z)),
+                                provider.biome(terrain, x, z).getRegistryName(),
                                 world.getBlockState(surface).getBlock().getRegistryName(),
                                 Long.toUnsignedString(plate.plateId, 16),
                                 plate.boundaryDistance,

@@ -27,8 +27,6 @@ dependencies {
     compileOnly 'com.google.errorprone:error_prone_annotations:2.41.0'
     modCompileOnly files(providers.gradleProperty('rivenCubicArtifact')
         .getOrElse('dev/pins/Cubature-cleanroom.jar'))
-    // Optional decoration provider; compiled against, never bundled (runtime.lock.json pins it).
-    modCompileOnly files('dev/pins/BiomesOPlenty-1.12.2-7.0.1.2445-universal.jar')
     // Optional ore catalogue provider; compiled against, never bundled (runtime.lock.json pins it).
     modCompileOnly files('dev/pins/gregtech-1.12.2-2.8.10-beta.jar')
     // ZenScript's annotations, which GTCEu's material classes carry; compiled against, never

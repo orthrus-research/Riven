@@ -596,23 +596,6 @@ vanilla table in `riven-biomes.json`. Registering a curated subset as real biome
 Native chunk biomes, biome queries and the DH preview all resolve through
 `Habitats.at(TerrainMap.Sample)` via `NativeColumns`. The crust floor is at Y -512 (since terrain-v72, 400 blocks under the lowest surface for geology, ore and caves); sea level is Y63 with still water through Y62.
 
-**Decoration provider** (prototype; `riven-bop.json`,
-`BiomeProvision`, `BopLooks`, `BopDecoration`):
-with Biomes O' Plenty loaded, a column's biome comes from an explicit override for its habitat key
-(highlands; coasts and water by temperature core after `#`; river mouths), else inland from BoP's
-own climate table: Riven's temperature and moisture map onto BoP's 9 x 12 grid and pick by BoP's
-weights (vanilla biomes included, fantasy and terrain-dependent biomes excluded), one pick per
-warped 1.5 km variety cell, with edge biomes (foothills, forest edges) along borders between
-differing picks. Since terrain-v84 that pick is the column's legacy look, never the biome it reports (see Riven biomes): BoP's overworld biomes are withheld from the registry and Riven builds them itself, unregistered, in BoP's registration order (`BopLooks`, `riven-compat-biomesoplenty.json`), so BoP's climate table is rebuilt exactly. Riven decides every block, soil included (Ground
-cover): since terrain-v116 no look's top, filler or surface routine changes it, where they had
-changed 60-69% of Riven's soil-topped columns (the census behind terrain-v115); the soils
-they had supplied are Riven's own crust rows.
-Since terrain-v123 no biome decorator runs in a Riven world, and the looks decide nothing placed
-(Population, below).
-`runtime.py play --tour
-tools/tours/standard-8675309.json` captures nine labeled views and closes the client; prepare
-tour instances with `--capture-ticks 900`, since decorated chunks take longer to arrive.
-
 **Population** (population-v1, terrain-v123, `riven-population.json`, `FirstAnimals`): Riven's own
 decorator, which adds what a chunk holds once its cubes exist and writes no block: a chunk column's
 first animals. Groups are drawn while a draw falls under `groupChance` (0.1, vanilla's), at most
@@ -632,9 +615,13 @@ found by origin, creatures without one) and counts what population has done sinc
 started (cubes, members in them, fitting, spawned, refused); `/riven digest` also writes the digested
 chunk columns' animals by origin with what they keep for life. Instances keep animals off for
 terrain captures (`spawn-animals=false`, which removes every animal on its first tick); prepare with
-`--spawn-animals` to see them.
+`--spawn-animals` to see them. `runtime.py play --tour
+tools/tours/standard-8675309.json` captures nine labeled views and closes the client; prepare
+tour instances with `--capture-ticks 900`, since populated chunks take longer to arrive.
+`tools/tours/separation-2485331.json` runs `/riven cover`, `/riven trees`, `/riven animals` and
+`/riven digest` at seven stops of seed 2485331 at 32 km (prepare with `--scale 4`).
 
-**Riven biomes** (prototype, terrain-v84, `riven-biome-registry.json`, `RivenBiomeTable`, `RivenBiomes`, `RivenBiomeTypes`): every column reports one of 61 `riven:` biomes, chosen from its habitat key: 30 inland by climate region and calm elevation (lowland for LOW and MID, highland for HIGH), 10 rugged by temperature band (hills, peaks), 13 coast and water biomes and 8 river mouths. Each extends the vanilla class of its kind (snow, taiga, plains, forest, savanna, jungle, desert, hills, mesa, beach, stone beach, swamp, ocean, river), which Demonica reads as its shader category and other mods test with `instanceof`; names avoid substrings shader packs misread ("end", "ice", "nether"); temperature, rainfall and precipitation drive vanilla weather; grass and foliage colors follow the vanilla color maps unless the world's mappings override them. They empty their decorators and surface hooks: Riven places every block itself. Every surface biome names a spawn table (`spawns`); a kind of mob its table lists (creature, monster, ambient) replaces its parent class's list, and the surface tables list creatures, starting as vanilla's lists for each parent class (savannas without llamas, as Riven's biomes keep vanilla's base height), which Population and natural spawning both read. Spawn search uses the 40 inland biomes. Underground, cubes report the 12 realm and depth biomes below (73 `riven:` biomes in all). With BoP loaded, Riven withholds its 68 overworld biomes through BoP's own `biome_ids.json` switch before BoP's preInit (`config/riven.cfg` `withholdProviderBiomes`, default on) and hides BoP's world type; a Riven world with BoP then uses 140 of 256 biome IDs (62 vanilla, 5 BoP Nether, 73 Riven). `/riven biomes` lists them with IDs, parents and categories; `tools/checks/BiomeTableCheck.java` proves all 163 habitat keys select a biome.
+**Riven biomes** (prototype, terrain-v84, `riven-biome-registry.json`, `RivenBiomeTable`, `RivenBiomes`, `RivenBiomeTypes`): every column reports one of 61 `riven:` biomes, chosen from its habitat key: 30 inland by climate region and calm elevation (lowland for LOW and MID, highland for HIGH), 10 rugged by temperature band (hills, peaks), 13 coast and water biomes and 8 river mouths. Each extends the vanilla class of its kind (snow, taiga, plains, forest, savanna, jungle, desert, hills, mesa, beach, stone beach, swamp, ocean, river), which Demonica reads as its shader category and other mods test with `instanceof`; names avoid substrings shader packs misread ("end", "ice", "nether"); temperature, rainfall and precipitation drive vanilla weather; grass and foliage colors follow the vanilla color maps unless the world's mappings override them. They empty their decorators and surface hooks: Riven places every block itself. Every surface biome names a spawn table (`spawns`); a kind of mob its table lists (creature, monster, ambient) replaces its parent class's list, and the surface tables list creatures, starting as vanilla's lists for each parent class (savannas without llamas, as Riven's biomes keep vanilla's base height), which Population and natural spawning both read. Spawn search uses the 40 inland biomes. Underground, cubes report the 12 realm and depth biomes below (73 `riven:` biomes in all). A Riven world uses 135 of 256 biome IDs (62 vanilla, 73 Riven). `/riven biomes` lists them with IDs, parents and categories; `tools/checks/BiomeTableCheck.java` proves all 163 habitat keys select a biome.
 
 **Resource mappings** (prototype, mappings-v1, `riven-mappings.json`, `Mappings`, `RivenNetwork`): roles name materials (`wood.oak.log`), each an ordered list of block states whose first loaded entry wins; layers add or replace roles and riven: biome colors: Riven's defaults (Riven's own and vanilla blocks; every wood's log and leaves), integration layers for loaded mods, then pack layers in `config/riven/mappings/*.json` by file name. A world resolves them once, when it is created, into `data/riven/definitions.json` with a SHA-256 fingerprint, and loads that snapshot for life; each joining client receives its fingerprint and biome colors in one packet. `/riven mappings` compares the world's snapshot with the current layers.
 
@@ -660,8 +647,7 @@ sites block by block.
 
 **Tree sites** (prototype, trees-v3, terrain-v93, `riven-trees.json`, `TreeSites`, `TreeShapes`):
 Riven decides where trees stand and draws every tree itself, so the distant preview shows exactly the
-trees that load; neither the provider's nor the vanilla decorator's tree or huge mushroom stage runs
-in a Riven world.
+trees that load; no biome decorator runs in a Riven world.
 Three layers of candidate cells are visited in order: emergent (16-block cells, trunks 9 apart),
 canopy (6, 4) and understory (5, 3). A candidate stands down within its layer's spacing of a
 higher-priority candidate of its layer or of a valid site of an earlier layer, so understory trees
@@ -686,14 +672,11 @@ cells up to 2 blocks wide, and over coarser cells the stand's most covering laye
 its mean crown heights where the layers' combined cover reaches one half. 38 of the 61 surface
 biomes grow trees; peaks, deserts, polar ground, salt flats, rocky shores and open water do not.
 `/riven trees [radius]` compares preview and world block by block and counts sites whose every log
-stands; `/riven find <biome>` names the nearest column of a riven: biome or a look.
+stands; `/riven find <biome>` names the nearest column of a riven: biome.
 
 **Ground cover** (prototype, ground-cover-v2, terrain-v99, `riven-ground-cover.json`,
-`GroundCover`): Riven places the plants and decals on the ground itself; neither the provider's nor
-the vanilla decorator's grass, flower, dead bush, small mushroom, reed or lily-pad stage runs
-or its cactus or pumpkins (terrain-v121); since terrain-v120 the provider's lily-pad stage (its
-reeds, lilies, algae, coral and kelp) does not run either, as Riven's shallows and underwater plants
-take the water. Vanilla cactus stands one to three high in deserts and badlands, at most one per
+`GroundCover`): Riven places the plants and decals on the ground itself, on land and in and under
+water (shallows and underwater plants); no biome decorator runs in a Riven world. Vanilla cactus stands one to three high in deserts and badlands, at most one per
 4-block cell inside its inner square so no two stand side by side (`cell`), and keeps its item in
 Riven worlds as the Common Reed keeps sugar cane; pumpkins turn up rarely in meadows and
 grassland. A column's cover is a pure function of seed, its riven: biome and the
@@ -921,7 +904,7 @@ hold even where a void cuts down to the formation below; rock tests (solubility,
   heights builds only the cave lattice levels it reads, and `CellMemo` gives each cell two slots
   (a pair of cells that shared one slot recomputed on every alternate read).
 - Every block cave decoration places is Riven content (below) or vanilla's; none comes from
-  Biomes O' Plenty.
+  another mod.
 
 On seed 8675309 (4 km, 32-block grid) 81% of land columns carry some decoration (84% before
 terrain-v87, when dry, frozen and wet skins also took roots and litter; `GeologySection decor`

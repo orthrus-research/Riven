@@ -353,12 +353,12 @@ final class TreeSites {
         for (int j = 0; j < w; j++)
             for (int i = 0; i < w; i++) {
                 biomes.maps.terrain.sample(x + i, z + j, s.sample);
-                Biome look = biomes.look(s.sample, x + i, z + j);
+
                 Recorder r = s.recorder;
                 r.reset();
                 TerrainColumn.preview(
                         s.sample,
-                        look,
+                        biomes.biome(s.sample, x + i, z + j),
                         biomes.maps.columns.assembler(),
                         heights,
                         biomes.maps.boulders,

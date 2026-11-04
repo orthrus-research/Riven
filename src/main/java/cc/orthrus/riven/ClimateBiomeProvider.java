@@ -7,7 +7,6 @@ import cc.orthrus.riven.worldgen.TerrainMap;
 import cc.orthrus.riven.worldgen.WorldGenerationContext;
 import cc.orthrus.riven.worldgen.WorldScale;
 
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
@@ -15,33 +14,15 @@ import net.minecraft.world.biome.BiomeProvider;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 /** Owns biome selection at world construction, before columns and cubes are generated. */
 final class ClimateBiomeProvider extends BiomeProvider {
-    /** Vanilla habitat biomes: the legacy look of every column without the decoration provider. */
-    private static final Map<String, Biome> PALETTE = create();
-
-    private static Map<String, Biome> create() {
-        Map<String, Biome> result = new LinkedHashMap<>();
-        for (String path : Habitats.paths()) {
-            ResourceLocation id = new ResourceLocation("minecraft", path);
-            if (!Biome.REGISTRY.containsKey(id))
-                throw new IllegalStateException("Missing habitat biome: " + id);
-            result.put(path, Biome.REGISTRY.getObject(id));
-        }
-        return Collections.unmodifiableMap(result);
-    }
-
     private static final Logger LOG = LogManager.getLogger("riven");
 
     final GenerationMaps maps;
     final WorldGenerationContext context;
-    final BiomeProvision provision;
     private final List<Biome> spawn;
 
     ClimateBiomeProvider(long seed, WorldScale scale) {
@@ -49,18 +30,8 @@ final class ClimateBiomeProvider extends BiomeProvider {
         maps = context.maps;
         LOG.info("Riven land: {}", maps.land);
         LOG.info("Riven provinces: {}", maps.provinces.summary());
-        provision = new BiomeProvision(seed);
         // Spawn search stays on land: the biomes inland habitat keys report.
         spawn = RivenBiomes.inland();
-    }
-
-    /** Vanilla habitat biome of a complete sample, without any provider. */
-    static Biome vanillaLook(TerrainMap.Sample sample) {
-        return vanillaLook(Habitats.at(sample));
-    }
-
-    static Biome vanillaLook(String habitat) {
-        return PALETTE.get(habitat);
     }
 
     /** The riven: biome a complete sample reports. */
@@ -71,22 +42,6 @@ final class ClimateBiomeProvider extends BiomeProvider {
     /** The riven: biome one column of a resolved chunk column reports. */
     Biome biome(NativeColumns.Column column, int index, int x, int z) {
         return RivenBiomes.select(column.key(index));
-    }
-
-    /**
-     * The legacy look of a complete sample at a column: the provider's pick, else the vanilla
-     * habitat. It lends decoration until Riven's feature families replace it; it is never
-     * reported, and Riven decides every soil itself.
-     */
-    Biome look(TerrainMap.Sample sample, int x, int z) {
-        Biome provided = provision.biome(Habitats.key(sample), Habitats.climate(sample), x, z);
-        return provided != null ? provided : vanillaLook(Habitats.at(sample));
-    }
-
-    /** The legacy look of one column of a resolved chunk column. */
-    Biome look(NativeColumns.Column column, int index, int x, int z) {
-        Biome provided = provision.biome(column.key(index), column.climate(index), x, z);
-        return provided != null ? provided : vanillaLook(column.habitat(index));
     }
 
     static boolean inWorld(long x, long z) {

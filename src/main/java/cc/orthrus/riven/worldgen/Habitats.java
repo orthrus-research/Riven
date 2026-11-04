@@ -63,10 +63,10 @@ public final class Habitats {
     }
 
     /**
-     * The decoration-provider key of the final logical biome: {@code MOUTH/<name>} for a river
+     * The habitat key of the final logical biome: {@code MOUTH/<name>} for a river
      * mouth, the coastal or water key of the vanilla table (with {@code BEACH_COLD} and
      * {@code RIVER_FROZEN}), or {@code <REGION>/<LOW|MID|HIGH>/<calm|rugged>} inland, from the same
-     * region, level and rugged test as {@link #at}. A provider maps keys to its own biomes.
+     * region, level and rugged test as {@link #at}. RivenBiomeTable maps each key to its riven: biome.
      */
     public static String key(TerrainMap.Sample sample) {
         int id = Biomes.resolve(sample);
@@ -93,24 +93,6 @@ public final class Habitats {
     }
 
     private static final String[] LEVELS = {"LOW", "MID", "HIGH"};
-
-    private static final JsonObject GRID =
-            Rules.load("riven-bop.json", 1).json.getAsJsonObject("climateGrid");
-    private static final double GRID_COLD = Rules.number(GRID, "coldestCelsius", -40, 10),
-            GRID_STEP = Rules.number(GRID, "celsiusPerStep", 1, 20),
-            GRID_WET = Rules.number(GRID, "wettestMoisture", 0, 1),
-            GRID_DRY = Rules.number(GRID, "driestMoisture", 0, 1);
-
-    /**
-     * A provider's climate grid cell (temperature 0-8 cold to hot, rainfall 0-11 wet to dry,
-     * code {@code temperature * 12 + rainfall}) from the column's continuous climate, so a provider
-     * can choose biomes by its own climate table.
-     */
-    public static int climate(TerrainMap.Sample sample) {
-        int t = (int) Math.floor((sample.climate.celsius - GRID_COLD) / GRID_STEP);
-        int r = (int) Math.floor((GRID_WET - sample.climate.moisture) / (GRID_WET - GRID_DRY) * 12);
-        return Math.max(0, Math.min(8, t)) * 12 + Math.max(0, Math.min(11, r));
-    }
 
     public static Set<String> paths() {
         Set<String> result = new LinkedHashSet<>();

@@ -121,8 +121,6 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         Generator(ClimateBiomeProvider biomes, World world) {
             this.biomes = biomes;
             this.world = world;
-            // Biomes O' Plenty, where loaded, keeps its own decoration out of the world.
-            if (BiomeProvision.active()) new BopDecoration(world.getWorldType());
             // The world's recorded definitions: resolved once, at creation, then loaded for life.
             snapshot = Mappings.load(world);
             trees = new TreeSites(world.getSeed(), biomes, HEIGHTS, snapshot);

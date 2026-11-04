@@ -220,8 +220,8 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   Since terrain-v123 Riven's population reads only inside its pregeneration box (the cubes above
   and below), where it had made about 2,000 synchronous reads a minute of PREFETCH flight.
 - **Riven owns reeds.** The vanilla decorator's reed stage, which placed no reed on Riven ground
-  where measured but made 61% of population's reads outside its box, does not run in Riven worlds,
-  and the provider's stands aside with the stages Riven owns. Ground cover places Riven's own Common
+  where measured but made 61% of population's reads outside its box, does not run in Riven worlds
+  (no biome decorator does, terrain-v123). Ground cover places Riven's own Common
   Reed, a cane block, at water margins in warm and temperate biomes. It grows on gravel and sandstone
   as well as grass, dirt and sand, where vanilla sugar cane would have fit about 40% of the margins.
   Each piece drops a sugar cane, so the item stays obtainable; planted, it grows vanilla sugar cane
@@ -330,28 +330,19 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
 - **Full worldgen ownership** (proposal "Riven full worldgen ownership", revision 2). Riven owns
   every placement in its worlds: its own `riven:` biomes, its own feature engine and shape models,
   and composable resource mappings that bind features to any installed mod's blocks, so the DH
-  preview draws the same models without extra LOD cost. BoP and other packs are block libraries,
-  bootstrapped on BoP until Riven's own assets and feature families replace them. Riven owns every
-  stage the looks decorated: every soil (`riven-surface.json`, terrain-v116), trees, huge
-  mushrooms, grass, flowers, dead bushes, mushrooms, reeds, the plants on and under water
-  (terrain-v120), cactus and pumpkins (terrain-v121); no BoP generator runs and BoP's terrain never
-  did. Riven's tree sites, ground cover, population and creature spawning run the same with or
-  without BoP (terrain-v122).
-  No biome decorator runs (terrain-v123): population is Riven's own, a chunk's first animals
+  preview draws the same models without extra LOD cost. Riven depends on no other mod for content:
+  it places every soil, tree, plant, reed, water plant, cactus and pumpkin itself, and Biomes O'
+  Plenty, which had lent decoration and blocks while Riven's own were made, has no role and no
+  code in Riven (terrain-v124). No biome decorator runs (terrain-v123): population is Riven's own, a chunk's first animals
   (`riven-population.json`), which writes no block and reads only the cube it spawns into and the
   cubes above and below, so no content depends on the order cubes populate in; terrain, water and
-  biome identity stay pure. BoP is optional, compiled against but never
-  bundled or modified (1.12.2-7.0.1.2445, CC BY-NC-ND 4.0, pinned in `runtime.lock.json`), and
-  Distant Horizons previews draw the same boulders, trees and ground cover as native cubes.
+  biome identity stay pure, and Distant Horizons previews draw the same boulders, trees and ground cover as native cubes.
 - **Per-world definitions.** Mapping layers (Riven defaults, integration layers for loaded mods,
   pack layers in `config/riven/mappings/`) resolve once, when a world is created, into its snapshot
   (`data/riven/definitions.json`); the world generates from that snapshot for life, and a small
   packet carries its client-side part (fingerprint, biome colors) to each joining player. Content
   is a pure function of seed and the world's recorded definitions; CI and the atlas use the
   packaged defaults.
-- **BoP's overworld biomes are withheld** from the registry by default whenever BoP is present
-  (BoP's own `biome_ids.json` switch, set during Riven's preInit; `withholdProviderBiomes` opts
-  out), and BoP's world type is hidden. BoP keeps its blocks, saplings and Nether biomes.
 
 ## Adopted 2026-10-23
 

@@ -22,8 +22,7 @@ public final class NativeColumns {
         private final int[] offsets, bottoms;
         private final TerrainBlock[] blocks;
         private final byte[] roles;
-        private final String[] habitats, keys;
-        private final byte[] climates;
+        private final String[] keys;
         private final OreMap ores;
         private final int[] oreOffsets, oreLo, oreHi;
         private final short[] oreDeposits;
@@ -37,9 +36,7 @@ public final class NativeColumns {
                 int[] bottoms,
                 TerrainBlock[] blocks,
                 byte[] roles,
-                String[] habitats,
                 String[] keys,
-                byte[] climates,
                 OreMap ores,
                 int[] oreOffsets,
                 int[] oreLo,
@@ -56,9 +53,7 @@ public final class NativeColumns {
             this.bottoms = bottoms;
             this.blocks = blocks;
             this.roles = roles;
-            this.habitats = habitats;
             this.keys = keys;
-            this.climates = climates;
             this.ores = ores;
             this.oreOffsets = oreOffsets;
             this.oreLo = oreLo;
@@ -112,11 +107,6 @@ public final class NativeColumns {
             return false;
         }
 
-        /** The provider climate grid cell ({@link Habitats#climate}) of a column. */
-        public int climate(int index) {
-            return climates[index];
-        }
-
         /** Writes the 16 blocks from cubeBottomY upward for one column into out. */
         public void cube(int index, int cubeBottomY, TerrainBlock[] out) {
             // A column's entries are its sorted runs, then a sentinel whose bottom is the
@@ -153,11 +143,7 @@ public final class NativeColumns {
             return run;
         }
 
-        public String habitat(int index) {
-            return habitats[index];
-        }
-
-        /** The decoration-provider key ({@link Habitats#key}) of a column. */
+        /** The habitat key ({@link Habitats#key}) of a column, which selects its riven: biome. */
         public String key(int index) {
             return keys[index];
         }
@@ -271,7 +257,7 @@ public final class NativeColumns {
      * The top of the highest non-air run of the column at (x, z), its ground or water over it: the
      * value {@code column(x >> 4, z >> 4).surface(index)} gives. A held chunk column answers;
      * otherwise this one column is resolved as {@link #build} resolves it (sampled, carved, its
-     * runs), without its ores, habitats or the other 255 columns. A tree site asks for every column
+     * runs), without its ores, habitat keys or the other 255 columns. A tree site asks for every column
      * its tree reaches, so neighbouring sites ask again; each thread keeps its recent answers.
      */
     public int surface(int x, int z) {
@@ -403,8 +389,7 @@ public final class NativeColumns {
         int[] offsets = new int[257], bottoms = new int[256 * 24];
         TerrainBlock[] blocks = new TerrainBlock[bottoms.length];
         byte[] roles = new byte[bottoms.length];
-        String[] habitats = new String[256], keys = new String[256];
-        byte[] climates = new byte[256];
+        String[] keys = new String[256];
         AssembledColumn assembled = new AssembledColumn();
         TerrainMap.Sample sample = new TerrainMap.Sample();
         OreMap.Bodies bodies = new OreMap.Bodies();
@@ -463,9 +448,7 @@ public final class NativeColumns {
                 bottoms[n] = c.topY();
                 roles[n] = Role.AIR.code();
                 blocks[n++] = TerrainBlock.AIR;
-                habitats[index] = Habitats.at(sample);
                 keys[index] = Habitats.key(sample);
-                climates[index] = (byte) Habitats.climate(sample);
                 int ground = ground(c);
                 minimumGround = Math.min(minimumGround, ground);
                 // Cell columns read their centre column (x and z of 2 within the cell).
@@ -495,9 +478,7 @@ public final class NativeColumns {
                 java.util.Arrays.copyOf(bottoms, n),
                 java.util.Arrays.copyOf(blocks, n),
                 java.util.Arrays.copyOf(roles, n),
-                habitats,
                 keys,
-                climates,
                 terrain.ores,
                 oreOffsets,
                 java.util.Arrays.copyOf(oreLo, ores),

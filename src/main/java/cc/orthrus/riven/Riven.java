@@ -10,14 +10,9 @@ import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
         modid = "riven",
         name = "Riven",
         version = "0.0.1",
-        // Before Biomes O' Plenty, so Riven withholds its overworld biomes before BoP registers
-        // them.
-        dependencies = "required-after:cubicchunks;before:biomesoplenty",
+        dependencies = "required-after:cubicchunks",
         acceptableRemoteVersions = "*")
 public final class Riven {
-    /** Whether Riven withholds the decoration provider's overworld biomes (config/riven.cfg). */
-    static boolean withholdProviderBiomes = true;
-
     @Mod.EventHandler
     public void construct(net.minecraftforge.fml.common.event.FMLConstructionEvent event) {
         // GTCEu posts its material events in its own preInit, which may run before Riven's.
@@ -30,12 +25,6 @@ public final class Riven {
         net.minecraftforge.common.config.Configuration config =
                 new net.minecraftforge.common.config.Configuration(
                         event.getSuggestedConfigurationFile());
-        withholdProviderBiomes =
-                config.getBoolean(
-                        "withholdProviderBiomes",
-                        "biomes",
-                        true,
-                        "Withhold Biomes O' Plenty's overworld biomes from the biome registry (BoP's own biome_ids.json switch). Riven reports its own riven: biomes; BoP keeps its blocks, saplings and Nether biomes. Applies to the whole installation: client and server must match.");
         PlayerEffects.enabled =
                 config.getBoolean(
                         "playerEffects",
@@ -43,8 +32,6 @@ public final class Riven {
                         true,
                         "Apply the subsurface climate's effects to players underground in Riven worlds. The effects themselves are in config/riven/player-effects.json (written from Riven's defaults on first run; /riven effects reload rereads it). Server side.");
         if (config.hasChanged()) config.save();
-        if (withholdProviderBiomes && BiomeProvision.active())
-            BopLooks.withhold(event.getModConfigurationDirectory(), event.getModLog());
         RivenNetwork.init();
         new RivenWorldType();
         cc.orthrus.riven.content.RivenContent.treeGrower(TreeGrowth::grow);
@@ -55,16 +42,13 @@ public final class Riven {
         org.apache.logging.log4j.Logger log = event.getModLog();
         log.info(
                 "Riven terrain-v{}: horizontal scale={}; seaLevel={}; highestOceanWater={};"
-                        + " baseTerrainPolicy={}; skewHillHeadingPolicy={}; decorationProvider={}"
-                        + " ({})",
+                        + " baseTerrainPolicy={}; skewHillHeadingPolicy={}",
                 cc.orthrus.riven.worldgen.TerrainMap.VERSION,
                 cc.orthrus.riven.worldgen.TerrainScale.HORIZONTAL,
                 cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT.seaLevel,
                 cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT.waterTopY,
                 cc.orthrus.riven.worldgen.BaseTerrainMap.configuredPolicy(),
-                cc.orthrus.riven.worldgen.HillTerrain.configuredHeadingPolicy(),
-                BiomeProvision.PROVIDER,
-                BiomeProvision.active() ? "loaded" : "absent");
+                cc.orthrus.riven.worldgen.HillTerrain.configuredHeadingPolicy());
         for (cc.orthrus.riven.worldgen.Rules definition :
                 cc.orthrus.riven.worldgen.Definitions.loadAll())
             log.info(
@@ -76,8 +60,6 @@ public final class Riven {
 
     @Mod.EventHandler
     public void postInit(net.minecraftforge.fml.common.event.FMLPostInitializationEvent event) {
-        if (withholdProviderBiomes && BiomeProvision.active())
-            BopLooks.hideWorldType(org.apache.logging.log4j.LogManager.getLogger("riven"));
         // Every block is registered by now: resolve the catalogue and prove it at startup.
         org.apache.logging.log4j.LogManager.getLogger("riven")
                 .info(TerrainColumn.catalogueSummary());

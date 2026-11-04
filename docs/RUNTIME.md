@@ -210,9 +210,7 @@ the current runtime.
 
 Riven worlds need Riven on client and server alike: chunks report `riven:` biomes, and each
 joining client receives the world's definitions packet (fingerprint, biome colors) that DH,
-Celeritas and shader packs read. `config/riven.cfg` `withholdProviderBiomes` (default true) keeps
-BoP's 68 overworld biomes out of the registry through BoP's own `biome_ids.json`; client and server
-must agree, as Forge syncs the biome registry on join.
+Celeritas and shader packs read.
 
 ## Launching
 
