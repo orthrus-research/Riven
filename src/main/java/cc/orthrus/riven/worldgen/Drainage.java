@@ -360,8 +360,8 @@ final class Drainage {
     /** Heap of networks past which preparation declines (demand still builds them). */
     private final long preparedBytes;
 
-    private final ThreadLocal<ContinentalOutlineMap.TrunkScratch> query =
-            ThreadLocal.withInitial(() -> new ContinentalOutlineMap.TrunkScratch(0));
+    private final ThreadLocal<ContinentalOutlineMap.CellScratch> query =
+            ThreadLocal.withInitial(() -> new ContinentalOutlineMap.CellScratch());
 
     /** Builds the hydrology plans of owner cells, given as (x, z) pairs, before a scan reads them. */
     interface Plans {
@@ -484,7 +484,7 @@ final class Drainage {
      * at {@code mouthRadius}).
      */
     Hit nearest(double x, double z, Hit wet, Hit near, double mouthRadius, double[] mouth) {
-        ContinentalOutlineMap.TrunkScratch q = query.get();
+        ContinentalOutlineMap.CellScratch q = query.get();
         int cells = outline.continentCells(x, z, reach, q);
         prepare(q, cells);
         double wetScore = Double.POSITIVE_INFINITY, nearScore = Double.POSITIVE_INFINITY;
@@ -614,7 +614,7 @@ final class Drainage {
      * capped at {@code clearance}.
      */
     double clearance(double x, double z, double clearance) {
-        ContinentalOutlineMap.TrunkScratch q = query.get();
+        ContinentalOutlineMap.CellScratch q = query.get();
         int cells = outline.continentCells(x, z, clearance + reach, q);
         prepare(q, cells);
         for (int k = 0; k < cells; k++) {
@@ -671,7 +671,7 @@ final class Drainage {
 
     /** Tools: the continents whose support reaches a column, as cell pairs (x, z). */
     long[] continents(double x, double z) {
-        ContinentalOutlineMap.TrunkScratch q = query.get();
+        ContinentalOutlineMap.CellScratch q = query.get();
         int n = outline.continentCells(x, z, 0, q);
         return Arrays.copyOf(q.cells, 2 * n);
     }
@@ -708,7 +708,7 @@ final class Drainage {
      * Builds the networks of a query's continent cells together when more than one is missing,
      * so a column waits for the slowest build instead of their sum (timing only).
      */
-    private void prepare(ContinentalOutlineMap.TrunkScratch q, int cells) {
+    private void prepare(ContinentalOutlineMap.CellScratch q, int cells) {
         int missing = 0;
         for (int k = 0; k < cells; k++)
             if (!memo.holds((int) q.cells[2 * k], (int) q.cells[2 * k + 1])) missing++;
@@ -755,7 +755,7 @@ final class Drainage {
                     held[1] += n.bytes;
                 });
         if (held[0] > memo.capacity() / 2 || held[1] > preparedBytes) return false;
-        ContinentalOutlineMap.TrunkScratch q = query.get();
+        ContinentalOutlineMap.CellScratch q = query.get();
         int cells = outline.continentCells(x, z, margin, q);
         long[] pairs = Arrays.copyOf(q.cells, 2 * cells);
         pool.forEach(cells, k -> network(pairs[2 * k], pairs[2 * k + 1]));
@@ -785,7 +785,7 @@ final class Drainage {
     }
 
     private Network build(long gx, long gz) {
-        ContinentalOutlineMap.TrunkScratch q = new ContinentalOutlineMap.TrunkScratch(0);
+        ContinentalOutlineMap.CellScratch q = new ContinentalOutlineMap.CellScratch();
         double[] box = new double[4];
         long owner = outline.continentBounds(gx, gz, q, box);
         // The support is a loose bound: a coarse scan finds the continent's own land, and the fine

@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 18,
+  "revision": 19,
   "variationSeed": "0x434f4e54494e3331",
   "family": "PER_CONTINENT",
   "familyWeights": {
@@ -40,7 +40,16 @@
     "shelterReach": 450,
     "shelterFloor": 0.2,
     "shelterConcavity": 0.8,
-    "straitBlend": 800
+    "straitBlend": 800,
+    "warpOctaves": 0,
+    "warpLacunarity": 2.3,
+    "warpGain": 0.5,
+    "macroGain": 2,
+    "macroShift": 0,
+    "styleWavelength": 2500,
+    "styleMin": 1,
+    "styleMax": 1,
+    "styleContrast": 1
   },
   "skeleton": {
     "rangeShare": 0.75,
@@ -91,7 +100,8 @@
     "straitBlend (v59): where the union is sea, varied continents meet through a polynomial smooth maximum of width straitBlend, never rising above half the hard depth, so a strait floor is rounded instead of creased along its midline (the creases drew straight deep lines between continents). Candidates are visited nearest first and skipped when their support bound cannot reach the union (or, at sea, come within straitBlend of it); skipping changes no result. Bays become a per-continent draw (bayProbability, 0 by default); where one exists its legacy shelter still applies.",
     "skeleton (revisions 13-14): a rangeShare of built mainland continents carries a crest in its shape frame (Spine continents along their six nodes, others a three-point line crestLengthInRadii long, bent up to crestBendInRadii), strength strengthMin..strengthMax times its size. A column's crest weight is that strength, tapered over the outer quarter of the crest, times a smooth falloff over crestHalfWidthInRadii (wandering 20% along the crest, distance jittered 8%), faded to zero over coastClearInRadii scaled radii from the coast. A column takes the largest crest of any continent in its window, each faded by its own size, so merged land has no seam where ownership switches. Base elevation reads it as uplift (riven-base-elevation.json crestWeight).",
     "Bays cut only their own continent before the union (kernel v3): a neighbor may refill one, closing it into an inland sea, and a bay never deepens existing sea.",
-    "land (revision 18, LandShare): a world's land share is the part of its square (8 km times the layout scale, centred on the origin) whose outline land weight is above zero, measured at world creation on measureSide x measureSide cell centres. Attempt 0 draws the outline from its own seed as before; attempt k salts only that seed, so a redraw changes nothing else in the world. The first attempt inside band is kept; after attempts, the one closest to the band. The mean comes from the draw: radius 1,550 (0.52 spacing, 1,350 before; stratifiedOccupancy 4 already fills every cell) puts it at 50%, a target the atlas measures, not a value read here."
+    "land (revision 18, LandShare): a world's land share is the part of its square (8 km times the layout scale, centred on the origin) whose outline land weight is above zero, measured at world creation on measureSide x measureSide cell centres. Attempt 0 draws the outline from its own seed as before; attempt k salts only that seed, so a redraw changes nothing else in the world. The first attempt inside band is kept; after attempts, the one closest to the band. The mean comes from the draw: radius 1,550 (0.52 spacing, 1,350 before; stratifiedOccupancy 4 already fills every cell) puts it at 50%, a target the atlas measures, not a value read here.",
+    "Coast shape knobs (revision 19), all neutral here, which reproduces revision 18 exactly: warpOctaves adds shear pairs above the base warp (wavelength divided by warpLacunarity^k, amplitude times warpGain^k, each in a golden-angle rotated frame), so the warp stays fold-free and invertible with det(J) = 1; macroGain is the amplitude growth per layout coast octave (2 before; 2.3 keeps relative roughness the same at every scale); macroShift adds layout octaves beyond log(layout) / log(2.3); the coast style is one world field (styleWavelength, layout-scaled) faded from styleMin on calm stretches to styleMax on rugged ones by styleContrast, scaling the base and layout coast octaves while the two small octaves take at most 1. Every bound includes styleMax, so a larger value can exceed the candidate reach and fail at load."
   ],
   "shoaling": {
     "wavelengthBlocks": 1400,

@@ -627,6 +627,31 @@ public final class ContinentalKernels {
         public final double roughnessMin, roughnessMax;
         public final double bayProbability, shelterReach, shelterFloor, shelterConcavity;
         public final double straitBlend;
+
+        /**
+         * Warp octaves above the base shear pair: each is a shear pair in its own rotated frame,
+         * at the base wavelength divided by lacunarity^k and amplitude times gain^k.
+         */
+        public final int warpOctaves;
+
+        public final double warpLacunarity, warpGain;
+
+        /**
+         * Amplitude growth per layout coast octave (each 2.3 times the last's wavelength): 2.3
+         * keeps relative roughness the same at every scale, lower smooths the large scales.
+         */
+        public final double macroGain;
+
+        /** Layout octaves added beyond log(layout) / log(2.3): bays and peninsulas at map scale. */
+        public final double macroShift;
+
+        /**
+         * Coast style: a smooth world field (wavelength styleWavelength, layout blocks) that
+         * multiplies coast detail from styleMin on calm stretches to styleMax on rugged ones;
+         * styleContrast spreads the field's values toward both ends.
+         */
+        public final double styleWavelength, styleMin, styleMax, styleContrast;
+
         final double[] weights;
 
         /** Null: no continent carries a crest. */
@@ -646,6 +671,15 @@ public final class ContinentalKernels {
                 double shelterFloor,
                 double shelterConcavity,
                 double straitBlend,
+                int warpOctaves,
+                double warpLacunarity,
+                double warpGain,
+                double macroGain,
+                double macroShift,
+                double styleWavelength,
+                double styleMin,
+                double styleMax,
+                double styleContrast,
                 double[] familyWeights,
                 Skeleton skeleton,
                 double layout) {
@@ -664,6 +698,15 @@ public final class ContinentalKernels {
                             && shelterFloor < shelterConcavity
                             && shelterConcavity <= 4)
                     || !positive(straitBlend)
+                    || warpOctaves < 0
+                    || warpOctaves > 4
+                    || !(warpLacunarity >= 1.5 && warpLacunarity <= 4)
+                    || !unit(warpGain)
+                    || !(macroGain >= 1 && macroGain <= 4)
+                    || !(macroShift >= 0 && macroShift <= 3)
+                    || !positive(styleWavelength)
+                    || !(styleMin >= 0 && styleMin <= styleMax && styleMax <= 4)
+                    || !(styleContrast > 0 && styleContrast <= 8)
                     || familyWeights.length != n) throw new IllegalArgumentException("variation");
             double total = 0;
             for (int i = 0; i < n; i++) {
@@ -685,16 +728,26 @@ public final class ContinentalKernels {
             this.shelterFloor = shelterFloor;
             this.shelterConcavity = shelterConcavity;
             this.straitBlend = straitBlend;
+            this.warpOctaves = warpOctaves;
+            this.warpLacunarity = warpLacunarity;
+            this.warpGain = warpGain;
+            this.macroGain = macroGain;
+            this.macroShift = macroShift;
+            this.styleWavelength = styleWavelength;
+            this.styleMin = styleMin;
+            this.styleMax = styleMax;
+            this.styleContrast = styleContrast;
             this.weights = familyWeights.clone();
             this.skeleton = skeleton;
             if (!(layout >= .25 && layout <= 16)) throw new IllegalArgumentException("layout");
-            // Coast detail is self-similar across layouts: octave k (wavelength 2.3^k detail
-            // wavelengths, amplitude 2^k) fades in as the layout passes 2.3^(k-1), so scale 1
-            // adds nothing and larger worlds keep their bays and headlands at map scale.
-            double octaves = log(layout) / log(2.3), bound = 0;
+            // Coast detail is self-similar across layouts: octave k (wavelength 2.3^(k+1) detail
+            // wavelengths, amplitude macroGain^(k+1)) fades in as the layout passes 2.3^k, so
+            // scale 1 adds nothing and larger worlds keep their bays and headlands at map scale.
+            double octaves = log(layout) / log(2.3) + macroShift, bound = 0;
             for (int k = 0; k < macro.length; k++) {
                 macro[k] = clamp(octaves - k, 0, 1);
-                bound += macro[k] * (2 << k);
+                macroAmplitude[k] = StrictMath.pow(macroGain, k + 1);
+                bound += macro[k] * macroAmplitude[k];
                 macroScale[k] = StrictMath.pow(2.3, k + 1);
                 double a = .6 * k + .4;
                 macroCos[k] = cos(a);
@@ -706,8 +759,9 @@ public final class ContinentalKernels {
         /** Weights of the layout-scaled coast octaves and their summed amplitude bound. */
         final double[] macro = new double[3];
 
-        /** Each layout octave's wavelength in detail wavelengths and its rotation. */
-        final double[] macroScale = new double[3],
+        /** Each layout octave's amplitude and wavelength in detail units, and its rotation. */
+        final double[] macroAmplitude = new double[3],
+                macroScale = new double[3],
                 macroCos = new double[3],
                 macroSin = new double[3];
 
@@ -811,6 +865,9 @@ public final class ContinentalKernels {
 
         public double size, elongation, roughness, interior, shelter;
 
+        /** The coast style multiplier at the column (1 for the single-family outline). */
+        public double coastStyle;
+
         /**
          * Cape (0..1): land on the convex side of the shelter concavity, a headland or point. Read
          * from the probes shelter already takes, at no extra cost.
@@ -862,6 +919,9 @@ public final class ContinentalKernels {
 
     /** Caller-owned working memory; no allocations once warm. */
     public static final class Scratch {
+        /** The last warp or unwarp result: (u, v) or (x, z). */
+        final double[] uv = new double[2];
+
         boolean certify;
         double positiveClearance;
         double headland;
@@ -891,6 +951,15 @@ public final class ContinentalKernels {
         protected final long seed;
         private final Earlier earlier;
         private final double stretch;
+
+        /**
+         * Warp octaves: amplitude, wavelength and frame rotation of each shear pair; octave 0 is
+         * the base pair (tuning's warp, unrotated), the rest come from the variation.
+         */
+        private final double[] warpA, warpL, warpC, warpS;
+
+        /** The most the warp moves a point along either world axis. */
+        private final double displacement;
 
         /** Null keeps the single-family legacy outline exactly. */
         protected final Variation variation;
@@ -927,8 +996,33 @@ public final class ContinentalKernels {
                     variation == null
                             ? tuning.radius
                             : tuning.radius * variation.sizeMax * sqrt(variation.elongationMax);
-            double shear = 3.75 * tuning.warpAmplitude / tuning.warpWavelength;
-            stretch = (1 + shear) * (1 + shear);
+            int octaves = 1 + (variation == null ? 0 : variation.warpOctaves);
+            warpA = new double[octaves];
+            warpL = new double[octaves];
+            warpC = new double[octaves];
+            warpS = new double[octaves];
+            double lipschitz = 1, moved = 0;
+            for (int k = 0; k < octaves; k++) {
+                warpA[k] =
+                        k == 0
+                                ? tuning.warpAmplitude
+                                : tuning.warpAmplitude * StrictMath.pow(variation.warpGain, k);
+                warpL[k] =
+                        k == 0
+                                ? tuning.warpWavelength
+                                : tuning.warpWavelength
+                                        / StrictMath.pow(variation.warpLacunarity, k);
+                // Golden-angle frames keep the octaves' shear axes apart.
+                double angle = 2.399963229728653 * k;
+                warpC[k] = k == 0 ? 1 : cos(angle);
+                warpS[k] = k == 0 ? 0 : sin(angle);
+                // Each shear's slope is at most 3.75 amplitude / wavelength (value noise).
+                double shear = 3.75 * warpA[k] / warpL[k];
+                lipschitz *= (1 + shear) * (1 + shear);
+                moved += (abs(warpC[k]) + abs(warpS[k])) * warpA[k];
+            }
+            stretch = lipschitz;
+            displacement = moved;
             jitter = variation == null ? .08 : variation.jitter;
             largestSupport =
                     2 * largest + detailBound(variation == null ? 1 : variation.roughnessMax);
@@ -955,7 +1049,10 @@ public final class ContinentalKernels {
         private double detailBound(double roughness) {
             return variation == null
                     ? .025 * tuning.spacing
-                    : roughness * tuning.detailAmplitude * (1.75 + variation.macroBound);
+                    : roughness
+                            * tuning.detailAmplitude
+                            * ((1 + variation.macroBound) * variation.styleMax
+                                    + .75 * min(1, variation.styleMax));
         }
 
         /** The kernel whose geometry builds this continent. */
@@ -977,14 +1074,59 @@ public final class ContinentalKernels {
             sample(x, z, out, scratch, false, true);
         }
 
-        public final double shearX(double z) {
-            return tuning.warpAmplitude
-                    * noise(seed ^ 0x534845415258L, z / tuning.warpWavelength, .31);
+        /**
+         * World to layout coordinates, into {@code out} as (u, v). Octave 0 is a pair of
+         * triangular shears; each further octave is a shear pair in a rotated frame. A shear
+         * moves one coordinate by a function of the other, so it never folds at any amplitude,
+         * and the composition stays globally invertible with det(J) = 1.
+         */
+        public final void warp(double x, double z, double[] out) {
+            double u = x + warpA[0] * noise(seed ^ 0x534845415258L, z / warpL[0], .31);
+            double v = z + warpA[0] * noise(seed ^ 0x53484541525AL, u / warpL[0], .73);
+            for (int k = 1; k < warpA.length; k++) {
+                double c = warpC[k], s = warpS[k];
+                double p = c * u + s * v, q = -s * u + c * v;
+                p += warpA[k] * noise(seed ^ (0x5741525058L + k), q / warpL[k], .31);
+                q += warpA[k] * noise(seed ^ (0x574152505AL + k), p / warpL[k], .73);
+                u = c * p - s * q;
+                v = s * p + c * q;
+            }
+            out[0] = u;
+            out[1] = v;
         }
 
-        public final double shearZ(double u) {
-            return tuning.warpAmplitude
-                    * noise(seed ^ 0x53484541525AL, u / tuning.warpWavelength, .73);
+        /**
+         * Coast style at layout coordinates: two rotated octaves of value noise, spread by the
+         * contrast and faded into styleMin..styleMax. One world field, so merged continents share
+         * their stretches; 1 for the single-family outline.
+         */
+        final double coastStyle(double u, double v) {
+            if (variation == null) return 1;
+            double w = variation.styleWavelength, w2 = .43 * w;
+            double n =
+                    .65 * noise(seed ^ 0x5354594C4531L, u / w, v / w)
+                            + .35
+                                    * noise(
+                                            seed ^ 0x5354594C4532L,
+                                            (.8 * u + .6 * v) / w2,
+                                            (-.6 * u + .8 * v) / w2);
+            double t = fade(clamp(.5 + .5 * variation.styleContrast * n, 0, 1));
+            return lerp(variation.styleMin, variation.styleMax, t);
+        }
+
+        /** Layout to world coordinates, into {@code out} as (x, z): the warp's exact inverse. */
+        public final void unwarp(double u, double v, double[] out) {
+            for (int k = warpA.length - 1; k >= 1; k--) {
+                double c = warpC[k], s = warpS[k];
+                double p = c * u + s * v, q = -s * u + c * v;
+                q -= warpA[k] * noise(seed ^ (0x574152505AL + k), p / warpL[k], .73);
+                p -= warpA[k] * noise(seed ^ (0x5741525058L + k), q / warpL[k], .31);
+                u = c * p - s * q;
+                v = s * p + c * q;
+            }
+            double z = v - warpA[0] * noise(seed ^ 0x53484541525AL, u / warpL[0], .73);
+            out[0] = u - warpA[0] * noise(seed ^ 0x534845415258L, z / warpL[0], .31);
+            out[1] = z;
         }
 
         public final double warpStretch() {
@@ -1009,7 +1151,9 @@ public final class ContinentalKernels {
         }
 
         public final double scaffoldClearance(double x, double z) {
-            double u = x + shearX(z), v = z + shearZ(u), o = tuning.corridorOffset;
+            double[] uv = new double[2];
+            warp(x, z, uv);
+            double u = uv[0], v = uv[1], o = tuning.corridorOffset;
             return min(
                             gridDistance(u + o, tuning.corridorPeriod),
                             gridDistance(v + o, tuning.corridorPeriod))
@@ -1050,17 +1194,9 @@ public final class ContinentalKernels {
         /** Eligibility, island flag and frame, from earlier facts at the anchor only. */
         private void facts(Cell c) {
             Tuning p = tuning;
-            double worldAz =
-                    c.az
-                            - p.warpAmplitude
-                                    * noise(seed ^ 0x53484541525AL, c.ax / p.warpWavelength, .73);
-            double worldAx =
-                    c.ax
-                            - p.warpAmplitude
-                                    * noise(
-                                            seed ^ 0x534845415258L,
-                                            worldAz / p.warpWavelength,
-                                            .31);
+            double[] world = new double[2];
+            unwarp(c.ax, c.az, world);
+            double worldAx = world[0], worldAz = world[1];
             c.suitability = earlier.suitability(worldAx, worldAz);
             c.islandBias = earlier.islandBias(worldAx, worldAz);
             if (!unit(c.suitability) || !unit(c.islandBias))
@@ -1112,13 +1248,12 @@ public final class ContinentalKernels {
                 throw new IllegalArgumentException(
                         "absolute coordinates outside supported Minecraft range");
             Tuning p = tuning;
-            // Two triangular shears are globally invertible: det(J)=1. Avoid fold-prone vector
-            // warps.
-            double u =
-                    x + p.warpAmplitude * noise(seed ^ 0x534845415258L, z / p.warpWavelength, .31);
-            double v =
-                    z + p.warpAmplitude * noise(seed ^ 0x53484541525AL, u / p.warpWavelength, .73);
+            // Shear pairs are globally invertible: det(J)=1. Avoid fold-prone vector warps.
+            warp(x, z, scratch.uv);
+            double u = scratch.uv[0], v = scratch.uv[1];
             long cx = (long) floor(u / p.spacing), cz = (long) floor(v / p.spacing);
+            double style = coastStyle(u, v);
+            out.coastStyle = style;
             out.warpU = u;
             out.warpV = v;
             // Varied Potential continents also need their kernel clearance to deepen the sea.
@@ -1214,7 +1349,7 @@ public final class ContinentalKernels {
                                                                     (-.6 * u + .8 * v)
                                                                             / (.43
                                                                                     * p.detailWavelength)))
-                                    : c.rough * p.detailAmplitude * roughCoast(id, u, v);
+                                    : c.rough * p.detailAmplitude * roughCoast(id, u, v, style);
                     scratch.positiveClearance = 0;
                     scratch.headland = 0;
                     double body = c.factor * shapeScore(c, qx, qz, scratch);
@@ -1491,10 +1626,8 @@ public final class ContinentalKernels {
                 double x, double z, double spacing, double radius, Scratch scratch, double[] out) {
             if (variation == null || variation.skeleton == null) return 0;
             Tuning p = tuning;
-            double u =
-                    x + p.warpAmplitude * noise(seed ^ 0x534845415258L, z / p.warpWavelength, .31);
-            double v =
-                    z + p.warpAmplitude * noise(seed ^ 0x53484541525AL, u / p.warpWavelength, .73);
+            warp(x, z, scratch.uv);
+            double u = scratch.uv[0], v = scratch.uv[1];
             long cx = (long) floor(u / p.spacing), cz = (long) floor(v / p.spacing);
             int side = 2 * reach + 1, n = 0;
             for (int k = 0; k < side * side; k++) {
@@ -1515,21 +1648,9 @@ public final class ContinentalKernels {
                     double qz = lerp(az, bz, (qx - ax) / (bx - ax));
                     double lx = qx * c.size * c.axis, lz = qz * c.size / c.axis;
                     double nu = c.ax + c.c * lx - c.s * lz, nv = c.az + c.s * lx + c.c * lz;
-                    // Back through the two shears to world coordinates.
-                    double worldZ =
-                            nv
-                                    - p.warpAmplitude
-                                            * noise(
-                                                    seed ^ 0x53484541525AL,
-                                                    nu / p.warpWavelength,
-                                                    .73);
-                    double worldX =
-                            nu
-                                    - p.warpAmplitude
-                                            * noise(
-                                                    seed ^ 0x534845415258L,
-                                                    worldZ / p.warpWavelength,
-                                                    .31);
+                    // Back through the warp to world coordinates.
+                    unwarp(nu, nv, scratch.uv);
+                    double worldX = scratch.uv[0], worldZ = scratch.uv[1];
                     if (sq(worldX - x) + sq(worldZ - z) > radius * radius) continue;
                     if (n + 6 > out.length) return n / 6;
                     double tx = (bx - ax) * c.size * c.axis, tz = (bz - az) * c.size / c.axis;
@@ -1552,10 +1673,8 @@ public final class ContinentalKernels {
                 double x, double z, double margin, Scratch scratch, long[] out) {
             if (variation == null || variation.skeleton == null) return 0;
             Tuning p = tuning;
-            double u =
-                    x + p.warpAmplitude * noise(seed ^ 0x534845415258L, z / p.warpWavelength, .31);
-            double v =
-                    z + p.warpAmplitude * noise(seed ^ 0x53484541525AL, u / p.warpWavelength, .73);
+            warp(x, z, scratch.uv);
+            double u = scratch.uv[0], v = scratch.uv[1];
             long cx = (long) floor(u / p.spacing), cz = (long) floor(v / p.spacing);
             int side = 2 * reach + 1, n = 0;
             for (int k = 0; k < side * side && n + 2 <= out.length; k++) {
@@ -1578,10 +1697,8 @@ public final class ContinentalKernels {
         public final int continentCells(
                 double x, double z, double margin, Scratch scratch, long[] out) {
             Tuning p = tuning;
-            double u =
-                    x + p.warpAmplitude * noise(seed ^ 0x534845415258L, z / p.warpWavelength, .31);
-            double v =
-                    z + p.warpAmplitude * noise(seed ^ 0x53484541525AL, u / p.warpWavelength, .73);
+            warp(x, z, scratch.uv);
+            double u = scratch.uv[0], v = scratch.uv[1];
             long cx = (long) floor(u / p.spacing), cz = (long) floor(v / p.spacing);
             int side = 2 * reach + 1, n = 0;
             for (int k = 0; k < side * side && n + 2 <= out.length; k++) {
@@ -1603,7 +1720,7 @@ public final class ContinentalKernels {
          */
         public final long continentBounds(long gx, long gz, Scratch scratch, double[] box) {
             Cell c = cellAt(scratch, gx, gz);
-            double r = c.support + tuning.warpAmplitude;
+            double r = c.support + displacement;
             box[0] = c.ax - r;
             box[1] = c.az - r;
             box[2] = c.ax + r;
@@ -1612,97 +1729,13 @@ public final class ContinentalKernels {
         }
 
         /**
-         * Trunk river paths of one continent, a pure function of its cell. About every {@code
-         * spacing} world blocks along the crest (jittered up to 30%) a path leaves the crest
-         * perpendicular to it, on alternating flanks, with a steady turn (up to 0.3 radians per
-         * kilometre) plus smooth wander (up to 0.6 radians, 900-block wavelength), in world
-         * steps of about {@code step}, until the continent's shape (before detail) lies more than
-         * its detail bound plus two steps below the coast, or after {@code maxSteps}. Paths are
-         * written to {@code out} as (point count, x0, z0, x1, z1, ...) in world coordinates, from
-         * the crest outward. Returns the path count.
-         */
-        public final int trunkPaths(
-                long gx,
-                long gz,
-                double spacing,
-                double step,
-                int maxSteps,
-                Scratch scratch,
-                double[] out) {
-            if (variation == null || variation.skeleton == null) return 0;
-            Tuning p = tuning;
-            Cell c = cellAt(scratch, gx, gz);
-            if (!c.facts) facts(c);
-            if (c.crestStrength <= 0) return 0;
-            int segments = c.crestPoints - 1, paths = 0, at = 0;
-            double first = c.crest[0], last = c.crest[2 * segments];
-            int count = max(1, (int) round((last - first) * c.size * c.axis / spacing));
-            boolean flip = random(c.id, 320) < .5;
-            double sea = detailBound(c.rough) + 2 * step;
-            for (int i = 0; i < count; i++) {
-                // Start points jitter up to 30% of the spacing along the crest.
-                double qx =
-                        first
-                                + (last - first)
-                                        * (i + .5 + .6 * (random(c.id, 340 + i) - .5))
-                                        / count;
-                int s = 0;
-                while (s < segments - 1 && c.crest[2 * s + 2] < qx) s++;
-                double ax = c.crest[2 * s], az = c.crest[2 * s + 1];
-                double bx = c.crest[2 * s + 2], bz = c.crest[2 * s + 3];
-                double qz = lerp(az, bz, (qx - ax) / (bx - ax));
-                double tx = bx - ax, tz = bz - az, length = hypot(tx, tz);
-                double side = ((i & 1) == 0) == flip ? 1 : -1;
-                double ox = -tz / length * side, oz = tx / length * side, nx = ox, nz = oz;
-                double turn = (random(c.id, 330 + i) - .5) * .6 / 1000;
-                long wander = c.id ^ (0x5452554e4b57L + i * 0x9e3779b97f4a7c15L);
-                if (at + 1 + 2 * (maxSteps + 1) > out.length) break;
-                int head = at++, points = 0;
-                for (int k = 0; k <= maxSteps; k++) {
-                    double lx = qx * c.size * c.axis, lz = qz * c.size / c.axis;
-                    double nu = c.ax + c.c * lx - c.s * lz, nv = c.az + c.s * lx + c.c * lz;
-                    double worldZ =
-                            nv
-                                    - p.warpAmplitude
-                                            * noise(
-                                                    seed ^ 0x53484541525AL,
-                                                    nu / p.warpWavelength,
-                                                    .73);
-                    double worldX =
-                            nu
-                                    - p.warpAmplitude
-                                            * noise(
-                                                    seed ^ 0x534845415258L,
-                                                    worldZ / p.warpWavelength,
-                                                    .31);
-                    out[at++] = worldX;
-                    out[at++] = worldZ;
-                    points++;
-                    if (k > 0 && c.factor * shapeScore(c, qx, qz, scratch) < -sea) break;
-                    // One world step along the current direction, measured through the frame.
-                    double scale = hypot(nx * c.size * c.axis, nz * c.size / c.axis);
-                    qx += nx * step / scale;
-                    qz += nz * step / scale;
-                    // Heading: a steady turn plus up to 0.6 radians of smooth wander (900-block
-                    // wavelength) from the distance travelled, so courses bend irregularly
-                    // without drifting.
-                    double travelled = (k + 1) * step;
-                    double a = turn * travelled + .6 * noise(wander, travelled / 900, .37);
-                    double ca = cos(a), sa = sin(a);
-                    nx = ox * ca - oz * sa;
-                    nz = ox * sa + oz * ca;
-                }
-                out[head] = points;
-                paths++;
-            }
-            return paths;
-        }
-
-        /**
          * Three rotated octaves in -1.75..1.75 (coves and points at three scales), plus the
-         * layout-scaled octaves above them when the world is larger than the 8 km tuning.
+         * layout-scaled octaves above them when the world is larger than the 8 km tuning. The
+         * coast style scales the base octave and the layout octaves; the two small octaves take at
+         * most 1, so a calm stretch smooths at every scale and a rugged one gains structure
+         * (inlets within bays) instead of speckle.
          */
-        private double roughCoast(long id, double u, double v) {
+        private double roughCoast(long id, double u, double v, double style) {
             double w = tuning.detailWavelength, w2 = w / 2.3, w3 = w / 5.3, macro = 0;
             for (int k = 0; k < variation.macro.length; k++) {
                 double weight = variation.macro[k];
@@ -1711,24 +1744,26 @@ public final class ContinentalKernels {
                 double ca = variation.macroCos[k], sa = variation.macroSin[k];
                 macro +=
                         weight
-                                * (2 << k)
+                                * variation.macroAmplitude[k]
                                 * noise(
                                         id ^ (0x524F5547484DL + k),
                                         (ca * u + sa * v) / wk,
                                         (-sa * u + ca * v) / wk);
             }
-            return macro
-                    + noise(id ^ 0x524F554748314CL, u / w, v / w)
-                    + .5
-                            * noise(
-                                    id ^ 0x524F554748324CL,
-                                    (.8 * u + .6 * v) / w2,
-                                    (-.6 * u + .8 * v) / w2)
-                    + .25
-                            * noise(
-                                    id ^ 0x524F554748334CL,
-                                    (.28 * u - .96 * v) / w3,
-                                    (.96 * u + .28 * v) / w3);
+            double calm = min(1, style);
+            return style * (macro + noise(id ^ 0x524F554748314CL, u / w, v / w))
+                    + calm
+                            * (.5
+                                    * noise(
+                                            id ^ 0x524F554748324CL,
+                                            (.8 * u + .6 * v) / w2,
+                                            (-.6 * u + .8 * v) / w2))
+                    + calm
+                            * (.25
+                                    * noise(
+                                            id ^ 0x524F554748334CL,
+                                            (.28 * u - .96 * v) / w3,
+                                            (.96 * u + .28 * v) / w3));
         }
 
         /** Precomputes the parts of this family's shape that depend only on the cell. */

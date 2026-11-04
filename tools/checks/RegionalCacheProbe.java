@@ -809,7 +809,7 @@ public final class RegionalCacheProbe {
             double[] box = new double[4];
             long owner =
                     maps.outline.continentBounds(
-                            gx, gz, new ContinentalOutlineMap.TrunkScratch(0), box);
+                            gx, gz, new ContinentalOutlineMap.CellScratch(), box);
             int x0 = (int) Math.floor(box[0] / cell), z0 = (int) Math.floor(box[1] / cell);
             int x1 = (int) Math.floor(box[2] / cell), z1 = (int) Math.floor(box[3] / cell);
             List<Long> covered = new ArrayList<>(), ring = new ArrayList<>();

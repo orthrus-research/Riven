@@ -185,6 +185,15 @@ public final class ContinentalOutlineMap {
                 Rules.number(v, "shelterFloor", 0, 4),
                 Rules.number(v, "shelterConcavity", .05, 4),
                 layout * Rules.number(v, "straitBlend", 8, 2000),
+                (int) Rules.number(v, "warpOctaves", 0, 4),
+                Rules.number(v, "warpLacunarity", 1.5, 4),
+                Rules.number(v, "warpGain", 0, 1),
+                Rules.number(v, "macroGain", 1, 4),
+                Rules.number(v, "macroShift", 0, 3),
+                layout * Rules.number(v, "styleWavelength", 256, 30000),
+                Rules.number(v, "styleMin", 0, 4),
+                Rules.number(v, "styleMax", 0, 4),
+                Rules.number(v, "styleContrast", .01, 8),
                 weights(j),
                 skeleton(j),
                 layout);
@@ -329,38 +338,27 @@ public final class ContinentalOutlineMap {
         return kernel.largestSupport();
     }
 
-    /** Caller-owned scratch for trunk-path and crest-cell queries. */
-    public static final class TrunkScratch {
+    /** Caller-owned scratch for continent-cell and crest-cell queries. */
+    public static final class CellScratch {
         final ContinentalKernels.Scratch work = new ContinentalKernels.Scratch();
         public final long[] cells = new long[2 * 49];
-        public final double[] paths;
-
-        public TrunkScratch(int capacity) {
-            paths = new double[capacity];
-        }
     }
 
     /** Crest-bearing continents whose support plus margin reaches a column, as cell pairs. */
-    public int crestCells(double x, double z, double margin, TrunkScratch s) {
+    public int crestCells(double x, double z, double margin, CellScratch s) {
         Rules.coordinates(x, z);
         return kernel.crestCells(x, z, margin, s.work, s.cells);
     }
 
     /** Built continents whose support plus margin reaches a column, as cell pairs. */
-    public int continentCells(double x, double z, double margin, TrunkScratch s) {
+    public int continentCells(double x, double z, double margin, CellScratch s) {
         Rules.coordinates(x, z);
         return kernel.continentCells(x, z, margin, s.work, s.cells);
     }
 
     /** A continent's owner id, with a conservative world-space box around its support. */
-    public long continentBounds(long cellX, long cellZ, TrunkScratch s, double[] box) {
+    public long continentBounds(long cellX, long cellZ, CellScratch s, double[] box) {
         return kernel.continentBounds(cellX, cellZ, s.work, box);
-    }
-
-    /** One continent's trunk river paths from its crest outward (see the kernel). */
-    public int trunkPaths(
-            long cellX, long cellZ, double spacing, double step, int maxSteps, TrunkScratch s) {
-        return kernel.trunkPaths(cellX, cellZ, spacing, step, maxSteps, s.work, s.paths);
     }
 
     /** Caller-owned scratch for crest-node queries. */
