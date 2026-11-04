@@ -24,6 +24,10 @@ public final class ContinentalMap {
     private final SeededNoise bedNoise, shoalNoise;
     private final double shelfY, deepY, bedAmplitude, deepBiomeY, shelfWidth, normalBand;
     private final double shoalWavelength, shoalStart, shoalWidth;
+
+    /** Shelf scale on the calmest and the most rugged coast, and the style range between them. */
+    private final double calmShelf, ruggedShelf, styleMin, styleMax;
+
     private final int waterTop;
     public final double spacing, landBlend, oceanTransitionWidth;
     public final int minimumSurfaceY, seaLevel;
@@ -65,6 +69,12 @@ public final class ContinentalMap {
         shoalWavelength = Rules.number(shoaling, "wavelengthBlocks", 128, 8192);
         shoalStart = Rules.number(shoaling, "noiseStart", -1, 1);
         shoalWidth = Rules.number(shoaling, "noiseWidth", .05, 2);
+        JsonObject shelfScale = j.getAsJsonObject("shelf");
+        calmShelf = Rules.number(shelfScale, "calmScale", .25, 3);
+        ruggedShelf = Rules.number(shelfScale, "ruggedScale", .25, 3);
+        JsonObject variation = j.getAsJsonObject("variation");
+        styleMin = Rules.number(variation, "styleMin", 0, 4);
+        styleMax = Rules.number(variation, "styleMax", 0, 4);
     }
 
     public static final class Sample {
@@ -96,6 +106,19 @@ public final class ContinentalMap {
          * is read separately by sites. Defined on both sides of the shore.
          */
         public double shoaling;
+
+        /**
+         * Shelf scale: how far the seabed profile (shelf, slope, deep) is stretched offshore,
+         * from the coast style at the column: broad on calm coast, narrow on rugged coast (a
+         * passive and an active margin). 1 with the single-family outline.
+         */
+        public double shelfScale = 1;
+
+        /**
+         * Craggy (0..1): how rugged the coast style is at the column, smoothed; the coast plan
+         * favours rocky types where it is high. 0 with the single-family outline.
+         */
+        public double craggy;
 
         public boolean marine, deepOcean, supplied, protectedWater, archipelago;
         public long owner;
@@ -172,7 +195,16 @@ public final class ContinentalMap {
                         : out.marine ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
         out.normalX = length > 1e-8 ? gx / length : 0;
         out.normalZ = length > 1e-8 ? gz / length : 0;
-        double depth = Math.max(0, -value.score),
+        double rugged =
+                styleMax > styleMin
+                        ? Math.max(
+                                0,
+                                Math.min(1, (value.coastStyle - styleMin) / (styleMax - styleMin)))
+                        : 0;
+        out.craggy = outline.family == null ? smooth(rugged) : 0;
+        out.shelfScale = lerp(calmShelf, ruggedShelf, out.craggy);
+        if (outline.family != null) out.shelfScale = 1;
+        double depth = Math.max(0, -value.score) / out.shelfScale,
                 shelf = shelfY + bedAmplitude * bedNoise.sample(x / 640, z / 640),
                 deep = deepY + bedAmplitude * bedNoise.sample(x / 1800 + .31, z / 1800 + .67);
         double floor = lerp(waterTop - 1, shelf, smooth(depth / shelfWidth));

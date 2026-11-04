@@ -113,7 +113,11 @@ public final class OceanBed {
 
     public void apply(
             double x, double z, ContinentalMap.Sample ocean, boolean reserved, Result out) {
-        double progress = Math.max(0, Math.min(1, -ocean.coastCoordinate / transitionWidth));
+        // The coast style stretches the whole seabed profile offshore (ContinentalMap.Sample).
+        double progress =
+                Math.max(
+                        0,
+                        Math.min(1, -ocean.coastCoordinate / (transitionWidth * ocean.shelfScale)));
         out.distance = completeDistance * progress;
         // Quintic roundoff near one can make the complement slightly negative.
         // Keep the strict contribution input contract without accepting nonfinite facts.

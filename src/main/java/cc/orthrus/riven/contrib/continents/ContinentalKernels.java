@@ -23,7 +23,6 @@ public final class ContinentalKernels {
     public enum Family {
         HARMONIC(0x524956434F4E5431L),
         SPINE(0x524956434F4E5432L),
-        CELLULAR(0x524956434F4E5433L),
         POTENTIAL(0x524956434F4E5434L);
         public final long salt;
 
@@ -515,56 +514,6 @@ public final class ContinentalKernels {
         }
     }
 
-    public static final class CellularStyle {
-        public final double insetScale;
-        public final double connectionProbability;
-
-        public CellularStyle(double insetScale, double connectionProbability) {
-            if (!Double.isFinite(insetScale)
-                    || insetScale < 1
-                    || insetScale > 2
-                    || !unit(connectionProbability))
-                throw new IllegalArgumentException("cellular style");
-            this.insetScale = insetScale;
-            this.connectionProbability = connectionProbability;
-        }
-
-        public double insetScale() {
-            return insetScale;
-        }
-
-        public double connectionProbability() {
-            return connectionProbability;
-        }
-
-        @Override
-        public boolean equals(Object value) {
-            if (this == value) return true;
-            if (!(value instanceof CellularStyle)) return false;
-            CellularStyle other = (CellularStyle) value;
-            return Double.compare(insetScale, other.insetScale) == 0
-                    && Double.compare(connectionProbability, other.connectionProbability) == 0;
-        }
-
-        @Override
-        public int hashCode() {
-            return java.util.Objects.hash(insetScale, connectionProbability);
-        }
-
-        @Override
-        public String toString() {
-            return String.format(
-                    java.util.Locale.ROOT,
-                    "CellularStyle[insetScale=%s,connectionProbability=%s]",
-                    insetScale,
-                    connectionProbability);
-        }
-
-        public static CellularStyle defaults() {
-            return new CellularStyle(1, .92);
-        }
-    }
-
     public static final class PotentialStyle {
         public final double mainlandThreshold;
         public final double islandThreshold;
@@ -623,7 +572,31 @@ public final class ContinentalKernels {
      * Kernel.concavity), so embayments are read from the outline instead of carved; the legacy ray-tube bay stays as an optional per-continent draw.
      */
     public static final class Variation {
-        public final double jitter, sizeMin, sizeMax, sizeSplit, largeShare, elongationMax;
+        public final double jitter, sizeMin, sizeMax, sizeSkew, elongationMax;
+
+        /**
+         * Clustering: one smooth field over anchors (wavelength clusterWavelength, layout blocks)
+         * raises sizes by up to clusterSize of the size range where it is high and lowers
+         * occupancy by up to clusterOccupancy where it is low, so continents gather in clusters
+         * with archipelagos between them and open ocean beyond.
+         */
+        public final double clusterWavelength, clusterSize, clusterOccupancy;
+
+        /**
+         * The island tier: each cell draws up to islandSlots islands, each with chance
+         * islandDensity (times islandOpenSea in a cell with no continent), raised toward 1 by the
+         * cluster. They lie within islandReach radii of the anchor, scattered or, by
+         * islandChainShare, strung along a chain; radii islandMin..islandMax continent radii,
+         * log-scaled with islandSkew. An open-sea cell with islands is built as island-only.
+         */
+        public final int islandSlots;
+
+        public final double islandDensity, islandOpenSea, islandReach, islandMin, islandMax;
+        public final double islandSkew, islandChainShare;
+
+        /** Largest axis ratio of an island (uniform draw); chain islands lie along their chain. */
+        public final double islandElongation;
+
         public final double roughnessMin, roughnessMax;
         public final double bayProbability, shelterReach, shelterFloor, shelterConcavity;
         public final double straitBlend;
@@ -652,6 +625,36 @@ public final class ContinentalKernels {
          */
         public final double styleWavelength, styleMin, styleMax, styleContrast;
 
+        /**
+         * Fjords: each built continent tries fjordSlots mouths, evenly spaced around its shape
+         * frame with jitter, each kept with fjordChance, a quarter of it on calm coast rising to all
+         * of it as the coast style there grows rugged.
+         * A fjord starts offshore and walks inland fjordLengthMin..fjordLengthMax radii with a
+         * heading that wanders up to fjordWander radians a step, narrowing from about fjordWidth
+         * blocks; fjordBranch of them fork, and lakeChance continue past their head as a chain of
+         * lakes. Carved as the distance to a tapered tube, so the score stays a distance.
+         */
+        public final int fjordSlots;
+
+        public final double fjordChance, fjordLengthMin, fjordLengthMax, fjordWidth, fjordWander;
+        public final double fjordBranch, lakeChance;
+
+        /**
+         * Peninsulas: peninsulaSlots tries, each kept with peninsulaChance (more on rugged coast),
+         * growing outward from inside the shape peninsulaLengthMin..Max radii, from about
+         * peninsulaWidth blocks at the root to a third of it at the tip; joined as a tube.
+         */
+        public final int peninsulaSlots;
+
+        public final double peninsulaChance, peninsulaLengthMin, peninsulaLengthMax;
+        public final double peninsulaWidth;
+
+        /**
+         * Coast detail is clamped to this share of its worst-case sum, which bounds supports
+         * strictly while typical detail stays far below the sum.
+         */
+        public final double detailShare;
+
         final double[] weights;
 
         /** Null: no continent carries a crest. */
@@ -661,8 +664,19 @@ public final class ContinentalKernels {
                 double jitter,
                 double sizeMin,
                 double sizeMax,
-                double sizeSplit,
-                double largeShare,
+                double sizeSkew,
+                double clusterWavelength,
+                double clusterSize,
+                double clusterOccupancy,
+                int islandSlots,
+                double islandDensity,
+                double islandOpenSea,
+                double islandReach,
+                double islandMin,
+                double islandMax,
+                double islandSkew,
+                double islandChainShare,
+                double islandElongation,
                 double elongationMax,
                 double roughnessMin,
                 double roughnessMax,
@@ -680,16 +694,39 @@ public final class ContinentalKernels {
                 double styleMin,
                 double styleMax,
                 double styleContrast,
+                int fjordSlots,
+                double fjordChance,
+                double fjordLengthMin,
+                double fjordLengthMax,
+                double fjordWidth,
+                double fjordWander,
+                double fjordBranch,
+                double lakeChance,
+                int peninsulaSlots,
+                double peninsulaChance,
+                double peninsulaLengthMin,
+                double peninsulaLengthMax,
+                double peninsulaWidth,
+                double detailShare,
                 double[] familyWeights,
                 Skeleton skeleton,
                 double layout) {
             int n = Family.values().length;
             if (!(jitter >= 0 && jitter <= .4)
-                    || !(sizeMin >= .4
-                            && sizeMin <= sizeSplit
-                            && sizeSplit <= sizeMax
-                            && sizeMax <= 2)
-                    || !unit(largeShare)
+                    || !(sizeMin >= .2 && sizeMin <= sizeMax && sizeMax <= 2)
+                    || !(sizeSkew >= .25 && sizeSkew <= 8)
+                    || !positive(clusterWavelength)
+                    || !unit(clusterSize)
+                    || !unit(clusterOccupancy)
+                    || islandSlots < 0
+                    || islandSlots > 8
+                    || !unit(islandDensity)
+                    || !unit(islandOpenSea)
+                    || !(islandReach >= 0 && islandReach <= 3)
+                    || !(islandMin > 0 && islandMin <= islandMax && islandMax <= 1)
+                    || !(islandSkew >= .25 && islandSkew <= 8)
+                    || !unit(islandChainShare)
+                    || !(islandElongation >= 1 && islandElongation <= 4)
                     || !(elongationMax >= 1 && elongationMax <= 4)
                     || !(roughnessMin >= 0 && roughnessMin <= roughnessMax && roughnessMax <= 4)
                     || !unit(bayProbability)
@@ -707,6 +744,24 @@ public final class ContinentalKernels {
                     || !positive(styleWavelength)
                     || !(styleMin >= 0 && styleMin <= styleMax && styleMax <= 4)
                     || !(styleContrast > 0 && styleContrast <= 8)
+                    || fjordSlots < 0
+                    || fjordSlots > 24
+                    || !unit(fjordChance)
+                    || !(fjordLengthMin > 0
+                            && fjordLengthMin <= fjordLengthMax
+                            && fjordLengthMax <= 1.2)
+                    || !positive(fjordWidth)
+                    || !(fjordWander >= 0 && fjordWander <= 1.5)
+                    || !unit(fjordBranch)
+                    || !unit(lakeChance)
+                    || peninsulaSlots < 0
+                    || peninsulaSlots > 12
+                    || !unit(peninsulaChance)
+                    || !(peninsulaLengthMin > 0
+                            && peninsulaLengthMin <= peninsulaLengthMax
+                            && peninsulaLengthMax <= .6)
+                    || !positive(peninsulaWidth)
+                    || !(detailShare > 0 && detailShare <= 1)
                     || familyWeights.length != n) throw new IllegalArgumentException("variation");
             double total = 0;
             for (int i = 0; i < n; i++) {
@@ -718,8 +773,19 @@ public final class ContinentalKernels {
             this.jitter = jitter;
             this.sizeMin = sizeMin;
             this.sizeMax = sizeMax;
-            this.sizeSplit = sizeSplit;
-            this.largeShare = largeShare;
+            this.sizeSkew = sizeSkew;
+            this.clusterWavelength = clusterWavelength;
+            this.clusterSize = clusterSize;
+            this.clusterOccupancy = clusterOccupancy;
+            this.islandSlots = islandSlots;
+            this.islandDensity = islandDensity;
+            this.islandOpenSea = islandOpenSea;
+            this.islandReach = islandReach;
+            this.islandMin = islandMin;
+            this.islandMax = islandMax;
+            this.islandSkew = islandSkew;
+            this.islandChainShare = islandChainShare;
+            this.islandElongation = islandElongation;
             this.elongationMax = elongationMax;
             this.roughnessMin = roughnessMin;
             this.roughnessMax = roughnessMax;
@@ -737,6 +803,20 @@ public final class ContinentalKernels {
             this.styleMin = styleMin;
             this.styleMax = styleMax;
             this.styleContrast = styleContrast;
+            this.fjordSlots = fjordSlots;
+            this.fjordChance = fjordChance;
+            this.fjordLengthMin = fjordLengthMin;
+            this.fjordLengthMax = fjordLengthMax;
+            this.fjordWidth = fjordWidth;
+            this.fjordWander = fjordWander;
+            this.fjordBranch = fjordBranch;
+            this.lakeChance = lakeChance;
+            this.peninsulaSlots = peninsulaSlots;
+            this.peninsulaChance = peninsulaChance;
+            this.peninsulaLengthMin = peninsulaLengthMin;
+            this.peninsulaLengthMax = peninsulaLengthMax;
+            this.peninsulaWidth = peninsulaWidth;
+            this.detailShare = detailShare;
             this.weights = familyWeights.clone();
             this.skeleton = skeleton;
             if (!(layout >= .25 && layout <= 16)) throw new IllegalArgumentException("layout");
@@ -779,15 +859,14 @@ public final class ContinentalKernels {
         }
 
         /**
-         * Radius multiplier of one continent from its uniform draw {@code u} in [0, 1): two modes,
-         * so a world reads as a few continents among minor islands. A {@code largeShare} of
-         * continents spans sizeSplit..sizeMax, the rest sizeMin..sizeSplit; the draw is rescaled
-         * within each mode so both stay uniform.
+         * Radius multiplier of one continent from its uniform draw {@code u} in [0, 1) and the
+         * cluster field at its anchor: log-scaled from sizeMin to sizeMax, so areas spread like a
+         * power law; sizeSkew above 1 favours small ones, and the cluster shifts the draw by up to
+         * clusterSize of the range either way.
          */
-        double size(double u) {
-            return u < largeShare
-                    ? lerp(sizeSplit, sizeMax, u / largeShare)
-                    : lerp(sizeMin, sizeSplit, (u - largeShare) / (1 - largeShare));
+        double size(double u, double cluster) {
+            double t = clamp(pow(u, sizeSkew) + clusterSize * (2 * cluster - 1), 0, 1);
+            return sizeMin * pow(sizeMax / sizeMin, t);
         }
 
         /** Major-to-minor axis ratio; squared draw keeps most continents near round. */
@@ -891,7 +970,37 @@ public final class ContinentalKernels {
     static final class Cell {
         Kernel kernel;
         long gx, gz, id;
-        double ax, az, size, elongation, rough, axis, factor, support;
+        double ax, az, size, elongation, rough, axis, factor, support, cluster, detailCap;
+
+        /** Built for its islands only: no continent body, no crest, no shelter of its own. */
+        boolean islandOnly;
+
+        /** Status and islands were decided with the draws (see cellAt), not with the facts. */
+        boolean early;
+
+        /** The frame (rotation and family) is set: by the facts, or by a neighbour's claim check. */
+        boolean framed;
+
+        /**
+         * Islands from the anchor in layout blocks: (x, z, radius, cos, sin, root of the axis
+         * ratio) each.
+         */
+        int islandCount;
+
+        final double[] islands = new double[6 * 8];
+
+        /**
+         * Fjords, lakes and peninsulas as tapered polylines from the anchor in layout blocks:
+         * per feature (kind, points, centre x, centre z, reach) then (x, z, half-width) per point;
+         * kind 0 is carved (fjords, lakes), 1 joined (peninsulas). featureLength is the used part.
+         */
+        double[] features = new double[0];
+
+        int featureLength;
+
+        /** Scratch while planning: the world heading at the end of the last path. */
+        double featureHeading;
+
         boolean facts;
         double suitability, islandBias;
         boolean archipelago;
@@ -927,10 +1036,10 @@ public final class ContinentalKernels {
         double headland;
 
         /**
-         * Cell cache indexed by cell coordinates modulo 8: the at most 7 x 7 candidate window of
+         * Cell cache indexed by cell coordinates modulo 16: the at most 11 x 11 candidate window of
          * one query never collides, so its entries stay valid for the whole query.
          */
-        final Cell[] cells = new Cell[64];
+        final Cell[] cells = new Cell[256];
 
         Cell[] window = new Cell[0];
         double[] distance = new double[0];
@@ -1025,7 +1134,8 @@ public final class ContinentalKernels {
             displacement = moved;
             jitter = variation == null ? .08 : variation.jitter;
             largestSupport =
-                    2 * largest + detailBound(variation == null ? 1 : variation.roughnessMax);
+                    max(2 * largest, islandExtent())
+                            + detailBound(variation == null ? 1 : variation.roughnessMax);
             // Every anchor outside the searched block lies at least (reach + .5 - jitter) spacings
             // away, which must cover the largest support plus the coastal transition.
             reach =
@@ -1037,7 +1147,7 @@ public final class ContinentalKernels {
                                                             / tuning.spacing
                                                     - .5
                                                     + jitter));
-            if (reach > 3) throw new IllegalArgumentException("continental supports too large");
+            if (reach > 5) throw new IllegalArgumentException("continental supports too large");
         }
 
         /** The largest distance at which any continent's shape can reach from its anchor. */
@@ -1045,15 +1155,34 @@ public final class ContinentalKernels {
             return largestSupport;
         }
 
+        /**
+         * The farthest an island's shape reaches from its cell's anchor, before detail: a chain's
+         * centre lies within half the reach, its islands within half the reach of the centre
+         * along it and 12% across. 0 without islands.
+         */
+        private double islandExtent() {
+            if (variation == null || variation.islandSlots == 0) return 0;
+            return tuning.radius
+                    * (1.12 * variation.islandReach
+                            + variation.islandMax * sqrt(variation.islandElongation));
+        }
+
         /** Largest coastal detail at a roughness; legacy keeps the fixed .025-spacing bound. */
         private double detailBound(double roughness) {
             return variation == null
                     ? .025 * tuning.spacing
-                    : roughness
-                            * tuning.detailAmplitude
-                            * ((1 + variation.macroBound) * variation.styleMax
-                                    + .75 * min(1, variation.styleMax));
+                    : variation.detailShare
+                            * (roughness
+                                    * tuning.detailAmplitude
+                                    * ((1 + variation.macroBound) * variation.styleMax
+                                            + .75 * min(1, variation.styleMax)));
         }
+
+        /** Feature plans by cell id; cleared whole when full. */
+        private final java.util.concurrent.ConcurrentHashMap<Long, double[]> featurePlans =
+                new java.util.concurrent.ConcurrentHashMap<>();
+
+        private static final int FEATURE_PLANS = 4096;
 
         /** The kernel whose geometry builds this continent. */
         Kernel geometryOf(long id) {
@@ -1096,6 +1225,22 @@ public final class ContinentalKernels {
         }
 
         /**
+         * The cluster field at an anchor in layout coordinates, 0..1: two rotated octaves of value
+         * noise, spread and faded so about a quarter of anchors sit near each end.
+         */
+        final double cluster(double u, double v) {
+            double w = variation.clusterWavelength, w2 = .43 * w;
+            double n =
+                    .65 * noise(seed ^ 0x434C55535431L, u / w, v / w)
+                            + .35
+                                    * noise(
+                                            seed ^ 0x434C55535432L,
+                                            (.6 * u - .8 * v) / w2,
+                                            (.8 * u + .6 * v) / w2);
+            return fade(clamp(.5 + 1.2 * n, 0, 1));
+        }
+
+        /**
          * Coast style at layout coordinates: two rotated octaves of value noise, spread by the
          * contrast and faded into styleMin..styleMax. One world field, so merged continents share
          * their stretches; 1 for the single-family outline.
@@ -1134,9 +1279,15 @@ public final class ContinentalKernels {
         }
 
         /** Independent occurrence draw, or a stratified 2 x 2 block quota when configured. */
-        private boolean occupied(long gx, long gz, long id, double suitability) {
+        private boolean occupied(
+                long gx, long gz, long id, double suitability, double cellCluster) {
             int quota = tuning.stratifiedOccupancy;
-            if (quota == 0) return random(id, 3) < tuning.occurrence * (.55 + .45 * suitability);
+            if (quota == 0)
+                return variation == null
+                        ? random(id, 3) < tuning.occurrence * (.55 + .45 * suitability)
+                        : random(id, 3)
+                                < tuning.occurrence
+                                        * (1 - variation.clusterOccupancy * (1 - cellCluster));
             long bx = Math.floorDiv(gx, 2), bz = Math.floorDiv(gz, 2);
             long block = cell(seed ^ 0x5354524154494659L, bx, bz);
             int index = (int) ((gx - 2 * bx) + 2 * (gz - 2 * bz));
@@ -1162,7 +1313,7 @@ public final class ContinentalKernels {
 
         /** The cached cell, with its anchor and draws; replaced in place on a miss. */
         private Cell cellAt(Scratch scratch, long gx, long gz) {
-            int slot = (int) (gx & 7) | (int) (gz & 7) << 3;
+            int slot = (int) (gx & 15) | (int) (gz & 15) << 4;
             Cell c = scratch.cells[slot];
             if (c == null) c = scratch.cells[slot] = new Cell();
             if (c.kernel == this && c.gx == gx && c.gz == gz) return c;
@@ -1175,8 +1326,10 @@ public final class ContinentalKernels {
             c.ax = (gx + .5 + 2 * jitter * (random(id, 1) - .5)) * p.spacing;
             c.az = (gz + .5 + 2 * jitter * (random(id, 2) - .5)) * p.spacing;
             c.size = c.elongation = c.rough = 1;
+            c.cluster = .5;
             if (variation != null) {
-                c.size = variation.size(random(id, 300));
+                c.cluster = cluster(c.ax, c.az);
+                c.size = variation.size(random(id, 300), c.cluster);
                 c.elongation = variation.elongation(random(id, 301));
                 c.rough = variation.roughness(random(id, 303));
             }
@@ -1186,13 +1339,36 @@ public final class ContinentalKernels {
             c.factor = c.size / c.axis;
             // Fixed maximum-detail bound keeps anchor admission independent of coast-detail
             // tuning.
-            c.support = 2 * p.radius * c.size * c.axis + detailBound(c.rough);
-            c.facts = c.planned = false;
+            c.detailCap = detailBound(c.rough);
+            // Varied occupancy without an eligibility floor or a quota reads only the id and the
+            // cluster, so status and islands are known here and each support is exact: the body
+            // of a built continent, the islands actually drawn (plus the transition, which the
+            // cone subtracts), nothing for empty open sea.
+            c.early = variation != null && p.eligibilityFloor <= 0 && p.stratifiedOccupancy == 0;
+            if (c.early) {
+                c.status = occupied(gx, gz, id, 1, c.cluster) ? 2 : 1;
+                c.islandOnly = false;
+                c.islandCount = 0;
+                if (variation.islandSlots > 0) islands(c);
+                double reachOut =
+                        c.status == 2 && !c.islandOnly ? 2 * p.radius * c.size * c.axis : 0;
+                for (int i = 0; i < c.islandCount; i++) {
+                    int at = 6 * i;
+                    reachOut =
+                            max(
+                                    reachOut,
+                                    hypot(c.islands[at], c.islands[at + 1])
+                                            + c.islands[at + 2] * c.islands[at + 5]
+                                            + p.transitionWidth);
+                }
+                c.support = reachOut > 0 ? reachOut + c.detailCap : 0;
+            } else c.support = max(2 * p.radius * c.size * c.axis, islandExtent()) + c.detailCap;
+            c.facts = c.planned = c.framed = false;
             return c;
         }
 
         /** Eligibility, island flag and frame, from earlier facts at the anchor only. */
-        private void facts(Cell c) {
+        private void facts(Cell c, Scratch scratch) {
             Tuning p = tuning;
             double[] world = new double[2];
             unwarp(c.ax, c.az, world);
@@ -1202,20 +1378,45 @@ public final class ContinentalKernels {
             if (!unit(c.suitability) || !unit(c.islandBias))
                 throw new IllegalArgumentException("earlier facts");
             c.archipelago = random(c.id, 4) < c.islandBias;
-            c.status =
-                    c.suitability < p.eligibilityFloor
-                            ? 0
-                            : !occupied(c.gx, c.gz, c.id, c.suitability) ? 1 : 2;
+            if (!c.early) {
+                c.status =
+                        c.suitability < p.eligibilityFloor
+                                ? 0
+                                : !occupied(c.gx, c.gz, c.id, c.suitability, c.cluster) ? 1 : 2;
+                c.islandOnly = false;
+                c.islandCount = 0;
+                if (variation != null && variation.islandSlots > 0 && c.status != 0) islands(c);
+            }
             if (c.status == 2) {
                 double angle = TAU * random(c.id, 5);
                 c.c = cos(angle);
                 c.s = sin(angle);
                 c.shape = geometryOf(c.id);
+                c.framed = true;
+            }
+            c.featureLength = 0;
+            if (variation != null && c.status == 2 && !c.islandOnly) {
+                // Plans are pure functions of the cell, shared read-only through a bounded cache
+                // (a clear never changes a result); a miss plans into a fresh buffer.
+                double[] plan = featurePlans.get(c.id);
+                if (plan == null) {
+                    c.features = new double[64];
+                    features(c, scratch);
+                    plan = java.util.Arrays.copyOf(c.features, c.featureLength);
+                    if (featurePlans.size() >= FEATURE_PLANS) featurePlans.clear();
+                    featurePlans.put(c.id, plan);
+                }
+                c.features = plan;
+                c.featureLength = plan.length;
             }
             c.crestStrength = 0;
             c.crestPoints = 0;
             Skeleton k = variation == null ? null : variation.skeleton;
-            if (k != null && c.status == 2 && !c.archipelago && random(c.id, 310) < k.rangeShare) {
+            if (k != null
+                    && c.status == 2
+                    && !c.islandOnly
+                    && !c.archipelago
+                    && random(c.id, 310) < k.rangeShare) {
                 double r = p.radius;
                 c.crestStrength = lerp(k.strengthMin, k.strengthMax, random(c.id, 311)) * c.size;
                 if (c.shape.family == Family.SPINE) {
@@ -1237,6 +1438,57 @@ public final class ContinentalKernels {
                 }
             }
             c.facts = true;
+        }
+
+        /**
+         * A cell's islands, from its id and cluster: scattered within the reach or strung along a
+         * chain through a centre within half of it. An open-sea cell that draws any becomes
+         * island-only.
+         */
+        private void islands(Cell c) {
+            Variation w = variation;
+            double r = tuning.radius, reach = w.islandReach * r;
+            double chance =
+                    w.islandDensity * (c.status == 2 ? 1 : w.islandOpenSea) * (.3 + .7 * c.cluster);
+            boolean chain = random(c.id, 400) < w.islandChainShare;
+            double heading = TAU * random(c.id, 401), dx = cos(heading), dz = sin(heading);
+            double centre = .5 * reach * sqrt(random(c.id, 402)), turn = TAU * random(c.id, 403);
+            double bx = centre * cos(turn), bz = centre * sin(turn);
+            int n = 0;
+            for (int i = 0; i < w.islandSlots; i++) {
+                if (random(c.id, 410 + i) >= chance) continue;
+                double ix, iz;
+                if (chain) {
+                    double along = .5 * reach * (2 * (i + .5) / w.islandSlots - 1);
+                    double across = .12 * reach * (2 * random(c.id, 430 + i) - 1);
+                    ix = bx + dx * along - dz * across;
+                    iz = bz + dz * along + dx * across;
+                } else {
+                    double rho = reach * sqrt(random(c.id, 430 + i)),
+                            a = TAU * random(c.id, 450 + i);
+                    ix = rho * cos(a);
+                    iz = rho * sin(a);
+                }
+                double t = pow(random(c.id, 470 + i), w.islandSkew);
+                double e = random(c.id, 490 + i);
+                double a =
+                        chain
+                                ? heading + .5 * (random(c.id, 510 + i) - .5)
+                                : TAU * random(c.id, 510 + i);
+                int at = 6 * n;
+                c.islands[at] = ix;
+                c.islands[at + 1] = iz;
+                c.islands[at + 2] = r * w.islandMin * pow(w.islandMax / w.islandMin, t);
+                c.islands[at + 3] = cos(a);
+                c.islands[at + 4] = sin(a);
+                c.islands[at + 5] = sqrt(1 + (w.islandElongation - 1) * e);
+                n++;
+            }
+            c.islandCount = n;
+            if (c.status == 1 && n > 0) {
+                c.status = 2;
+                c.islandOnly = true;
+            }
         }
 
         private void sample(
@@ -1311,25 +1563,38 @@ public final class ContinentalKernels {
                             : most <= out.score - variation.straitBlend) continue;
                 }
                 out.candidates++;
-                if (!c.facts) facts(c);
+                if (!c.facts) facts(c, scratch);
                 // Varied continents reach full ocean depth (-transitionWidth) at their support
                 // edge, so a shallow island field cannot end in a step to the deep sea there.
                 double bound = c.support - dist - (variation == null ? 0 : p.transitionWidth);
                 Reason reason;
                 double score, cut = Double.POSITIVE_INFINITY, shaped = 0;
+                // A rejected cell adds nothing to the varied union (its starting -spacing): at
+                // -transitionWidth it lifted its whole support disc to shelf depth, a circle once
+                // occupancy left cells open.
+                double rejected = variation == null ? -p.transitionWidth : -p.spacing;
                 if (c.status == 0) {
                     out.rejectedEarlier++;
-                    score = min(bound, -p.transitionWidth);
+                    score = min(bound, rejected);
                     reason = Reason.EARLIER_INELIGIBLE;
                 } else if (c.status == 1) {
                     out.rejectedSeed++;
-                    score = min(bound, -p.transitionWidth);
+                    score = min(bound, rejected);
                     reason = Reason.SEEDED_OPEN_SEA;
                 } else {
                     out.admitted++;
                     double lx = c.c * wx + c.s * wz, lz = -c.s * wx + c.c * wz;
                     double qx = lx / (c.size * c.axis), qz = lz * c.axis / c.size;
                     long id = c.id;
+                    scratch.positiveClearance = 0;
+                    scratch.headland = 0;
+                    double body =
+                            c.islandOnly ? -p.spacing : c.factor * shapeScore(c, qx, qz, scratch);
+                    if (c.featureLength > 0) body = joined(c, wx, wz, body);
+                    body = withIslands(c, wx, wz, body);
+                    // Shelter's probes read the same shape (body, peninsulas and islands), so
+                    // island rims read as capes, as satellites' did.
+                    shaped = body;
                     // Bounded coastal detail, independent wavelength and amplitude; never
                     // changes site admission.
                     double detail =
@@ -1349,11 +1614,18 @@ public final class ContinentalKernels {
                                                                     (-.6 * u + .8 * v)
                                                                             / (.43
                                                                                     * p.detailWavelength)))
-                                    : c.rough * p.detailAmplitude * roughCoast(id, u, v, style);
-                    scratch.positiveClearance = 0;
-                    scratch.headland = 0;
-                    double body = c.factor * shapeScore(c, qx, qz, scratch);
+                                    : clamp(
+                                            c.rough
+                                                    * p.detailAmplitude
+                                                    * roughCoast(id, u, v, style),
+                                            -c.detailCap,
+                                            c.detailCap);
                     score = min(bound, body + detail);
+                    // Fjords and lakes turn land into water without deepening the sea, as a bay
+                    // cut does, but they join the score before rawScore: a fjord is a steep open
+                    // coast, not bay shelter (which the coast typer reads as marsh).
+                    if (c.featureLength > 0 && score > 0)
+                        score = min(score, max(carved(c, wx, wz, score), -score));
                     // Riven adaptation (2026-10-22): a bay cuts only its own continent, before
                     // the union, so a neighbor's land may refill it and the ray never crosses
                     // another landmass. A bay closed off that way is an inland sea. The cut
@@ -1373,7 +1645,6 @@ public final class ContinentalKernels {
                                                         + TAU * random(id, 7));
                         cut = -c.factor * rayTube(inward, across - bend, width);
                     }
-                    shaped = body;
                     reason =
                             min(score, cut) > 0
                                     ? Reason.LAND
@@ -1400,12 +1671,12 @@ public final class ContinentalKernels {
                         out.size = c.size;
                         out.elongation = c.elongation;
                         out.roughness = c.rough;
-                        owner = c.status == 2 ? c : null;
+                        owner = c.status == 2 && !c.islandOnly ? c : null;
                         ownerBody = shaped;
                     }
                 } else if (variation != null && score > second) {
                     second = score;
-                    runnerUp = c.status == 2 ? c : null;
+                    runnerUp = c.status == 2 && !c.islandOnly ? c : null;
                     secondBody = shaped;
                 }
             }
@@ -1538,6 +1809,8 @@ public final class ContinentalKernels {
                         c.factor
                                 * shapeScore(
                                         c, lx / (c.size * c.axis), lz * c.axis / c.size, scratch);
+                if (c.featureLength > 0) probe = joined(c, px, pz, probe);
+                probe = withIslands(c, px, pz, probe);
                 sum += probe;
                 land += clamp(.5 + probe / 64, 0, 1);
             }
@@ -1554,7 +1827,8 @@ public final class ContinentalKernels {
          * cuts one.
          */
         private void crest(Scratch scratch, int live, double u, double v, Sample out) {
-            for (int n = 0; n < live; n++) if (!scratch.window[n].facts) facts(scratch.window[n]);
+            for (int n = 0; n < live; n++)
+                if (!scratch.window[n].facts) facts(scratch.window[n], scratch);
             out.crest = crestMax(scratch, live, u, v, out.score);
             if (out.crest <= 0) return;
             out.crestDx = (crestMax(scratch, live, u + 4, v, out.score) - out.crest) / 4;
@@ -1634,7 +1908,7 @@ public final class ContinentalKernels {
                 Cell c = cellAt(scratch, cx + k % side - reach, cz + k / side - reach);
                 double edge = c.support + radius;
                 if (sq(u - c.ax) + sq(v - c.az) > edge * edge) continue;
-                if (!c.facts) facts(c);
+                if (!c.facts) facts(c, scratch);
                 if (c.crestStrength <= 0) continue;
                 int segments = c.crestPoints - 1;
                 double first = c.crest[0], last = c.crest[2 * segments];
@@ -1681,7 +1955,7 @@ public final class ContinentalKernels {
                 Cell c = cellAt(scratch, cx + k % side - reach, cz + k / side - reach);
                 double edge = c.support + margin;
                 if (sq(u - c.ax) + sq(v - c.az) > edge * edge) continue;
-                if (!c.facts) facts(c);
+                if (!c.facts) facts(c, scratch);
                 if (c.crestStrength <= 0) continue;
                 out[n++] = c.gx;
                 out[n++] = c.gz;
@@ -1705,7 +1979,7 @@ public final class ContinentalKernels {
                 Cell c = cellAt(scratch, cx + k % side - reach, cz + k / side - reach);
                 double edge = c.support + margin;
                 if (sq(u - c.ax) + sq(v - c.az) > edge * edge) continue;
-                if (!c.facts) facts(c);
+                if (!c.facts) facts(c, scratch);
                 if (c.status != 2) continue;
                 out[n++] = c.gx;
                 out[n++] = c.gz;
@@ -1766,6 +2040,389 @@ public final class ContinentalKernels {
                                             (.96 * u + .28 * v) / w3));
         }
 
+        /**
+         * Plans a built continent's fjords, lakes and peninsulas, a pure function of its cell.
+         * Mouths and roots are spaced evenly around the shape frame (where the coast lies near
+         * one radius in every direction) with jitter; paths walk in the frame and are stored as
+         * offsets from the anchor, so a fjord runs across the coast however the continent is
+         * stretched. Widths shrink with small continents.
+         */
+        private void features(Cell c, Scratch scratch) {
+            Variation w = variation;
+            double r = tuning.radius, scale = min(1, c.size), span = w.styleMax - w.styleMin;
+            double[] q = new double[2];
+            for (int i = 0; i < w.fjordSlots; i++) {
+                double a = TAU * (i + .5 + .8 * (random(c.id, 600 + i) - .5)) / w.fjordSlots;
+                double coast = coastRadius(c, a, scratch);
+                if (coast < 0) continue;
+                // The mouth lies just offshore of the continent's own coast on this ray.
+                q[0] = (coast + .12 * r) * cos(a);
+                q[1] = (coast + .12 * r) * sin(a);
+                double mx = offsetX(c, q), mz = offsetZ(c, q);
+                double rugged =
+                        span <= 0
+                                ? 1
+                                : clamp(
+                                        (coastStyle(c.ax + mx, c.az + mz) - w.styleMin) / span,
+                                        0,
+                                        1);
+                if (random(c.id, 640 + i) >= w.fjordChance * (.25 + .75 * rugged)) continue;
+                // A mouth in a neighbour's land would leave the fjord an inland channel.
+                if (claimed(c, c.ax + mx, c.az + mz)) continue;
+                double length = r * lerp(w.fjordLengthMin, w.fjordLengthMax, random(c.id, 660 + i));
+                double width = scale * w.fjordWidth * lerp(.6, 1.4, random(c.id, 680 + i));
+                long walk = c.id ^ (0x464A4F5244L + 31L * i);
+                double heading = a + PI;
+                int head = path(c, 0, q, heading, length, 10, width, .3 * width, walk);
+                if (random(c.id, 700 + i) < w.fjordBranch) {
+                    // A fork from the middle of the fjord, turned up to 0.9 radians off it.
+                    int mid = head + 5 + 3 * 4;
+                    double[] f = c.features;
+                    q[0] = f[mid];
+                    q[1] = f[mid + 1];
+                    double turn =
+                            (random(c.id, 720 + i) < .5 ? -1 : 1)
+                                    * lerp(.5, .9, random(c.id, 740 + i));
+                    pathFrom(
+                            c,
+                            0,
+                            f[mid],
+                            f[mid + 1],
+                            c.featureHeading + turn,
+                            .45 * length,
+                            4,
+                            .8 * f[mid + 2],
+                            .2 * width,
+                            walk ^ 0x464F524BL);
+                }
+                if (random(c.id, 760 + i) < w.lakeChance) {
+                    // Lakes beyond the head, along its last heading: glacial finger lakes.
+                    double[] f = c.features;
+                    int end = head + 5 + 3 * 10;
+                    double x = f[end],
+                            z = f[end + 1],
+                            dx = cos(c.featureHeading),
+                            dz = sin(c.featureHeading);
+                    int lakes = 2 + (int) (3 * random(c.id, 780 + i));
+                    for (int k = 0; k < lakes; k++) {
+                        // A gap, then a lake drawn out along the valley.
+                        x += dx * width * lerp(1.2, 2.4, random(c.id, 800 + 8 * i + k));
+                        z += dz * width * lerp(1.2, 2.4, random(c.id, 800 + 8 * i + k));
+                        double long_ = width * lerp(2.5, 6, random(c.id, 850 + 8 * i + k));
+                        double half = width * lerp(.4, .9, random(c.id, 900 + 8 * i + k));
+                        double bend = .35 * (random(c.id, 950 + 8 * i + k) - .5);
+                        double ex = cos(c.featureHeading + bend), ez = sin(c.featureHeading + bend);
+                        lake(c, x, z, x + ex * long_, z + ez * long_, half);
+                        x += ex * long_;
+                        z += ez * long_;
+                    }
+                }
+            }
+            for (int i = 0; i < w.peninsulaSlots; i++) {
+                double a = TAU * (i + .5 + .8 * (random(c.id, 1000 + i) - .5)) / w.peninsulaSlots;
+                double coast = coastRadius(c, a, scratch);
+                if (coast < .3 * r) continue;
+                // The root lies just inside the continent's own coast on this ray.
+                q[0] = (coast - .15 * r) * cos(a);
+                q[1] = (coast - .15 * r) * sin(a);
+                double mx = offsetX(c, q), mz = offsetZ(c, q);
+                double rugged =
+                        span <= 0
+                                ? 1
+                                : clamp(
+                                        (coastStyle(c.ax + mx, c.az + mz) - w.styleMin) / span,
+                                        0,
+                                        1);
+                if (random(c.id, 1020 + i) >= w.peninsulaChance * (.4 + .6 * rugged)) continue;
+                double length =
+                        r
+                                * (.15
+                                        + lerp(
+                                                w.peninsulaLengthMin,
+                                                w.peninsulaLengthMax,
+                                                random(c.id, 1040 + i)));
+                double width = scale * w.peninsulaWidth * lerp(.7, 1.3, random(c.id, 1060 + i));
+                path(c, 1, q, a, length, 5, width, width / 3, c.id ^ (0x50454E494EL + 31L * i));
+            }
+        }
+
+        /**
+         * Where the continent's own score (body and detail) crosses the coast along a shape-frame ray at
+         * angle a, in frame blocks: scanned inward from two radii in tenths of a radius, then
+         * bisected five times (to 0.3% of a radius). -1 when the ray finds no land. Each probe resets the scratch state shapeScore
+         * reads, as sample does, and the caller's state is restored, so the plan is a pure
+         * function of the cell.
+         */
+        private double coastRadius(Cell c, double a, Scratch scratch) {
+            boolean certify = scratch.certify;
+            double clearance = scratch.positiveClearance, headland = scratch.headland;
+            double r = tuning.radius, ca = cos(a), sa = sin(a), outside = -1;
+            for (int k = 20; k >= 1; k--) {
+                double rho = .1 * k * r;
+                if (body(c, rho * ca, rho * sa, scratch) >= 0) {
+                    outside = k == 20 ? -2 : rho + .1 * r;
+                    break;
+                }
+            }
+            double found = -1;
+            if (outside > 0) {
+                double lo = outside - .1 * r, hi = outside;
+                for (int i = 0; i < 5; i++) {
+                    double mid = .5 * (lo + hi);
+                    if (body(c, mid * ca, mid * sa, scratch) >= 0) lo = mid;
+                    else hi = mid;
+                }
+                found = .5 * (lo + hi);
+            }
+            scratch.certify = certify;
+            scratch.positiveClearance = clearance;
+            scratch.headland = headland;
+            return found;
+        }
+
+        /** The continent's own score at a shape-frame point: its body plus the clamped detail. */
+        private double body(Cell c, double qx, double qz, Scratch scratch) {
+            scratch.certify = true;
+            scratch.positiveClearance = 0;
+            scratch.headland = 0;
+            double[] q = {qx, qz};
+            double u = c.ax + offsetX(c, q), v = c.az + offsetZ(c, q);
+            double detail =
+                    clamp(
+                            c.rough
+                                    * tuning.detailAmplitude
+                                    * roughCoast(c.id, u, v, coastStyle(u, v)),
+                            -c.detailCap,
+                            c.detailCap);
+            return c.factor * shapeScore(c, qx, qz, scratch) + detail;
+        }
+
+        /**
+         * Whether another built continent's own score (body and detail) is land at layout point
+         * (u, v). Read through a private per-thread scratch, so the query's cell cache is never
+         * touched, and from bodies alone (never features), so planning does not recurse.
+         */
+        private boolean claimed(Cell c, double u, double v) {
+            Scratch own = planScratch.get();
+            long cx = (long) floor(u / tuning.spacing), cz = (long) floor(v / tuning.spacing);
+            for (int k = 0, side = 2 * reach + 1; k < side * side; k++) {
+                Cell n = cellAt(own, cx + k % side - reach, cz + k / side - reach);
+                if (n.id == c.id || n.status != 2 || n.islandOnly) continue;
+                double wx = u - n.ax, wz = v - n.az;
+                if (wx * wx + wz * wz > n.support * n.support) continue;
+                if (n.shape == null || !n.framed) {
+                    double angle = TAU * random(n.id, 5);
+                    n.c = cos(angle);
+                    n.s = sin(angle);
+                    n.shape = geometryOf(n.id);
+                    n.framed = true;
+                }
+                double lx = n.c * wx + n.s * wz, lz = -n.s * wx + n.c * wz;
+                if (body(n, lx / (n.size * n.axis), lz * n.axis / n.size, own) > 0) return true;
+            }
+            return false;
+        }
+
+        private final ThreadLocal<Scratch> planScratch = ThreadLocal.withInitial(Scratch::new);
+
+        /** World offset from the anchor of a shape-frame point (qx, qz). */
+        private double offsetX(Cell c, double[] q) {
+            double lx = q[0] * c.size * c.axis, lz = q[1] * c.size / c.axis;
+            return c.c * lx - c.s * lz;
+        }
+
+        private double offsetZ(Cell c, double[] q) {
+            double lx = q[0] * c.size * c.axis, lz = q[1] * c.size / c.axis;
+            return c.s * lx + c.c * lz;
+        }
+
+        /**
+         * A wandering path from shape-frame point q along heading (frame radians), length frame
+         * blocks in steps, half-width from w0 to w1, stored as offsets. Returns its start index;
+         * its last frame heading is left in featureHeading.
+         */
+        private int path(
+                Cell c,
+                int kind,
+                double[] q,
+                double heading,
+                double length,
+                int steps,
+                double w0,
+                double w1,
+                long walk) {
+            int start = c.featureLength;
+            reserve(c, 5 + 3 * (steps + 1));
+            double[] f = c.features;
+            f[start] = kind;
+            f[start + 1] = steps + 1;
+            double qx = q[0], qz = q[1], step = length / steps;
+            for (int k = 0; k <= steps; k++) {
+                if (k > 0) {
+                    heading += turn(walk, k);
+                    qx += step * cos(heading);
+                    qz += step * sin(heading);
+                }
+                q[0] = qx;
+                q[1] = qz;
+                int at = start + 5 + 3 * k;
+                f[at] = offsetX(c, q);
+                f[at + 1] = offsetZ(c, q);
+                f[at + 2] = width(walk, k, steps, w0, w1);
+            }
+            // The last world heading, for forks and lakes.
+            int last = start + 5 + 3 * steps;
+            c.featureHeading = atan2(f[last + 1] - f[last - 2], f[last] - f[last - 3]);
+            seal(c, start, steps + 1);
+            return start;
+        }
+
+        /** As {@link #path} from a world offset and world heading (forks). */
+        private void pathFrom(
+                Cell c,
+                int kind,
+                double x,
+                double z,
+                double heading,
+                double length,
+                int steps,
+                double w0,
+                double w1,
+                long walk) {
+            int start = c.featureLength;
+            reserve(c, 5 + 3 * (steps + 1));
+            double[] f = c.features;
+            f[start] = kind;
+            f[start + 1] = steps + 1;
+            double step = length * c.size, h = heading;
+            for (int k = 0; k <= steps; k++) {
+                if (k > 0) {
+                    h += turn(walk, k);
+                    x += step / steps * cos(h);
+                    z += step / steps * sin(h);
+                }
+                int at = start + 5 + 3 * k;
+                f[at] = x;
+                f[at + 1] = z;
+                f[at + 2] = width(walk, k, steps, w0, w1) / (k == 0 ? 1.5 : 1);
+            }
+            seal(c, start, steps + 1);
+        }
+
+        /**
+         * A path's turn at step k: smooth value noise along the path (a coherent bend over a few
+         * steps, not a jitter), up to fjordWander radians.
+         */
+        private double turn(long walk, int k) {
+            return variation.fjordWander * noise(walk ^ 0x5455524EL, .45 * k, .37);
+        }
+
+        /**
+         * Half-width at step k of steps: the taper from w0 to w1, pinching and swelling by up to
+         * 35% along the path, flared by half again at the first point (a fjord's mouth).
+         */
+        private static double width(long walk, int k, int steps, double w0, double w1) {
+            double swell = 1 + .35 * noise(walk ^ 0x5357454CL, .6 * k, .21);
+            return lerp(w0, w1, k / (double) steps) * swell * (k == 0 ? 1.5 : 1);
+        }
+
+        /** A carved lake: a capsule from (x0, z0) to (x1, z1), narrower at both ends. */
+        private void lake(Cell c, double x0, double z0, double x1, double z1, double half) {
+            int start = c.featureLength;
+            reserve(c, 5 + 9);
+            double[] f = c.features;
+            f[start] = 0;
+            f[start + 1] = 3;
+            double[] at = {
+                x0, z0, .45 * half, .5 * (x0 + x1), .5 * (z0 + z1), half, x1, z1, .45 * half
+            };
+            System.arraycopy(at, 0, f, start + 5, 9);
+            seal(c, start, 3);
+        }
+
+        private void reserve(Cell c, int more) {
+            if (c.features.length < c.featureLength + more)
+                c.features = java.util.Arrays.copyOf(c.features, 2 * (c.featureLength + more));
+        }
+
+        /** Stores a feature's bounding circle and closes it. */
+        private void seal(Cell c, int start, int points) {
+            double[] f = c.features;
+            double cx = 0, cz = 0;
+            for (int k = 0; k < points; k++) {
+                cx += f[start + 5 + 3 * k];
+                cz += f[start + 6 + 3 * k];
+            }
+            cx /= points;
+            cz /= points;
+            double reach = 0;
+            for (int k = 0; k < points; k++) {
+                int at = start + 5 + 3 * k;
+                reach = max(reach, hypot(f[at] - cx, f[at + 1] - cz) + f[at + 2]);
+            }
+            f[start + 2] = cx;
+            f[start + 3] = cz;
+            f[start + 4] = reach;
+            c.featureLength = start + 5 + 3 * points;
+        }
+
+        /**
+         * Distance from (x, z) to the nearest tapered tube of a kind, less its half-width there:
+         * negative inside. Features whose bounding circle cannot beat {@code best} are skipped.
+         */
+        private static double tube(Cell c, int kind, double x, double z, double best) {
+            double[] f = c.features;
+            for (int at = 0; at < c.featureLength; ) {
+                int points = (int) f[at + 1];
+                int next = at + 5 + 3 * points;
+                if ((int) f[at] == kind && hypot(x - f[at + 2], z - f[at + 3]) - f[at + 4] < best) {
+                    if (points == 1)
+                        best = min(best, hypot(x - f[at + 5], z - f[at + 6]) - f[at + 7]);
+                    else
+                        for (int k = 0; k + 1 < points; k++) {
+                            int p = at + 5 + 3 * k;
+                            double ax = f[p], az = f[p + 1], bx = f[p + 3], bz = f[p + 4];
+                            double vx = bx - ax, vz = bz - az, l2 = vx * vx + vz * vz;
+                            double t =
+                                    l2 <= 0 ? 0 : clamp(((x - ax) * vx + (z - az) * vz) / l2, 0, 1);
+                            double w = lerp(f[p + 2], f[p + 5], t);
+                            double d = hypot(x - ax - t * vx, z - az - t * vz) - w;
+                            // Rough walls: up to a quarter of the width, at about twice its scale.
+                            if (d < .25 * w)
+                                d -= .25 * w * noise(c.id ^ 0x57414C4CL, x / (2 * w), z / (2 * w));
+                            best = min(best, d);
+                        }
+                }
+                at = next;
+            }
+            return best;
+        }
+
+        /**
+         * The body joined with the cell's islands: ellipses of area-preserving axis ratio e^2,
+         * each scored as its radius less the stretched distance (at most e from the true one).
+         */
+        private static double withIslands(Cell c, double wx, double wz, double body) {
+            for (int i = 0; i < c.islandCount; i++) {
+                int at = 6 * i;
+                double ix = wx - c.islands[at], iz = wz - c.islands[at + 1];
+                double ca = c.islands[at + 3], sa = c.islands[at + 4], e = c.islands[at + 5];
+                double along = ca * ix + sa * iz, across = -sa * ix + ca * iz;
+                body = max(body, c.islands[at + 2] - hypot(along / e, across * e));
+            }
+            return body;
+        }
+
+        /** The body joined with its peninsulas. */
+        private static double joined(Cell c, double x, double z, double body) {
+            return max(body, -tube(c, 1, x, z, -body));
+        }
+
+        /** The carve of fjords and lakes: the tube distance (negative inside), at most the score. */
+        private static double carved(Cell c, double x, double z, double score) {
+            return tube(c, 0, x, z, score);
+        }
+
         /** Precomputes the parts of this family's shape that depend only on the cell. */
         abstract void plan(Cell c);
 
@@ -1787,7 +2444,6 @@ public final class ContinentalKernels {
                 Variation variation,
                 HarmonicStyle harmonic,
                 SpineStyle spine,
-                CellularStyle cellular,
                 PotentialStyle potential) {
             super(
                     null,
@@ -1801,7 +2457,6 @@ public final class ContinentalKernels {
                     new Kernel[] {
                         new Harmonic(seed, p, r, e, harmonic),
                         new Spine(seed, p, r, e, spine),
-                        new Cellular(seed, p, r, e, cellular),
                         new Potential(seed, p, r, e, potential)
                     };
         }
@@ -1982,128 +2637,6 @@ public final class ContinentalKernels {
                     * ((index == 0 ? -.485 : .495)
                             + .09 * sin(z / (.48 * radius) + TAU * random(id, 200 + index))
                             + .035 * sin(z / (.19 * radius) + TAU * random(id, 210 + index)));
-        }
-    }
-
-    /** F3: seven jittered sub-sites; eroded pairwise bisectors clip rounded cells. Selected adjacency
-     * bridges are a separate union. This is a finite local mosaic, NOT a global Voronoi simulation. */
-    public static final class Cellular extends Kernel {
-        public final CellularStyle style;
-
-        /** Plan layout: sites, per-pair bisector terms, then bridge endpoints. */
-        private static final int SITES = 0, PAIRS = 24, BRIDGES = PAIRS + 4 * 64;
-
-        public Cellular(long seed, Tuning p, Reference r, Earlier e, CellularStyle style) {
-            super(Family.CELLULAR, seed, p, r, e);
-            this.style = java.util.Objects.requireNonNull(style);
-        }
-
-        /**
-         * Plan: (x, z, radius) of each sub-site; for each ordered pair the bisector direction,
-         * offset and length; then the connected edges of the bounded Prim tree over the sites
-         * (no recursive selected-neighbor queries).
-         */
-        void plan(Cell c) {
-            long id = c.id;
-            boolean islands = c.archipelago;
-            double r = tuning.radius;
-            int count = 4 + (int) (4 * random(id, 59));
-            double[] g = c.plan(BRIDGES + 1 + 2 * 8);
-            g[SITES] = 0;
-            g[SITES + 1] = 0;
-            for (int i = 1; i < count; i++) {
-                double a = TAU * (i - 1 + .8 * (random(id, 60 + i) - .5)) / (count - 1);
-                double orbit = r * (.42 + .72 * random(id, 70 + i));
-                g[SITES + 3 * i] = orbit * cos(a);
-                g[SITES + 3 * i + 1] = orbit * sin(a);
-            }
-            for (int i = 0; i < count; i++)
-                g[SITES + 3 * i + 2] =
-                        (islands
-                                        ? (.32 + .12 * random(id, 130 + i))
-                                        : (.42 + .42 * random(id, 130 + i)))
-                                * r;
-            for (int i = 0; i < count; i++)
-                for (int j = 0; j < count; j++)
-                    if (i != j) {
-                        double xi = g[SITES + 3 * i], zi = g[SITES + 3 * i + 1];
-                        double xj = g[SITES + 3 * j], zj = g[SITES + 3 * j + 1];
-                        double dx = xj - xi, dz = zj - zi;
-                        int at = PAIRS + 4 * (8 * i + j);
-                        g[at] = dx;
-                        g[at + 1] = dz;
-                        g[at + 2] = (sq(xj) + sq(zj) - sq(xi) - sq(zi)) / 2;
-                        g[at + 3] = hypot(dx, dz);
-                    }
-            int edges = 0;
-            if (!islands) {
-                boolean[] joined = new boolean[count];
-                joined[0] = true;
-                for (int edge = 1; edge < count; edge++) {
-                    double best = Double.POSITIVE_INFINITY;
-                    int from = 0, to = 0;
-                    for (int i = 0; i < count; i++)
-                        if (joined[i])
-                            for (int j = 0; j < count; j++)
-                                if (!joined[j]) {
-                                    double d =
-                                            sq(g[SITES + 3 * i] - g[SITES + 3 * j])
-                                                    + sq(
-                                                            g[SITES + 3 * i + 1]
-                                                                    - g[SITES + 3 * j + 1]);
-                                    if (d < best) {
-                                        best = d;
-                                        from = i;
-                                        to = j;
-                                    }
-                                }
-                    joined[to] = true;
-                    if (random(id, 80 + to) < style.connectionProbability) {
-                        g[BRIDGES + 1 + 2 * edges] = from;
-                        g[BRIDGES + 2 + 2 * edges] = to;
-                        edges++;
-                    }
-                }
-            }
-            g[BRIDGES] = edges;
-            c.count = count;
-        }
-
-        protected double geometry(Cell c, double x, double z, Scratch s) {
-            boolean islands = c.archipelago;
-            double[] g = c.plan;
-            int count = c.count;
-            double r = tuning.radius, result = -2 * r;
-            double inset = style.insetScale * ((islands ? .09 : .04) * r + .025 * tuning.spacing);
-            for (int i = 0; i < count; i++) {
-                double score =
-                        g[SITES + 3 * i + 2]
-                                - hypot(x - g[SITES + 3 * i], z - g[SITES + 3 * i + 1]);
-                for (int j = 0; j < count; j++)
-                    if (i != j) {
-                        int at = PAIRS + 4 * (8 * i + j);
-                        double clearance = (g[at + 2] - x * g[at] - z * g[at + 1]) / g[at + 3];
-                        score = min(score, clearance - inset);
-                    }
-                result = max(result, score);
-            }
-            // Irregular count/spacing/radius plus a sparse tree avoid a repeated radial flower
-            // motif.
-            for (int e = 0, edges = (int) g[BRIDGES]; e < edges; e++) {
-                int from = (int) g[BRIDGES + 1 + 2 * e], to = (int) g[BRIDGES + 2 + 2 * e];
-                result =
-                        max(
-                                result,
-                                tuning.bridgeHalfWidth
-                                        - capsuleDistance(
-                                                x,
-                                                z,
-                                                g[SITES + 3 * from],
-                                                g[SITES + 3 * from + 1],
-                                                g[SITES + 3 * to],
-                                                g[SITES + 3 * to + 1]));
-            }
-            return result;
         }
     }
 

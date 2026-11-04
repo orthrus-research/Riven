@@ -85,7 +85,7 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   blocks under dry ground, 16 under fluid); the numbers are data, the rule is the engine's.
 - **The surface: land share, provinces, coast and drainage.** The surface is a chain: outline
   with land check, provinces, coast plan, base ground, drainage, landform primitives, biomes,
-  blocks. Land targets a 50% mean, held by redrawing an outline that misses its band (35 to 65%);
+  blocks. Land targets a 45% mean, held by redrawing an outline that misses its band (35 to 65%);
   the band is data and the mean is a target the atlas measures. Provinces are a seeded regional
   map precomputed as a pure plan, covering sea (a few ocean classes, such as warm or cold, deep or
   shallow) as well as land. A province is the parent of its biomes and owns the rules that ease

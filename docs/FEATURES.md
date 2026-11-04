@@ -11,7 +11,7 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
   factor of 0.5-8 from the generator options (`scale=4`; `generator-settings` in
   server.properties, `runtime.py prepare --scale`, `terrain_atlas.py render --scale`) multiplies
   the continental layout: the continent lattice, radius, warp, bridges, bays, shelter reach and
-  strait blend (crests, crest nodes and trunk paths follow in continent radii); temperature and
+  strait blend (crests and crest nodes follow in continent radii); temperature and
   moisture wavelengths and belt; plate cells and volcanic provinces; climate forcing's upwind
   step and lattice. Coast detail is self-similar: above 1 octaves at 2.3 and 5.3 detail
   wavelengths (amplitude 2 and 4) fade in with log(scale)/log(2.3); below 1 the base octaves and
@@ -143,14 +143,28 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
 
 ## Continents and oceans
 
-- **Outline** (`ContinentalOutlineMap`, MIT kernels; `riven-continents.json`): since v58
-  (`PER_CONTINENT`, `variation`) every continent draws its own family (harmonic, spine, cellular
-  or potential, equal weights), a radius multiplier in two modes (30% at 1.0-1.5, the rest at
-  0.8-1.0), an area-preserving axis ratio up to 2.2 (squared draw, mostly near round) and a coast
-  roughness of 0.4-3.0 scaling three rotated detail octaves (60 blocks at 520, 230 and 98);
-  anchors jitter 0.25 spacing. `WORLD_SEEDED` or a named family keeps the earlier one-family
-  outline exactly (same atlas digest as v57). Exact zero land weight is marine. Owns the outline
-  only; no water admission or bed shaping.
+- **Outline** (`ContinentalOutlineMap`, MIT kernels; `riven-continents.json`): every continent
+  draws its own family (harmonic, spine or potential; Cellular retired in v125), a log-scaled
+  radius multiplier of 0.3-1.7 skewed toward small ones, an area-preserving axis ratio up to 3
+  and a coast roughness of 0.6-1.6. Cells of the 3,000-block lattice (times the layout scale) are
+  occupied by chance, thinned and shrunk where one smooth cluster field is low, so continents
+  gather in clusters with archipelagos between them and open ocean beyond (v125). Exact zero land
+  weight is marine. Owns the outline only; no water admission or bed shaping.
+- **Coast character** (v125): a coast style field (2,500 blocks times the layout scale) runs
+  stretches of coast from calm (0.6) to rugged (4): it scales the large coast octaves, so rugged
+  coast gains inlets within bays, while the two small octaves never exceed 1. The warp is shear
+  pairs, fold-free and invertible. Each built continent plans its fjords and peninsulas once (a
+  pure function of the cell in a bounded cache): mouths just offshore of where its own score
+  crosses the coast on 24 rays of its shape frame, kept mostly on rugged coast and never where a
+  neighbour's land holds the mouth; fjords wander inland 0.2-0.6 radii, pinch and swell from a
+  flared mouth, fork, and sometimes continue as finger lakes. They are carved as the distance to a
+  tapered tube with rough walls, so the score stays a coast distance (gradient p50 1.02, p90 1.92
+  at 32 km on 16 seeds) and a fjord is open coast, not bay shelter. Peninsulas grow from just
+  inside the coast as tubes joined to the body. Islands: each cell draws up to 8 elliptical
+  islands, scattered or in an aligned chain; an open-sea cell with islands is built island-only.
+  Measured at 32 km on 16 seeds (`ShapeCheck`): solidity 0.66 (v124 0.70), 3 slivers per world
+  (6); 46.4% land kept on 64 seeds (`LandShareCheck`), 1.67 draws per world, the largest landmass
+  68% of land and spanning the world in 31 of 64.
 - **Outline traits** (v58): each column carries its owner continent's family, size, axis ratio,
   roughness and interior depth (`ContinentalMap.Sample`) for later classification. Shelter is
   read from the outline (v59): within 450 blocks of the coast, the five-point Laplacian of the
@@ -167,12 +181,13 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
   stretches of dissipative (1) and reflective (0) coast, about half each. It is continuous by
   construction; shelter, which changes within a few blocks offshore, stays a site-level trait.
   The ray-tube bay is a
-  per-continent draw, off by default (`bayProbability` 0). Cellular bridges join 40% of cells
-  (were 92%); Potential sea deepens with distance from its kernels instead of staying
+  per-continent draw, off by default (`bayProbability` 0). Potential sea deepens with distance from its kernels instead of staying
   shelf-deep. Where continents meet at sea a smooth union (`straitBlend` 800) rounds strait
   floors; before v59 their creases drew straight deep lines between continents.
-- **Outline cost** (8 km atlas of seed 8675309, 8 threads): 2.7 s sampling, median column 28 µs on
-  land and 8 µs at sea (one-family v57: 4.2 s, 28 and 13 µs). Each scratch caches the continent
+- **Outline cost** (8 km atlas of seed 8675309, 8 threads, v58): 2.7 s sampling, median column 28 µs on
+  land and 8 µs at sea. Feature plans (v125) are cached per kernel; a coast-heavy 8 km window
+  samples 28% slower with them than without (51 s against 40 s), mostly from the longer coast
+  through the coastal stages. Each scratch caches the continent
   cells of its query window (anchor, draws, eligibility and the family's geometry plan: phases,
   satellites, spine nodes, cell sites with bisectors and bridge tree, potential kernels), so
   repeated reads by climate, forcing, intent and normals stop recomputing them; entries are pure
@@ -184,7 +199,10 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
   (v65). Dividing the score by its gradient jumped across creases where lobes or continents meet
   in the union max, which left one-block spikes and terrace steps in the coastal plain.
 - **Ocean floors** (`OceanBed`, MIT `OceanFloors`; `riven-ocean-floors.json`): shelf, slope,
-  ridges, trenches and banks from the reference; bank detail fades offshore. Fitted inside the
+  ridges, trenches and banks from the reference; bank detail fades offshore. Since v125 the whole
+  profile stretches offshore with the coast style at the column (`shelf` in
+  `riven-continents.json`): 1.6 times on the calmest coast, 0.45 on the most rugged, so shelves
+  are broad off calm coast and narrow off rugged coast instead of one ring around every shore. Fitted inside the
   continental deep band. Nearshore shoaling (v68): the bed rises toward a ramp from the shore to the
   shoal floor (Y47) over 48 blocks on reflective coasts to 176 on dissipative ones, blended back to
   the shelf by that reach, and never lowered. On 2 seeds, the share of coasts at most 5 blocks
@@ -196,8 +214,15 @@ Province types shape nothing yet: relief recipes come with S4 of the engine desi
   each column within 350 blocks of the coast belongs to its nearest kept site, so segment edges
   cross the coast. A segment's type, band width and foot are chosen once at its site, from facts
   read 64 blocks inland before any shore shaping (the land's level and ruggedness, the outline's
-  cape, headland, shelter and shoaling, the broad grade across the shore, moisture and warmth),
-  as the most suitable type with each score shaken by up to 0.25.
+  cape, headland, shelter and shoaling, the broad grade across the shore, moisture and warmth,
+  and since v125 `craggy`, how rugged the outline's coast style is), as the most suitable type
+  with each score shaken by up to 0.25. Craggy coast leans to cliff (+0.6), headland (+0.8) and
+  platform (+0.3), calm coast to beach (-0.4 craggy) and marsh (-0.5), so fjorded stretches carry
+  rocky forms. On 8 seeds at 8 km (`CoastCheck`): headland 6.4% of band columns (v124 3.9%),
+  cliff 3.5% (2.4%), beach 59.6% (63.5%), marsh 16.0% (16.2%); stacks 1,085 (863), sea caves 537
+  (415), spits 38 (79). A sea cave is admitted only where its whole axis is clear of reserved
+  water and aquifers, and wins its footprint over the band's height forms, so its passage is
+  never walled off; a spit or tombolo's line is checked for reserved water every block.
   - **Types and profiles** (from the waterline inland, to the inland height H): cliff (band
     30-60) and headland (60-120, on capes) keep a foot of up to 4 blocks at the sea and rise to H
     within a quarter of the band; bluff (80-150) rises over the whole band from a foot of 2-8;

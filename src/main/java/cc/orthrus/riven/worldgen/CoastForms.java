@@ -552,6 +552,14 @@ public final class CoastForms {
         double rise = lerp(caveHeight, unit(h, 3));
         // A cave reaches no farther than its segment's band.
         length = Math.min(length, s.width);
+        // Its column refuses reserved water and aquifers, so its whole axis must be clear, sampled
+        // every block from the mouth: else the passage is cut and the vault inland is sealed.
+        TerrainMap.Sample probe = scratch.get();
+        for (int d = 0; d <= Math.ceil(length); d++) {
+            parent.sample(at[0] + at[2] * d, at[1] + at[3] * d, probe);
+            Hydro.Sample w = probe.water;
+            if (reserved(probe) || w.aquiferMin <= w.aquiferMax && w.aquiferMax >= sea) return null;
+        }
         return new Placed(
                 Form.SEA_CAVE,
                 s,
@@ -906,7 +914,10 @@ public final class CoastForms {
             out.weight = 1;
             height = builtHeight;
             out.emergent = marine && height >= sea;
-        } else if (cave != null && out.family == null) {
+        } else if (cave != null) {
+            // A sea cave cuts through the cliff its coast's height forms built: on its own
+            // footprint it wins, from the ground they left, so its passage is never walled off
+            // between the mouth notch and the vault.
             double cut = cave.body.column(x, z, height, sample.water, out);
             if (!Double.isNaN(cut)) {
                 out.family = Form.SEA_CAVE;

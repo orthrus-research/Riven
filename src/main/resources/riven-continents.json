@@ -1,17 +1,16 @@
 {
   "schema": 1,
-  "revision": 19,
+  "revision": 20,
   "variationSeed": "0x434f4e54494e3331",
   "family": "PER_CONTINENT",
   "familyWeights": {
     "HARMONIC": 1,
     "SPINE": 1,
-    "CELLULAR": 1,
     "POTENTIAL": 1
   },
   "tuning": {
     "spacing": 3000,
-    "radius": 1550,
+    "radius": 1700,
     "detailAmplitude": 60,
     "detailWavelength": 520,
     "warpAmplitude": 226,
@@ -25,17 +24,28 @@
     "transitionScale": 1,
     "corridorOffsetInSpacings": 6,
     "corridorPeriodInSpacings": 12,
-    "stratifiedOccupancy": 4
+    "stratifiedOccupancy": 0
   },
   "variation": {
-    "anchorJitter": 0.25,
-    "sizeMin": 0.8,
-    "sizeMax": 1.5,
-    "sizeSplit": 1.0,
-    "largeShare": 0.3,
-    "elongationMax": 2.2,
-    "roughnessMin": 0.4,
-    "roughnessMax": 3.0,
+    "anchorJitter": 0.35,
+    "sizeMin": 0.3,
+    "sizeMax": 1.7,
+    "sizeSkew": 1.6,
+    "clusterWavelength": 4500,
+    "clusterSize": 0.3,
+    "clusterOccupancy": 0.4,
+    "islandSlots": 8,
+    "islandDensity": 0.9,
+    "islandOpenSea": 1.0,
+    "islandReach": 1.8,
+    "islandMin": 0.04,
+    "islandMax": 0.15,
+    "islandSkew": 2.0,
+    "islandChainShare": 0.5,
+    "islandElongation": 3.0,
+    "elongationMax": 3,
+    "roughnessMin": 0.6,
+    "roughnessMax": 1.6,
     "bayProbability": 0.0,
     "shelterReach": 450,
     "shelterFloor": 0.2,
@@ -44,12 +54,26 @@
     "warpOctaves": 0,
     "warpLacunarity": 2.3,
     "warpGain": 0.5,
-    "macroGain": 2,
-    "macroShift": 0,
+    "macroGain": 2.3,
+    "macroShift": 1,
     "styleWavelength": 2500,
-    "styleMin": 1,
-    "styleMax": 1,
-    "styleContrast": 1
+    "styleMin": 0.6,
+    "styleMax": 4,
+    "styleContrast": 1.5,
+    "fjordSlots": 24,
+    "fjordChance": 0.85,
+    "fjordLengthMin": 0.2,
+    "fjordLengthMax": 0.6,
+    "fjordWidth": 22,
+    "fjordWander": 0.6,
+    "fjordBranch": 0.5,
+    "lakeChance": 0.2,
+    "peninsulaSlots": 6,
+    "peninsulaChance": 0.35,
+    "peninsulaLengthMin": 0.15,
+    "peninsulaLengthMax": 0.45,
+    "peninsulaWidth": 220,
+    "detailShare": 0.5
   },
   "skeleton": {
     "rangeShare": 0.75,
@@ -63,15 +87,11 @@
   "styles": {
     "HARMONIC": {
       "harmonicStrength": 1,
-      "satelliteScale": 1
+      "satelliteScale": 0
     },
     "SPINE": {
       "widthScale": 0.8,
       "spurScale": 1
-    },
-    "CELLULAR": {
-      "insetScale": 1.5,
-      "connectionProbability": 0.4
     },
     "POTENTIAL": {
       "mainlandThreshold": 0.19,
@@ -84,6 +104,10 @@
     "measureSide": 64
   },
   "shelfFraction": 0.35,
+  "shelf": {
+    "calmScale": 1.6,
+    "ruggedScale": 0.45
+  },
   "normalBandInCoastalPlainWidths": 1.5,
   "contract": [
     "Choose one authored outline alternative per world, explicitly or by seed; do not blend incompatible scores or preserve the old continental grid underneath it.",
@@ -94,14 +118,16 @@
     "All offshore profile transitions finish within the kernel transition band before negative score-window changes. Local finite-difference normals are not exact shoreline distances.",
     "The original source import was not runtime-qualified. Require fresh worlds after definition changes; standalone admission checks do not establish final fluid topology, native/DH parity or visual acceptance.",
     "The ocean corridor lattice (every corridorPeriodInSpacings, 3 in the original kernel) is shifted by corridorOffsetInSpacings; at 12 and 6 with the 3,000-block lattice its nearest lines fall 18 km from the origin, outside a 32 km world even with the warp (up to warpAmplitude). Enclosed seas are allowed, so corridors no longer need to be dense.",
-    "Tuned for 8 km worlds (revision 11): a 3,000-block lattice with radius 0.45 spacing and every cell occupied (stratifiedOccupancy 4) gives 8 km worlds 41-46% land by family on 64 seeds, with the largest landmass 34-46% of land (radius 0.533 gave 54-60% and merged neighbours across the map); Spine width, Potential thresholds and Cellular inset even out the families. stratifiedOccupancy 1-3 fixes how many cells of each 2 x 2 block hold land.",
-    "PER_CONTINENT (revision 12): every admitted continent draws its outline family by familyWeights, a radius multiplier (sizeMin-sizeMax), an area-preserving axis ratio (1-elongationMax, squared draw so most stay near round), and a coast roughness (roughnessMin-roughnessMax) scaling three rotated detail octaves of detailAmplitude at detailWavelength, /2.3 and /5.3. Anchors jitter by anchorJitter spacings each way; the candidate search widens so every anchor whose support can reach a column is searched. WORLD_SEEDED or an explicit family keeps the earlier single-family outline exactly and ignores variation.",
+    "Layout (revision 20, tuned at 32 km): a 3,000-block lattice (times the layout scale) whose cells are occupied by chance: occurrence lowered by up to clusterOccupancy where one smooth cluster field (clusterWavelength) is low, so continents gather in clusters with archipelagos between them and open ocean beyond. Radius 1,700 with sizes log-scaled from sizeMin to sizeMax (sizeSkew 1.6 favours small ones, the cluster shifts the draw by up to clusterSize) gives 32 km worlds a 46-47% mean land share on 16 seeds, the largest landmass about 64% of land. stratifiedOccupancy 1-4 instead fixes how many cells of each 2 x 2 block hold land, and occupancy then waits for the earlier facts.",
+    "PER_CONTINENT: every admitted continent draws its outline family by familyWeights (harmonic, spine, potential), a radius multiplier, an area-preserving axis ratio (1-elongationMax, squared draw so most stay near round), and a coast roughness (roughnessMin-roughnessMax) scaling three rotated detail octaves of detailAmplitude at detailWavelength, /2.3 and /5.3. Anchors jitter by anchorJitter spacings each way; the candidate search (at most 11 x 11 cells) widens so every anchor whose support can reach a column is searched. Without an eligibility floor or a quota, a cell's status and islands are decided with its draws, so each support is exact (its body, its drawn islands, or nothing for empty open sea) and an open-sea cell adds nothing to the union. WORLD_SEEDED or an explicit family keeps the single-family outline and ignores variation. Harmonic satellites are off (satelliteScale 0): the island tier replaces them.",
     "Shelter is read from the outline, not carved: within shelterReach of the coast, the owner continent's shape score (before detail) is sampled at four points shelterReach / 2 away; its Laplacian times that step is about 0 on a straight coast, +step / r in a bay or between lobes of radius r and negative off headlands. Shelter rises from 0 at shelterFloor (mild lobe curvature stays open) to 1 at shelterConcavity and is 0 on straight or convex coasts and in straits between continents. The probes must also find the shore (a sea column needs land at two, a land column sea at one), so creases a family's score carries out to sea never read as bays.",
     "straitBlend (v59): where the union is sea, varied continents meet through a polynomial smooth maximum of width straitBlend, never rising above half the hard depth, so a strait floor is rounded instead of creased along its midline (the creases drew straight deep lines between continents). Candidates are visited nearest first and skipped when their support bound cannot reach the union (or, at sea, come within straitBlend of it); skipping changes no result. Bays become a per-continent draw (bayProbability, 0 by default); where one exists its legacy shelter still applies.",
     "skeleton (revisions 13-14): a rangeShare of built mainland continents carries a crest in its shape frame (Spine continents along their six nodes, others a three-point line crestLengthInRadii long, bent up to crestBendInRadii), strength strengthMin..strengthMax times its size. A column's crest weight is that strength, tapered over the outer quarter of the crest, times a smooth falloff over crestHalfWidthInRadii (wandering 20% along the crest, distance jittered 8%), faded to zero over coastClearInRadii scaled radii from the coast. A column takes the largest crest of any continent in its window, each faded by its own size, so merged land has no seam where ownership switches. Base elevation reads it as uplift (riven-base-elevation.json crestWeight).",
     "Bays cut only their own continent before the union (kernel v3): a neighbor may refill one, closing it into an inland sea, and a bay never deepens existing sea.",
-    "land (revision 18, LandShare): a world's land share is the part of its square (8 km times the layout scale, centred on the origin) whose outline land weight is above zero, measured at world creation on measureSide x measureSide cell centres. Attempt 0 draws the outline from its own seed as before; attempt k salts only that seed, so a redraw changes nothing else in the world. The first attempt inside band is kept; after attempts, the one closest to the band. The mean comes from the draw: radius 1,550 (0.52 spacing, 1,350 before; stratifiedOccupancy 4 already fills every cell) puts it at 50%, a target the atlas measures, not a value read here.",
-    "Coast shape knobs (revision 19), all neutral here, which reproduces revision 18 exactly: warpOctaves adds shear pairs above the base warp (wavelength divided by warpLacunarity^k, amplitude times warpGain^k, each in a golden-angle rotated frame), so the warp stays fold-free and invertible with det(J) = 1; macroGain is the amplitude growth per layout coast octave (2 before; 2.3 keeps relative roughness the same at every scale); macroShift adds layout octaves beyond log(layout) / log(2.3); the coast style is one world field (styleWavelength, layout-scaled) faded from styleMin on calm stretches to styleMax on rugged ones by styleContrast, scaling the base and layout coast octaves while the two small octaves take at most 1. Every bound includes styleMax, so a larger value can exceed the candidate reach and fail at load."
+    "land (LandShare): a world's land share is the part of its square (8 km times the layout scale, centred on the origin) whose outline land weight is above zero, measured at world creation on measureSide x measureSide cell centres. Attempt 0 draws the outline from its own seed; attempt k salts only that seed, so a redraw changes nothing else in the world. The first attempt inside band is kept; after attempts, the one closest to the band. The mean, 45% (D35), comes from the draw and is a target the atlas measures, not a value read here.",
+    "Coast (revision 20): the warp is shear pairs (warpOctaves above the base pair, each in a golden-angle rotated frame), fold-free and invertible with det(J) = 1. macroGain is the amplitude growth per layout coast octave and macroShift adds layout octaves beyond log(layout) / log(2.3). The coast style is one world field (styleWavelength, layout-scaled) from styleMin on calm stretches to styleMax on rugged ones (styleContrast): it scales the base and layout octaves, while the two small octaves take at most 1, so rugged coast gains inlets within bays instead of speckle. Detail is clamped to detailShare of its worst-case sum, which bounds supports strictly.",
+    "Islands, fjords and peninsulas (revision 20): each cell draws up to islandSlots elliptical islands (log-scaled islandMin..islandMax radii, scattered or, by islandChainShare, along an aligned chain); an open-sea cell with islands is built island-only (no body, no crest, no shelter of its own). Each built continent plans fjords and peninsulas once, a pure function of its cell held in a bounded cache: fjordSlots mouths around its shape frame, each just offshore of where its own score (body and detail) crosses the coast on that ray, kept by fjordChance (a quarter of it on calm coast, all of it on rugged) unless a neighbour's own score is land at the mouth. A fjord walks inland fjordLengthMin..Max radii with a smoothly wandering heading (fjordWander), pinching and swelling from a flared mouth of about fjordWidth blocks to a third of it, forks by fjordBranch and, by lakeChance, continues past its head as finger lakes. Fjords and lakes are carved as the distance to the tapered tube (rough walls) and join the score before rawScore, so the score stays a distance, the sea is never deepened and a fjord reads as open coast, not bay shelter. Peninsulas (peninsulaSlots, peninsulaChance, more on rugged coast) grow outward from just inside the coast as tubes joined to the body, so shelter's probes see them.",
+    "shelf (revision 20): the seabed profile (shelf, slope and deep) is stretched offshore by calmScale on the calmest coast and ruggedScale on the most rugged (the coast style at the column, smoothed): a passive margin's broad shelf against an active margin's narrow one. Read by ContinentalMap's bed and OceanBed's floors; the coast coordinate itself is unchanged."
   ],
   "shoaling": {
     "wavelengthBlocks": 1400,

@@ -108,7 +108,6 @@ public final class ContinentalOutlineMap {
         JsonObject styles = j.getAsJsonObject("styles");
         ContinentalKernels.HarmonicStyle harmonic = harmonic(styles);
         ContinentalKernels.SpineStyle spine = spine(styles);
-        ContinentalKernels.CellularStyle cellular = cellular(styles);
         ContinentalKernels.PotentialStyle potential = potential(styles);
         if ("PER_CONTINENT".equals(selected)) {
             family = null;
@@ -121,7 +120,6 @@ public final class ContinentalOutlineMap {
                             variation(j, layout),
                             harmonic,
                             spine,
-                            cellular,
                             potential);
         } else {
             if ("WORLD_SEEDED".equals(selected)) {
@@ -140,11 +138,6 @@ public final class ContinentalOutlineMap {
                     break;
                 case SPINE:
                     kernel = new ContinentalKernels.Spine(seed, tuning, reference, earlier, spine);
-                    break;
-                case CELLULAR:
-                    kernel =
-                            new ContinentalKernels.Cellular(
-                                    seed, tuning, reference, earlier, cellular);
                     break;
                 case POTENTIAL:
                     kernel =
@@ -173,10 +166,21 @@ public final class ContinentalOutlineMap {
         JsonObject v = j.getAsJsonObject("variation");
         return new ContinentalKernels.Variation(
                 Rules.number(v, "anchorJitter", 0, .4),
-                Rules.number(v, "sizeMin", .4, 2),
-                Rules.number(v, "sizeMax", .4, 2),
-                Rules.number(v, "sizeSplit", .4, 2),
-                Rules.number(v, "largeShare", 0, 1),
+                Rules.number(v, "sizeMin", .2, 2),
+                Rules.number(v, "sizeMax", .2, 2),
+                Rules.number(v, "sizeSkew", .25, 8),
+                layout * Rules.number(v, "clusterWavelength", 1000, 60000),
+                Rules.number(v, "clusterSize", 0, 1),
+                Rules.number(v, "clusterOccupancy", 0, 1),
+                (int) Rules.number(v, "islandSlots", 0, 8),
+                Rules.number(v, "islandDensity", 0, 1),
+                Rules.number(v, "islandOpenSea", 0, 1),
+                Rules.number(v, "islandReach", 0, 3),
+                Rules.number(v, "islandMin", .01, 1),
+                Rules.number(v, "islandMax", .01, 1),
+                Rules.number(v, "islandSkew", .25, 8),
+                Rules.number(v, "islandChainShare", 0, 1),
+                Rules.number(v, "islandElongation", 1, 4),
                 Rules.number(v, "elongationMax", 1, 4),
                 Rules.number(v, "roughnessMin", 0, 4),
                 Rules.number(v, "roughnessMax", 0, 4),
@@ -194,6 +198,20 @@ public final class ContinentalOutlineMap {
                 Rules.number(v, "styleMin", 0, 4),
                 Rules.number(v, "styleMax", 0, 4),
                 Rules.number(v, "styleContrast", .01, 8),
+                (int) Rules.number(v, "fjordSlots", 0, 24),
+                Rules.number(v, "fjordChance", 0, 1),
+                Rules.number(v, "fjordLengthMin", .01, 1.2),
+                Rules.number(v, "fjordLengthMax", .01, 1.2),
+                layout * Rules.number(v, "fjordWidth", 4, 1000),
+                Rules.number(v, "fjordWander", 0, 1.5),
+                Rules.number(v, "fjordBranch", 0, 1),
+                Rules.number(v, "lakeChance", 0, 1),
+                (int) Rules.number(v, "peninsulaSlots", 0, 12),
+                Rules.number(v, "peninsulaChance", 0, 1),
+                Rules.number(v, "peninsulaLengthMin", .01, .6),
+                Rules.number(v, "peninsulaLengthMax", .01, .6),
+                layout * Rules.number(v, "peninsulaWidth", 8, 2000),
+                Rules.number(v, "detailShare", .05, 1),
                 weights(j),
                 skeleton(j),
                 layout);
@@ -222,12 +240,6 @@ public final class ContinentalOutlineMap {
     private static ContinentalKernels.SpineStyle spine(JsonObject styles) {
         JsonObject s = styles.getAsJsonObject("SPINE");
         return new ContinentalKernels.SpineStyle(number(s, "widthScale"), number(s, "spurScale"));
-    }
-
-    private static ContinentalKernels.CellularStyle cellular(JsonObject styles) {
-        JsonObject c = styles.getAsJsonObject("CELLULAR");
-        return new ContinentalKernels.CellularStyle(
-                number(c, "insetScale"), number(c, "connectionProbability"));
     }
 
     private static ContinentalKernels.PotentialStyle potential(JsonObject styles) {
@@ -341,7 +353,7 @@ public final class ContinentalOutlineMap {
     /** Caller-owned scratch for continent-cell and crest-cell queries. */
     public static final class CellScratch {
         final ContinentalKernels.Scratch work = new ContinentalKernels.Scratch();
-        public final long[] cells = new long[2 * 49];
+        public final long[] cells = new long[2 * 121];
     }
 
     /** Crest-bearing continents whose support plus margin reaches a column, as cell pairs. */

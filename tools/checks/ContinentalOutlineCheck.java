@@ -38,9 +38,7 @@ public final class ContinentalOutlineCheck {
     }
 
     /** Every single-family outline plus the packaged per-continent mode. */
-    private static final String[] MODES = {
-        "HARMONIC", "SPINE", "CELLULAR", "POTENTIAL", "PER_CONTINENT"
-    };
+    private static final String[] MODES = {"HARMONIC", "SPINE", "POTENTIAL", "PER_CONTINENT"};
 
     private static JsonObject definition(String family) {
         JsonObject json = Rules.load("riven-continents.json", 1).json;

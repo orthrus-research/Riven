@@ -476,15 +476,26 @@ public final class CoastSediment {
     }
 
     /**
-     * Whether every node of a plan from index from on stands on ground a deposit may build on:
-     * not reserved, no deeper than the shoal and no higher than a beach.
+     * Whether every node of a plan from index from on stands on ground a deposit may build on (no
+     * deeper than the shoal, no higher than a beach) and its line between them crosses no
+     * reserved water, sampled every block.
      */
     private boolean shallow(SedimentaryCoasts.Plan plan, int from, TerrainMap.Sample probe) {
         for (int k = from; k < plan.nodeCount() - 1; k++) {
-            parent.sample(plan.nodeX(k), plan.nodeZ(k), probe);
+            double ax = plan.nodeX(k), az = plan.nodeZ(k);
+            parent.sample(ax, az, probe);
             if (reserved(probe)
                     || probe.height < reference.sea - reference.shoalDepth
                     || probe.height > reference.sea + reference.beachMax) return false;
+            // Reserved water between nodes, at one-block steps: a stream narrower than the node
+            // spacing would otherwise cross the form and cut its sand off from land.
+            double bx = plan.nodeX(k + 1), bz = plan.nodeZ(k + 1);
+            int steps = (int) Math.ceil(Math.hypot(bx - ax, bz - az));
+            for (int i = 1; i < steps; i++) {
+                double t = i / (double) steps;
+                parent.sample(ax + t * (bx - ax), az + t * (bz - az), probe);
+                if (reserved(probe)) return false;
+            }
         }
         return true;
     }

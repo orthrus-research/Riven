@@ -48,6 +48,7 @@ public final class Shore {
         "rocky",
         "wet",
         "warm",
+        "craggy",
         "bias"
     };
 
@@ -427,7 +428,8 @@ public final class Shore {
         f[9] = Math.max(f[8], o.cape);
         f[10] = Rules.smooth((b.climate.moisture - WET) / .18);
         f[11] = Rules.smooth((b.climate.celsius - WARM) / 8);
-        f[12] = 1;
+        f[12] = o.craggy;
+        f[13] = 1;
         return f;
     }
 

@@ -365,7 +365,8 @@ public final class CoastCheck {
         int pad = 24, x0 = (int) Math.floor(minX) - pad, z0 = (int) Math.floor(minZ) - pad;
         int w = (int) Math.ceil(maxX) + pad - x0 + 1, d = (int) Math.ceil(maxZ) + pad - z0 + 1;
         boolean bench = v.form == CoastSediment.Form.BEACH_BENCH;
-        // 1: this form's emergent sand; 2: land or a stack's body, which sand may join.
+        // 1: this form's emergent sand; 2: land or a stack's body, which sand may join; 3: another
+        // form's emergent sand, which joins this form's sand to land as well as land does.
         byte[] kind = new byte[w * d];
         int columns = 0;
         for (int dz = 0; dz < d; dz++)
@@ -389,21 +390,23 @@ public final class CoastCheck {
                 }
                 if (mine && s.ocean.marine && f.height >= sea) kind[dz * w + dx] = 1;
                 else if (!s.ocean.marine || s.rocky.hasVolume()) kind[dz * w + dx] = 2;
+                else if (f.weight > 0 && f.height >= sea) kind[dz * w + dx] = 3;
             }
         if (bench || columns == 0) return columns;
-        // Flood the emergent sand from every column of it that touches land.
+        // Flood the emergent sand (this form's and any other's) from every column of it that
+        // touches land.
         int[] queue = new int[w * d];
         boolean[] seen = new boolean[w * d];
         int head = 0, tail = 0;
         for (int i = 0; i < w * d; i++)
-            if (kind[i] == 1 && touches(kind, w, d, i, (byte) 2)) {
+            if ((kind[i] == 1 || kind[i] == 3) && touches(kind, w, d, i, (byte) 2)) {
                 seen[i] = true;
                 queue[tail++] = i;
             }
         while (head < tail) {
             int i = queue[head++];
             for (int q : neighbours(w, d, i))
-                if (q >= 0 && kind[q] == 1 && !seen[q]) {
+                if (q >= 0 && (kind[q] == 1 || kind[q] == 3) && !seen[q]) {
                     seen[q] = true;
                     queue[tail++] = q;
                 }
