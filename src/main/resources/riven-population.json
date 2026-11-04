@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "variationSeed": "0x4649525354414e4d",
+  "about": "Population (population-v1): what Riven adds to a chunk once its cubes exist, never blocks. A chunk column's first animals are a pure function of seed, definitions and the chunk: groups are drawn while a draw falls under groupChance, at most maxGroups; each takes a species from the creature list of the riven: biome at the chunk's centre (riven-biome-registry.json spawnTables) by weight and a size between that entry's minimum and maximum (at most 8), and a start column in the chunk; each member walks up to step - 1 blocks along each axis from the last, held inside the chunk, and stands on that column's surface unless it is water. The cube holding a member's feet spawns it if the block below carries it and its feet and head are free of anything solid, so population reads only that cube and the cubes above and below it. Species, place, facing and every random choice the animal makes when it first spawns (coat, colour, strength, the vanilla spawn bonus) come from the member's own draw; each animal carries its origin (riven:origin, chunk x, chunk z, group, member) in its Forge data.",
+  "animals": {
+    "groupChance": 0.1,
+    "maxGroups": 4,
+    "step": 5
+  }
+}

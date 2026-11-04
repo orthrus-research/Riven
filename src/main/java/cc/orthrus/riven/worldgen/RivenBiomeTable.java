@@ -31,8 +31,12 @@ public final class RivenBiomeTable {
         public final float temperature, rainfall;
         public final List<String> types;
 
-        /** An underground biome's vanilla mobs (riven-biome-registry.json spawnTables). */
-        public final List<Spawn> monsters, ambient;
+        /**
+         * The vanilla mobs of each kind the biome's spawn table lists (riven-biome-registry.json
+         * spawnTables), by kind: {@code creature}, {@code monster} or {@code ambient}. A kind its
+         * table lists replaces its parent class's list; an unlisted kind keeps it.
+         */
+        public final Map<String, List<Spawn>> spawns;
 
         Definition(int index, JsonObject j, Map<String, String> categories, JsonObject tables) {
             this.index = index;
@@ -52,28 +56,31 @@ public final class RivenBiomeTable {
             List<String> t = new ArrayList<>();
             for (JsonElement e : j.getAsJsonArray("types")) t.add(e.getAsString());
             types = Collections.unmodifiableList(t);
-            JsonObject table = null;
+            Map<String, List<Spawn>> kinds = new java.util.TreeMap<>();
             if (j.has("spawns")) {
-                // Other parents keep their vanilla class's own spawns.
-                if (!parent.equals("void"))
-                    throw new IllegalStateException("Only underground biomes take spawns: " + id);
-                table = tables.getAsJsonObject(j.get("spawns").getAsString());
+                JsonObject table = tables.getAsJsonObject(j.get("spawns").getAsString());
                 if (table == null) throw new IllegalStateException("Unknown spawn table for " + id);
-            }
-            monsters = spawns(table, "monster", MONSTERS);
-            ambient = spawns(table, "ambient", AMBIENT);
+                for (Map.Entry<String, Set<String>> kind : KINDS.entrySet())
+                    if (table.has(kind.getKey()))
+                        kinds.put(kind.getKey(), spawns(table, kind.getKey(), kind.getValue()));
+            } else if (!parent.equals("void") && !parent.equals("hell"))
+                throw new IllegalStateException("No spawn table for surface biome " + id);
+            spawns = Collections.unmodifiableMap(kinds);
+        }
+
+        /** The mobs of one kind the biome's table lists, or an empty list. */
+        public List<Spawn> spawns(String kind) {
+            return spawns.getOrDefault(kind, Collections.emptyList());
         }
 
         private static List<Spawn> spawns(JsonObject table, String kind, Set<String> allowed) {
             List<Spawn> list = new ArrayList<>();
-            if (table != null && table.has(kind))
-                for (JsonElement e : table.getAsJsonArray(kind)) {
-                    Spawn s = new Spawn(e.getAsJsonArray());
-                    if (!allowed.contains(s.mob))
-                        throw new IllegalStateException(
-                                "Not a " + kind + " Riven spawns: " + s.mob);
-                    list.add(s);
-                }
+            for (JsonElement e : table.getAsJsonArray(kind)) {
+                Spawn s = new Spawn(e.getAsJsonArray());
+                if (!allowed.contains(s.mob))
+                    throw new IllegalStateException("Not a " + kind + " Riven spawns: " + s.mob);
+                list.add(s);
+            }
             return Collections.unmodifiableList(list);
         }
     }
@@ -93,8 +100,23 @@ public final class RivenBiomeTable {
         }
     }
 
-    /** The vanilla mobs underground biomes may list (the mod maps each name to its class). */
+    /** The vanilla mobs a spawn table may list, by kind (the mod maps each name to its class). */
     public static final Set<String>
+            CREATURES =
+                    Collections.unmodifiableSet(
+                            new LinkedHashSet<>(
+                                    java.util.Arrays.asList(
+                                            "sheep",
+                                            "pig",
+                                            "chicken",
+                                            "cow",
+                                            "horse",
+                                            "donkey",
+                                            "llama",
+                                            "rabbit",
+                                            "wolf",
+                                            "polar_bear",
+                                            "parrot"))),
             MONSTERS =
                     Collections.unmodifiableSet(
                             new LinkedHashSet<>(
@@ -111,6 +133,14 @@ public final class RivenBiomeTable {
                                             "enderman",
                                             "witch"))),
             AMBIENT = Collections.singleton("bat");
+
+    private static final Map<String, Set<String>> KINDS = new java.util.LinkedHashMap<>();
+
+    static {
+        KINDS.put("creature", CREATURES);
+        KINDS.put("monster", MONSTERS);
+        KINDS.put("ambient", AMBIENT);
+    }
 
     private static final List<Definition> DEFINITIONS;
     private static final Map<String, Definition> BY_ID = new HashMap<>();

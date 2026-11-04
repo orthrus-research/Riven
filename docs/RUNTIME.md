@@ -241,7 +241,9 @@ prints climate, terrain, biome and feature diagnostics at the player's position.
 [radius [x z]]` hashes the world's blocks around a point by state name, one line per chunk column
 whose band (32 blocks under its lowest surface to 48 over its highest, from the generator's
 columns) is wholly loaded, into the save's `riven/digests/<x>_<z>_r<radius>.txt` and one total, so
-two worlds of one seed compare block for block; a tour view's `commands` run before its teleport,
+two worlds of one seed compare block for block, and the first animals of those chunk columns by
+origin, with what each keeps for life, into `<x>_<z>_r<radius>_animals.txt` and their own total.
+`/riven animals [radius]` compares the first animals planned near the player with the world. A tour view's `commands` run before its teleport,
 so `execute {player} ~ ~ ~ riven digest 48 <x> <z>` there digests the previous view. `--lod-trace`
 installs the lab observer so every `play` records DH LOD stages (OBSERVABILITY.md, DH LOD stage
 trace).

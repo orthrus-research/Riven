@@ -25,7 +25,7 @@ final class RivenCommand extends CommandBase {
 
     @Override
     public String getUsage(ICommandSender sender) {
-        return "/riven [x z] | /riven find <biome> [radius] | /riven trees [radius] | /riven cover [radius] | /riven boulders [radius] | /riven digest [radius [x z]] | /riven biomes | /riven mappings | /riven shaderprops [player] | /riven effects [reload]";
+        return "/riven [x z] | /riven find <biome> [radius] | /riven trees [radius] | /riven cover [radius] | /riven boulders [radius] | /riven digest [radius [x z]] | /riven animals [radius] | /riven biomes | /riven mappings | /riven shaderprops [player] | /riven effects [reload]";
     }
 
     /**
@@ -490,6 +490,63 @@ final class RivenCommand extends CommandBase {
             sender.sendMessage(new TextComponentString("Riven boulders missing: " + missing));
     }
 
+    /**
+     * The first animals of the chunk columns near the sender against the world: those planned, those
+     * whose feet cube is loaded, those the world carries there, and of those the ones found by their
+     * origin among the loaded entities; also the loaded creatures without an origin, and the planned
+     * species.
+     */
+    private static void animals(ICommandSender sender, World world, String[] args)
+            throws CommandException {
+        int radius = args.length > 1 ? parseInt(args[1], 1, 256) : 48;
+        FirstAnimals animals = RivenWorldType.animals(world);
+        if (animals == null) throw new CommandException("Riven animals need a Riven cubic world");
+        java.util.Set<String> origins = new java.util.HashSet<>();
+        int untagged = 0;
+        for (net.minecraft.entity.Entity e : world.loadedEntityList) {
+            String origin = e.getEntityData().getString(FirstAnimals.ORIGIN);
+            if (!origin.isEmpty()) origins.add(origin);
+            else if (e instanceof net.minecraft.entity.passive.EntityAnimal) untagged++;
+        }
+        BlockPos at = sender.getPosition();
+        int planned = 0, loaded = 0, fitting = 0, found = 0, foundUnfit = 0;
+        Map<String, Integer> species = new TreeMap<>();
+        for (int cz = (at.getZ() - radius) >> 4; cz <= (at.getZ() + radius) >> 4; cz++)
+            for (int cx = (at.getX() - radius) >> 4; cx <= (at.getX() + radius) >> 4; cx++)
+                for (FirstAnimals.Animal a : animals.plan(cx, cz, Integer.MIN_VALUE)) {
+                    planned++;
+                    species.merge(a.kind.mob, 1, Integer::sum);
+                    BlockPos feet = new BlockPos(a.x, a.y, a.z);
+                    if (!world.isBlockLoaded(feet.down()) || !world.isBlockLoaded(feet.up()))
+                        continue;
+                    loaded++;
+                    boolean fits = FirstAnimals.fits(world, feet),
+                            there = origins.contains(a.origin);
+                    if (fits) fitting++;
+                    if (there && fits) found++;
+                    if (there && !fits) foundUnfit++;
+                }
+        sender.sendMessage(
+                new TextComponentString(
+                        String.format(
+                                Locale.ROOT,
+                                "Riven animals r=%d: planned=%d loaded=%d fitting=%d found=%d missing=%d foundUnfit=%d untagged=%d species=%s; population cubes=%d members=%d fitting=%d spawned=%d refused=%d",
+                                radius,
+                                planned,
+                                loaded,
+                                fitting,
+                                found,
+                                fitting - found,
+                                foundUnfit,
+                                untagged,
+                                species,
+                                FirstAnimals.COUNTS[0],
+                                FirstAnimals.COUNTS[1],
+                                FirstAnimals.COUNTS[2],
+                                FirstAnimals.COUNTS[3],
+                                FirstAnimals.COUNTS[4])));
+    }
+
     /** Blocks below a chunk column's lowest surface and above its highest that a digest hashes. */
     private static final int DIGEST_BELOW = 32, DIGEST_ABOVE = 48;
 
@@ -514,6 +571,7 @@ final class RivenCommand extends CommandBase {
         ClimateBiomeProvider provider = (ClimateBiomeProvider) world.getBiomeProvider();
         Map<net.minecraft.block.state.IBlockState, byte[]> names = new java.util.HashMap<>();
         java.security.MessageDigest chunk = sha256(), total = sha256();
+        java.util.Set<String> chunks = new java.util.HashSet<>();
         StringBuilder lines = new StringBuilder();
         int hashed = 0, skipped = 0;
         long blocks = 0;
@@ -564,9 +622,34 @@ final class RivenCommand extends CommandBase {
                                 hex(chunk.digest()));
                 total.update((line + "\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
                 lines.append(line).append('\n');
+                chunks.add(cx + "," + cz);
                 hashed++;
             }
         String digest = hex(total.digest());
+        // The first animals of the hashed chunk columns, by origin, without what changes as they
+        // live (position, motion, health, timers, ids).
+        java.util.TreeMap<String, String> animals = new java.util.TreeMap<>();
+        for (net.minecraft.entity.Entity e : world.loadedEntityList) {
+            String origin = e.getEntityData().getString(FirstAnimals.ORIGIN);
+            int comma = origin.indexOf(',', origin.indexOf(',') + 1);
+            if (comma < 0 || !chunks.contains(origin.substring(0, comma))) continue;
+            animals.put(
+                    origin,
+                    origin
+                            + " "
+                            + net.minecraft.entity.EntityList.getKey(e)
+                            + " "
+                            + lasting(e.writeToNBT(new net.minecraft.nbt.NBTTagCompound())));
+        }
+        StringBuilder animalLines = new StringBuilder();
+        for (String line : animals.values()) animalLines.append(line).append('\n');
+        String animalDigest =
+                hex(
+                        sha256().digest(
+                                        animalLines
+                                                .toString()
+                                                .getBytes(
+                                                        java.nio.charset.StandardCharsets.UTF_8)));
         java.io.File out =
                 new java.io.File(
                         world.getSaveHandler().getWorldDirectory(),
@@ -576,6 +659,12 @@ final class RivenCommand extends CommandBase {
             java.nio.file.Files.write(
                     out.toPath(),
                     lines.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            java.nio.file.Files.write(
+                    new java.io.File(
+                                    out.getParentFile(),
+                                    out.getName().replace(".txt", "_animals.txt"))
+                            .toPath(),
+                    animalLines.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));
         } catch (java.io.IOException e) {
             throw new CommandException("Cannot write " + out + ": " + e);
         }
@@ -583,7 +672,7 @@ final class RivenCommand extends CommandBase {
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Riven digest %d %d r=%d: chunks=%d skipped=%d blocks=%d sha256=%s (%s)",
+                                "Riven digest %d %d r=%d: chunks=%d skipped=%d blocks=%d sha256=%s animals=%d sha256=%s (%s)",
                                 x,
                                 z,
                                 radius,
@@ -591,7 +680,53 @@ final class RivenCommand extends CommandBase {
                                 skipped,
                                 blocks,
                                 digest,
+                                animals.size(),
+                                animalDigest,
                                 out.getName())));
+    }
+
+    /** NBT keys of an animal that it keeps for life: its looks, strength and attributes. */
+    private static final java.util.Set<String> LASTING =
+            new java.util.TreeSet<>(
+                    java.util.Arrays.asList(
+                            "Attributes",
+                            "CollarColor",
+                            "Color",
+                            "LeftHanded",
+                            "RabbitType",
+                            "Strength",
+                            "Variant"));
+
+    /**
+     * An animal's lasting NBT in a fixed order: the {@link #LASTING} keys, each attribute's base
+     * and its modifiers by name (without their random ids).
+     */
+    private static String lasting(net.minecraft.nbt.NBTTagCompound nbt) {
+        StringBuilder s = new StringBuilder();
+        for (String key : LASTING) {
+            if (!nbt.hasKey(key)) continue;
+            if (!key.equals("Attributes")) {
+                s.append(key).append('=').append(nbt.getTag(key)).append(';');
+                continue;
+            }
+            java.util.TreeMap<String, String> attributes = new java.util.TreeMap<>();
+            net.minecraft.nbt.NBTTagList list = nbt.getTagList(key, 10);
+            for (int i = 0; i < list.tagCount(); i++) {
+                net.minecraft.nbt.NBTTagCompound a = list.getCompoundTagAt(i);
+                java.util.TreeSet<String> modifiers = new java.util.TreeSet<>();
+                net.minecraft.nbt.NBTTagList m = a.getTagList("Modifiers", 10);
+                for (int k = 0; k < m.tagCount(); k++)
+                    modifiers.add(
+                            m.getCompoundTagAt(k).getString("Name")
+                                    + ":"
+                                    + m.getCompoundTagAt(k).getDouble("Amount")
+                                    + ":"
+                                    + m.getCompoundTagAt(k).getInteger("Operation"));
+                attributes.put(a.getString("Name"), a.getDouble("Base") + modifiers.toString());
+            }
+            s.append(key).append('=').append(attributes).append(';');
+        }
+        return s.toString();
     }
 
     private static java.security.MessageDigest sha256() {
@@ -654,6 +789,10 @@ final class RivenCommand extends CommandBase {
         }
         if (args.length >= 3 && args[0].equals("column")) {
             column(sender, world, parseInt(args[1]), parseInt(args[2]));
+            return;
+        }
+        if (args.length >= 1 && args[0].equals("animals")) {
+            animals(sender, world, args);
             return;
         }
         if (args.length >= 1 && args[0].equals("digest")) {

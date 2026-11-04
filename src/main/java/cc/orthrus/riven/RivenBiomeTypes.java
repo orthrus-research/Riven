@@ -3,10 +3,12 @@ package cc.orthrus.riven;
 import cc.orthrus.riven.worldgen.RivenBiomeTable;
 
 import net.minecraft.entity.EntityLiving;
+import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.monster.EntityCaveSpider;
 import net.minecraft.entity.monster.EntityCreeper;
 import net.minecraft.entity.monster.EntityEnderman;
 import net.minecraft.entity.monster.EntityHusk;
+import net.minecraft.entity.monster.EntityPolarBear;
 import net.minecraft.entity.monster.EntitySkeleton;
 import net.minecraft.entity.monster.EntitySlime;
 import net.minecraft.entity.monster.EntitySpider;
@@ -15,6 +17,16 @@ import net.minecraft.entity.monster.EntityWitch;
 import net.minecraft.entity.monster.EntityZombie;
 import net.minecraft.entity.monster.EntityZombieVillager;
 import net.minecraft.entity.passive.EntityBat;
+import net.minecraft.entity.passive.EntityChicken;
+import net.minecraft.entity.passive.EntityCow;
+import net.minecraft.entity.passive.EntityDonkey;
+import net.minecraft.entity.passive.EntityHorse;
+import net.minecraft.entity.passive.EntityLlama;
+import net.minecraft.entity.passive.EntityParrot;
+import net.minecraft.entity.passive.EntityPig;
+import net.minecraft.entity.passive.EntityRabbit;
+import net.minecraft.entity.passive.EntitySheep;
+import net.minecraft.entity.passive.EntityWolf;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
@@ -36,6 +48,7 @@ import net.minecraft.world.biome.BiomeTaiga;
 import net.minecraft.world.biome.BiomeVoid;
 import net.minecraft.world.chunk.ChunkPrimer;
 
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -66,7 +79,92 @@ final class RivenBiomeTypes {
         }
     }
 
+    /**
+     * A Riven biome of its definition's parent class, each kind of mob its spawn table lists
+     * replacing that class's own list.
+     */
     static Biome create(RivenBiomeTable.Definition d) {
+        Biome biome = parented(d);
+        for (EnumCreatureType type : EnumCreatureType.values()) {
+            String kind = kind(type);
+            if (kind == null || !d.spawns.containsKey(kind)) continue;
+            List<Biome.SpawnListEntry> list = biome.getSpawnableList(type);
+            list.clear();
+            for (RivenBiomeTable.Spawn s : d.spawns(kind))
+                list.add(new Biome.SpawnListEntry(mob(s.mob), s.weight, s.minimum, s.maximum));
+        }
+        return biome;
+    }
+
+    /** A spawn table's kind for a creature type, or null for a kind tables do not list. */
+    static String kind(EnumCreatureType type) {
+        switch (type) {
+            case CREATURE:
+                return "creature";
+            case MONSTER:
+                return "monster";
+            case AMBIENT:
+                return "ambient";
+            default:
+                return null;
+        }
+    }
+
+    /** The vanilla class of a mob a spawn table names. */
+    static Class<? extends EntityLiving> mob(String name) {
+        switch (name) {
+            case "sheep":
+                return EntitySheep.class;
+            case "pig":
+                return EntityPig.class;
+            case "chicken":
+                return EntityChicken.class;
+            case "cow":
+                return EntityCow.class;
+            case "horse":
+                return EntityHorse.class;
+            case "donkey":
+                return EntityDonkey.class;
+            case "llama":
+                return EntityLlama.class;
+            case "rabbit":
+                return EntityRabbit.class;
+            case "wolf":
+                return EntityWolf.class;
+            case "polar_bear":
+                return EntityPolarBear.class;
+            case "parrot":
+                return EntityParrot.class;
+            case "zombie":
+                return EntityZombie.class;
+            case "zombie_villager":
+                return EntityZombieVillager.class;
+            case "husk":
+                return EntityHusk.class;
+            case "skeleton":
+                return EntitySkeleton.class;
+            case "stray":
+                return EntityStray.class;
+            case "spider":
+                return EntitySpider.class;
+            case "cave_spider":
+                return EntityCaveSpider.class;
+            case "creeper":
+                return EntityCreeper.class;
+            case "slime":
+                return EntitySlime.class;
+            case "enderman":
+                return EntityEnderman.class;
+            case "witch":
+                return EntityWitch.class;
+            case "bat":
+                return EntityBat.class;
+            default:
+                throw new IllegalStateException("No vanilla mob named " + name);
+        }
+    }
+
+    private static Biome parented(RivenBiomeTable.Definition d) {
         Biome.BiomeProperties p = new Biome.BiomeProperties(d.name);
         p.setTemperature(d.temperature).setRainfall(d.rainfall);
         if (d.precipitation.equals("none")) p.setRainDisabled();
@@ -615,7 +713,8 @@ final class RivenBiomeTypes {
 
     /**
      * An underground biome (a depth biome or a deep realm): the void's class, so shader packs give
-     * it no surface category, spawning only the vanilla mobs its definition lists.
+     * it no surface category, spawning only the vanilla mobs its spawn table lists (BiomeVoid's own
+     * lists are empty).
      */
     static final class Underground extends BiomeVoid implements RivenBiome {
         private final RivenBiomeTable.Definition d;
@@ -624,44 +723,6 @@ final class RivenBiomeTypes {
         Underground(RivenBiomeTable.Definition d, BiomeProperties p) {
             super(p);
             this.d = d;
-            // BiomeVoid starts with no spawns.
-            for (RivenBiomeTable.Spawn s : d.monsters)
-                spawnableMonsterList.add(
-                        new SpawnListEntry(mob(s.mob), s.weight, s.minimum, s.maximum));
-            for (RivenBiomeTable.Spawn s : d.ambient)
-                spawnableCaveCreatureList.add(
-                        new SpawnListEntry(mob(s.mob), s.weight, s.minimum, s.maximum));
-        }
-
-        private static Class<? extends EntityLiving> mob(String name) {
-            switch (name) {
-                case "zombie":
-                    return EntityZombie.class;
-                case "zombie_villager":
-                    return EntityZombieVillager.class;
-                case "husk":
-                    return EntityHusk.class;
-                case "skeleton":
-                    return EntitySkeleton.class;
-                case "stray":
-                    return EntityStray.class;
-                case "spider":
-                    return EntitySpider.class;
-                case "cave_spider":
-                    return EntityCaveSpider.class;
-                case "creeper":
-                    return EntityCreeper.class;
-                case "slime":
-                    return EntitySlime.class;
-                case "enderman":
-                    return EntityEnderman.class;
-                case "witch":
-                    return EntityWitch.class;
-                case "bat":
-                    return EntityBat.class;
-                default:
-                    throw new IllegalStateException("No vanilla mob named " + name);
-            }
         }
 
         @Override

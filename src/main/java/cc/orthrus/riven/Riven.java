@@ -50,10 +50,6 @@ public final class Riven {
         cc.orthrus.riven.content.RivenContent.treeGrower(TreeGrowth::grow);
         MinecraftForge.EVENT_BUS.register(RivenSpawn.class);
         MinecraftForge.EVENT_BUS.register(PlayerEffects.class);
-        MinecraftForge.TERRAIN_GEN_BUS.register(DecorationFilter.class);
-        MinecraftForge.ORE_GEN_BUS.register(DecorationFilter.class);
-        // Cleanroom posts terrain-generation events on the main bus; Forge on its own buses.
-        MinecraftForge.EVENT_BUS.register(DecorationFilter.class);
         // Every packaged definition loads here, so a malformed one fails at startup; the log names
         // each with its revision and fingerprint (Definitions).
         org.apache.logging.log4j.Logger log = event.getModLog();

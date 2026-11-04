@@ -597,7 +597,7 @@ Native chunk biomes, biome queries and the DH preview all resolve through
 `Habitats.at(TerrainMap.Sample)` via `NativeColumns`. The crust floor is at Y -512 (since terrain-v72, 400 blocks under the lowest surface for geology, ore and caves); sea level is Y63 with still water through Y62.
 
 **Decoration provider** (prototype; `riven-bop.json`,
-`BiomeProvision`, `BopLooks`, `BopDecoration`, `DecorationFilter`):
+`BiomeProvision`, `BopLooks`, `BopDecoration`):
 with Biomes O' Plenty loaded, a column's biome comes from an explicit override for its habitat key
 (highlands; coasts and water by temperature core after `#`; river mouths), else inland from BoP's
 own climate table: Riven's temperature and moisture map onto BoP's 9 x 12 grid and pick by BoP's
@@ -607,21 +607,34 @@ differing picks. Since terrain-v84 that pick is the column's legacy look, never 
 cover): since terrain-v116 no look's top, filler or surface routine changes it, where they had
 changed 60-69% of Riven's soil-topped columns (the census behind terrain-v115); the soils
 they had supplied are Riven's own crust rows.
-Population runs once per chunk column, in the cube holding the surface at the center of its
-offset area: the legacy look's own decorator, with every stage of its own denied in Riven worlds
-(`DecorationFilter`: trees, plants, reeds, lily pads, cactus and pumpkins, which Riven's tree sites
-and ground cover own; sand, clay and gravel patches since terrain-v118; springs, wells, fossils, ice
-spikes, boulders and every ore or stone blob), so it carries only other mods' custom decoration,
-and the column's first animals. No BoP generator runs (terrain-v121; BoP's own event handler
-stands aside). The filter listens on the main event bus as well: Cleanroom delivers decoration and
-ore events there, so before terrain-v71 springs and ores still generated.
-Without BoP each look is its vanilla habitat biome and everything else runs the same: tree sites,
-ground cover, population and creature spawning no longer wait on BoP (terrain-v122). Population is the one recorded
-exception to order independence (DECISIONS 2026-10-25, Full worldgen ownership). `runtime.py play --tour
+Since terrain-v123 no biome decorator runs in a Riven world, and the looks decide nothing placed
+(Population, below).
+`runtime.py play --tour
 tools/tours/standard-8675309.json` captures nine labeled views and closes the client; prepare
 tour instances with `--capture-ticks 900`, since decorated chunks take longer to arrive.
 
-**Riven biomes** (prototype, terrain-v84, `riven-biome-registry.json`, `RivenBiomeTable`, `RivenBiomes`, `RivenBiomeTypes`): every column reports one of 61 `riven:` biomes, chosen from its habitat key: 30 inland by climate region and calm elevation (lowland for LOW and MID, highland for HIGH), 10 rugged by temperature band (hills, peaks), 13 coast and water biomes and 8 river mouths. Each extends the vanilla class of its kind (snow, taiga, plains, forest, savanna, jungle, desert, hills, mesa, beach, stone beach, swamp, ocean, river), which Demonica reads as its shader category and other mods test with `instanceof`; names avoid substrings shader packs misread ("end", "ice", "nether"); temperature, rainfall and precipitation drive vanilla weather; grass and foliage colors follow the vanilla color maps unless the world's mappings override them. They empty their decorators and surface hooks: decoration still comes from each column's legacy look until Riven's feature families replace it, and Riven decides the surface itself. Spawn search uses the 40 inland biomes. Underground, cubes report the 12 realm and depth biomes below (73 `riven:` biomes in all). With BoP loaded, Riven withholds its 68 overworld biomes through BoP's own `biome_ids.json` switch before BoP's preInit (`config/riven.cfg` `withholdProviderBiomes`, default on) and hides BoP's world type; a Riven world with BoP then uses 140 of 256 biome IDs (62 vanilla, 5 BoP Nether, 73 Riven). `/riven biomes` lists them with IDs, parents and categories; `tools/checks/BiomeTableCheck.java` proves all 163 habitat keys select a biome.
+**Population** (population-v1, terrain-v123, `riven-population.json`, `FirstAnimals`): Riven's own
+decorator, which adds what a chunk holds once its cubes exist and writes no block: a chunk column's
+first animals. Groups are drawn while a draw falls under `groupChance` (0.1, vanilla's), at most
+`maxGroups`; each takes a species by weight from the creature list of the riven: biome at the
+chunk's centre (Riven biomes, spawn tables) and a size between that entry's minimum and maximum
+(at most 8), and its members walk from a start column inside the chunk onto the columns' surfaces,
+never water. The cube holding a member's feet spawns it where the block below carries it and its
+feet and head are free of anything solid, so population reads only that cube and the cubes above
+and below it (Cubature's population boxes: none to write into, one cube up and down to
+pregenerate), and content stays independent of the order cubes populate in. Every random choice
+an animal makes as it first spawns (sheep colour, horse coat and strength, the vanilla spawn bonus)
+comes from its member's own draw, so two worlds of one seed hold the same animals; each carries its
+origin (`riven:origin`: chunk, group, member) in its Forge data. Groups are drawn whether or not a
+member stands, so the plan is fixed per chunk; a member whose column does not carry it is left out
+rather than moved. `/riven animals [radius]` compares the plan with the world (planned, fitting,
+found by origin, creatures without one) and counts what population has done since the server
+started (cubes, members in them, fitting, spawned, refused); `/riven digest` also writes the digested
+chunk columns' animals by origin with what they keep for life. Instances keep animals off for
+terrain captures (`spawn-animals=false`, which removes every animal on its first tick); prepare with
+`--spawn-animals` to see them.
+
+**Riven biomes** (prototype, terrain-v84, `riven-biome-registry.json`, `RivenBiomeTable`, `RivenBiomes`, `RivenBiomeTypes`): every column reports one of 61 `riven:` biomes, chosen from its habitat key: 30 inland by climate region and calm elevation (lowland for LOW and MID, highland for HIGH), 10 rugged by temperature band (hills, peaks), 13 coast and water biomes and 8 river mouths. Each extends the vanilla class of its kind (snow, taiga, plains, forest, savanna, jungle, desert, hills, mesa, beach, stone beach, swamp, ocean, river), which Demonica reads as its shader category and other mods test with `instanceof`; names avoid substrings shader packs misread ("end", "ice", "nether"); temperature, rainfall and precipitation drive vanilla weather; grass and foliage colors follow the vanilla color maps unless the world's mappings override them. They empty their decorators and surface hooks: Riven places every block itself. Every surface biome names a spawn table (`spawns`); a kind of mob its table lists (creature, monster, ambient) replaces its parent class's list, and the surface tables list creatures, starting as vanilla's lists for each parent class (savannas without llamas, as Riven's biomes keep vanilla's base height), which Population and natural spawning both read. Spawn search uses the 40 inland biomes. Underground, cubes report the 12 realm and depth biomes below (73 `riven:` biomes in all). With BoP loaded, Riven withholds its 68 overworld biomes through BoP's own `biome_ids.json` switch before BoP's preInit (`config/riven.cfg` `withholdProviderBiomes`, default on) and hides BoP's world type; a Riven world with BoP then uses 140 of 256 biome IDs (62 vanilla, 5 BoP Nether, 73 Riven). `/riven biomes` lists them with IDs, parents and categories; `tools/checks/BiomeTableCheck.java` proves all 163 habitat keys select a biome.
 
 **Resource mappings** (prototype, mappings-v1, `riven-mappings.json`, `Mappings`, `RivenNetwork`): roles name materials (`wood.oak.log`), each an ordered list of block states whose first loaded entry wins; layers add or replace roles and riven: biome colors: Riven's defaults (Riven's own and vanilla blocks; every wood's log and leaves), integration layers for loaded mods, then pack layers in `config/riven/mappings/*.json` by file name. A world resolves them once, when it is created, into `data/riven/definitions.json` with a SHA-256 fingerprint, and loads that snapshot for life; each joining client receives its fingerprint and biome colors in one packet. `/riven mappings` compares the world's snapshot with the current layers.
 

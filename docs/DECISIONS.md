@@ -213,12 +213,12 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   and measurement tools record `deliveryMode` in `cubeExperiments`; a legacy
   `incrementalMaintenance=false` in an older config reads as BASELINE.
 - **Explicit generation timing in Cubature.** Only delivery requests (cube and column watchers and
-  ahead preparation) hand generation to the workers; every other request, including reads that
-  Riven's population makes outside its prepared box, gets real terrain on the server thread. A
+  ahead preparation) hand generation to the workers; every other request gets real terrain on the
+  server thread. A
   request that does not schedule never treats work in flight as absent: it runs the job if no
-  worker has started it, or waits for the worker, so decoration never depends on worker timing.
-  Riven's population reads outside its box cost about 2,000 synchronous cubes per minute of
-  PREFETCH flight; widening its pregeneration requirements would move them to the workers.
+  worker has started it, or waits for the worker, so population never depends on worker timing.
+  Since terrain-v123 Riven's population reads only inside its pregeneration box (the cubes above
+  and below), where it had made about 2,000 synchronous reads a minute of PREFETCH flight.
 - **Riven owns reeds.** The vanilla decorator's reed stage, which placed no reed on Riven ground
   where measured but made 61% of population's reads outside its box, does not run in Riven worlds,
   and the provider's stands aside with the stages Riven owns. Ground cover places Riven's own Common
@@ -337,11 +337,12 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   (terrain-v120), cactus and pumpkins (terrain-v121); no BoP generator runs and BoP's terrain never
   did. Riven's tree sites, ground cover, population and creature spawning run the same with or
   without BoP (terrain-v122).
-  Population (other mods' custom decoration, a chunk's first animals) crosses chunk borders, so it
-  is the one exception to order independence;
-  terrain, water and biome identity stay pure. BoP is optional, compiled against but never
+  No biome decorator runs (terrain-v123): population is Riven's own, a chunk's first animals
+  (`riven-population.json`), which writes no block and reads only the cube it spawns into and the
+  cubes above and below, so no content depends on the order cubes populate in; terrain, water and
+  biome identity stay pure. BoP is optional, compiled against but never
   bundled or modified (1.12.2-7.0.1.2445, CC BY-NC-ND 4.0, pinned in `runtime.lock.json`), and
-  Distant Horizons previews carry surface blocks, not decorations, until chunks generate natively.
+  Distant Horizons previews draw the same boulders, trees and ground cover as native cubes.
 - **Per-world definitions.** Mapping layers (Riven defaults, integration layers for loaded mods,
   pack layers in `config/riven/mappings/`) resolve once, when a world is created, into its snapshot
   (`data/riven/definitions.json`); the world generates from that snapshot for life, and a small

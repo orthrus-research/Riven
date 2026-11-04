@@ -30,12 +30,9 @@ import net.minecraft.world.biome.BiomeProvider;
 import net.minecraft.world.biome.BiomeProviderSingle;
 import net.minecraft.world.chunk.Chunk;
 
-import org.apache.logging.log4j.LogManager;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ForkJoinPool;
 
 /** Direct terrain generation. CC owns cube lifetime, lighting and storage. */
@@ -78,10 +75,6 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         return new Generator((ClimateBiomeProvider) world.getBiomeProvider(), world);
     }
 
-    /** Decoration failures already logged, one line per biome and message. */
-    private static final java.util.Set<String> DECORATION_FAILURES =
-            java.util.concurrent.ConcurrentHashMap.newKeySet();
-
     /** The recorded definitions of a Riven cubic server world, or null. */
     static Mappings.Snapshot snapshot(World world) {
         Generator generator = generator(world);
@@ -109,14 +102,17 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         return generator == null ? null : generator.cover;
     }
 
+    /** The first animals of a Riven cubic server world, or null. */
+    static FirstAnimals animals(World world) {
+        Generator generator = generator(world);
+        return generator == null ? null : generator.animals;
+    }
+
     /** The realms below the crust floor of a Riven cubic server world, or null. */
     static RealmMap realms(World world) {
         Generator generator = generator(world);
         return generator == null ? null : generator.realms;
     }
-
-    /** Cubes above and below the anchor that one column's decoration may reach. */
-    private static final int DECORATION_BELOW = 2, DECORATION_ABOVE = 3;
 
     private static final class Generator implements ICubeGenerator, ICubicTerrainPreview {
         private final ClimateBiomeProvider biomes;
@@ -131,6 +127,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             snapshot = Mappings.load(world);
             trees = new TreeSites(world.getSeed(), biomes, HEIGHTS, snapshot);
             cover = new GroundCover(world.getSeed(), biomes, trees);
+            animals = new FirstAnimals(world.getSeed(), biomes);
             realms = new RealmMap(world.getSeed(), HEIGHTS);
             List<Biome> realmBiomes = new ArrayList<>();
             for (RealmMap.Realm realm : RealmMap.realms())
@@ -158,6 +155,9 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
 
         /** Riven's ground cover. */
         private final GroundCover cover;
+
+        /** Riven's population: each chunk column's first animals. */
+        private final FirstAnimals animals;
 
         @Override
         public Sampler createTerrainPreviewSampler() {
@@ -452,73 +452,25 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         }
 
         /**
-         * Population (riven-bop.json). Each chunk column populates its vanilla offset area once, in
-         * the cube holding the surface at that area's centre, with a vanilla-style seed: the legacy
-         * look's own decorator, which {@link DecorationFilter} leaves only other mods' custom
-         * decoration (Riven owns every stage it had), and the column's first animals.
-         * Placements that cross into neighbouring chunks depend on population order: the one
-         * recorded exception to order independence (docs/DECISIONS.md).
+         * Population (riven-population.json): a chunk column's first animals, each spawned by the
+         * cube holding its feet. It writes no block and reads only the cube and the cubes above and
+         * below it, so it does not depend on the order cubes populate in.
          */
         @Override
         public void populate(ICube cube) {
-            int cubeX = cube.getX(), cubeZ = cube.getZ();
-            int ax = cubeX * 16 + 16, az = cubeZ * 16 + 16;
-            if (!ClimateBiomeProvider.inWorld(cubeX * 16L, cubeZ * 16L)
-                    || !ClimateBiomeProvider.inWorld(ax + 16L, az + 16L)) return;
-            // Only the cube holding the anchor column's surface decorates. The one-column answers
-            // settle that without building the anchor's chunk column (256 columns with geology,
-            // caves and ores): a sky cube from its uncarved runs alone, so a cube loaded from disk
-            // next to fresh sky does not build a cold column on the server thread.
-            NativeColumns columns = biomes.maps.columns;
-            int bottom = cube.getY() * 16;
-            if (!columns.surfaceAbove(ax, az, bottom - 1) || columns.surface(ax, az) >= bottom + 16)
-                return;
-            NativeColumns.Column anchor = columns.column(ax >> 4, az >> 4);
-            int index = ((az & 15) << 4) | (ax & 15);
-            Random random = new Random(world.getSeed());
-            long a = random.nextLong() / 2 * 2 + 1, b = random.nextLong() / 2 * 2 + 1;
-            random.setSeed(cubeX * a + cubeZ * b ^ world.getSeed());
-            BlockPos corner = new BlockPos(cubeX * 16, 0, cubeZ * 16);
-            // Decoration follows the area centre's legacy look, not the riven: biome it reports.
-            Biome biome = biomes.lookAt(corner.getX() + 16, corner.getZ() + 16);
-            // Vanilla decorators assume heights of zero and up (a roofed forest over a sea floor
-            // below Y0 asks Random for a negative bound). Decoration is optional, so a decorator
-            // that fails skips this chunk instead of stopping the server.
-            // Tree sites already stand in the cubes; the look's own tree stages stand aside.
-            try {
-                biome.decorate(world, random, corner);
-            } catch (IllegalArgumentException | IndexOutOfBoundsException e) {
-                if (DECORATION_FAILURES.add(BiomeProvision.lookName(biome) + ": " + e.getMessage()))
-                    LogManager.getLogger("Riven")
-                            .warn(
-                                    "Skipped decoration of {} at {} after {}; further failures of this kind are not logged",
-                                    BiomeProvision.lookName(biome),
-                                    corner,
-                                    e.toString());
-            }
-            // A chunk column's first animals, from the riven: biome its surface reports (not the
-            // biome at Y 0, which may be a depth biome) and their own seed, so the decoration
-            // sequence above stays as it was.
-            net.minecraft.world.WorldEntitySpawner.performWorldGenSpawning(
-                    world,
-                    biomes.biome(anchor, index, ax, az),
-                    corner.getX() + 8,
-                    corner.getZ() + 8,
-                    16,
-                    16,
-                    new Random(world.getSeed() ^ (cubeX * 341873128712L + cubeZ * 132897987541L)));
+            animals.populate(world, cube);
         }
 
-        /** Decorations of the columns at and below/west/north of a cube reach into it. */
+        /** Population writes into its own cube alone. */
         @Override
         public Box getFullPopulationRequirements(ICube cube) {
-            return new Box(-1, -DECORATION_ABOVE, -1, 0, DECORATION_BELOW, 0);
+            return NO_REQUIREMENT;
         }
 
-        /** An anchor decorates its offset area, spanning the next column east and south. */
+        /** An animal's ground may lie in the cube below and its head in the cube above. */
         @Override
         public Box getPopulationPregenerationRequirements(ICube cube) {
-            return new Box(0, -DECORATION_BELOW, 0, 1, DECORATION_ABOVE, 1);
+            return new Box(0, -1, 0, 0, 1, 0);
         }
 
         @Override

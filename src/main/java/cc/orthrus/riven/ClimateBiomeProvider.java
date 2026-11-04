@@ -7,7 +7,6 @@ import cc.orthrus.riven.worldgen.TerrainMap;
 import cc.orthrus.riven.worldgen.WorldGenerationContext;
 import cc.orthrus.riven.worldgen.WorldScale;
 
-import net.minecraft.init.Biomes;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.biome.Biome;
@@ -88,12 +87,6 @@ final class ClimateBiomeProvider extends BiomeProvider {
     Biome look(NativeColumns.Column column, int index, int x, int z) {
         Biome provided = provision.biome(column.key(index), column.climate(index), x, z);
         return provided != null ? provided : vanillaLook(column.habitat(index));
-    }
-
-    /** The legacy look at a column, from the same resolved chunk column as native cubes. */
-    Biome lookAt(int x, int z) {
-        if (!inWorld(x, z)) return Biomes.PLAINS;
-        return look(maps.columns.column(x >> 4, z >> 4), ((z & 15) << 4) | (x & 15), x, z);
     }
 
     static boolean inWorld(long x, long z) {
