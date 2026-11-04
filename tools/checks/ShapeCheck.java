@@ -27,6 +27,8 @@ import java.util.concurrent.Future;
  *   <li><b>Clark-Evans R</b>: mean nearest-neighbour distance between mass centroids over that of
  *       random points at the same density; 1 is random, above 1 regular (2.15 a hexagonal grid),
  *       below 1 clustered.
+ *   <li><b>slivers</b>: landmasses of 6 pixels or more that are at least 85% edge (a one-pixel
+ *       erosion leaves 15% or less): crescents and streaks rather than islands.
  *   <li><b>coast gradient</b>: the median and 90th percentile of the outline score's gradient at
  *       coast pixels (16-block central differences); the score is read as coast distance, so it
  *       should stay near 1.
@@ -80,7 +82,7 @@ public final class ShapeCheck {
         System.out.println("OK");
     }
 
-    /** seed, land, masses, largest, slope, solidity, dimension, R, margin ratio, gradient p50, p90. */
+    /** seed, land, masses, largest, slope, solidity, dimension, R, margin ratio, gradient p50, p90, slivers. */
     static double[] measure(
             long seed, TerrainHeightReference heights, WorldScale world, int side, Path masks)
             throws IOException {
@@ -143,7 +145,7 @@ public final class ShapeCheck {
         boolean[] seen = new boolean[side * side];
         int[] stack = new int[side * side];
         List<double[]> masses = new ArrayList<>(); // area, ci, ck, solidity
-        int largest = 0;
+        int largest = 0, slivers = 0;
         for (int start = 0; start < land.length; start++) {
             if (!land[start] || seen[start]) continue;
             int top = 0, size = 0;
@@ -166,6 +168,8 @@ public final class ShapeCheck {
                 if (k < side - 1 && land[c + 1] && !seen[c + 1]) seen[stack[top++] = c + 1] = true;
             }
             largest = Math.max(largest, size);
+            // A sliver is all edge: at least 6 pixels, of which at most 15% are interior.
+            if (size >= 6 && size - rim.size() <= .15 * size) slivers++;
             if (size >= minPixels)
                 masses.add(new double[] {size, si / size, sk / size, size / hullArea(rim)});
         }
@@ -260,7 +264,8 @@ public final class ShapeCheck {
             r,
             ratio,
             p50,
-            p90
+            p90,
+            slivers
         };
     }
 
@@ -325,7 +330,8 @@ public final class ShapeCheck {
         "Clark-Evans R",
         "plate margin ratio",
         "coast gradient p50",
-        "coast gradient p90"
+        "coast gradient p90",
+        "slivers"
     };
 
     private static void report(List<Future<double[]>> rows, boolean each) throws Exception {
@@ -344,7 +350,7 @@ public final class ShapeCheck {
                         Locale.ROOT,
                         "  seed %d: land %.1f%%, %d masses, largest %.0f%%, slope %.2f,"
                                 + " solidity %.2f, dimension %.3f, R %.2f, margin %.2f,"
-                                + " gradient %.2f / %.2f%n",
+                                + " gradient %.2f / %.2f, slivers %d%n",
                         (long) v[0],
                         v[1],
                         (int) v[2],
@@ -355,7 +361,8 @@ public final class ShapeCheck {
                         v[7],
                         v[8],
                         v[9],
-                        v[10]);
+                        v[10],
+                        (int) v[11]);
             for (int m = 0; m < metrics; m++) {
                 double x = v[m + 1];
                 if (Double.isNaN(x)) continue;
