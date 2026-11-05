@@ -8,14 +8,8 @@ public final class ClimateForcingMap {
     private static final Rules RULES = Rules.load("riven-climate-forcing.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;
 
-    public enum Policy {
-        LEGACY,
-        DERIVED
-    }
-
     public enum Status {
         UNSAMPLED,
-        LEGACY,
         DISABLED,
         OUTSIDE_DOMAIN,
         MARINE,
@@ -23,7 +17,6 @@ public final class ClimateForcingMap {
     }
 
     private final ClimateStructureMap structure;
-    public final Policy policy;
     public final int upwindSamples;
     public final double transportX, transportZ, stepBlocks, maximumReach, responseHeight;
     private final double maximumWindwardFactor, maximumLeeFactor;
@@ -72,7 +65,6 @@ public final class ClimateForcingMap {
         if (structure == null || heights == null || json == null || world == null)
             throw new NullPointerException();
         this.structure = structure;
-        policy = Policy.valueOf(json.get("policy").getAsString());
         double tx = Rules.number(json, "transportX", -1, 1);
         double tz = Rules.number(json, "transportZ", -1, 1);
         double length = StrictMath.hypot(tx, tz);
@@ -171,10 +163,6 @@ public final class ClimateForcingMap {
         if (!Double.isFinite(x) || !Double.isFinite(z))
             throw new IllegalArgumentException("Finite climate forcing coordinates required");
         out.clear(Status.UNSAMPLED);
-        if (policy == Policy.LEGACY) {
-            out.status = Status.LEGACY;
-            return;
-        }
         if (!Rules.inCoordinateDomain(x, z)) {
             out.status = Status.OUTSIDE_DOMAIN;
             return;

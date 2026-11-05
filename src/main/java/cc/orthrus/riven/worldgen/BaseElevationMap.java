@@ -70,10 +70,15 @@ public final class BaseElevationMap {
         private final HeightSample regional = new HeightSample(), upliftSample = new HeightSample();
         private double meanHeight, dx, dz, minimumY, maximumY, envelope, envelopeDx, envelopeDz;
         private double uplift, blend, intentDx, intentDz, belt, beltDx, beltDz;
-        private double legacyPosition = -1;
+
+        /** The intent's landform position (0..3 over the four reference forms); -1 at sea. */
+        private double intentPosition = -1;
+
+        public double intentPosition() {
+            return intentPosition;
+        }
+
         private String firstLandform, secondLandform;
-        // Retain the interpolation terms so the LEGACY consumer keeps its exact arithmetic order.
-        private double meanSpan, marginA, marginB, blendDerivative, stateDx, stateDz;
 
         public double meanHeight() {
             return meanHeight;
@@ -136,40 +141,12 @@ public final class BaseElevationMap {
             return intentDz;
         }
 
-        public double legacyPosition() {
-            return legacyPosition;
-        }
-
         public String firstLandform() {
             return firstLandform;
         }
 
         public String secondLandform() {
             return secondLandform;
-        }
-
-        double meanSpan() {
-            return meanSpan;
-        }
-
-        double marginA() {
-            return marginA;
-        }
-
-        double marginB() {
-            return marginB;
-        }
-
-        double blendDerivative() {
-            return blendDerivative;
-        }
-
-        double stateDx() {
-            return stateDx;
-        }
-
-        double stateDz() {
-            return stateDz;
         }
     }
 
@@ -212,7 +189,7 @@ public final class BaseElevationMap {
             sz += slope * beltWeight * beltDz;
         }
         double position = Math.max(0, Math.min(3, state * 3));
-        out.legacyPosition = position;
+        out.intentPosition = position;
         out.intentDx = state <= 0 || state >= 1 ? 0 : 3 * sx;
         out.intentDz = state <= 0 || state >= 1 ? 0 : 3 * sz;
         int index = Math.min(2, (int) position);
@@ -245,12 +222,6 @@ public final class BaseElevationMap {
         out.belt = belt;
         out.beltDx = beltDx;
         out.beltDz = beltDz;
-        out.meanSpan = meanB - meanA;
-        out.marginA = marginA;
-        out.marginB = marginB;
-        out.blendDerivative = derivative;
-        out.stateDx = sx;
-        out.stateDz = sz;
     }
 
     void clear(Sample out) {
@@ -258,9 +229,7 @@ public final class BaseElevationMap {
         out.envelope = out.envelopeDx = out.envelopeDz = 0;
         out.uplift = out.blend = out.intentDx = out.intentDz = 0;
         out.belt = out.beltDx = out.beltDz = 0;
-        out.meanSpan =
-                out.marginA = out.marginB = out.blendDerivative = out.stateDx = out.stateDz = 0;
-        out.legacyPosition = -1;
+        out.intentPosition = -1;
         out.firstLandform = out.secondLandform = null;
     }
 

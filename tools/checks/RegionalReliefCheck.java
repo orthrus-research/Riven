@@ -65,7 +65,7 @@ public final class RegionalReliefCheck {
                     b.amplitude(),
                     b.noise(),
                     b.fineContribution(),
-                    b.legacyPosition()
+                    b.position()
                 }) out.append(Long.toHexString(Double.doubleToLongBits(v))).append('|');
         for (RegionalProfileMap.Profile p : RegionalProfileMap.Profile.values())
             out.append(Long.toHexString(Double.doubleToLongBits(b.region().weight(p)))).append('|');
@@ -191,28 +191,12 @@ public final class RegionalReliefCheck {
             GenerationMaps maps = new GenerationMaps(seed);
             RegionalProfileMap regions = new RegionalProfileMap(seed, heights);
             BaseTerrainMap map =
-                    new BaseTerrainMap(
-                            seed,
-                            maps.baseElevation,
-                            maps.provinces,
-                            heights,
-                            regions,
-                            BaseTerrainMap.Policy.REGIONAL);
-            BaseTerrainMap legacy =
-                    new BaseTerrainMap(
-                            seed,
-                            maps.baseElevation,
-                            maps.provinces,
-                            heights,
-                            regions,
-                            BaseTerrainMap.Policy.LEGACY);
-            BaseTerrainMap.Sample sample = new BaseTerrainMap.Sample(),
-                    old = new BaseTerrainMap.Sample();
+                    new BaseTerrainMap(seed, maps.baseElevation, maps.provinces, heights, regions);
+            BaseTerrainMap.Sample sample = new BaseTerrainMap.Sample();
             List<String> expected = new ArrayList<>();
             for (int i = 0; i < 1024; i++) {
                 double x = (i % 32 - 16) * 941.25 + .25, z = (i / 32 - 16) * 1021.75 - .5;
                 map.sample(x, z, sample);
-                legacy.sample(x, z, old);
                 partition(sample.region());
                 // S4: the province bands set the level, so heights leave the tectonic intent's
                 // envelope by design and stay inside the allocation.
@@ -221,13 +205,6 @@ public final class RegionalReliefCheck {
                                 && sample.height() >= heights.lowestSurface
                                 && sample.height() <= heights.highestSurface,
                         "Height inside the allocation");
-                require(
-                        Double.doubleToLongBits(sample.meanHeight())
-                                        == Double.doubleToLongBits(old.meanHeight())
-                                && sample.elevation().minimumY() == old.minimumY()
-                                && sample.elevation().maximumY() == old.maximumY()
-                                && sample.legacyPosition() == old.legacyPosition(),
-                        "Elevation policy changed");
                 require(sample.amplitude() >= 0, "Negative relief amplitude");
                 expected.add(snapshot(sample));
                 if ((i & 15) == 0) gradients(map, x, z);

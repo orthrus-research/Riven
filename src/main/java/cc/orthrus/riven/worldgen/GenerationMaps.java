@@ -33,18 +33,12 @@ public final class GenerationMaps {
         final BaseTerrainMap baseTerrain;
         final TerrainMap terrain;
 
-        Draw(
-                long seed,
-                TerrainHeightReference heights,
-                BaseTerrainMap.Policy policy,
-                WorldScale world,
-                int attempt) {
+        Draw(long seed, TerrainHeightReference heights, WorldScale world, int attempt) {
             this.attempt = attempt;
             temperature = new TemperatureMap(seed, world, attempt);
             climate = new ClimateMap(seed, temperature, climateForcing);
             provinces = new ProvinceMap(seed, world, plates, continents, spines, climate);
-            baseTerrain =
-                    new BaseTerrainMap(seed, baseElevation, provinces, heights, regions, policy);
+            baseTerrain = new BaseTerrainMap(seed, baseElevation, provinces, heights, regions);
             terrain =
                     new TerrainMap(
                             seed,
@@ -73,32 +67,20 @@ public final class GenerationMaps {
 
     /** A world at a layout scale (1 = 8 km tuning, 4 = 32 km worlds). */
     public GenerationMaps(long seed, WorldScale world) {
-        this(seed, TerrainHeightReference.DEFAULT, BaseTerrainMap.configuredPolicy(), world, true);
+        this(seed, TerrainHeightReference.DEFAULT, world, true);
     }
 
     GenerationMaps(long seed, TerrainHeightReference heights) {
-        this(seed, heights, BaseTerrainMap.configuredPolicy());
-    }
-
-    GenerationMaps(long seed, TerrainHeightReference heights, BaseTerrainMap.Policy policy) {
-        this(seed, heights, policy, WorldScale.DEFAULT, true);
+        this(seed, heights, WorldScale.DEFAULT, true);
     }
 
     /** The game's maps ({@link WorldGenerationContext}): no pool until the host supplies one. */
-    GenerationMaps(
-            long seed,
-            TerrainHeightReference heights,
-            BaseTerrainMap.Policy policy,
-            WorldScale world) {
-        this(seed, heights, policy, world, false);
+    GenerationMaps(long seed, TerrainHeightReference heights, WorldScale world) {
+        this(seed, heights, world, false);
     }
 
     private GenerationMaps(
-            long seed,
-            TerrainHeightReference heights,
-            BaseTerrainMap.Policy policy,
-            WorldScale world,
-            boolean tools) {
+            long seed, TerrainHeightReference heights, WorldScale world, boolean tools) {
         if (tools) pool.use(BuildPool.tools());
         plates = new PlateMap(seed, world);
         land = LandShare.choose(seed, heights, world);
@@ -115,7 +97,7 @@ public final class GenerationMaps {
         Draw kept = null;
         int draws = 0;
         for (int attempt = 0; attempt < ClimateCoverage.ATTEMPTS; attempt++) {
-            Draw draw = new Draw(seed, heights, policy, world, attempt);
+            Draw draw = new Draw(seed, heights, world, attempt);
             draws++;
             if (kept == null || draw.fewest > kept.fewest) kept = draw;
             if (draw.fewest >= ClimateCoverage.MIN_PATCHES) break;

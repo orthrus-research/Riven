@@ -33,7 +33,7 @@ public final class BaseElevationCheck {
                     sample.blend(),
                     sample.intentDx(),
                     sample.intentDz(),
-                    sample.legacyPosition()
+                    sample.intentPosition()
                 }) result.append(Long.toHexString(Double.doubleToRawLongBits(value))).append('|');
         return result.append(sample.firstLandform())
                 .append('|')
@@ -68,7 +68,7 @@ public final class BaseElevationCheck {
                     "Allocation-envelope gradient");
             close(
                     axis == 0 ? center.intentDx() : center.intentDz(),
-                    (plus.legacyPosition() - minus.legacyPosition()) / (2 * h),
+                    (plus.intentPosition() - minus.intentPosition()) / (2 * h),
                     "Position gradient");
         }
     }
@@ -96,7 +96,7 @@ public final class BaseElevationCheck {
             BaseElevationMap.Sample sample = new BaseElevationMap.Sample();
             map.sample(-1234.25, 5678.5, sample);
             require(
-                    sample.legacyPosition() == Math.max(0, Math.min(3, state * 3)),
+                    sample.intentPosition() == Math.max(0, Math.min(3, state * 3)),
                     "Clamped class control");
             require(
                     sample.dx() == 0
@@ -186,7 +186,7 @@ public final class BaseElevationCheck {
                             && reused.blend() == 0
                             && reused.intentDx() == 0
                             && reused.intentDz() == 0
-                            && reused.legacyPosition() == -1
+                            && reused.intentPosition() == -1
                             && reused.firstLandform() == null
                             && reused.secondLandform() == null,
                     "Marine clear leaked observations");

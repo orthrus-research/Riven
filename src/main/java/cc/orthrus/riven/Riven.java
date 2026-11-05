@@ -41,13 +41,11 @@ public final class Riven {
         // each with its revision and fingerprint (Definitions).
         org.apache.logging.log4j.Logger log = event.getModLog();
         log.info(
-                "Riven terrain-v{}: horizontal scale={}; seaLevel={}; highestOceanWater={};"
-                        + " baseTerrainPolicy={}",
+                "Riven terrain-v{}: horizontal scale={}; seaLevel={}; highestOceanWater={}",
                 cc.orthrus.riven.worldgen.TerrainMap.VERSION,
                 cc.orthrus.riven.worldgen.TerrainScale.HORIZONTAL,
                 cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT.seaLevel,
-                cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT.waterTopY,
-                cc.orthrus.riven.worldgen.BaseTerrainMap.configuredPolicy());
+                cc.orthrus.riven.worldgen.TerrainHeightReference.DEFAULT.waterTopY);
         for (cc.orthrus.riven.worldgen.Rules definition :
                 cc.orthrus.riven.worldgen.Definitions.loadAll())
             log.info(

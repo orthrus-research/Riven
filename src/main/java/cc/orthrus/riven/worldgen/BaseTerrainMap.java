@@ -7,11 +7,6 @@ public final class BaseTerrainMap {
     private static final Rules RULES = Rules.load("riven-base-terrain.json", 1);
     public static final String FINGERPRINT = RULES.fingerprint;
 
-    public enum Policy {
-        LEGACY,
-        REGIONAL
-    }
-
     private final BaseElevationMap elevation;
     private final RegionalProfileMap profiles;
 
@@ -70,26 +65,16 @@ public final class BaseTerrainMap {
 
     private final SeededNoise body, detail, wide;
     private final double bodyScale, detailScale, wideScale;
-    private final double legacyAmplitude, legacyBody, legacyFine;
-    private final Policy policy;
     public final int minimumSurfaceY;
-
-    public static Policy configuredPolicy() {
-        return Policy.valueOf(RULES.json.get("policy").getAsString());
-    }
 
     BaseTerrainMap(
             long seed,
             BaseElevationMap elevation,
             ProvinceMap provinces,
             TerrainHeightReference heights,
-            RegionalProfileMap profiles,
-            Policy policy) {
-        if (elevation == null
-                || provinces == null
-                || heights == null
-                || profiles == null
-                || policy == null) throw new NullPointerException();
+            RegionalProfileMap profiles) {
+        if (elevation == null || provinces == null || heights == null || profiles == null)
+            throw new NullPointerException();
         this.elevation = elevation;
         ground =
                 new ProvinceGround(
@@ -98,7 +83,6 @@ public final class BaseTerrainMap {
                                 * Rules.number(RULES.json, "groundStepInEdges", .05, 1));
         this.profiles = profiles;
         seaLevel = heights.seaLevel;
-        this.policy = policy;
         JsonObject j = RULES.json;
         minimumSurfaceY = elevation.minimumSurfaceY;
         bodyScale =
@@ -161,10 +145,6 @@ public final class BaseTerrainMap {
         spurN = new SeededNoise(SeededNoise.mix(seed ^ 0x53505552L));
         swellN = new SeededNoise(SeededNoise.mix(seed ^ 0x5357454c4cL));
         hollowN = new SeededNoise(SeededNoise.mix(seed ^ 0x484f4c4c4f57L));
-        legacyAmplitude = Rules.number(j, "legacyAmplitudeFraction", 0, 1);
-        legacyBody = Rules.number(j, "legacyBodyShare", 0, 1);
-        legacyFine = Rules.number(j, "legacyFineShare", 0, 1);
-        if (legacyBody + legacyFine != 1) throw new IllegalStateException("Legacy spectral shares");
         body = new SeededNoise(SeededNoise.mix(seed ^ Rules.seed(j, "bodySeed")));
         detail = new SeededNoise(SeededNoise.mix(seed ^ Rules.seed(j, "detailSeed")));
         wide = new SeededNoise(SeededNoise.mix(seed ^ Rules.seed(j, "wideSeed")));
@@ -276,10 +256,6 @@ public final class BaseTerrainMap {
             return noise;
         }
 
-        public double legacyPosition() {
-            return elevation.legacyPosition();
-        }
-
         public double meanHeight() {
             return elevation.meanHeight();
         }
@@ -309,10 +285,6 @@ public final class BaseTerrainMap {
         }
     }
 
-    public Policy policy() {
-        return policy;
-    }
-
     public double wideScale() {
         return wideScale;
     }
@@ -333,332 +305,295 @@ public final class BaseTerrainMap {
         BaseElevationMap.Sample e = out.elevation;
         body.sample(x / bodyScale + 0.19, z / bodyScale + 0.73, out.body);
         detail.sample(x / detailScale + 0.43, z / detailScale + 0.29, out.detail);
-        if (policy == Policy.LEGACY) {
-            profiles.clear(out.region);
-            // Preserve the former operation order, phases and derivatives for the comparator.
-            double amplitudeA = legacyAmplitude * e.marginA(),
-                    amplitudeB = legacyAmplitude * e.marginB();
-            double amplitude = lerp(amplitudeA, amplitudeB, e.blend());
-            double n = out.body.height * legacyBody + out.detail.height * legacyFine;
-            out.amplitude = amplitude;
-            out.noise = n;
-            double nx =
-                    out.body.dx / bodyScale * legacyBody + out.detail.dx / detailScale * legacyFine;
-            double nz =
-                    out.body.dz / bodyScale * legacyBody + out.detail.dz / detailScale * legacyFine;
-            double blendSlope = e.meanSpan() + (amplitudeB - amplitudeA) * n;
-            double broadBlendSlope =
-                    e.meanSpan() + (amplitudeB - amplitudeA) * out.body.height * legacyBody;
-            out.broadDx =
-                    amplitude * out.body.dx / bodyScale * legacyBody
-                            + broadBlendSlope * e.blendDerivative() * e.stateDx();
-            out.broadDz =
-                    amplitude * out.body.dz / bodyScale * legacyBody
-                            + broadBlendSlope * e.blendDerivative() * e.stateDz();
-            out.height = e.meanHeight() + amplitude * n;
-            out.dx = amplitude * nx + blendSlope * e.blendDerivative() * e.stateDx();
-            out.dz = amplitude * nz + blendSlope * e.blendDerivative() * e.stateDz();
-            out.fineContribution = amplitude * out.detail.height * legacyFine;
-            out.coarseHeight = e.meanHeight() + amplitude * out.body.height * legacyBody;
-            out.ground = e.meanHeight() - seaLevel;
-            out.position = e.legacyPosition();
-            out.spine = out.plateau = 0;
-            out.minimumY = e.minimumY();
-            out.maximumY = e.maximumY();
-        } else {
-            out.minimumY = seaLevel + 1;
-            out.maximumY = ceiling;
-            profiles.sample(x, z, out.region);
-            wide.sample(x / wideScale + .53, z / wideScale + .17, out.wide);
-            // S4: the province bands set the level; their characters shape it. Every term below
-            // carries its exact derivative.
-            double[] f = out.fields;
-            ground.sample(x, z, f);
-            int fx = ProvinceGround.FIELDS, fz = 2 * ProvinceGround.FIELDS;
-            // Plateaus: the level stands on the cap where the plateau share, warped by an edge
-            // field that leaves mesas outside the rim and notches canyons into it, passes one
-            // half, and on the ground below elsewhere, joined by a scarp; the cap loses its ridges.
-            double cap = 0, capDx = 0, capDz = 0;
-            if (f[3] > 0) {
-                double ps = plateauEdgeScale;
-                edge1.gradient(x / ps + .17, z / ps + .61, out.edgeA);
-                edge2.gradient(3 * x / ps + .44, 3 * z / ps + .29, out.edgeB);
-                double rim = plateauEdge * (out.edgeA.height + .5 * out.edgeB.height) / 1.5;
-                double ex = plateauEdge * (out.edgeA.dx + 1.5 * out.edgeB.dx) / (1.5 * ps);
-                double ez = plateauEdge * (out.edgeA.dz + 1.5 * out.edgeB.dz) / (1.5 * ps);
-                double q = (f[3] + rim - .5) / scarpWidth + .5;
-                cap = Rules.smooth(q);
-                double slope = smoothSlope(q) / scarpWidth;
-                capDx = slope * (f[fx + 3] + ex);
-                capDz = slope * (f[fz + 3] + ez);
-                // A spine wins over a cap: ranges keep their ridges where they cross a plateau.
-                double yq = (f[4] - spineYieldFrom) / (spineYieldFull - spineYieldFrom);
-                double yieldW = Rules.smooth(yq);
-                if (yieldW > 0) {
-                    double ys = smoothSlope(yq) / (spineYieldFull - spineYieldFrom);
-                    capDx = capDx * (1 - yieldW) - cap * ys * f[fx + 4];
-                    capDz = capDz * (1 - yieldW) - cap * ys * f[fz + 4];
-                    cap *= 1 - yieldW;
-                }
-                double gap = f[5] - f[6];
-                f[0] = f[6] + gap * cap;
-                f[fx] = f[fx + 6] + (f[fx + 5] - f[fx + 6]) * cap + gap * capDx;
-                f[fz] = f[fz + 6] + (f[fz + 5] - f[fz + 6]) * cap + gap * capDz;
-                f[fx + 2] = f[fx + 2] * (1 - cap) - f[2] * capDx;
-                f[fz + 2] = f[fz + 2] * (1 - cap) - f[2] * capDz;
-                f[2] *= 1 - cap;
+        out.minimumY = seaLevel + 1;
+        out.maximumY = ceiling;
+        profiles.sample(x, z, out.region);
+        wide.sample(x / wideScale + .53, z / wideScale + .17, out.wide);
+        // S4: the province bands set the level; their characters shape it. Every term below
+        // carries its exact derivative.
+        double[] f = out.fields;
+        ground.sample(x, z, f);
+        int fx = ProvinceGround.FIELDS, fz = 2 * ProvinceGround.FIELDS;
+        // Plateaus: the level stands on the cap where the plateau share, warped by an edge
+        // field that leaves mesas outside the rim and notches canyons into it, passes one
+        // half, and on the ground below elsewhere, joined by a scarp; the cap loses its ridges.
+        double cap = 0, capDx = 0, capDz = 0;
+        if (f[3] > 0) {
+            double ps = plateauEdgeScale;
+            edge1.gradient(x / ps + .17, z / ps + .61, out.edgeA);
+            edge2.gradient(3 * x / ps + .44, 3 * z / ps + .29, out.edgeB);
+            double rim = plateauEdge * (out.edgeA.height + .5 * out.edgeB.height) / 1.5;
+            double ex = plateauEdge * (out.edgeA.dx + 1.5 * out.edgeB.dx) / (1.5 * ps);
+            double ez = plateauEdge * (out.edgeA.dz + 1.5 * out.edgeB.dz) / (1.5 * ps);
+            double q = (f[3] + rim - .5) / scarpWidth + .5;
+            cap = Rules.smooth(q);
+            double slope = smoothSlope(q) / scarpWidth;
+            capDx = slope * (f[fx + 3] + ex);
+            capDz = slope * (f[fz + 3] + ez);
+            // A spine wins over a cap: ranges keep their ridges where they cross a plateau.
+            double yq = (f[4] - spineYieldFrom) / (spineYieldFull - spineYieldFrom);
+            double yieldW = Rules.smooth(yq);
+            if (yieldW > 0) {
+                double ys = smoothSlope(yq) / (spineYieldFull - spineYieldFrom);
+                capDx = capDx * (1 - yieldW) - cap * ys * f[fx + 4];
+                capDz = capDz * (1 - yieldW) - cap * ys * f[fz + 4];
+                cap *= 1 - yieldW;
             }
-            // The continents' spines raise ranges along the land's own axis: the weight lifts the
-            // level and pulls relief and ridged share toward a range's, wherever the province.
-            double spine = f[4];
-            out.spine = Math.max(0, Math.min(1, spine));
-            out.plateau = cap;
-            if (spine > 0) {
-                double sx = f[fx + 4], sz = f[fz + 4];
-                f[0] += spineLift * spine;
-                f[fx] += spineLift * sx;
-                f[fz] += spineLift * sz;
-                for (int k = 1; k <= 2; k++) {
-                    double target = k == 1 ? spineRelief : spineRidged, gap = target - f[k];
-                    f[fx + k] = f[fx + k] * (1 - spine) + gap * sx;
-                    f[fz + k] = f[fz + k] * (1 - spine) + gap * sz;
-                    f[k] += gap * spine;
-                }
-            }
-            double level = f[0], groundDx = f[fx], groundDz = f[fz];
-            // Character strength: a slow patch field, calm over most of a province.
-            character.sample(x / characterScale + .11, z / characterScale + .83, out.patch);
-            double patchSpan = characterFull - characterStart;
-            double t = (.5 + .5 * out.patch.height - characterStart) / patchSpan;
-            double strength = characterFloor + (1 - characterFloor) * Rules.smooth(t);
-            double strengthSlope =
-                    (1 - characterFloor) * smoothSlope(t) / patchSpan * .5 / characterScale;
-            double strengthDx = strengthSlope * out.patch.dx,
-                    strengthDz = strengthSlope * out.patch.dz;
-            double mean = seaLevel + level;
-            out.ground = level;
-            out.position = elevation.position(mean);
-            // The rolling part carries the unridged share of the province's relief.
-            double unridged = 1 - f[2];
-            double envelope =
-                    groundAmplitude
-                            + groundAmplitudePerBlock * level
-                            + rollingGain * f[1] * strength * unridged;
-            double envelopeDx =
-                    groundAmplitudePerBlock * groundDx
-                            + rollingGain
-                                    * (f[fx + 1] * strength * unridged
-                                            + f[1] * strengthDx * unridged
-                                            - f[1] * strength * f[fx + 2]);
-            double envelopeDz =
-                    groundAmplitudePerBlock * groundDz
-                            + rollingGain
-                                    * (f[fz + 1] * strength * unridged
-                                            + f[1] * strengthDz * unridged
-                                            - f[1] * strength * f[fz + 2]);
-            double fraction = out.region.amplitudeFraction();
-            double amplitude = envelope * fraction;
-            double amplitudeDx = envelopeDx * fraction + envelope * out.region.amplitudeDx();
-            double amplitudeDz = envelopeDz * fraction + envelope * out.region.amplitudeDz();
-            // A plateau's cap is calm: it keeps a share of the ground's amplitude.
-            if (cap > 0) {
-                double flat = 1 - plateauFlatten * cap;
-                amplitudeDx = amplitudeDx * flat - amplitude * plateauFlatten * capDx;
-                amplitudeDz = amplitudeDz * flat - amplitude * plateauFlatten * capDz;
-                amplitude *= flat;
-            }
-            double w = out.region.wideShare(), fineShare = out.region.fineShare();
-            double c = 1 - w - fineShare;
-            double coarse = w * out.wide.height + c * out.body.height;
-            double n = coarse + fineShare * out.detail.height;
-            double coarseDx =
-                    w * out.wide.dx / wideScale
-                            + c * out.body.dx / bodyScale
-                            + out.region.wideDx() * (out.wide.height - out.body.height)
-                            - out.region.fineDx() * out.body.height;
-            double coarseDz =
-                    w * out.wide.dz / wideScale
-                            + c * out.body.dz / bodyScale
-                            + out.region.wideDz() * (out.wide.height - out.body.height)
-                            - out.region.fineDz() * out.body.height;
-            double nx =
-                    coarseDx
-                            + fineShare * out.detail.dx / detailScale
-                            + out.region.fineDx() * out.detail.height;
-            double nz =
-                    coarseDz
-                            + fineShare * out.detail.dz / detailScale
-                            + out.region.fineDz() * out.detail.height;
-            double meanDx = groundDx;
-            double meanDz = groundDz;
-            out.amplitude = amplitude;
-            out.noise = n;
-            // Ridges: crests and valleys where the province is ridged; mountains are never calm,
-            // so a ridged province keeps at least its ridged share of strength.
-            double ridges = 0, ridgesDx = 0, ridgesDz = 0;
-            double keep = Math.max(strength, f[2]);
-            double keepDx = strength >= f[2] ? strengthDx : f[fx + 2];
-            double keepDz = strength >= f[2] ? strengthDz : f[fz + 2];
-            double ridgeAmplitude = ridgeGain * f[1] * f[2] * keep;
-            if (ridgeAmplitude > 0) {
-                double ampDx =
-                        ridgeGain
-                                * (f[fx + 1] * f[2] * keep
-                                        + f[1] * f[fx + 2] * keep
-                                        + f[1] * f[2] * keepDx);
-                double ampDz =
-                        ridgeGain
-                                * (f[fz + 1] * f[2] * keep
-                                        + f[1] * f[fz + 2] * keep
-                                        + f[1] * f[2] * keepDz);
-                // A domain warp bends the crests into long, curving range lines; (jxx jxz; jzx
-                // jzz) is its Jacobian, which carries the octaves' derivatives back to x and z.
-                warpX.gradient(x / ridgeWarpScale + .31, z / ridgeWarpScale + .72, out.warpA);
-                warpZ.gradient(x / ridgeWarpScale + .66, z / ridgeWarpScale + .15, out.warpB);
-                double bend = ridgeWarp / ridgeWarpScale;
-                double px = x + ridgeWarp * out.warpA.height, pz = z + ridgeWarp * out.warpB.height;
-                double jxx = 1 + bend * out.warpA.dx, jxz = bend * out.warpA.dz;
-                double jzx = bend * out.warpB.dx, jzz = 1 + bend * out.warpB.dz;
-                // Three rotated gradient octaves: their zero lines, the crests, follow no axis.
-                octave(ridge1, px, pz, ridgeScale, 0, .27, .64, out.ridgeA);
-                octave(ridge2, px, pz, ridgeScale / 2.1, 1, .51, .08, out.ridgeB);
-                octave(ridge3, px, pz, ridgeScale / 4.4, 2, .93, .38, out.ridgeC);
-                double a = ridged(out.ridgeA.height), b = ridged(out.ridgeB.height);
-                double cc = ridged(out.ridgeC.height);
-                double ad = ridgedSlope(out.ridgeA.height);
-                double bd = ridgedSlope(out.ridgeB.height);
-                double cd = ridgedSlope(out.ridgeC.height);
-                double ax = ad * out.ridgeA.dx, az = ad * out.ridgeA.dz;
-                double bx = bd * out.ridgeB.dx, bz = bd * out.ridgeB.dz;
-                double cx = cd * out.ridgeC.dx, cz = cd * out.ridgeC.dz;
-                // Sharper crests where the first octave is high: small ridges ride on big ones.
-                double g = .35 + .65 * a;
-                double r = a + .5 * b * g + .25 * cc * g;
-                double rpx = ax + .5 * (bx * g + b * .65 * ax) + .25 * (cx * g + cc * .65 * ax);
-                double rpz = az + .5 * (bz * g + b * .65 * az) + .25 * (cz * g + cc * .65 * az);
-                double rx = rpx * jxx + rpz * jzx, rz = rpx * jxz + rpz * jzz;
-                // Centred for gradient octaves: the shape's mean and its 95th percentile above
-                // the mean match the value-noise ridges these replaced (mean 0.922, p95 +0.516
-                // of r here), so bands keep their heights and only the pattern changes.
-                double shape = r / RIDGE_SPREAD - RIDGE_CENTRE;
-                ridges = ridgeAmplitude * shape;
-                ridgesDx = ampDx * shape + ridgeAmplitude * rx / RIDGE_SPREAD;
-                ridgesDz = ampDz * shape + ridgeAmplitude * rz / RIDGE_SPREAD;
-            }
-            // Landform palettes: the province type's rounded hills, spurs, broad swells and
-            // hollows. The character varies the hills and spurs; a plateau's cap stays calm.
-            double forms = 0, formsDx = 0, formsDz = 0;
-            {
-                double calm = 1 - cap, calmDx = -capDx, calmDz = -capDz;
-                double vary = 1 - variety + variety * strength;
-                double varyDx = variety * strengthDx, varyDz = variety * strengthDz;
-                if (f[7] > 0) {
-                    // Rounded hills: two octaves shaped into domes, u (1.5 - 0.5 u^2).
-                    octave(hillA, x, z, hillScale, 0, .21, .57, out.landA);
-                    octave(hillB, x, z, hillScale / 2.3, 1, .68, .12, out.landB);
-                    double u = (out.landA.height + .45 * out.landB.height) / 1.45;
-                    double hx = (out.landA.dx + .45 * out.landB.dx) / 1.45;
-                    double hz = (out.landA.dz + .45 * out.landB.dz) / 1.45;
-                    double s = u * (1.5 - .5 * u * u), ds = 1.5 - 1.5 * u * u;
-                    double a = f[7] * vary * calm;
-                    forms += a * s;
-                    formsDx +=
-                            a * ds * hx
-                                    + s
-                                            * (f[fx + 7] * vary * calm
-                                                    + f[7] * varyDx * calm
-                                                    + f[7] * vary * calmDx);
-                    formsDz +=
-                            a * ds * hz
-                                    + s
-                                            * (f[fz + 7] * vary * calm
-                                                    + f[7] * varyDz * calm
-                                                    + f[7] * vary * calmDz);
-                }
-                if (f[8] > 0) {
-                    // Spurs: small ridged crests and valleys, centred on their mean.
-                    octave(spurN, x, z, spurScale, 2, .35, .91, out.landA);
-                    double r = ridged(out.landA.height) - .45, dr = ridgedSlope(out.landA.height);
-                    double a = f[8] * vary * calm;
-                    forms += a * r;
-                    formsDx +=
-                            a * dr * out.landA.dx
-                                    + r
-                                            * (f[fx + 8] * vary * calm
-                                                    + f[8] * varyDx * calm
-                                                    + f[8] * vary * calmDx);
-                    formsDz +=
-                            a * dr * out.landA.dz
-                                    + r
-                                            * (f[fz + 8] * vary * calm
-                                                    + f[8] * varyDz * calm
-                                                    + f[8] * vary * calmDz);
-                }
-                if (f[9] > 0) {
-                    // Broad swells: one slow octave.
-                    octave(swellN, x, z, swellScale, 1, .84, .43, out.landB);
-                    forms += f[9] * out.landB.height;
-                    formsDx += f[9] * out.landB.dx + f[fx + 9] * out.landB.height;
-                    formsDz += f[9] * out.landB.dz + f[fz + 9] * out.landB.height;
-                }
-                if (f[10] > 0) {
-                    // Hollows: a flat floor with shallow dips where the field falls below zero.
-                    octave(hollowN, x, z, hollowScale, 0, .52, .26, out.landA);
-                    double u = out.landA.height;
-                    if (u < 0) {
-                        double dip = u * u, a = f[10] * calm;
-                        forms -= a * dip;
-                        formsDx -=
-                                a * 2 * u * out.landA.dx
-                                        + dip * (f[fx + 10] * calm + f[10] * calmDx);
-                        formsDz -=
-                                a * 2 * u * out.landA.dz
-                                        + dip * (f[fz + 10] * calm + f[10] * calmDz);
-                    }
-                }
-            }
-            ridges += forms;
-            ridgesDx += formsDx;
-            ridgesDz += formsDz;
-            out.coarseHeight = mean + amplitude * coarse + ridges;
-            out.fineContribution = amplitude * fineShare * out.detail.height;
-            double height = mean + amplitude * n + ridges;
-            double dx = meanDx + amplitudeDx * n + amplitude * nx + ridgesDx;
-            double dz = meanDz + amplitudeDz * n + amplitude * nz + ridgesDz;
-            // Terraces: flat steps with short risers on a plateau's scarp, a broken escarpment.
-            double steps = scarpTerrace * 4 * cap * (1 - cap);
-            if (steps > 0) {
-                double stepsDx = scarpTerrace * 4 * (1 - 2 * cap) * capDx;
-                double stepsDz = scarpTerrace * 4 * (1 - 2 * cap) * capDz;
-                double q = (height - seaLevel) / terraceBlocks, floor = Math.floor(q);
-                double rise = Rules.smooth((q - floor - (1 - terraceRiser)) / terraceRiser);
-                double stepped = seaLevel + (floor + rise) * terraceBlocks;
-                double slope =
-                        q - floor < 1 - terraceRiser
-                                ? 0
-                                : smoothSlope((q - floor - (1 - terraceRiser)) / terraceRiser)
-                                        / terraceRiser;
-                double k = 1 - steps + steps * slope;
-                double gap = stepped - height;
-                height = height + gap * steps;
-                dx = dx * k + gap * stepsDx;
-                dz = dz * k + gap * stepsDz;
-            }
-            // The soft ceiling bends peaks toward the allocation's top.
-            if (height > ceilingStart) {
-                double span = ceiling - ceilingStart, u = (height - ceilingStart) / span;
-                double bent = ceilingStart + span * Math.tanh(u);
-                double k = 1 - Math.tanh(u) * Math.tanh(u);
-                height = bent;
-                dx *= k;
-                dz *= k;
-            }
-            out.height = height;
-            out.dx = dx;
-            out.dz = dz;
-            out.broadDx = meanDx + amplitudeDx * coarse + amplitude * coarseDx + ridgesDx;
-            out.broadDz = meanDz + amplitudeDz * coarse + amplitude * coarseDz + ridgesDz;
+            double gap = f[5] - f[6];
+            f[0] = f[6] + gap * cap;
+            f[fx] = f[fx + 6] + (f[fx + 5] - f[fx + 6]) * cap + gap * capDx;
+            f[fz] = f[fz + 6] + (f[fz + 5] - f[fz + 6]) * cap + gap * capDz;
+            f[fx + 2] = f[fx + 2] * (1 - cap) - f[2] * capDx;
+            f[fz + 2] = f[fz + 2] * (1 - cap) - f[2] * capDz;
+            f[2] *= 1 - cap;
         }
+        // The continents' spines raise ranges along the land's own axis: the weight lifts the
+        // level and pulls relief and ridged share toward a range's, wherever the province.
+        double spine = f[4];
+        out.spine = Math.max(0, Math.min(1, spine));
+        out.plateau = cap;
+        if (spine > 0) {
+            double sx = f[fx + 4], sz = f[fz + 4];
+            f[0] += spineLift * spine;
+            f[fx] += spineLift * sx;
+            f[fz] += spineLift * sz;
+            for (int k = 1; k <= 2; k++) {
+                double target = k == 1 ? spineRelief : spineRidged, gap = target - f[k];
+                f[fx + k] = f[fx + k] * (1 - spine) + gap * sx;
+                f[fz + k] = f[fz + k] * (1 - spine) + gap * sz;
+                f[k] += gap * spine;
+            }
+        }
+        double level = f[0], groundDx = f[fx], groundDz = f[fz];
+        // Character strength: a slow patch field, calm over most of a province.
+        character.sample(x / characterScale + .11, z / characterScale + .83, out.patch);
+        double patchSpan = characterFull - characterStart;
+        double t = (.5 + .5 * out.patch.height - characterStart) / patchSpan;
+        double strength = characterFloor + (1 - characterFloor) * Rules.smooth(t);
+        double strengthSlope =
+                (1 - characterFloor) * smoothSlope(t) / patchSpan * .5 / characterScale;
+        double strengthDx = strengthSlope * out.patch.dx, strengthDz = strengthSlope * out.patch.dz;
+        double mean = seaLevel + level;
+        out.ground = level;
+        out.position = elevation.position(mean);
+        // The rolling part carries the unridged share of the province's relief.
+        double unridged = 1 - f[2];
+        double envelope =
+                groundAmplitude
+                        + groundAmplitudePerBlock * level
+                        + rollingGain * f[1] * strength * unridged;
+        double envelopeDx =
+                groundAmplitudePerBlock * groundDx
+                        + rollingGain
+                                * (f[fx + 1] * strength * unridged
+                                        + f[1] * strengthDx * unridged
+                                        - f[1] * strength * f[fx + 2]);
+        double envelopeDz =
+                groundAmplitudePerBlock * groundDz
+                        + rollingGain
+                                * (f[fz + 1] * strength * unridged
+                                        + f[1] * strengthDz * unridged
+                                        - f[1] * strength * f[fz + 2]);
+        double fraction = out.region.amplitudeFraction();
+        double amplitude = envelope * fraction;
+        double amplitudeDx = envelopeDx * fraction + envelope * out.region.amplitudeDx();
+        double amplitudeDz = envelopeDz * fraction + envelope * out.region.amplitudeDz();
+        // A plateau's cap is calm: it keeps a share of the ground's amplitude.
+        if (cap > 0) {
+            double flat = 1 - plateauFlatten * cap;
+            amplitudeDx = amplitudeDx * flat - amplitude * plateauFlatten * capDx;
+            amplitudeDz = amplitudeDz * flat - amplitude * plateauFlatten * capDz;
+            amplitude *= flat;
+        }
+        double w = out.region.wideShare(), fineShare = out.region.fineShare();
+        double c = 1 - w - fineShare;
+        double coarse = w * out.wide.height + c * out.body.height;
+        double n = coarse + fineShare * out.detail.height;
+        double coarseDx =
+                w * out.wide.dx / wideScale
+                        + c * out.body.dx / bodyScale
+                        + out.region.wideDx() * (out.wide.height - out.body.height)
+                        - out.region.fineDx() * out.body.height;
+        double coarseDz =
+                w * out.wide.dz / wideScale
+                        + c * out.body.dz / bodyScale
+                        + out.region.wideDz() * (out.wide.height - out.body.height)
+                        - out.region.fineDz() * out.body.height;
+        double nx =
+                coarseDx
+                        + fineShare * out.detail.dx / detailScale
+                        + out.region.fineDx() * out.detail.height;
+        double nz =
+                coarseDz
+                        + fineShare * out.detail.dz / detailScale
+                        + out.region.fineDz() * out.detail.height;
+        double meanDx = groundDx;
+        double meanDz = groundDz;
+        out.amplitude = amplitude;
+        out.noise = n;
+        // Ridges: crests and valleys where the province is ridged; mountains are never calm,
+        // so a ridged province keeps at least its ridged share of strength.
+        double ridges = 0, ridgesDx = 0, ridgesDz = 0;
+        double keep = Math.max(strength, f[2]);
+        double keepDx = strength >= f[2] ? strengthDx : f[fx + 2];
+        double keepDz = strength >= f[2] ? strengthDz : f[fz + 2];
+        double ridgeAmplitude = ridgeGain * f[1] * f[2] * keep;
+        if (ridgeAmplitude > 0) {
+            double ampDx =
+                    ridgeGain
+                            * (f[fx + 1] * f[2] * keep
+                                    + f[1] * f[fx + 2] * keep
+                                    + f[1] * f[2] * keepDx);
+            double ampDz =
+                    ridgeGain
+                            * (f[fz + 1] * f[2] * keep
+                                    + f[1] * f[fz + 2] * keep
+                                    + f[1] * f[2] * keepDz);
+            // A domain warp bends the crests into long, curving range lines; (jxx jxz; jzx
+            // jzz) is its Jacobian, which carries the octaves' derivatives back to x and z.
+            warpX.gradient(x / ridgeWarpScale + .31, z / ridgeWarpScale + .72, out.warpA);
+            warpZ.gradient(x / ridgeWarpScale + .66, z / ridgeWarpScale + .15, out.warpB);
+            double bend = ridgeWarp / ridgeWarpScale;
+            double px = x + ridgeWarp * out.warpA.height, pz = z + ridgeWarp * out.warpB.height;
+            double jxx = 1 + bend * out.warpA.dx, jxz = bend * out.warpA.dz;
+            double jzx = bend * out.warpB.dx, jzz = 1 + bend * out.warpB.dz;
+            // Three rotated gradient octaves: their zero lines, the crests, follow no axis.
+            octave(ridge1, px, pz, ridgeScale, 0, .27, .64, out.ridgeA);
+            octave(ridge2, px, pz, ridgeScale / 2.1, 1, .51, .08, out.ridgeB);
+            octave(ridge3, px, pz, ridgeScale / 4.4, 2, .93, .38, out.ridgeC);
+            double a = ridged(out.ridgeA.height), b = ridged(out.ridgeB.height);
+            double cc = ridged(out.ridgeC.height);
+            double ad = ridgedSlope(out.ridgeA.height);
+            double bd = ridgedSlope(out.ridgeB.height);
+            double cd = ridgedSlope(out.ridgeC.height);
+            double ax = ad * out.ridgeA.dx, az = ad * out.ridgeA.dz;
+            double bx = bd * out.ridgeB.dx, bz = bd * out.ridgeB.dz;
+            double cx = cd * out.ridgeC.dx, cz = cd * out.ridgeC.dz;
+            // Sharper crests where the first octave is high: small ridges ride on big ones.
+            double g = .35 + .65 * a;
+            double r = a + .5 * b * g + .25 * cc * g;
+            double rpx = ax + .5 * (bx * g + b * .65 * ax) + .25 * (cx * g + cc * .65 * ax);
+            double rpz = az + .5 * (bz * g + b * .65 * az) + .25 * (cz * g + cc * .65 * az);
+            double rx = rpx * jxx + rpz * jzx, rz = rpx * jxz + rpz * jzz;
+            // Centred for gradient octaves: the shape's mean and its 95th percentile above
+            // the mean match the value-noise ridges these replaced (mean 0.922, p95 +0.516
+            // of r here), so bands keep their heights and only the pattern changes.
+            double shape = r / RIDGE_SPREAD - RIDGE_CENTRE;
+            ridges = ridgeAmplitude * shape;
+            ridgesDx = ampDx * shape + ridgeAmplitude * rx / RIDGE_SPREAD;
+            ridgesDz = ampDz * shape + ridgeAmplitude * rz / RIDGE_SPREAD;
+        }
+        // Landform palettes: the province type's rounded hills, spurs, broad swells and
+        // hollows. The character varies the hills and spurs; a plateau's cap stays calm.
+        double forms = 0, formsDx = 0, formsDz = 0;
+        {
+            double calm = 1 - cap, calmDx = -capDx, calmDz = -capDz;
+            double vary = 1 - variety + variety * strength;
+            double varyDx = variety * strengthDx, varyDz = variety * strengthDz;
+            if (f[7] > 0) {
+                // Rounded hills: two octaves shaped into domes, u (1.5 - 0.5 u^2).
+                octave(hillA, x, z, hillScale, 0, .21, .57, out.landA);
+                octave(hillB, x, z, hillScale / 2.3, 1, .68, .12, out.landB);
+                double u = (out.landA.height + .45 * out.landB.height) / 1.45;
+                double hx = (out.landA.dx + .45 * out.landB.dx) / 1.45;
+                double hz = (out.landA.dz + .45 * out.landB.dz) / 1.45;
+                double s = u * (1.5 - .5 * u * u), ds = 1.5 - 1.5 * u * u;
+                double a = f[7] * vary * calm;
+                forms += a * s;
+                formsDx +=
+                        a * ds * hx
+                                + s
+                                        * (f[fx + 7] * vary * calm
+                                                + f[7] * varyDx * calm
+                                                + f[7] * vary * calmDx);
+                formsDz +=
+                        a * ds * hz
+                                + s
+                                        * (f[fz + 7] * vary * calm
+                                                + f[7] * varyDz * calm
+                                                + f[7] * vary * calmDz);
+            }
+            if (f[8] > 0) {
+                // Spurs: small ridged crests and valleys, centred on their mean.
+                octave(spurN, x, z, spurScale, 2, .35, .91, out.landA);
+                double r = ridged(out.landA.height) - .45, dr = ridgedSlope(out.landA.height);
+                double a = f[8] * vary * calm;
+                forms += a * r;
+                formsDx +=
+                        a * dr * out.landA.dx
+                                + r
+                                        * (f[fx + 8] * vary * calm
+                                                + f[8] * varyDx * calm
+                                                + f[8] * vary * calmDx);
+                formsDz +=
+                        a * dr * out.landA.dz
+                                + r
+                                        * (f[fz + 8] * vary * calm
+                                                + f[8] * varyDz * calm
+                                                + f[8] * vary * calmDz);
+            }
+            if (f[9] > 0) {
+                // Broad swells: one slow octave.
+                octave(swellN, x, z, swellScale, 1, .84, .43, out.landB);
+                forms += f[9] * out.landB.height;
+                formsDx += f[9] * out.landB.dx + f[fx + 9] * out.landB.height;
+                formsDz += f[9] * out.landB.dz + f[fz + 9] * out.landB.height;
+            }
+            if (f[10] > 0) {
+                // Hollows: a flat floor with shallow dips where the field falls below zero.
+                octave(hollowN, x, z, hollowScale, 0, .52, .26, out.landA);
+                double u = out.landA.height;
+                if (u < 0) {
+                    double dip = u * u, a = f[10] * calm;
+                    forms -= a * dip;
+                    formsDx -=
+                            a * 2 * u * out.landA.dx + dip * (f[fx + 10] * calm + f[10] * calmDx);
+                    formsDz -=
+                            a * 2 * u * out.landA.dz + dip * (f[fz + 10] * calm + f[10] * calmDz);
+                }
+            }
+        }
+        ridges += forms;
+        ridgesDx += formsDx;
+        ridgesDz += formsDz;
+        out.coarseHeight = mean + amplitude * coarse + ridges;
+        out.fineContribution = amplitude * fineShare * out.detail.height;
+        double height = mean + amplitude * n + ridges;
+        double dx = meanDx + amplitudeDx * n + amplitude * nx + ridgesDx;
+        double dz = meanDz + amplitudeDz * n + amplitude * nz + ridgesDz;
+        // Terraces: flat steps with short risers on a plateau's scarp, a broken escarpment.
+        double steps = scarpTerrace * 4 * cap * (1 - cap);
+        if (steps > 0) {
+            double stepsDx = scarpTerrace * 4 * (1 - 2 * cap) * capDx;
+            double stepsDz = scarpTerrace * 4 * (1 - 2 * cap) * capDz;
+            double q = (height - seaLevel) / terraceBlocks, floor = Math.floor(q);
+            double rise = Rules.smooth((q - floor - (1 - terraceRiser)) / terraceRiser);
+            double stepped = seaLevel + (floor + rise) * terraceBlocks;
+            double slope =
+                    q - floor < 1 - terraceRiser
+                            ? 0
+                            : smoothSlope((q - floor - (1 - terraceRiser)) / terraceRiser)
+                                    / terraceRiser;
+            double k = 1 - steps + steps * slope;
+            double gap = stepped - height;
+            height = height + gap * steps;
+            dx = dx * k + gap * stepsDx;
+            dz = dz * k + gap * stepsDz;
+        }
+        // The soft ceiling bends peaks toward the allocation's top.
+        if (height > ceilingStart) {
+            double span = ceiling - ceilingStart, u = (height - ceilingStart) / span;
+            double bent = ceilingStart + span * Math.tanh(u);
+            double k = 1 - Math.tanh(u) * Math.tanh(u);
+            height = bent;
+            dx *= k;
+            dz *= k;
+        }
+        out.height = height;
+        out.dx = dx;
+        out.dz = dz;
+        out.broadDx = meanDx + amplitudeDx * coarse + amplitude * coarseDx + ridgesDx;
+        out.broadDz = meanDz + amplitudeDz * coarse + amplitude * coarseDz + ridgesDz;
     }
 
     /**

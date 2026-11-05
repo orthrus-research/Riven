@@ -43,8 +43,7 @@ final class ColumnReport {
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Climate forcing %s/%s: background=%.3f correction=%+.3f factor=%+.3f landWeight=%.3f obstruction=%.2f contrast=%.2f blocks datumY=%d reads=%d/%d (structure/elevation)",
-                                provider.maps.climateForcing.policy,
+                                "Climate forcing %s: background=%.3f correction=%+.3f factor=%+.3f landWeight=%.3f obstruction=%.2f contrast=%.2f blocks datumY=%d reads=%d/%d (structure/elevation)",
                                 climate.forcing.status(),
                                 climate.backgroundMoisture,
                                 climate.moistureCorrection,

@@ -12,6 +12,6 @@ public final class WorldGenerationContext {
 
     public WorldGenerationContext(long seed, WorldScale scale) {
         this.scale = scale;
-        maps = new GenerationMaps(seed, terrainHeights, BaseTerrainMap.configuredPolicy(), scale);
+        maps = new GenerationMaps(seed, terrainHeights, scale);
     }
 }

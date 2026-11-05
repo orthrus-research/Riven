@@ -39,7 +39,7 @@ public final class ClimateForcingCheck {
 
     private static final class Context {
         final ClimateStructureMap structure;
-        final ClimateForcingMap derived, legacy, disabled;
+        final ClimateForcingMap derived, disabled;
         final ClimateMap climate, background, zero;
 
         Context(long seed, Family family) {
@@ -52,19 +52,15 @@ public final class ClimateForcingCheck {
                             new BaseElevationMap(seed, new PlateMap(seed), heights),
                             heights);
             JsonObject json = settings();
-            json.addProperty("policy", "DERIVED");
             derived = new ClimateForcingMap(structure, heights, json);
             json = settings();
-            json.addProperty("policy", "LEGACY");
-            legacy = new ClimateForcingMap(structure, heights, json);
-            json = settings();
-            json.addProperty("policy", "DERIVED");
             json.addProperty("maximumWindwardFactor", 0);
             json.addProperty("maximumLeeFactor", 0);
             disabled = new ClimateForcingMap(structure, heights, json);
             TemperatureMap temperature = new TemperatureMap(seed);
             climate = new ClimateMap(seed, temperature, derived);
-            background = new ClimateMap(seed, temperature, legacy);
+            // Forcing disabled reads the background climate through the same path.
+            background = new ClimateMap(seed, temperature, disabled);
             zero = new ClimateMap(seed, temperature, disabled);
         }
     }
@@ -341,7 +337,7 @@ public final class ClimateForcingCheck {
         }
         require(farEdge, "Missing far-edge land control");
         ClimateForcingMap.Sample direct = new ClimateForcingMap.Sample();
-        for (ClimateForcingMap map : new ClimateForcingMap[] {c.derived, c.legacy, c.disabled}) {
+        for (ClimateForcingMap map : new ClimateForcingMap[] {c.derived, c.disabled}) {
             map.sample(0, 0, direct);
             String unchanged = forcing(direct);
             for (double bad :
@@ -363,13 +359,7 @@ public final class ClimateForcingCheck {
                 // Expected for every policy.
             }
         }
-        // Reuse across policies must not retain formerly derived values or work counters.
-        c.background.sample(100, 200, sample);
-        require(
-                sample.forcing.status() == ClimateForcingMap.Status.LEGACY
-                        && sample.forcing.structureQueries() == 0,
-                "Legacy reset");
-        require(Double.isNaN(sample.forcing.landWeight()), "Stale legacy observation");
+        // Reuse across maps must not retain formerly derived values or work counters.
         c.zero.sample(100, 200, sample);
         require(
                 sample.forcing.status() == ClimateForcingMap.Status.DISABLED
