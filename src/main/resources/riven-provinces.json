@@ -1,8 +1,8 @@
 {
   "schema": 1,
-  "revision": 6,
+  "revision": 7,
   "variationSeed": "0x50524f56494e4331",
-  "cells": {"sizeBlocks": 1400, "jitter": 0.85, "warpBlocks": 900, "warpWavelengthBlocks": 3600, "edgeBlocks": 500},
+  "cells": {"sizeBlocks": 1400, "jitter": 0.85, "warpBlocks": 900, "warpWavelengthBlocks": 3600, "shearOctaves": [[1400, 520], [700, 260], [350, 130]], "edgeBlocks": 500},
   "types": [
     {"id": "plain", "enabled": true, "share": [0.15, 0.35], "band": [5, 35], "relief": {"blocks": 4, "ridged": 0, "plateau": 0}, "palette": {"hills": 0, "spurs": 0, "swells": 6, "hollows": 2}},
     {"id": "basin", "enabled": true, "share": [0.0, 0.15], "band": [2, 25], "relief": {"blocks": 3, "ridged": 0, "plateau": 0}, "palette": {"hills": 0, "spurs": 0, "swells": 2, "hollows": 5}},

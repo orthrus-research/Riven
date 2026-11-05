@@ -98,7 +98,11 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
 
 `ProvinceMap` (`riven-provinces.json`, terrain-v103) is the parent of biomes. It's a seeded
 regional map of provinces about 1,400 blocks across (times the layout scale), on a jittered grid
-read at warped coordinates. Each column belongs to its nearest province, with an intensity from 0
+read at warped coordinates: a broad warp (900 blocks at 3,600) and, since terrain-v131, three
+fold-free shear octaves at the cell scale (1,400, 700 and 350 blocks, amplitudes 520, 260 and 130;
+each a shear pair in its own golden-angle frame, so its Jacobian's determinant is 1). A broad warp
+alone is nearly affine across one cell and leaves its edges straight bisectors; the shear octaves
+bend them into lobed, natural borders. Each column belongs to its nearest province, with an intensity from 0
 at the edge to 1 inside (350 blocks).
 
 Every province has two faces, a land type and an ocean class, and each column takes the face of

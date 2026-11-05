@@ -100,6 +100,13 @@ public final class ProvinceMap {
     /** The definitions, read once: the packaged ones, or a variant a check builds. */
     static final class Definition {
         final double size, jitter, warp, warpWavelength, edge;
+
+        /**
+         * The fold-free fine warp (v131): per octave a wavelength and an amplitude in blocks, each
+         * a shear pair in its own golden-angle frame, so province edges bend at cell scale.
+         */
+        final double[] shearWavelength, shearAmplitude;
+
         final double reach, threshold, spineThreshold, levelWavelength, forelandReach;
         final int side;
         final Type[] types;
@@ -118,6 +125,17 @@ public final class ProvinceMap {
             jitter = Rules.number(cells, "jitter", 0, 1);
             warp = Rules.number(cells, "warpBlocks", 0, 4096);
             warpWavelength = Rules.number(cells, "warpWavelengthBlocks", 64, 65536);
+            JsonArray octaves = cells.getAsJsonArray("shearOctaves");
+            shearWavelength = new double[octaves.size()];
+            shearAmplitude = new double[octaves.size()];
+            for (int k = 0; k < octaves.size(); k++) {
+                JsonArray o = octaves.get(k).getAsJsonArray();
+                shearWavelength[k] = o.get(0).getAsDouble();
+                shearAmplitude[k] = o.get(1).getAsDouble();
+                if (!(shearWavelength[k] >= 16 && shearWavelength[k] <= 65536)
+                        || !(shearAmplitude[k] >= 0 && shearAmplitude[k] <= 8192))
+                    throw new IllegalStateException("riven-provinces.json: shearOctaves");
+            }
             edge = Rules.number(cells, "edgeBlocks", 1, 8192);
             side = (int) Rules.number(j.getAsJsonObject("budget"), "measureSide", 8, 512);
             List<Type> list = new ArrayList<>();
@@ -300,6 +318,11 @@ public final class ProvinceMap {
     private final long seed;
     private final double size, edge, reach, interiorBlocks, half;
     private final SeededNoise warpX, warpZ, level;
+
+    /** The fine warp's shear noises (two per octave) and their frames. */
+    private final SeededNoise[] shearU, shearV;
+
+    private final double[] shearCos, shearSin;
     private final PlateMap plates;
     private final SpineMap spines;
     private final ContinentalMap continents;
@@ -373,6 +396,18 @@ public final class ProvinceMap {
         half = scale.side() / 2;
         warpX = new SeededNoise(SeededNoise.mix(seed ^ 0x5741525058L));
         warpZ = new SeededNoise(SeededNoise.mix(seed ^ 0x574152505aL));
+        int octaves = def.shearWavelength.length;
+        shearU = new SeededNoise[octaves];
+        shearV = new SeededNoise[octaves];
+        shearCos = new double[octaves];
+        shearSin = new double[octaves];
+        for (int k = 0; k < octaves; k++) {
+            shearU[k] = new SeededNoise(SeededNoise.mix(seed ^ (0x5348454152L + 2L * k)));
+            shearV[k] = new SeededNoise(SeededNoise.mix(seed ^ (0x5348454152L + 2L * k + 1)));
+            double a = (k + 1) * 2.399963229728653;
+            shearCos[k] = Math.cos(a);
+            shearSin[k] = Math.sin(a);
+        }
         level = new SeededNoise(SeededNoise.mix(seed ^ 0x4c4556454cL));
         // The world square's cells (seed point inside), each sampled once.
         int i0 = (int) Math.floor(-half / size) - 1, i1 = (int) Math.floor(half / size) + 1;
@@ -806,8 +841,22 @@ public final class ProvinceMap {
     /** The warped point of (x, z), into out. */
     private void warp(double x, double z, double[] out) {
         double scale = size / def.size, w = def.warpWavelength * scale;
-        out[0] = x + def.warp * scale * warpX.sample(x / w, z / w);
-        out[1] = z + def.warp * scale * warpZ.sample(x / w, z / w);
+        double u = x + def.warp * scale * warpX.sample(x / w, z / w);
+        double v = z + def.warp * scale * warpZ.sample(x / w, z / w);
+        // Fine octaves as shear pairs in rotated frames: a shear moves one coordinate by a function
+        // of the other, so its Jacobian's determinant is 1 and the warp never folds; edges bend
+        // at cell scale instead of staying the straight bisectors a smooth broad warp leaves.
+        for (int k = 0; k < shearU.length; k++) {
+            double c = shearCos[k], s = shearSin[k];
+            double l = def.shearWavelength[k] * scale, a = def.shearAmplitude[k] * scale;
+            double p = c * u + s * v, q = -s * u + c * v;
+            p += a * shearU[k].sample(q / l, .31 + k);
+            q += a * shearV[k].sample(p / l, .73 + k);
+            u = c * p - s * q;
+            v = s * p + c * q;
+        }
+        out[0] = u;
+        out[1] = v;
     }
 
     /** The cell nearest a column. */
