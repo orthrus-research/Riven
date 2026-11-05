@@ -112,17 +112,31 @@ public final class MountainBoundaryCheck {
                 new int[][] {
                     {7124, 3179}, {8102, 4552}, {75891, 3626}, {-1, -1}, {-17, -16}, {0, 0}
                 }) points.add(observe(maps, 0, 0, p[0], p[1], false));
+        // Mountain plans stand on spine nodes (v130), not on sites: probe the nodes found on a
+        // coarse grid over the same cells.
         Sites sites = maps.terrain.types.sites;
+        double[] nodes = new double[6 * 64];
+        Set<String> found = new HashSet<>();
         int owners = 0;
         search:
         for (int cz = 0; cz <= LAST_CELL; cz++)
             for (int cx = 0; cx <= LAST_CELL; cx++) {
-                long key = sites.key(cx, cz);
-                if (!sites.admits(cx, cz, key, Sites.Lane.MOUNTAINS)) continue;
-                if (owners == OWNER_CAP) break search;
-                owners++;
-                double ax = sites.x(cx, key), az = sites.z(cz, key);
-                points.add(observe(maps, cx, cz, (int) Math.floor(ax), (int) Math.floor(az), true));
+                int count =
+                        maps.spines.nodes(
+                                cx * sites.spacing, cz * sites.spacing, 600, sites.spacing, nodes);
+                for (int k = 0; k < count; k++) {
+                    if (!found.add((long) nodes[6 * k] + "," + (long) nodes[6 * k + 1])) continue;
+                    if (owners == OWNER_CAP) break search;
+                    owners++;
+                    points.add(
+                            observe(
+                                    maps,
+                                    (int) nodes[6 * k],
+                                    (int) nodes[6 * k + 1],
+                                    (int) Math.floor(nodes[6 * k + 3]),
+                                    (int) Math.floor(nodes[6 * k + 4]),
+                                    true));
+                }
             }
         int applied = 0;
         Set<String> observedReasons = new HashSet<>();

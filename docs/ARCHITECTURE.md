@@ -226,22 +226,17 @@ their own cube path below the crust floor.
 ## Feature sites
 
 `Sites` (configured in `riven-terrain.json`) places sparse major features on a 288-block cell
-grid. Every cell is a raw anchor (`anchorProbability` 1.0, v42); a sequential lottery assigns its
-lane (carver/cut 40%, hills 30%, mountains 15%, cold 3.75%, volcanic 1.9%, then
-landmark under 1%). With `competition` LANE (v42) an anchor is admitted
-only if no higher-priority raw anchor of the same lane lies within twice that lane's radius;
-supports of different lanes may overlap and compose in stage order. Since v52, mountain, volcanic and
-cold neighbors veto only if their own anchor passes the stage's anchor-local admission
-(earlier intent, climate, water and marine tests, memoized per cell); other raw neighbors veto
-whether or not they would build. (SHARED, the rule until v41, also let every other lane veto within the
-larger of the 518-block separation and the sum of both radii; it vetoed about 90% of anchors.) Per-lane maximum radii: carver, cut, hills,
-landmark 259; volcanic 288; mountains 576; cold 816
-blocks.
+grid (terrain-v130: one mode). Each lane (landmark, carver, general cut, cold, volcanic) draws its
+own anchor in every cell from a lane-salted key with its `laneDensity`; the salts are stable, so a
+lane leaving changes no other lane's anchors. An anchor is admitted only if no higher-priority
+anchor of its own lane, whose own anchor-local admission passes (earlier facts, memoized per
+cell), lies within twice that lane's radius; supports of different lanes may overlap and compose
+in stage order. Per-lane maximum radii: carver, cut, landmark 259; volcanic 288; cold 816 blocks.
 
 Each family's terrain adapter then certifies its admitted site against the earlier parent and
-rejects it when the footprint fails, without rerolling. Mountains left the lanes at v62
-(`laneDensity` MOUNTAINS 0): they follow the plates' mountain belts instead (continent crests
-until terrain-v104; FEATURES.md).
+rejects it when the footprint fails, without rerolling. Mountains stand on no site: since
+terrain-v130 their plans sit at nodes along the continents' spines (`SpineMap.nodes`), and the
+retired continent crests and the shared-competition mode are gone.
 
 ## Measured structural limits
 

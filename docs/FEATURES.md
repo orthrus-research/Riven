@@ -431,20 +431,6 @@ ground's landform position (`BaseElevationMap.position`), not intent. Plateau bu
   elevation, legal bands and analytic gradients from plates, regional noise and the height
   reference. State is 0.40 + 0.3 signed plate uplift + 0.3 regional + 1.0 mountain belt (softly
   capped at 0.45; until terrain-v104 the owner continent's crest).
-- **Continent crests** (v61, `skeleton` in `riven-continents.json`; no longer read since
-  terrain-v104, when plate belts took over high ground): 75% of built mainland
-  continents carry a crest in their shape frame (Spine continents along their six nodes, others a
-  bent three-point line 0.8 radii each side of the center along the major axis), strength 0.7-1.0
-  times continent size, tapered over the outer quarter at each end, with a falloff over 0.9 radii
-  that wanders 20% along the crest, faded at the coast over 0.6 scaled radii (0.25 before v63). A land column takes
-  the largest crest of any continent in its window, so merged land has no seam where ownership
-  switches; only base elevation's outline read computes it. Measured on 4 seeds (8 km, adjacent
-  columns one block apart): no base-elevation step over 3 blocks per block (v60 had 4,390 steps
-  of up to 110 blocks from owner-only crests and a discontinuous along-crest parameter), 0.1% of
-  land steeper than 1.5; 48% of mountain-grade land lies on crests (15% without). 8 km atlas of
-  seed 8675309: mountains 0 -> 0.8% of land, plateaus 1.2 -> 2.5%, drylands 0.02 -> 0.23%,
-  highest land Y238 -> Y257. Dense 512 x 512 windows on 8 threads: 1.6 s vs 1.4 s on lowland,
-  1.4 s vs 0.7 s on the new highland, where mountains and plateaus now build.
 - **Regional relief** (`RegionalProfileMap`, `BaseTerrainMap`, v31; `riven-terrain-regions.json`,
   `riven-base-terrain.json`): bounded regional amplitude and spectral profiles. REGIONAL is
   packaged and builds on province ground ([Provinces](#provinces)); LEGACY is the exact earlier
@@ -460,9 +446,9 @@ ground's landform position (`BaseElevationMap.position`), not intent. Plateau bu
 | Stage | Families | Definition | Activity |
 | --- | --- | --- | --- |
 | Regional passes (`RegionalTerrainPasses`) | hummocks, knolls, ridges, benches, dunes | `riven-terrain-passes.json` | 6.4% |
-| Volcanic (`VolcanicTerrain`) | cone, caldera, fissure, lobe plateau | `riven-volcanic.json` | About 1 per 4 seeds (prototype): hot anchors only; support slope within 2x the family limit, potential 0.3 |
+| Volcanic (`VolcanicTerrain`) | cone, caldera, fissure, lobe plateau | `riven-volcanic.json` | 3-12 volcanoes per 32 km world (v130): potential from rifts, the arcs along ranges (spine weight 0.15-0.5) and sparse hotspots, in any climate; only the core (0.4 of the radius) stands clear of water, rivers keep their beds through the skirt |
 | Cold regions (`ColdTerrain`) | cirque, trough, drumlins, moraines | `riven-cold-regions.json` | 0.19% of land on seed 8675309 (prototype; a warm seed) |
-| Mountains (`MountainTerrain`) | ridge tree, folded belts, summit graph, warped ridges; spine massif | `riven-mountains.json` | 2-6% of land (v128: the massif rises by spine weight, not plate belt, and the stage fades on plateau caps) |
+| Mountains (`MountainTerrain`) | ridge tree, folded belts, summit graph, warped ridges; spine massif | `riven-mountains.json` | 13-16% of land at 32 km (v130: plans at nodes along the spines, where the range weight reaches 0.5, heading down the ridge; the massif rises by spine weight; the stage fades on plateau caps) |
 | Landmarks (`RegionalLandmarks`) | capped hill, curved ridge, rimmed basin, fan apron, branching ravine, sculpted dune | `riven-landmarks.json` | 0.8% of land on seed 8675309 at step 16, 1.4x taller (prototype; 0.7% before) |
 | Surface carvers (`SurfaceCarvers`) | 24 profiles (V ravine to en-echelon clefts) | `riven-surface-carvers.json` | 1.7% of land on seed 8675309, 1.5x deeper (prototype; 1.2% before) |
 | General cuts (`GeneralSurfaceCuts`) | ribbon ravine, branch gully, pinched slot, breach saddle | `riven-general-surface-cuts.json` | 1-2 cuts per 8 km world (prototype; 0 before) |
@@ -605,7 +591,7 @@ drains through its gorge. A lake needs 6 grid cells below its level and stands a
 Channels crossing a lake run at its level, so its outlet leaves at the spill. The shore is the
 contour where the ground, interpolated between the lake's cells, meets the level; a 3-block bank
 eases the ground to the water, and dry columns within 6 blocks of the level stand at least level
-with it. Lakes reserve their box (and two cells) from landforms. On the canonical world at 32 km
+with it. Landforms keep clear of a lake by the distance to its nearest wet cell (less half a cell diagonal; v130, the whole box until then, which reserved entire ranges). On the canonical world at 32 km
 they cover 4.0% of land (1.8-4.2% over eight seeds), most in the valleys and piedmonts of ranges.
 
 - **Meanders:** a wave 11 channel widths long (at least 24 blocks, drifting 30% along the course)

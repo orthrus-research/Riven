@@ -30,9 +30,17 @@ public final class VolcanicTerrain {
 
     private final SeededNoise opportunity;
     private final double[] weights = new double[FAMILIES.length];
-    private final double radius, potentialSpan, compressionWeight;
-    private final TemperatureBand supportBand;
-    private final double fadeZero, fadeFull;
+    private final double radius, potentialSpan;
+
+    /**
+     * Volcanism (v130): rifts, the arcs along ranges (by spine weight) and sparse hotspots (peaks
+     * of the regional field) give the potential, in any climate.
+     */
+    private final double riftWeight, arcFrom, arcFull, arcWeight, hotspotFrom, hotspotFull;
+
+    /** The share of a cone's radius that must stand clear of surface water. */
+    private final double waterCore;
+
     private final int searchRadius, sets, ways, maximumColumns;
     private final AtomicReferenceArray<Entry> memo;
     private final CellMemo<Boolean> anchors = new CellMemo<>(4096);
@@ -97,11 +105,15 @@ public final class VolcanicTerrain {
         if (radius + 2 > waterCellBlocks)
             throw new IllegalStateException(
                     "Volcanic support must fit the finite water-clearance query");
-        supportBand = TemperatureBand.valueOf(j.get("supportTemperatureBand").getAsString());
-        fadeFull = Rules.number(j, "climateFadeFullCelsius", -40, 60);
-        fadeZero = Rules.number(j, "climateFadeZeroCelsius", -40, fadeFull - .5);
+        JsonObject v = j.getAsJsonObject("volcanism");
+        waterCore = Rules.number(v, "waterCoreShare", .1, 1);
+        riftWeight = Rules.number(v, "riftWeight", 0, 1);
+        arcFrom = Rules.number(v, "arcSpineFrom", 0, 1);
+        arcFull = Rules.number(v, "arcSpineFull", arcFrom + .01, 1);
+        arcWeight = Rules.number(v, "arcWeight", 0, 1);
+        hotspotFrom = Rules.number(v, "hotspotFrom", 0, 1);
+        hotspotFull = Rules.number(v, "hotspotFull", hotspotFrom + .01, 1);
         potentialSpan = plateBlocks * Rules.number(j, "potentialInPlateWidths", .25, 4);
-        compressionWeight = Rules.number(j, "compressionWeight", 0, 1);
         opportunity = new SeededNoise(SeededNoise.mix(seed ^ 0x564f4c504f54454eL));
         for (int i = 0; i < FAMILIES.length; i++)
             weights[i] =
@@ -191,15 +203,13 @@ public final class VolcanicTerrain {
                                     seed, cx, cz, FAMILIES[selected], x, z, reference, tuning);
                     if (VolcanicKernels.columnPrerequisite(p) != VolcanicKernels.Reason.ACCEPTED
                             || p.radius > radius
-                            || water.surfaceClearance(x, z, p.radius + 2) < p.radius + 2)
-                        return false;
+                            || water.surfaceClearance(x, z, core(p)) < core(p)) return false;
                     TerrainMap.Sample s = new TerrainMap.Sample();
                     parent.sample(Math.rint(x), Math.rint(z), s);
                     return Double.isFinite(s.height)
                             && !s.ocean.marine
                             && !s.water.wet
                             && s.water.weight <= 0
-                            && s.climate.temperatureBand == supportBand
                             && potential(x, z, s) >= tuning.minimumPotential;
                 });
     }
@@ -224,7 +234,9 @@ public final class VolcanicTerrain {
         if (p.radius > radius) return reject("SUPPORT_BUDGET", bounds);
         if (Math.abs(x) + halo > 29999984 || Math.abs(z) + halo > 29999984)
             return reject("WORLD_BOUND", bounds);
-        if (water.surfaceClearance(x, z, halo) < halo) return reject("WATER_SUPPORT", bounds);
+        // Only the core must stand clear of water (v130): rivers and lakes keep their beds and
+        // banks through the skirt, as the hydrology constraint applies last.
+        if (water.surfaceClearance(x, z, core(p)) < core(p)) return reject("WATER_SUPPORT", bounds);
         int minX = (int) Math.floor(x - halo),
                 maxX = (int) Math.ceil(x + halo),
                 minZ = (int) Math.floor(z - halo),
@@ -241,10 +253,6 @@ public final class VolcanicTerrain {
         // Nothing from this height raster is retained by the published decision.
         double[][] rows = new double[3][width];
         TerrainMap.Sample scratch = new TerrainMap.Sample();
-        // Volcanoes need a hot anchor; cooler support columns fade the cone in apply (v55).
-        parent.sample(Math.rint(x), Math.rint(z), scratch);
-        if (scratch.climate.temperatureBand != supportBand)
-            return reject("CLIMATE_SUPPORT", bounds);
         for (int pz = startZ; pz <= maxZ; pz += step) {
             int rowIndex = (pz - startZ) / step;
             double[] row = rows[rowIndex % 3];
@@ -257,8 +265,8 @@ public final class VolcanicTerrain {
                 if (!Double.isFinite(scratch.height)) return reject("INVALID_PARENT", bounds);
                 // Marine columns never receive the cone; they leave the certificate and stencil.
                 if (scratch.ocean.marine) continue;
-                if (scratch.water.wet || scratch.water.weight > 0)
-                    return reject("PROTECTED_SUPPORT", bounds);
+                // Water columns keep their beds: like marine ones they leave the certificate.
+                if (scratch.water.wet || scratch.water.weight > 0) continue;
                 bounds.min = Math.min(bounds.min, scratch.height);
                 bounds.max = Math.max(bounds.max, scratch.height);
                 bounds.potential = Math.min(bounds.potential, potential(px, pz, scratch));
@@ -310,9 +318,9 @@ public final class VolcanicTerrain {
         return new Decision(decision.plan, decision.reason.name(), bounds);
     }
 
-    /** Full at climateFadeFullCelsius and above, zero at climateFadeZeroCelsius and below. */
-    private double climateFade(TerrainMap.BaseSample base) {
-        return Rules.smooth((base.climate.celsius - fadeZero) / (fadeFull - fadeZero));
+    /** The core of a proposal that must stand clear of surface water. */
+    private double core(VolcanicKernels.ColumnProposal p) {
+        return p.radius * waterCore + 2;
     }
 
     /** Height step to a certified neighbour; a skipped marine neighbour contributes nothing. */
@@ -325,12 +333,14 @@ public final class VolcanicTerrain {
     }
 
     private double potential(double x, double z, TerrainMap.BaseSample base) {
-        // Authored regional opportunity plus earlier smooth compression intent.
-        // This is a selector, not evidence of magma, geology or a physical heat source.
+        // Where the ground model says the crust is active: rifts, arcs along the ranges, and
+        // sparse hotspots. A selector, not evidence of magma or a physical heat source.
+        double rift =
+                base.land.landform == Terrain.Landform.RIFT ? riftWeight * base.land.strength : 0;
+        double arc = arcWeight * Rules.smooth((base.base.spine() - arcFrom) / (arcFull - arcFrom));
         double regional = .5 + .5 * opportunity.sample(x / potentialSpan, z / potentialSpan);
-        return Math.max(
-                0,
-                Math.min(1, regional * (1 - compressionWeight) + base.uplift * compressionWeight));
+        double hotspot = Rules.smooth((regional - hotspotFrom) / (hotspotFull - hotspotFrom));
+        return Math.max(rift, Math.max(arc, hotspot));
     }
 
     public static final class Result implements StageResult {
@@ -392,7 +402,7 @@ public final class VolcanicTerrain {
                     out.reason = "UNCERTIFIED_PARENT";
                     continue;
                 }
-                double applied = plan.delta((int) x, (int) z) * climateFade(base);
+                double applied = plan.delta((int) x, (int) z);
                 if (applied == 0) continue;
                 out.contributors++;
                 if (Math.abs(applied) > Math.abs(out.delta)

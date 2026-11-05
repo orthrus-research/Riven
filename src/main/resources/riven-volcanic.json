@@ -1,9 +1,6 @@
 {
   "schema": 1,
-  "revision": 5,
-  "supportTemperatureBand": "HOT",
-  "climateFadeZeroCelsius": 20,
-  "climateFadeFullCelsius": 25,
+  "revision": 6,
   "variationSeed": "564f4c43414e4943",
   "size": 1.0,
   "relief": 1.0,
@@ -13,10 +10,10 @@
   "minimumPotential": 0.3,
   "parentSlopeTolerance": 2.0,
   "potentialInPlateWidths": 0.75,
-  "compressionWeight": 0.25,
+  "volcanism": {"riftWeight": 0.9, "arcSpineFrom": 0.15, "arcSpineFull": 0.5, "arcWeight": 0.8, "hotspotFrom": 0.75, "hotspotFull": 0.95, "waterCoreShare": 0.4},
   "familyWeights": {"CONE": 1, "CALDERA": 1, "FISSURE": 1, "LOBE_PLATEAU": 1},
   "cacheSets": 32,
   "cacheWays": 4,
   "maximumCertificateColumns": 400000,
-  "note": "All four MIT families use shared anchors and a separate exhaustive native-column certificate. Reference widths are horizontally scaled once; vertical magnitudes stay physical. Earlier region noise and compression provide authored opportunity, not physical magma or geological history. Three temporary rows measure all integer parent values and four-neighbor slope stencils; no continuous proof is inferred. Final fractional queries preserve the parent for this layer. No lava or new material palette is implied. Runtime/cost/occurrence qualification remains pending."
+  "note": "All four MIT families use shared anchors and a separate exhaustive native-column certificate. Reference widths are horizontally scaled once; vertical magnitudes stay physical. Rifts, arcs along the ranges and sparse hotspots (v130) provide authored opportunity, in any climate, not physical magma or geological history. Three temporary rows measure all integer parent values and four-neighbor slope stencils; no continuous proof is inferred. Final fractional queries preserve the parent for this layer. No lava or new material palette is implied. Runtime/cost/occurrence qualification remains pending."
 }

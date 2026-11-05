@@ -12,8 +12,6 @@ import com.google.gson.JsonObject;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -575,11 +573,6 @@ public final class TerrainAtlas {
             GenerationMaps maps, int minX, int minZ, int width, int height, int step)
             throws Exception {
         Sites sites = maps.terrain.types.sites;
-        Method laneOf = Sites.class.getDeclaredMethod("laneOf", long.class);
-        laneOf.setAccessible(true);
-        Field probabilityField = Sites.class.getDeclaredField("probability");
-        probabilityField.setAccessible(true);
-        double probability = probabilityField.getDouble(sites);
         double margin = 0;
         for (Sites.Lane lane : Sites.Lane.values())
             margin = Math.max(margin, sites.maximumRadius(lane));
@@ -589,39 +582,39 @@ public final class TerrainAtlas {
         int r1 = (int) Math.floor((minZ + height * step + margin) / sites.spacing) + 1;
         JsonArray list = new JsonArray();
         TerrainMap.Sample s = new TerrainMap.Sample();
-        for (int cz = r0; cz <= r1; cz++)
-            for (int cx = c0; cx <= c1; cx++) {
-                long key = sites.key(cx, cz);
-                if (Sites.random(key, 1) >= probability) continue;
-                Sites.Lane lane = (Sites.Lane) laneOf.invoke(sites, key);
-                double ax = sites.x(cx, key), az = sites.z(cz, key);
-                double radius = sites.maximumRadius(lane);
-                if (ax + radius < minX
-                        || ax - radius >= minX + width * step
-                        || az + radius < minZ
-                        || az - radius >= minZ + height * step) continue;
-                JsonObject site = new JsonObject();
-                site.addProperty("cellX", cx);
-                site.addProperty("cellZ", cz);
-                site.addProperty("lane", lane.name());
-                site.addProperty("x", round(ax));
-                site.addProperty("z", round(az));
-                site.addProperty("radius", round(radius));
-                boolean admitted = sites.admits(cx, cz, key, lane);
-                site.addProperty("admitted", admitted);
-                if (admitted) {
-                    maps.terrain.sample(Math.floor(ax), Math.floor(az), s);
-                    int stage = stageOf(lane);
-                    site.addProperty("marine", s.ocean.marine);
-                    site.addProperty("stage", STAGE_NAMES[stage]);
-                    String why = reason(s, stage);
-                    if (why != null) site.addProperty("reasonAtAnchor", why);
-                    Enum<?> f = family(s, stage);
-                    if (f != null) site.addProperty("familyAtAnchor", f.name());
-                    site.addProperty("deltaAtAnchor", round(delta(s, stage)));
+        for (Sites.Lane lane : Sites.Lane.values())
+            for (int cz = r0; cz <= r1; cz++)
+                for (int cx = c0; cx <= c1; cx++) {
+                    long key = sites.key(lane, cx, cz);
+                    if (!sites.inLane(key, lane)) continue;
+                    double ax = sites.x(cx, key), az = sites.z(cz, key);
+                    double radius = sites.maximumRadius(lane);
+                    if (ax + radius < minX
+                            || ax - radius >= minX + width * step
+                            || az + radius < minZ
+                            || az - radius >= minZ + height * step) continue;
+                    JsonObject site = new JsonObject();
+                    site.addProperty("cellX", cx);
+                    site.addProperty("cellZ", cz);
+                    site.addProperty("lane", lane.name());
+                    site.addProperty("x", round(ax));
+                    site.addProperty("z", round(az));
+                    site.addProperty("radius", round(radius));
+                    boolean admitted = sites.admits(cx, cz, key, lane);
+                    site.addProperty("admitted", admitted);
+                    if (admitted) {
+                        maps.terrain.sample(Math.floor(ax), Math.floor(az), s);
+                        int stage = stageOf(lane);
+                        site.addProperty("marine", s.ocean.marine);
+                        site.addProperty("stage", STAGE_NAMES[stage]);
+                        String why = reason(s, stage);
+                        if (why != null) site.addProperty("reasonAtAnchor", why);
+                        Enum<?> f = family(s, stage);
+                        if (f != null) site.addProperty("familyAtAnchor", f.name());
+                        site.addProperty("deltaAtAnchor", round(delta(s, stage)));
+                    }
+                    list.add(site);
                 }
-                list.add(site);
-            }
         return list;
     }
 
@@ -647,8 +640,6 @@ public final class TerrainAtlas {
                 return 4;
             case CARVER:
                 return 5;
-            case MOUNTAINS:
-                return 3;
             case COLD:
                 return 2;
             case VOLCANIC:

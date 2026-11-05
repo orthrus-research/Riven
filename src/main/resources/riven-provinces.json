@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 5,
+  "revision": 6,
   "variationSeed": "0x50524f56494e4331",
   "cells": {"sizeBlocks": 1400, "jitter": 0.85, "warpBlocks": 900, "warpWavelengthBlocks": 3600, "edgeBlocks": 500},
   "types": [
@@ -13,7 +13,7 @@
     {"id": "foreland", "enabled": true, "share": [0.05, 0.15], "band": [30, 90], "relief": {"blocks": 25, "ridged": 0.2, "plateau": 0}, "palette": {"hills": 14, "spurs": 14, "swells": 4, "hollows": 0}}
   ],
   "spine": {"type": "range", "threshold": 0.15},
-  "spines": {"cellBlocks": 64, "tileCells": 128, "capBlocks": 2500, "blurBlocks": 80, "flatSlope": 0.35, "halfWidthFromBlocks": 150, "halfWidthFullBlocks": 550, "widthShare": 0.5, "minWidthBlocks": 125},
+  "spines": {"cellBlocks": 64, "tileCells": 128, "capBlocks": 2500, "blurBlocks": 80, "flatSlope": 0.35, "halfWidthFromBlocks": 150, "halfWidthFullBlocks": 550, "widthShare": 0.5, "minWidthBlocks": 125, "nodeWeight": 0.5},
   "tectonic": {"divergent": "rift", "reachBlocks": 700, "threshold": 0.35},
   "stable": {"low": {"coastal": "plain", "interior": "basin"}, "high": {"rest": "upland", "top": "tableland"}, "levelWavelengthCells": 3.0},
   "foreland": {"type": "foreland", "beside": "range", "reachCells": 1.25},

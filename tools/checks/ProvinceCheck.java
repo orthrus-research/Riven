@@ -44,7 +44,7 @@ public final class ProvinceCheck {
                 world,
                 plates,
                 continents,
-                new SpineMap(continents, world, pool),
+                new SpineMap(seed, continents, world, pool),
                 climate,
                 def);
     }

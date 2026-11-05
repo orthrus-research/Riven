@@ -690,13 +690,7 @@ final class Drainage {
         prepare(q, cells);
         for (int k = 0; k < cells; k++) {
             Network n = network(q.cells[2 * k], q.cells[2 * k + 1]);
-            if (n.lakes != null)
-                for (int l = 0; l < n.lakes.level.length; l++) {
-                    double[] b = n.lakes.box;
-                    double dx = Math.max(0, Math.max(b[4 * l] - x, x - b[4 * l + 2]));
-                    double dz = Math.max(0, Math.max(b[4 * l + 1] - z, z - b[4 * l + 3]));
-                    clearance = Math.min(clearance, Math.hypot(dx, dz));
-                }
+            if (n.lakes != null) clearance = lakeClearance(n.lakes, x, z, clearance);
             if (n.channels.length == 0) continue;
             // River segments are binned by their support; scan only the bins within reach.
             int ax = (int) Math.floor((x - clearance - n.originX) / n.bin);
@@ -1551,6 +1545,40 @@ final class Drainage {
             }
         }
         return found;
+    }
+
+    /**
+     * The distance from a column to the nearest wet cell of any lake, less half a cell's
+     * diagonal (a conservative bound on the distance to its water), within the lakes' boxes; the
+     * box only rejects columns far from every lake.
+     */
+    private static double lakeClearance(Lakes l, double x, double z, double clearance) {
+        boolean near = false;
+        for (int k = 0; k < l.level.length && !near; k++) {
+            double[] b = l.box;
+            near =
+                    x >= b[4 * k] - clearance
+                            && x <= b[4 * k + 2] + clearance
+                            && z >= b[4 * k + 1] - clearance
+                            && z <= b[4 * k + 3] + clearance;
+        }
+        if (!near) return clearance;
+        int reach = (int) Math.ceil(clearance / l.cell) + 1;
+        int ci = (int) Math.floor((x - l.originX) / l.cell),
+                cj = (int) Math.floor((z - l.originZ) / l.cell);
+        double half = l.cell * Math.sqrt(.5);
+        for (int j = Math.max(0, cj - reach); j <= Math.min(l.nz - 1, cj + reach); j++)
+            for (int i = Math.max(0, ci - reach); i <= Math.min(l.nx - 1, ci + reach); i++) {
+                int k = j * l.nx + i, lake = l.lakeOf[k];
+                if (lake < 0 || !(l.ground[k] < l.level[lake])) continue;
+                double d =
+                        Math.hypot(
+                                        x - l.originX - (i + .5) * l.cell,
+                                        z - l.originZ - (j + .5) * l.cell)
+                                - half;
+                clearance = Math.min(clearance, Math.max(0, d));
+            }
+        return clearance;
     }
 
     private static boolean touches(boolean[] own, int k, int nx, int nz) {

@@ -49,7 +49,7 @@ public final class SampleHistoryCheck {
         scratch("worldgen.SurfaceCarvers$Result", "ax", "az", "bx", "bz", "width");
         scratch("worldgen.RegionalLandmarks$Result", "anchorBase", "weights");
         scratch("worldgen.DrylandTerrain$Result", "sample", "substrate");
-        scratch("worldgen.MountainTerrain$Result", "sample", "crest");
+        scratch("worldgen.MountainTerrain$Result", "sample", "nodes");
         scratch("worldgen.CoastSediment$Result", "geometry", "creek");
         // Kernel work buffers and noise samples behind the published base facts; marine columns
         // clear the facts and never read these.

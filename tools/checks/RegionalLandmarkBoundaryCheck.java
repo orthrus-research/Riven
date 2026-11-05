@@ -113,7 +113,7 @@ public final class RegionalLandmarkBoundaryCheck {
         search:
         for (int cz = 0; cz <= 512; cz++) {
             for (int cx = 0; cx <= 512; cx++) {
-                long key = sites.key(cx, cz);
+                long key = sites.key(Sites.Lane.LANDMARK, cx, cz);
                 if (!sites.admits(cx, cz, key, Sites.Lane.LANDMARK)) continue;
                 admitted++;
                 double ax = sites.x(cx, key), az = sites.z(cz, key);

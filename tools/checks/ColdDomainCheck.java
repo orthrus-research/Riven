@@ -174,7 +174,7 @@ public final class ColdDomainCheck {
         search:
         for (int cz = 0; cz <= 512 && requests < 8; cz++)
             for (int cx = 0; cx <= 512 && requests < 8; cx++) {
-                long key = sites.key(cx, cz);
+                long key = sites.key(Sites.Lane.COLD, cx, cz);
                 if (!sites.admits(cx, cz, key, Sites.Lane.COLD)) continue;
                 requests++;
                 calls[0] = calls[1] = 0;

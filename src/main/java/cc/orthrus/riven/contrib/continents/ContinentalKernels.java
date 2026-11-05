@@ -657,9 +657,6 @@ public final class ContinentalKernels {
 
         final double[] weights;
 
-        /** Null: no continent carries a crest. */
-        public final Skeleton skeleton;
-
         public Variation(
                 double jitter,
                 double sizeMin,
@@ -709,7 +706,6 @@ public final class ContinentalKernels {
                 double peninsulaWidth,
                 double detailShare,
                 double[] familyWeights,
-                Skeleton skeleton,
                 double layout) {
             int n = Family.values().length;
             if (!(jitter >= 0 && jitter <= .4)
@@ -818,7 +814,6 @@ public final class ContinentalKernels {
             this.peninsulaWidth = peninsulaWidth;
             this.detailShare = detailShare;
             this.weights = familyWeights.clone();
-            this.skeleton = skeleton;
             if (!(layout >= .25 && layout <= 16)) throw new IllegalArgumentException("layout");
             // Coast detail is self-similar across layouts: octave k (wavelength 2.3^(k+1) detail
             // wavelengths, amplitude macroGain^(k+1)) fades in as the layout passes 2.3^k, so
@@ -879,49 +874,6 @@ public final class ContinentalKernels {
         }
     }
 
-    /**
-     * Riven extension (2026-10-23): per-continent crest. A {@code rangeShare} of built mainland
-     * continents carries a crest line in its shape frame (Spine continents along their own six
-     * nodes, others a bent three-point line along the major axis), with a strength drawn from
-     * strengthMin..strengthMax times the continent's size. Columns read the owner's crest weight:
-     * strength, a smooth falloff over crestHalfWidth radii of shape-frame distance, and a fade
-     * to zero at the coast over coastClear scaled radii. It is an uplift opportunity for earlier
-     * elevation, not terrain.
-     */
-    public static final class Skeleton {
-        public final double rangeShare,
-                strengthMin,
-                strengthMax,
-                halfWidth,
-                length,
-                bend,
-                coastClear;
-
-        public Skeleton(
-                double rangeShare,
-                double strengthMin,
-                double strengthMax,
-                double halfWidthInRadii,
-                double lengthInRadii,
-                double bendInRadii,
-                double coastClearInRadii) {
-            if (!unit(rangeShare)
-                    || !(strengthMin >= 0 && strengthMin <= strengthMax && strengthMax <= 2)
-                    || !(halfWidthInRadii > 0 && halfWidthInRadii <= 1)
-                    || !(lengthInRadii >= 0 && lengthInRadii <= 1.5)
-                    || !(bendInRadii >= 0 && bendInRadii <= .6)
-                    || !(coastClearInRadii > 0 && coastClearInRadii <= 1))
-                throw new IllegalArgumentException("skeleton");
-            this.rangeShare = rangeShare;
-            this.strengthMin = strengthMin;
-            this.strengthMax = strengthMax;
-            this.halfWidth = halfWidthInRadii;
-            this.length = lengthInRadii;
-            this.bend = bendInRadii;
-            this.coastClear = coastClearInRadii;
-        }
-    }
-
     /** Caller owns one per active thread. Fields overwritten on every query. Score is NOT exact distance. */
     public static final class Sample {
         public double score,
@@ -954,12 +906,6 @@ public final class ContinentalKernels {
         public double cape;
 
         public double warpU, warpV, headland;
-
-        /**
-         * The owner continent's crest weight (0 off its range, at sea and at the coast) and its
-         * world gradient; the warp's shear is not differentiated.
-         */
-        public double crest, crestDx, crestDz;
     }
 
     /**
@@ -972,7 +918,7 @@ public final class ContinentalKernels {
         long gx, gz, id;
         double ax, az, size, elongation, rough, axis, factor, support, cluster, detailCap;
 
-        /** Built for its islands only: no continent body, no crest, no shelter of its own. */
+        /** Built for its islands only: no continent body, no shelter of its own. */
         boolean islandOnly;
 
         /** Status and islands were decided with the draws (see cellAt), not with the facts. */
@@ -1011,11 +957,6 @@ public final class ContinentalKernels {
         Kernel shape;
         double c, s;
 
-        /** Crest strength (0: no range) and its shape-frame polyline, (x, z) pairs. */
-        double crestStrength;
-
-        int crestPoints;
-        final double[] crest = new double[12];
         boolean planned;
         int count;
         double[] plan = new double[0];
@@ -1190,17 +1131,12 @@ public final class ContinentalKernels {
         }
 
         public final void sample(double x, double z, Sample out, Scratch scratch) {
-            sample(x, z, out, scratch, true, false);
+            sample(x, z, out, scratch, true);
         }
 
-        /** As {@link #sample}, without shelter or crest: for probes and reads of the score. */
+        /** As {@link #sample}, without shelter: for probes and reads of the score. */
         public final void sampleScore(double x, double z, Sample out, Scratch scratch) {
-            sample(x, z, out, scratch, false, false);
-        }
-
-        /** As {@link #sampleScore}, plus the crest weight and gradient (for base elevation). */
-        public final void sampleCrest(double x, double z, Sample out, Scratch scratch) {
-            sample(x, z, out, scratch, false, true);
+            sample(x, z, out, scratch, false);
         }
 
         /**
@@ -1409,34 +1345,6 @@ public final class ContinentalKernels {
                 c.features = plan;
                 c.featureLength = plan.length;
             }
-            c.crestStrength = 0;
-            c.crestPoints = 0;
-            Skeleton k = variation == null ? null : variation.skeleton;
-            if (k != null
-                    && c.status == 2
-                    && !c.islandOnly
-                    && !c.archipelago
-                    && random(c.id, 310) < k.rangeShare) {
-                double r = p.radius;
-                c.crestStrength = lerp(k.strengthMin, k.strengthMax, random(c.id, 311)) * c.size;
-                if (c.shape.family == Family.SPINE) {
-                    // The spine's own centreline (its plan's node positions).
-                    for (int i = 0; i < 6; i++) {
-                        c.crest[2 * i] = r * (-1.22 + .49 * i);
-                        c.crest[2 * i + 1] =
-                                r
-                                        * (.48 * (random(c.id, 40 + i) - .5)
-                                                + .18 * sin(i * 1.7 + random(c.id, 49) * TAU));
-                    }
-                    c.crestPoints = 6;
-                } else {
-                    for (int i = 0; i < 3; i++) {
-                        c.crest[2 * i] = r * k.length * (i - 1);
-                        c.crest[2 * i + 1] = r * k.bend * (2 * random(c.id, 312 + i) - 1);
-                    }
-                    c.crestPoints = 3;
-                }
-            }
             c.facts = true;
         }
 
@@ -1491,8 +1399,7 @@ public final class ContinentalKernels {
             }
         }
 
-        private void sample(
-                double x, double z, Sample out, Scratch scratch, boolean traits, boolean crests) {
+        private void sample(double x, double z, Sample out, Scratch scratch, boolean traits) {
             if (!Double.isFinite(x)
                     || !Double.isFinite(z)
                     || abs(x) > 30_000_000
@@ -1520,7 +1427,6 @@ public final class ContinentalKernels {
             out.family = family;
             out.size = out.elongation = out.roughness = 1;
             out.interior = out.shelter = out.cape = 0;
-            out.crest = out.crestDx = out.crestDz = 0;
             double soft = -p.spacing, ownerBody = 0, second = Double.NEGATIVE_INFINITY;
             double secondBody = 0;
             Cell owner = null, runnerUp = null;
@@ -1728,8 +1634,6 @@ public final class ContinentalKernels {
             // height.
             if (!out.marine) out.reason = Reason.LAND;
             out.landWeight = smooth(0, p.transitionWidth, max(0, out.score));
-            if (crests && variation != null && variation.skeleton != null && !out.marine)
-                crest(scratch, live, u, v, out);
             double bayShelter =
                     out.bayClearance < raw && out.bayClearance <= out.corridorClearance
                             ? fade(clamp((raw - out.bayClearance) / p.bayDepth, 0, 1))
@@ -1833,153 +1737,8 @@ public final class ContinentalKernels {
         }
 
         /**
-         * Crest weight at a land column: the largest crest of any continent in the query window
-         * (owner or not, so merged land has no seam where ownership switches), faded to zero at
-         * the coast by the union score, and its world gradient by forward differences over 4
-         * blocks (the coast fade's own slope is left out; it only shapes the last coastClear
-         * radii). A crest ends well inside its continent's support, so the window's edge never
-         * cuts one.
-         */
-        private void crest(Scratch scratch, int live, double u, double v, Sample out) {
-            for (int n = 0; n < live; n++)
-                if (!scratch.window[n].facts) facts(scratch.window[n], scratch);
-            out.crest = crestMax(scratch, live, u, v, out.score);
-            if (out.crest <= 0) return;
-            out.crestDx = (crestMax(scratch, live, u + 4, v, out.score) - out.crest) / 4;
-            out.crestDz = (crestMax(scratch, live, u, v + 4, out.score) - out.crest) / 4;
-        }
-
-        /** The largest crest in the window, each faded at the coast by its own continent's size. */
-        private double crestMax(Scratch scratch, int live, double u, double v, double score) {
-            double best = 0, clear = variation.skeleton.coastClear * tuning.radius;
-            for (int n = 0; n < live; n++) {
-                Cell c = scratch.window[n];
-                if (c.crestStrength > 0)
-                    best =
-                            max(
-                                    best,
-                                    crestShape(c, u - c.ax, v - c.az)
-                                            * fade(clamp(score / (clear * c.size), 0, 1)));
-            }
-            return best;
-        }
-
-        /**
-         * One continent's crest weight before the coast fade: strength, tapered over the outer
-         * quarter of the crest at each end, times a smooth falloff with shape-frame distance to the polyline. The
-         * half-width wanders by up to 20% along the crest and the distance by up to 8% of it
-         * (noise at the continent radius, from the cell id), so ranges end and narrow irregularly instead of
-         * following the segments' straight contours.
-         */
-        private double crestShape(Cell c, double wx, double wz) {
-            Skeleton k = variation.skeleton;
-            double r = tuning.radius;
-            double lx = c.c * wx + c.s * wz, lz = -c.s * wx + c.c * wz;
-            double qx = lx / (c.size * c.axis), qz = lz * c.axis / c.size;
-            double best = Double.POSITIVE_INFINITY;
-            int segments = c.crestPoints - 1;
-            for (int i = 0; i < segments; i++) {
-                double ax = c.crest[2 * i], az = c.crest[2 * i + 1];
-                double bx = c.crest[2 * i + 2], bz = c.crest[2 * i + 3];
-                double t =
-                        clamp(
-                                ((qx - ax) * (bx - ax) + (qz - az) * (bz - az))
-                                        / (sq(bx - ax) + sq(bz - az)),
-                                0,
-                                1);
-                best = min(best, sq(qx - lerp(ax, bx, t)) + sq(qz - lerp(az, bz, t)));
-            }
-            // Position along the crest by projection on its own axis (crest x is monotone), so it
-            // is continuous where the nearest segment flips inside a bend.
-            double first = c.crest[0], last = c.crest[2 * segments];
-            double along = clamp((qx - first) / (last - first), 0, 1);
-            double width =
-                    k.halfWidth * r * (1 + .2 * noise(c.id ^ 0x4352455354574CL, along * 4, .5));
-            double d = sqrt(best) + .08 * width * noise(c.id ^ 0x435245535444L, qx / r, qz / r);
-            double t = 1 - d / width;
-            if (t <= 0) return 0;
-            double taper = fade(clamp(min(along, 1 - along) / .25, 0, 1));
-            return c.crestStrength * taper * fade(t);
-        }
-
-        /**
-         * Crest-chain nodes near a column: every continent in the column's query window that
-         * carries a crest gets max(1, round(length / spacing)) nodes, evenly spaced along its
-         * crest axis; each node within {@code radius} blocks of the column is written to {@code
-         * out} as (cell x, cell z, node index, world x, world z, tangent angle). Returns the node
-         * count, at most out.length / 6. Nodes are pure functions of the cell, so a node is the
-         * same from every column that sees it.
-         */
-        public final int crestNodes(
-                double x, double z, double spacing, double radius, Scratch scratch, double[] out) {
-            if (variation == null || variation.skeleton == null) return 0;
-            Tuning p = tuning;
-            warp(x, z, scratch.uv);
-            double u = scratch.uv[0], v = scratch.uv[1];
-            long cx = (long) floor(u / p.spacing), cz = (long) floor(v / p.spacing);
-            int side = 2 * reach + 1, n = 0;
-            for (int k = 0; k < side * side; k++) {
-                Cell c = cellAt(scratch, cx + k % side - reach, cz + k / side - reach);
-                double edge = c.support + radius;
-                if (sq(u - c.ax) + sq(v - c.az) > edge * edge) continue;
-                if (!c.facts) facts(c, scratch);
-                if (c.crestStrength <= 0) continue;
-                int segments = c.crestPoints - 1;
-                double first = c.crest[0], last = c.crest[2 * segments];
-                int count = max(1, (int) round((last - first) * c.size * c.axis / spacing));
-                for (int i = 0; i < count; i++) {
-                    double qx = first + (last - first) * (i + .5) / count;
-                    int s = 0;
-                    while (s < segments - 1 && c.crest[2 * s + 2] < qx) s++;
-                    double ax = c.crest[2 * s], az = c.crest[2 * s + 1];
-                    double bx = c.crest[2 * s + 2], bz = c.crest[2 * s + 3];
-                    double qz = lerp(az, bz, (qx - ax) / (bx - ax));
-                    double lx = qx * c.size * c.axis, lz = qz * c.size / c.axis;
-                    double nu = c.ax + c.c * lx - c.s * lz, nv = c.az + c.s * lx + c.c * lz;
-                    // Back through the warp to world coordinates.
-                    unwarp(nu, nv, scratch.uv);
-                    double worldX = scratch.uv[0], worldZ = scratch.uv[1];
-                    if (sq(worldX - x) + sq(worldZ - z) > radius * radius) continue;
-                    if (n + 6 > out.length) return n / 6;
-                    double tx = (bx - ax) * c.size * c.axis, tz = (bz - az) * c.size / c.axis;
-                    out[n++] = c.gx;
-                    out[n++] = c.gz;
-                    out[n++] = i;
-                    out[n++] = worldX;
-                    out[n++] = worldZ;
-                    out[n++] = atan2(c.s * tx + c.c * tz, c.c * tx - c.s * tz);
-                }
-            }
-            return n / 6;
-        }
-
-        /**
-         * Continents whose support plus {@code margin} reaches a column and that carry a crest:
-         * their cell coordinates as (x, z) pairs in {@code out}. Returns the count.
-         */
-        public final int crestCells(
-                double x, double z, double margin, Scratch scratch, long[] out) {
-            if (variation == null || variation.skeleton == null) return 0;
-            Tuning p = tuning;
-            warp(x, z, scratch.uv);
-            double u = scratch.uv[0], v = scratch.uv[1];
-            long cx = (long) floor(u / p.spacing), cz = (long) floor(v / p.spacing);
-            int side = 2 * reach + 1, n = 0;
-            for (int k = 0; k < side * side && n + 2 <= out.length; k++) {
-                Cell c = cellAt(scratch, cx + k % side - reach, cz + k / side - reach);
-                double edge = c.support + margin;
-                if (sq(u - c.ax) + sq(v - c.az) > edge * edge) continue;
-                if (!c.facts) facts(c, scratch);
-                if (c.crestStrength <= 0) continue;
-                out[n++] = c.gx;
-                out[n++] = c.gz;
-            }
-            return n / 2;
-        }
-
-        /**
-         * Built continents whose support plus {@code margin} reaches a column, with or without a
-         * crest: their cell coordinates as (x, z) pairs in {@code out}. Returns the count. (Riven
+         * Built continents whose support plus {@code margin} reaches a column:
+         * their cell coordinates as (x, z) pairs in {@code out}. Returns the count. (Riven
          * extension for per-continent drainage.)
          */
         public final int continentCells(

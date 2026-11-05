@@ -107,7 +107,7 @@ public final class GenerationMaps {
         climateStructure = new ClimateStructureMap(outline, baseElevation, heights);
         climateForcing = new ClimateForcingMap(climateStructure, heights, world);
         continents = new ContinentalMap(seed, heights, outline);
-        spines = new SpineMap(continents, world, pool);
+        spines = new SpineMap(seed, continents, world, pool);
         substrate = new SubstrateMap();
         regions = new RegionalProfileMap(seed, heights);
         // The climate draw: the first phase in which every climate forms enough patches, else

@@ -77,7 +77,7 @@ public final class SurfaceCarverBoundaryCheck {
         search:
         for (int cz = 0; cz <= lastCell; cz++) {
             for (int cx = 0; cx <= lastCell; cx++) {
-                long key = sites.key(cx, cz);
+                long key = sites.key(Sites.Lane.CARVER, cx, cz);
                 if (!sites.admits(cx, cz, key, Sites.Lane.CARVER)) continue;
                 admitted++;
                 double ax = sites.x(cx, key), az = sites.z(cz, key);

@@ -65,7 +65,9 @@ public final class VolcanicPortCheck {
         search:
         for (int cz = 0; cz <= 512 && requests < 64; cz++)
             for (int cx = 0; cx <= 512 && requests < 64; cx++) {
-                if (!sites.admits(cx, cz, sites.key(cx, cz), Sites.Lane.VOLCANIC)) continue;
+                if (!sites.admits(
+                        cx, cz, sites.key(Sites.Lane.VOLCANIC, cx, cz), Sites.Lane.VOLCANIC))
+                    continue;
                 requests++;
                 calls[0] = calls[1] = 0;
                 VolcanicTerrain.Decision decision = terrain.plan(cx, cz);

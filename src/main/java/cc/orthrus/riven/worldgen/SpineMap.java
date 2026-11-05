@@ -25,6 +25,7 @@ public final class SpineMap {
     private static final int TILES = 64;
 
     private final ContinentalMap continents;
+    private final long seed;
     private final BuildPool pool;
     private final double cell, cap, flatSlope, halfFrom, halfFull, widthShare, minWidth;
     private final int tile, halo, blur;
@@ -43,9 +44,10 @@ public final class SpineMap {
         }
     }
 
-    public SpineMap(ContinentalMap continents, WorldScale scale, BuildPool pool) {
+    public SpineMap(long worldSeed, ContinentalMap continents, WorldScale scale, BuildPool pool) {
         if (continents == null || scale == null || pool == null) throw new NullPointerException();
         this.continents = continents;
+        seed = SeededNoise.mix(worldSeed ^ 0x5350494e454e4fL);
         this.pool = pool;
         JsonObject j = ProvinceMap.RULES.json.getAsJsonObject("spines");
         cell = Rules.number(j, "cellBlocks", 4, 256) * scale.layout;
@@ -66,6 +68,70 @@ public final class SpineMap {
                                                 * scale.layout
                                                 / cell));
         halo = (int) Math.ceil(cap * (1 + widthShare) / cell) + 3 * blur + 3;
+        nodeFrom = Rules.number(j, "nodeWeight", 0, 1);
+    }
+
+    /** The range weight a spine node needs (mountain plans stand on the ranges' cores). */
+    private final double nodeFrom;
+
+    private static final double[] NONE = new double[0];
+    private static final int NODE_MEMO = 1 << 16;
+    private final ConcurrentHashMap<Long, double[]> nodeMemo = new ConcurrentHashMap<>();
+
+    /**
+     * Spine nodes within radius of (x, z) on a jittered lattice of spacing: each lattice cell holds
+     * one candidate point, a node where the range weight there reaches nodeWeight, heading along
+     * the ridge (the eigenvector of the weight's Hessian with the larger eigenvalue, the direction
+     * in which the weight curves least). Writes (cell x, cell z, 0, x, z, heading) per node into
+     * out, as many as fit, and returns the count. Pure per lattice cell, held in a bounded memo.
+     */
+    public int nodes(double x, double z, double spacing, double radius, double[] out) {
+        int i0 = (int) Math.floor((x - radius) / spacing),
+                i1 = (int) Math.floor((x + radius) / spacing);
+        int j0 = (int) Math.floor((z - radius) / spacing),
+                j1 = (int) Math.floor((z + radius) / spacing);
+        int count = 0;
+        for (int j = j0; j <= j1; j++)
+            for (int i = i0; i <= i1; i++) {
+                double[] n = node(i, j, spacing);
+                if (n.length == 0 || Math.hypot(n[0] - x, n[1] - z) > radius) continue;
+                if (6 * (count + 1) > out.length) return count;
+                out[6 * count] = i;
+                out[6 * count + 1] = j;
+                out[6 * count + 2] = 0;
+                out[6 * count + 3] = n[0];
+                out[6 * count + 4] = n[1];
+                out[6 * count + 5] = n[2];
+                count++;
+            }
+        return count;
+    }
+
+    private double[] node(int i, int j, double spacing) {
+        long key = SeededNoise.cell(seed ^ Double.doubleToLongBits(spacing), i, j);
+        double[] known = nodeMemo.get(key);
+        if (known != null) return known;
+        long h = SeededNoise.cell(seed, i, j);
+        double px = (i + .2 + .6 * SeededNoise.unit(h)) * spacing;
+        double pz = (j + .2 + .6 * SeededNoise.unit(SeededNoise.mix(h))) * spacing;
+        double w = weight(px, pz);
+        double[] made = NONE;
+        if (w >= nodeFrom) {
+            double s = spacing / 3;
+            double xp = weight(px + s, pz), xm = weight(px - s, pz);
+            double zp = weight(px, pz + s), zm = weight(px, pz - s);
+            double hxx = (xp - 2 * w + xm) / (s * s), hzz = (zp - 2 * w + zm) / (s * s);
+            double hxz =
+                    (weight(px + s, pz + s)
+                                    - weight(px + s, pz - s)
+                                    - weight(px - s, pz + s)
+                                    + weight(px - s, pz - s))
+                            / (4 * s * s);
+            made = new double[] {px, pz, .5 * Math.atan2(2 * hxz, hxx - hzz)};
+        }
+        if (nodeMemo.size() >= NODE_MEMO) nodeMemo.clear();
+        nodeMemo.put(key, made);
+        return made;
     }
 
     /** The range weight at (x, z), 0 off every range to 1 on a full one. */

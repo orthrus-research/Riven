@@ -165,7 +165,7 @@ public final class VolcanicBoundaryCheck {
         for (int cz = 0; cz <= LAST_CELL; cz++)
             for (int cx = 0; cx <= LAST_CELL; cx++) {
                 if (d.samples == SAMPLE_CAP) break search;
-                long key = sites.key(cx, cz);
+                long key = sites.key(Sites.Lane.VOLCANIC, cx, cz);
                 if (!sites.admits(cx, cz, key, Sites.Lane.VOLCANIC)) continue;
                 d.admitted++;
                 double ax = sites.x(cx, key), az = sites.z(cz, key);

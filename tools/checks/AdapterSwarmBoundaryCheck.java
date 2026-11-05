@@ -93,7 +93,7 @@ public final class AdapterSwarmBoundaryCheck {
             search:
             for (int z = 0; z <= LAST_CELL; z++)
                 for (int x = 0; x <= LAST_CELL; x++) {
-                    long key = sites.key(x, z);
+                    long key = sites.key(lane, x, z);
                     if (!sites.admits(x, z, key, lane)) continue;
                     points.add(
                             new Point(

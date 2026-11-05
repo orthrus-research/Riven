@@ -125,7 +125,7 @@ public final class ColdBoundaryCheck {
         search:
         for (int cz = 0; cz <= LAST_CELL; cz++)
             for (int cx = 0; cx <= LAST_CELL; cx++) {
-                long key = sites.key(cx, cz);
+                long key = sites.key(Sites.Lane.COLD, cx, cz);
                 if (!sites.admits(cx, cz, key, Sites.Lane.COLD)) continue;
                 if (owners == OWNER_CAP) break search;
                 owners++;

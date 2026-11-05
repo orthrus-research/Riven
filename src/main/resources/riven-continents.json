@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 20,
+  "revision": 21,
   "variationSeed": "0x434f4e54494e3331",
   "family": "PER_CONTINENT",
   "familyWeights": {
@@ -75,15 +75,6 @@
     "peninsulaWidth": 220,
     "detailShare": 0.5
   },
-  "skeleton": {
-    "rangeShare": 0.75,
-    "strengthMin": 1.0,
-    "strengthMax": 1.4,
-    "crestHalfWidthInRadii": 0.9,
-    "crestLengthInRadii": 0.8,
-    "crestBendInRadii": 0.3,
-    "coastClearInRadii": 0.6
-  },
   "styles": {
     "HARMONIC": {
       "harmonicStrength": 1,
@@ -122,7 +113,6 @@
     "PER_CONTINENT: every admitted continent draws its outline family by familyWeights (harmonic, spine, potential), a radius multiplier, an area-preserving axis ratio (1-elongationMax, squared draw so most stay near round), and a coast roughness (roughnessMin-roughnessMax) scaling three rotated detail octaves of detailAmplitude at detailWavelength, /2.3 and /5.3. Anchors jitter by anchorJitter spacings each way; the candidate search (at most 11 x 11 cells) widens so every anchor whose support can reach a column is searched. Without an eligibility floor or a quota, a cell's status and islands are decided with its draws, so each support is exact (its body, its drawn islands, or nothing for empty open sea) and an open-sea cell adds nothing to the union. WORLD_SEEDED or an explicit family keeps the single-family outline and ignores variation. Harmonic satellites are off (satelliteScale 0): the island tier replaces them.",
     "Shelter is read from the outline, not carved: within shelterReach of the coast, the owner continent's shape score (before detail) is sampled at four points shelterReach / 2 away; its Laplacian times that step is about 0 on a straight coast, +step / r in a bay or between lobes of radius r and negative off headlands. Shelter rises from 0 at shelterFloor (mild lobe curvature stays open) to 1 at shelterConcavity and is 0 on straight or convex coasts and in straits between continents. The probes must also find the shore (a sea column needs land at two, a land column sea at one), so creases a family's score carries out to sea never read as bays.",
     "straitBlend (v59): where the union is sea, varied continents meet through a polynomial smooth maximum of width straitBlend, never rising above half the hard depth, so a strait floor is rounded instead of creased along its midline (the creases drew straight deep lines between continents). Candidates are visited nearest first and skipped when their support bound cannot reach the union (or, at sea, come within straitBlend of it); skipping changes no result. Bays become a per-continent draw (bayProbability, 0 by default); where one exists its legacy shelter still applies.",
-    "skeleton (revisions 13-14): a rangeShare of built mainland continents carries a crest in its shape frame (Spine continents along their six nodes, others a three-point line crestLengthInRadii long, bent up to crestBendInRadii), strength strengthMin..strengthMax times its size. A column's crest weight is that strength, tapered over the outer quarter of the crest, times a smooth falloff over crestHalfWidthInRadii (wandering 20% along the crest, distance jittered 8%), faded to zero over coastClearInRadii scaled radii from the coast. A column takes the largest crest of any continent in its window, each faded by its own size, so merged land has no seam where ownership switches. Base elevation reads it as uplift (riven-base-elevation.json crestWeight).",
     "Bays cut only their own continent before the union (kernel v3): a neighbor may refill one, closing it into an inland sea, and a bay never deepens existing sea.",
     "land (LandShare): a world's land share is the part of its square (8 km times the layout scale, centred on the origin) whose outline land weight is above zero, measured at world creation on measureSide x measureSide cell centres. Attempt 0 draws the outline from its own seed; attempt k salts only that seed, so a redraw changes nothing else in the world. The first attempt inside band is kept; after attempts, the one closest to the band. The mean, 45% (D35), comes from the draw and is a target the atlas measures, not a value read here.",
     "Coast (revision 20): the warp is shear pairs (warpOctaves above the base pair, each in a golden-angle rotated frame), fold-free and invertible with det(J) = 1. macroGain is the amplitude growth per layout coast octave and macroShift adds layout octaves beyond log(layout) / log(2.3). The coast style is one world field (styleWavelength, layout-scaled) from styleMin on calm stretches to styleMax on rugged ones (styleContrast): it scales the base and layout octaves, while the two small octaves take at most 1, so rugged coast gains inlets within bays instead of speckle. Detail is clamped to detailShare of its worst-case sum, which bounds supports strictly.",

@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 129;
+    public static final int VERSION = 130;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -89,7 +89,7 @@ public final class TerrainMap {
         majorFeatureParent = this::sampleBeforeMajorFeatures;
         mountains =
                 new MountainTerrain(
-                        seed, heights, continents.outline, intentSampler, hydro, hydro.cellBlocks);
+                        seed, heights, provinces.spines(), intentSampler, hydro, hydro.cellBlocks);
         cold =
                 new ColdTerrain(
                         seed, heights, types.sites, majorFeatureParent, hydro, hydro.cellBlocks);

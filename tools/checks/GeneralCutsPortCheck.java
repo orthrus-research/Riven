@@ -87,7 +87,7 @@ public final class GeneralCutsPortCheck {
         }
 
         void owner(Sites sites, int cx, int cz) {
-            long key = sites.key(cx, cz);
+            long key = sites.key(Sites.Lane.CUTS, cx, cz);
             originX = (int) Math.round(sites.x(cx, key));
             originZ = (int) Math.round(sites.z(cz, key));
             intents = parents = waters = 0;
@@ -269,7 +269,7 @@ public final class GeneralCutsPortCheck {
         search:
         for (int z = 0; z <= 128 && requests < 32; z++)
             for (int x = 0; x <= 128 && requests < 32; x++) {
-                long key = sites.key(x, z);
+                long key = sites.key(Sites.Lane.CUTS, x, z);
                 if (!sites.admits(x, z, key, Sites.Lane.CUTS)) continue;
                 requests++;
                 p.owner(sites, x, z);

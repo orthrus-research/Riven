@@ -5,8 +5,8 @@ import cc.orthrus.riven.contrib.mountains.MountainKernels;
 import com.google.gson.JsonObject;
 
 /**
- * Mountain ranges along continent crests (mountains-v4). Each continent crest carries a chain of
- * MIT mountain plans, evenly spaced along it and aligned with its tangent; a column takes the
+ * Mountain ranges along the continents' spines (terrain-v130). Each spine carries MIT mountain
+ * plans at nodes along its core (SpineMap.nodes), aligned with the ridge; a column takes the
  * largest raise of the chain nodes within reach. The kernel's per-column fades (intent, uplift,
  * parent band, headroom, water preservation) keep every range continuous, so there is no site
  * lottery and no all-or-nothing footprint certificate.
@@ -21,7 +21,7 @@ public final class MountainTerrain {
         MountainKernels.Family.WARPED_RIDGES
     };
     private final long seed;
-    private final ContinentalOutlineMap outline;
+    private final SpineMap spines;
     private final IntentSampler earlierIntent;
     private final BoundedWaterClearance waterClearance;
     private final MountainKernels.Reference reference;
@@ -35,12 +35,12 @@ public final class MountainTerrain {
     MountainTerrain(
             long worldSeed,
             TerrainHeightReference heights,
-            ContinentalOutlineMap outline,
+            SpineMap spines,
             IntentSampler earlierIntent,
             BoundedWaterClearance waterClearance,
             int waterCellBlocks) {
         seed = SeededNoise.mix(worldSeed ^ Rules.seed(RULES.json, "variationSeed"));
-        this.outline = outline;
+        this.spines = spines;
         this.earlierIntent = earlierIntent;
         this.waterClearance = waterClearance;
         TerrainHeightReference.Feature mountain = heights.feature("mountains"),
@@ -201,8 +201,7 @@ public final class MountainTerrain {
         public long id;
         public String reason;
         private final MountainKernels.Sample sample = new MountainKernels.Sample();
-        private final ContinentalOutlineMap.CrestScratch crest =
-                new ContinentalOutlineMap.CrestScratch();
+        private final double[] nodes = new double[6 * 64];
 
         public void clear(double parent) {
             height = parent;
@@ -260,8 +259,9 @@ public final class MountainTerrain {
             if (massifDelta <= 0) out.reason = why.name();
             return;
         }
-        int count = outline.crestNodes(x, z, spacing, halfLength, out.crest);
-        double[] nodes = out.crest.nodes;
+        // Plans stand on the continents' spines (v130), at nodes along each range's core.
+        double[] nodes = out.nodes;
+        int count = spines.nodes(x, z, spacing, halfLength, nodes);
         for (int i = 0; i < count; i++) {
             int cellX = (int) nodes[6 * i], cellZ = (int) nodes[6 * i + 1];
             int node = (int) nodes[6 * i + 2];

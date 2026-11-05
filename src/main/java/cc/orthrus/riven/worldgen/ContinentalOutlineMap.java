@@ -213,22 +213,7 @@ public final class ContinentalOutlineMap {
                 layout * Rules.number(v, "peninsulaWidth", 8, 2000),
                 Rules.number(v, "detailShare", .05, 1),
                 weights(j),
-                skeleton(j),
                 layout);
-    }
-
-    /** Crest lines per continent; absent means none. Lengths are in continent radii. */
-    private static ContinentalKernels.Skeleton skeleton(JsonObject j) {
-        if (!j.has("skeleton")) return null;
-        JsonObject k = j.getAsJsonObject("skeleton");
-        return new ContinentalKernels.Skeleton(
-                Rules.number(k, "rangeShare", 0, 1),
-                Rules.number(k, "strengthMin", 0, 2),
-                Rules.number(k, "strengthMax", 0, 2),
-                Rules.number(k, "crestHalfWidthInRadii", .05, 1),
-                Rules.number(k, "crestLengthInRadii", 0, 1.5),
-                Rules.number(k, "crestBendInRadii", 0, .6),
-                Rules.number(k, "coastClearInRadii", .05, 1));
     }
 
     private static ContinentalKernels.HarmonicStyle harmonic(JsonObject styles) {
@@ -318,19 +303,6 @@ public final class ContinentalOutlineMap {
         public ContinentalKernels.Reason reason() {
             return value.reason;
         }
-
-        /** The largest crest weight at the column and its world gradient (sampleCrest only). */
-        public double crest() {
-            return value.crest;
-        }
-
-        public double crestDx() {
-            return value.crestDx;
-        }
-
-        public double crestDz() {
-            return value.crestDz;
-        }
     }
 
     public void sample(double x, double z, Sample out) {
@@ -350,16 +322,10 @@ public final class ContinentalOutlineMap {
         return kernel.largestSupport();
     }
 
-    /** Caller-owned scratch for continent-cell and crest-cell queries. */
+    /** Caller-owned scratch for continent-cell queries. */
     public static final class CellScratch {
         final ContinentalKernels.Scratch work = new ContinentalKernels.Scratch();
         public final long[] cells = new long[2 * 121];
-    }
-
-    /** Crest-bearing continents whose support plus margin reaches a column, as cell pairs. */
-    public int crestCells(double x, double z, double margin, CellScratch s) {
-        Rules.coordinates(x, z);
-        return kernel.crestCells(x, z, margin, s.work, s.cells);
     }
 
     /** Built continents whose support plus margin reaches a column, as cell pairs. */
@@ -371,27 +337,6 @@ public final class ContinentalOutlineMap {
     /** A continent's owner id, with a conservative world-space box around its support. */
     public long continentBounds(long cellX, long cellZ, CellScratch s, double[] box) {
         return kernel.continentBounds(cellX, cellZ, s.work, box);
-    }
-
-    /** Caller-owned scratch for crest-node queries. */
-    public static final class CrestScratch {
-        final ContinentalKernels.Scratch work = new ContinentalKernels.Scratch();
-        public final double[] nodes = new double[6 * 48];
-    }
-
-    /**
-     * Crest-chain nodes within {@code radius} of a column, spaced about {@code spacing} along each
-     * crest: (cell x, cell z, node index, world x, world z, tangent angle) in {@code s.nodes}.
-     */
-    public int crestNodes(double x, double z, double spacing, double radius, CrestScratch s) {
-        Rules.coordinates(x, z);
-        return kernel.crestNodes(x, z, spacing, radius, s.work, s.nodes);
-    }
-
-    /** Score and the crest weight with its gradient; shelter is left at zero. */
-    public void sampleCrest(double x, double z, Sample out) {
-        if (out == null) throw new NullPointerException("out");
-        kernel.sampleCrest(x, z, out.value, out.work);
     }
 
     /** Score-only probe for finite differences; shelter is left at zero. */
