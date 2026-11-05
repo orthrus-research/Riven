@@ -22,13 +22,6 @@ public final class BaseElevationCheck {
         for (double value :
                 new double[] {
                     sample.meanHeight(),
-                    sample.dx(),
-                    sample.dz(),
-                    sample.minimumY(),
-                    sample.maximumY(),
-                    sample.envelope(),
-                    sample.envelopeDx(),
-                    sample.envelopeDz(),
                     sample.uplift(),
                     sample.blend(),
                     sample.intentDx(),
@@ -53,19 +46,15 @@ public final class BaseElevationCheck {
         BaseElevationMap.Sample center = new BaseElevationMap.Sample(),
                 minus = new BaseElevationMap.Sample(),
                 plus = new BaseElevationMap.Sample();
+        // The plate belt is read per block (floor x, floor z), so difference whole blocks about a
+        // block centre; a sub-block step would see the belt as flat and miss its gradient.
+        x = Math.floor(x) + .5;
+        z = Math.floor(z) + .5;
         map.sample(x, z, center);
-        double h = .015625;
+        double h = 1;
         for (int axis = 0; axis < 2; axis++) {
             map.sample(x - (axis == 0 ? h : 0), z - (axis == 1 ? h : 0), minus);
             map.sample(x + (axis == 0 ? h : 0), z + (axis == 1 ? h : 0), plus);
-            close(
-                    axis == 0 ? center.dx() : center.dz(),
-                    (plus.meanHeight() - minus.meanHeight()) / (2 * h),
-                    "Mean gradient");
-            close(
-                    axis == 0 ? center.envelopeDx() : center.envelopeDz(),
-                    (plus.envelope() - minus.envelope()) / (2 * h),
-                    "Allocation-envelope gradient");
             close(
                     axis == 0 ? center.intentDx() : center.intentDz(),
                     (plus.intentPosition() - minus.intentPosition()) / (2 * h),
@@ -99,12 +88,7 @@ public final class BaseElevationCheck {
                     sample.intentPosition() == Math.max(0, Math.min(3, state * 3)),
                     "Clamped class control");
             require(
-                    sample.dx() == 0
-                            && sample.dz() == 0
-                            && sample.intentDx() == 0
-                            && sample.intentDz() == 0
-                            && sample.envelopeDx() == 0
-                            && sample.envelopeDz() == 0,
+                    sample.intentDx() == 0 && sample.intentDz() == 0,
                     "Constant class has a gradient");
             gradients(map, -1234.25, 5678.5);
         }
@@ -123,18 +107,7 @@ public final class BaseElevationCheck {
                 map.sample(x, z, fresh);
                 map.sample(x, z, reused);
                 require(snapshot(fresh).equals(snapshot(reused)), "Fresh/reused scratch mismatch");
-                require(
-                        fresh.minimumY() <= fresh.meanHeight()
-                                && fresh.meanHeight() <= fresh.maximumY(),
-                        "Mean outside allocation");
-                require(
-                        fresh.envelope() >= 0
-                                && fresh.envelope()
-                                        <= Math.min(
-                                                        fresh.meanHeight() - fresh.minimumY(),
-                                                        fresh.maximumY() - fresh.meanHeight())
-                                                + 1e-10,
-                        "Invalid envelope");
+                require(Double.isFinite(fresh.meanHeight()), "Non-finite mean");
                 expected.add(snapshot(fresh));
                 if ((i & 15) == 0) gradients(map, x, z);
                 points++;
@@ -175,13 +148,6 @@ public final class BaseElevationCheck {
             map.clear(reused);
             require(
                     reused.meanHeight() == 0
-                            && reused.dx() == 0
-                            && reused.dz() == 0
-                            && reused.envelope() == 0
-                            && reused.envelopeDx() == 0
-                            && reused.envelopeDz() == 0
-                            && reused.minimumY() == 0
-                            && reused.maximumY() == 0
                             && reused.uplift() == 0
                             && reused.blend() == 0
                             && reused.intentDx() == 0

@@ -68,8 +68,7 @@ public final class BaseElevationMap {
     /** Read-only observations in caller-owned scratch; allocation is not a final-terrain bound. */
     public static final class Sample {
         private final HeightSample regional = new HeightSample(), upliftSample = new HeightSample();
-        private double meanHeight, dx, dz, minimumY, maximumY, envelope, envelopeDx, envelopeDz;
-        private double uplift, blend, intentDx, intentDz, belt, beltDx, beltDz;
+        private double meanHeight, uplift, blend, intentDx, intentDz;
 
         /** The intent's landform position (0..3 over the four reference forms); -1 at sea. */
         private double intentPosition = -1;
@@ -84,49 +83,8 @@ public final class BaseElevationMap {
             return meanHeight;
         }
 
-        public double dx() {
-            return dx;
-        }
-
-        public double dz() {
-            return dz;
-        }
-
-        public double minimumY() {
-            return minimumY;
-        }
-
-        public double maximumY() {
-            return maximumY;
-        }
-
-        public double envelope() {
-            return envelope;
-        }
-
-        public double envelopeDx() {
-            return envelopeDx;
-        }
-
-        public double envelopeDz() {
-            return envelopeDz;
-        }
-
         public double uplift() {
             return uplift;
-        }
-
-        /** The column's mountain belt (riven-plates.json belts: 0 off any) and its world gradient. */
-        public double belt() {
-            return belt;
-        }
-
-        public double beltDx() {
-            return beltDx;
-        }
-
-        public double beltDz() {
-            return beltDz;
         }
 
         public double blend() {
@@ -198,37 +156,16 @@ public final class BaseElevationMap {
         TerrainHeightReference.Feature a = forms[index], b = forms[index + 1];
         double meanA = heights.seaLevel + a.elevationOffset.targetAverage;
         double meanB = heights.seaLevel + b.elevationOffset.targetAverage;
-        double marginA =
-                Math.min(
-                        a.elevationOffset.targetAverage - a.elevationOffset.min,
-                        a.elevationOffset.max - a.elevationOffset.targetAverage);
-        double marginB =
-                Math.min(
-                        b.elevationOffset.targetAverage - b.elevationOffset.min,
-                        b.elevationOffset.max - b.elevationOffset.targetAverage);
         out.meanHeight = lerp(meanA, meanB, alpha);
-        out.dx = (meanB - meanA) * derivative * sx;
-        out.dz = (meanB - meanA) * derivative * sz;
-        out.envelope = lerp(marginA, marginB, alpha);
-        out.envelopeDx = (marginB - marginA) * derivative * sx;
-        out.envelopeDz = (marginB - marginA) * derivative * sz;
-        out.minimumY = heights.seaLevel + lerp(a.elevationOffset.min, b.elevationOffset.min, alpha);
-        out.maximumY = heights.seaLevel + lerp(a.elevationOffset.max, b.elevationOffset.max, alpha);
         out.firstLandform = a.id;
         out.secondLandform = b.id;
         out.blend = alpha;
         // Readers of uplift want raising only: the signed uplift's positive part, and the belt.
         out.uplift = Math.max(0, out.upliftSample.height) + belt;
-        out.belt = belt;
-        out.beltDx = beltDx;
-        out.beltDz = beltDz;
     }
 
     void clear(Sample out) {
-        out.meanHeight = out.dx = out.dz = out.minimumY = out.maximumY = 0;
-        out.envelope = out.envelopeDx = out.envelopeDz = 0;
-        out.uplift = out.blend = out.intentDx = out.intentDz = 0;
-        out.belt = out.beltDx = out.beltDz = 0;
+        out.meanHeight = out.uplift = out.blend = out.intentDx = out.intentDz = 0;
         out.intentPosition = -1;
         out.firstLandform = out.secondLandform = null;
     }

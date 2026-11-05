@@ -240,7 +240,6 @@ public final class MountainTerrain {
         double massifKeep = Rules.smooth(clearance / massifSkirt);
         // Massif relief covers the crest band under the mountain ceiling and keeps water; kernel
         // peaks below combine with it by maximum, never adding peak budgets.
-        BaseElevationMap.Sample e = base.base.elevation();
         double room = Math.max(0, reference.maxY - parent);
         double massifDelta =
                 base.ocean.marine
