@@ -141,6 +141,8 @@ public final class ClimateStructureCheck {
                     tuning.addProperty("warpAmplitude", 0);
                     tuning.addProperty("occurrence", 1);
                     tuning.addProperty("eligibilityFloor", 0);
+                    // Put a corridor lattice line on the origin so its coast is at x = edge.
+                    tuning.addProperty("corridorOffsetInSpacings", 0);
                     tuning.addProperty(
                             "corridorHalfWidth", .45 * tuning.get("spacing").getAsDouble());
                     ContinentalOutlineMap outline =

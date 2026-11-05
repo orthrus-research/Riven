@@ -122,7 +122,7 @@ public final class SubstrateBoundaryCheck {
                     throw new AssertionError("Accepted invalid scalar: " + field);
                 } catch (IllegalStateException expected) {
                     require(
-                            expected.getMessage().equals("Range: " + field),
+                            expected.getMessage().startsWith("Range: " + field + " = "),
                             "Invalid scalar diagnostic");
                 }
             }

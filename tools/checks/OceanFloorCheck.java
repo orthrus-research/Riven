@@ -35,7 +35,19 @@ public final class OceanFloorCheck {
                                 p.blockY() >= maps.terrain.minimumSurfaceY,
                                 "Native stone shortcut hides bed");
                         if (!p.water.wet && p.water.weight == 0)
-                            require(p.height <= 62, "Unreserved marine surface emerged");
+                            // Only the coast forms (sea stacks, arches) may stand out of the sea.
+                            require(
+                                    p.rockyParentHeight <= 62,
+                                    "Unreserved marine surface emerged: seed "
+                                            + seed
+                                            + " at "
+                                            + x
+                                            + ","
+                                            + z
+                                            + " parent "
+                                            + p.rockyParentHeight
+                                            + " bed "
+                                            + p.ocean.bedHeight);
                         if (p.water.wet) {
                             require(p.height == p.water.floor, "Reserved channel changed");
                             reservations++;
@@ -71,9 +83,17 @@ public final class OceanFloorCheck {
                                 }
                             }
                         maps.terrain.oceanBed.apply(x, z, p.ocean, true, other);
-                        require(
-                                other.height == p.ocean.bedHeight,
-                                "Reserved adapter changed parent");
+                        // Reserved columns keep the parent in every family; the bed's own
+                        // clamp and shoal ramp still apply, and hydro owns the wet height.
+                        for (OceanFloors.Output part :
+                                new OceanFloors.Output[] {
+                                    other.shelf, other.ridge, other.trench, other.bank
+                                })
+                            require(
+                                    part.weight == 0
+                                            && part.reason == OceanFloors.Reason.RESERVED
+                                            && part.bedY == p.ocean.bedHeight,
+                                    "Reserved adapter changed parent");
                     }
                 // Locate discontinuous continental owner changes, then narrow to sub-block
                 // precision.

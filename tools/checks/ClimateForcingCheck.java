@@ -226,17 +226,23 @@ public final class ClimateForcingCheck {
         }
         require(Double.isFinite(landX), "Missing directional land control");
         for (double tx : new double[] {-1, 0, .8})
-            for (int count : new int[] {1, 8}) {
-                json = settings();
-                json.addProperty("transportX", tx);
-                json.addProperty("transportZ", .6);
-                json.addProperty("upwindSamples", count);
-                ClimateForcingMap map =
-                        new ClimateForcingMap(
-                                context.structure, TerrainHeightReference.DEFAULT, json);
-                close(StrictMath.hypot(map.transportX, map.transportZ), 1, "Normalized direction");
-                explicitStencil(map, context.structure, landX, landZ);
-            }
+            for (int count : new int[] {1, 8})
+                for (double lattice : new double[] {0, -1}) {
+                    json = settings();
+                    // 0 reads every upwind point exactly; the packaged lattice interpolates them.
+                    if (lattice == 0) json.addProperty("upwindLatticeBlocks", 0);
+                    json.addProperty("transportX", tx);
+                    json.addProperty("transportZ", .6);
+                    json.addProperty("upwindSamples", count);
+                    ClimateForcingMap map =
+                            new ClimateForcingMap(
+                                    context.structure, TerrainHeightReference.DEFAULT, json);
+                    close(
+                            StrictMath.hypot(map.transportX, map.transportZ),
+                            1,
+                            "Normalized direction");
+                    explicitStencil(map, context.structure, landX, landZ);
+                }
     }
 
     private static void explicitStencil(
@@ -257,6 +263,12 @@ public final class ClimateForcingCheck {
                     "Marine skip");
             return;
         }
+        if (map.latticeBlocks > 0) {
+            require(
+                    actual.structureQueries() == 1 && actual.elevationQueries() == elevation,
+                    "Lattice work counts");
+            return;
+        }
         double end = point.obstructionAboveDatum(), contrast = 0;
         for (int i = 1; i <= map.upwindSamples; i++) {
             structure.sample(
@@ -273,7 +285,14 @@ public final class ClimateForcingCheck {
         require(
                 actual.structureQueries() == map.upwindSamples + 1
                         && actual.elevationQueries() == elevation,
-                "Exact work counts");
+                "Exact work counts: structure "
+                        + actual.structureQueries()
+                        + " of "
+                        + (map.upwindSamples + 1)
+                        + ", elevation "
+                        + actual.elevationQueries()
+                        + " of "
+                        + elevation);
     }
 
     private static void domains(Context c) {
@@ -432,7 +451,10 @@ public final class ClimateForcingCheck {
                             land++;
                             require(
                                     a.forcing.status() == ClimateForcingMap.Status.COMPLETE
-                                            && a.forcing.structureQueries() == 9,
+                                            && a.forcing.structureQueries()
+                                                    == (c.derived.latticeBlocks > 0
+                                                            ? 1
+                                                            : c.derived.upwindSamples + 1),
                                     "Incomplete interior land");
                             if (a.forcing.elevationQueries() < 9) mixed++;
                             if (a.forcing.landWeight() < 1) transition++;
