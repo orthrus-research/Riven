@@ -238,8 +238,9 @@ ground's landform position (`BaseElevationMap.position`), not intent. Plateau bu
   crosses the coast on 24 rays of its shape frame, kept mostly on rugged coast and never where a
   neighbour's land holds the mouth; fjords wander inland 0.2-0.6 radii, pinch and swell from a
   flared mouth, fork, and sometimes continue as finger lakes. They are carved as the distance to a
-  tapered tube with rough walls, so the score stays a coast distance (gradient p50 1.02, p90 1.92
-  at 32 km on 16 seeds) and a fjord is open coast, not bay shelter. Peninsulas grow from just
+  tapered tube with rough walls (full roughness within a quarter width of the wall, fading out by
+  half a width, so the score has no step), so the score stays a coast distance (gradient p50 1.03,
+  p90 1.92 at 32 km on 16 seeds) and a fjord is open coast, not bay shelter. Peninsulas grow from just
   inside the coast as tubes joined to the body. Islands: each cell draws up to 8 elliptical
   islands, scattered or in an aligned chain; an open-sea cell with islands is built island-only.
   Measured at 32 km on 16 seeds (`ShapeCheck`): solidity 0.66 (v124 0.70), 3 slivers per world
@@ -263,7 +264,10 @@ ground's landform position (`BaseElevationMap.position`), not intent. Plateau bu
   The ray-tube bay is a
   per-continent draw, off by default (`bayProbability` 0). Potential sea deepens with distance from its kernels instead of staying
   shelf-deep. Where continents meet at sea a smooth union (`straitBlend` 800) rounds strait
-  floors; before v59 their creases drew straight deep lines between continents.
+  floors; before v59 their creases drew straight deep lines between continents. A candidate fades
+  out of both unions across the last transition width of its search window (v132): at the rim it
+  still scored inside the blend of a deeper union, and entering it stepped strait floors by up to
+  54 blocks.
 - **Outline cost** (8 km atlas of seed 8675309, 8 threads, v58): 2.7 s sampling, median column 28 µs on
   land and 8 µs at sea. Feature plans (v125) are cached per kernel; a coast-heavy 8 km window
   samples 28% slower with them than without (51 s against 40 s), mostly from the longer coast

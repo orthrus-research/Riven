@@ -1570,6 +1570,13 @@ public final class ContinentalKernels {
                                     ? Reason.LAND
                                     : score > 0 ? Reason.BAY : Reason.SHAPE_OCEAN;
                 }
+                // The window ends at support + transitionWidth, where a candidate still scores
+                // about -2 transitionWidth, inside the strait blend of a deeper union. Fade it out
+                // across that last width so it leaves both unions without a step (v132); it only
+                // lowers sea, so no land moves.
+                double rim = (dist - c.support) / p.transitionWidth;
+                if (variation != null && rim > 0)
+                    score -= fade(min(1, rim)) * (p.spacing + variation.straitBlend);
                 raw = max(raw, score);
                 score = min(score, max(cut, -score));
                 if (variation != null) soft = smoothMax(soft, score, variation.straitBlend);
@@ -2131,7 +2138,9 @@ public final class ContinentalKernels {
             double reach = 0;
             for (int k = 0; k < points; k++) {
                 int at = start + 5 + 3 * k;
-                reach = max(reach, hypot(f[at] - cx, f[at + 1] - cz) + f[at + 2]);
+                // The rough walls reach a quarter width past the tube: a tighter circle skipped
+                // features that still beat the score.
+                reach = max(reach, hypot(f[at] - cx, f[at + 1] - cz) + 1.25 * f[at + 2]);
             }
             f[start + 2] = cx;
             f[start + 3] = cz;
@@ -2160,9 +2169,18 @@ public final class ContinentalKernels {
                                     l2 <= 0 ? 0 : clamp(((x - ax) * vx + (z - az) * vz) / l2, 0, 1);
                             double w = lerp(f[p + 2], f[p + 5], t);
                             double d = hypot(x - ax - t * vx, z - az - t * vz) - w;
-                            // Rough walls: up to a quarter of the width, at about twice its scale.
-                            if (d < .25 * w)
-                                d -= .25 * w * noise(c.id ^ 0x57414C4CL, x / (2 * w), z / (2 * w));
+                            // Rough walls: up to a quarter of the width, at about twice its scale,
+                            // fading out between a quarter and a half width from the wall. A hard
+                            // start left a step in the score, so land met sea along it (v132).
+                            if (d < .5 * w)
+                                d -=
+                                        .25
+                                                * w
+                                                * fade(clamp(2 - d / (.25 * w), 0, 1))
+                                                * noise(
+                                                        c.id ^ 0x57414C4CL,
+                                                        x / (2 * w),
+                                                        z / (2 * w));
                             best = min(best, d);
                         }
                 }
