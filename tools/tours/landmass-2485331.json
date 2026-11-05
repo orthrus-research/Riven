@@ -1,0 +1,11 @@
+[
+  {"label":"south_island_overview","x":-4599.5,"y":340,"z":13200.5,"yaw":180.0,"pitch":45,"commands":["time set 6000","gamerule doDaylightCycle false","weather clear 100000","execute {player} -4600 100 12600 riven"]},
+  {"label":"hook_fjord","x":-3855.5,"y":210,"z":12074.5,"yaw":180.0,"pitch":38,"commands":["execute {player} -3856 100 11904 riven"]},
+  {"label":"south_fjords","x":-5455.5,"y":210,"z":14154.5,"yaw":180.0,"pitch":38,"commands":["execute {player} -5456 100 13984 riven"]},
+  {"label":"north_peninsula","x":2992.5,"y":230,"z":-1887.5,"yaw":180.0,"pitch":35,"commands":["execute {player} 2992 100 -2108 riven"]},
+  {"label":"north_fjord","x":3952.5,"y":210,"z":-17.5,"yaw":180.0,"pitch":38,"commands":["execute {player} 3952 100 -188 riven"]},
+  {"label":"headland_coast","x":-14335.5,"y":240,"z":-14421.5,"yaw":180.0,"pitch":35,"commands":["execute {player} -14336 100 -14592 riven"]},
+  {"label":"cliff_coast","x":960.5,"y":240,"z":-13589.5,"yaw":180.0,"pitch":35,"commands":["execute {player} 960 100 -13760 riven"]},
+  {"label":"marsh_coast","x":-6271.5,"y":200,"z":-14485.5,"yaw":180.0,"pitch":35,"commands":["execute {player} -6272 100 -14656 riven"]},
+  {"label":"broad_shallows","x":7424.5,"y":180,"z":15786.5,"yaw":180.0,"pitch":40,"commands":["execute {player} 7424 100 15616 riven"]}
+]

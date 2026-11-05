@@ -5,11 +5,16 @@ Each window in `tools/atlas-golden.json` is rendered from the working tree throu
 mismatch means generated content changed: either an unintended regression, or an intended change
 whose new digests belong in the same commit (`update`). Run with the atlas venv interpreter.
 
+The first window renders alone, so the sampler compiles once; the rest render concurrently
+(`--jobs`), since a small window waits on serial regional plan builds and leaves most cores idle.
+Results print in the file's order.
+
   .local/atlas-venv/Scripts/python tools/atlas_golden.py check
   .local/atlas-venv/Scripts/python tools/atlas_golden.py update
 """
 
 import argparse
+import concurrent.futures
 import json
 import subprocess
 import sys
@@ -56,11 +61,17 @@ def main():
     parser.add_argument(
         "--verify", action="store_true", help="also prove thread/order independence"
     )
+    parser.add_argument(
+        "--jobs", type=int, default=3, help="windows rendered at once after the first (3)"
+    )
     args = parser.parse_args()
     golden = json.loads(GOLDEN.read_text(encoding="utf-8"))
+    windows = golden["windows"]
+    digests = [render(windows[0], args.verify)] if windows else []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
+        digests += list(pool.map(lambda w: render(w, args.verify), windows[1:]))
     changed = []
-    for window in golden["windows"]:
-        digest = render(window, args.verify)
+    for window, digest in zip(windows, digests):
         expected = window.get("digest")
         status = "ok" if digest == expected else ("new" if expected is None else "CHANGED")
         print(

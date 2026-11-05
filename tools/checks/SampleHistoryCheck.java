@@ -257,13 +257,28 @@ public final class SampleHistoryCheck {
         return new int[] {marine, shaped, transitions, order.size()};
     }
 
-    public static void main(String[] args) throws ReflectiveOperationException {
+    public static void main(String[] args) throws Exception {
         exemptions();
         int results = registrations();
         System.out.println("stage results registered once: " + results);
         String[] seeds = args.length == 0 ? new String[] {"8675309"} : args;
-        for (String seed : seeds) {
-            int[] counts = history(Long.parseLong(seed));
+        // Seeds build their own maps and sample on one thread each, so they run at once; results
+        // print in argument order and the first failure, in that order, is the one reported.
+        java.util.concurrent.ExecutorService pool =
+                java.util.concurrent.Executors.newFixedThreadPool(seeds.length);
+        List<java.util.concurrent.Future<int[]>> runs = new java.util.ArrayList<>();
+        for (String seed : seeds) runs.add(pool.submit(() -> history(Long.parseLong(seed))));
+        pool.shutdown();
+        for (int i = 0; i < seeds.length; i++) {
+            String seed = seeds[i];
+            int[] counts;
+            try {
+                counts = runs.get(i).get();
+            } catch (java.util.concurrent.ExecutionException failure) {
+                Throwable cause = failure.getCause();
+                if (cause instanceof Error) throw (Error) cause;
+                throw (Exception) cause;
+            }
             System.out.println(
                     "seed "
                             + seed

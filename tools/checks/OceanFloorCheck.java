@@ -1,5 +1,6 @@
+package cc.orthrus.riven.worldgen;
+
 import cc.orthrus.riven.contrib.ocean.OceanFloors;
-import cc.orthrus.riven.worldgen.*;
 
 import java.io.*;
 import java.util.*;

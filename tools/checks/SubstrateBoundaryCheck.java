@@ -13,6 +13,46 @@ import java.util.concurrent.Future;
 public final class SubstrateBoundaryCheck {
     private static final double PARENT = 160;
 
+    /** A flat, dry, inland intent at the parent height, as the dryland stage reads it. */
+    static void dryIntent(double x, double z, TerrainMap.BaseSample out) {
+        out.ocean.marine = false;
+        out.shore.kind = Shore.Kind.INLAND;
+        out.shore.landWeight = 1;
+        out.shore.distance = 1000000;
+        out.shore.height = PARENT;
+        out.land.low = 1;
+        out.climate.moisture = 0;
+        out.climate.celsius = 0;
+        out.minimumY = TerrainHeightReference.DEFAULT.lowestSurface;
+        out.maximumY = TerrainHeightReference.DEFAULT.highestSurface;
+    }
+
+    private static String scalar(Object value) {
+        return value instanceof Double
+                ? Long.toHexString(Double.doubleToLongBits((Double) value))
+                : String.valueOf(value);
+    }
+
+    /** Every public field of a dryland result, exactly. */
+    static String snapshot(DrylandTerrain.Result result) throws Exception {
+        java.lang.reflect.Field[] fields = DrylandTerrain.Result.class.getFields();
+        java.util.Arrays.sort(
+                fields, java.util.Comparator.comparing(java.lang.reflect.Field::getName));
+        StringBuilder row = new StringBuilder();
+        for (java.lang.reflect.Field field : fields) {
+            if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) continue;
+            if (row.length() > 0) row.append('|');
+            row.append(field.getName()).append('=');
+            Object value = field.get(result);
+            if (value instanceof double[]) {
+                for (double item : (double[]) value) row.append(scalar(item)).append(';');
+            } else if (value instanceof String[]) {
+                for (String item : (String[]) value) row.append(item).append(';');
+            } else row.append(scalar(value));
+        }
+        return row.toString();
+    }
+
     private SubstrateBoundaryCheck() {}
 
     private static void require(boolean condition, String message) {
@@ -98,7 +138,7 @@ public final class SubstrateBoundaryCheck {
                             definition(mode == 1 ? 1 : 0, mode == 2 ? 1 : 0, mode == 3 ? 1 : 0));
             DrylandTerrain adapter = new DrylandTerrain(8675309, heights, substrate);
             TerrainMap.Sample base = new TerrainMap.Sample();
-            DrylandParityCheck.dryIntent(0, 0, base);
+            dryIntent(0, 0, base);
             DrylandTerrain.Result out = new DrylandTerrain.Result();
             int[] calls = {0};
             BoundedWaterClearance clearance =
@@ -151,11 +191,11 @@ public final class SubstrateBoundaryCheck {
         BoundedWaterClearance clearance = (x, z, limit) -> limit;
         List<String> expected = new ArrayList<>();
         TerrainMap.Sample base = new TerrainMap.Sample();
-        DrylandParityCheck.dryIntent(0, 0, base);
+        dryIntent(0, 0, base);
         DrylandTerrain.Result result = new DrylandTerrain.Result();
         for (int i = 0; i < 256; i++) {
             adapter.apply(-2048 + i * 16.25, -i * 31.5, base, clearance, PARENT, result);
-            expected.add(DrylandParityCheck.snapshot(result));
+            expected.add(snapshot(result));
         }
         ExecutorService workers = Executors.newFixedThreadPool(4);
         try {
@@ -166,7 +206,7 @@ public final class SubstrateBoundaryCheck {
                         () -> {
                             SubstrateMap.Sample local = new SubstrateMap.Sample();
                             TerrainMap.Sample earlier = new TerrainMap.Sample();
-                            DrylandParityCheck.dryIntent(0, 0, earlier);
+                            dryIntent(0, 0, earlier);
                             DrylandTerrain.Result out = new DrylandTerrain.Result();
                             for (int n = 0; n < 256; n++) {
                                 int i = (n * 73 + lane * 17) & 255;
@@ -179,9 +219,7 @@ public final class SubstrateBoundaryCheck {
                                         clearance,
                                         PARENT,
                                         out);
-                                require(
-                                        expected.get(i).equals(DrylandParityCheck.snapshot(out)),
-                                        "Concurrent replay");
+                                require(expected.get(i).equals(snapshot(out)), "Concurrent replay");
                             }
                             return null;
                         });
