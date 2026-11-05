@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 128;
+    public static final int VERSION = 129;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -431,6 +431,13 @@ public final class TerrainMap {
                 out.minimumY,
                 out.maximumY,
                 out.passes);
+        // A plateau's cap stays calm: the passes fade on it, as the mountains do (v129).
+        double keep = 1 - out.land.plateau;
+        if (keep < 1) {
+            out.passes.height =
+                    out.originalHeight + (out.passes.height - out.originalHeight) * keep;
+            out.passes.appliedDisplacement *= keep;
+        }
         out.height = out.passes.height;
         out.rockyParentHeight = out.height;
         out.clearSkippedStages(out.height);

@@ -109,7 +109,8 @@ public final class RegionalTerrainPasses {
         double[] scores = out.admission;
         scores[0] = land.low * .8 + land.middle * .15;
         scores[1] = land.middle * (0.5 + 0.5 * climate.moisture);
-        scores[2] = mountain * (0.2 + 0.8 * steep);
+        // Ridges where the ground is high and steep, fewer on a spine, which carries its own.
+        scores[2] = mountain * (0.2 + 0.8 * steep) * (1 - .7 * land.mountain);
         scores[3] = warm * dry * hill * (0.4 + 0.6 * steep);
         scores[4] = hot * dry * (1 - steep) * (land.low + land.middle) * 1.8;
         double total = 0;

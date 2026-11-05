@@ -967,9 +967,9 @@ public final class Hydro
             if (scratch.ocean.marine
                     || scratch.climate.moisture < minimumMoisture
                     || scratch.shore.height < heights.seaLevel + 8) continue;
-            // Mountain-belt land drains through its continent's trunks; cell networks keep the
-            // rest.
-            if (scratch.baseTerrain().elevation().belt() > 0) continue;
+            // Ranges (strong spines) drain through their continent's networks; cell networks
+            // keep the rest.
+            if (scratch.baseTerrain().spine() > .5) continue;
             double supply =
                     scratch.climate.moisture
                             * (1 - .12 * Math.max(0, scratch.climate.celsius) / 40);

@@ -11,13 +11,26 @@ public final class TemperatureMap {
     private final double warpScale, warpAmplitude, beltPeriod, beltAmplitude, beltOffset;
     final double layout;
 
+    /** The climate draw (ClimateCoverage): it shifts the belts' phases, nothing else. */
+    final int attempt;
+
     public TemperatureMap(long worldSeed) {
         this(worldSeed, WorldScale.DEFAULT);
     }
 
-    /** Wavelengths, warp and belt follow the world's layout scale; amplitudes do not. */
+    /**
+     * Wavelengths, warp and belt follow the climate's layout, the world's layout raised to
+     * layoutExponent (terrain-v129): a larger world holds more climate cycles, so every climate
+     * recurs instead of each lying in one stretch. Amplitudes do not scale.
+     */
     public TemperatureMap(long worldSeed, WorldScale world) {
-        layout = world.layout;
+        this(worldSeed, world, 0);
+    }
+
+    /** The map of one climate draw: attempt k moves the belt by k golden fractions of its period. */
+    TemperatureMap(long worldSeed, WorldScale world, int attempt) {
+        this.attempt = attempt;
+        layout = Math.pow(world.layout, Rules.number(RULES.json, "layoutExponent", 0, 1));
         broad = new SeededNoise(SeededNoise.mix(worldSeed ^ 0x54454d5042524f41L));
         detail = new SeededNoise(SeededNoise.mix(worldSeed ^ 0x54454d5044455441L));
         warpX = new SeededNoise(SeededNoise.mix(worldSeed ^ 0x54454d5057415258L));
@@ -33,9 +46,16 @@ public final class TemperatureMap {
         beltPeriod = layout * Rules.number(t, "beltPeriodBlocks", 0, 4194304);
         beltAmplitude = Rules.number(t, "beltAmplitudeCelsius", 0, 60);
         beltOffset =
-                t.has("beltOffsetBlocks")
-                        ? layout * Rules.number(t, "beltOffsetBlocks", 0, 4194304)
-                        : 0;
+                (t.has("beltOffsetBlocks")
+                                ? layout * Rules.number(t, "beltOffsetBlocks", 0, 4194304)
+                                : 0)
+                        + phase(attempt, .6180339887) * beltPeriod;
+    }
+
+    /** The fraction of a period attempt k shifts a belt by (golden steps, so draws spread). */
+    static double phase(int attempt, double step) {
+        double f = attempt * step;
+        return f - Math.floor(f);
     }
 
     public double celsius(int blockX, int blockZ) {

@@ -21,6 +21,46 @@ public final class GenerationMaps {
     public final NativeColumns columns;
     public final Boulders boulders;
 
+    /** The kept climate draw, how many were drawn and its rarest climate's patches. */
+    public final int climateAttempt, climateDraws, climateFewest;
+
+    /** The maps that read the climate, built for one draw. */
+    private final class Draw {
+        final int attempt, fewest;
+        final TemperatureMap temperature;
+        final ClimateMap climate;
+        final ProvinceMap provinces;
+        final BaseTerrainMap baseTerrain;
+        final TerrainMap terrain;
+
+        Draw(
+                long seed,
+                TerrainHeightReference heights,
+                BaseTerrainMap.Policy policy,
+                WorldScale world,
+                int attempt) {
+            this.attempt = attempt;
+            temperature = new TemperatureMap(seed, world, attempt);
+            climate = new ClimateMap(seed, temperature, climateForcing);
+            provinces = new ProvinceMap(seed, world, plates, continents, spines, climate);
+            baseTerrain =
+                    new BaseTerrainMap(seed, baseElevation, provinces, heights, regions, policy);
+            terrain =
+                    new TerrainMap(
+                            seed,
+                            plates,
+                            heights,
+                            climate,
+                            provinces,
+                            continents,
+                            substrate,
+                            baseTerrain,
+                            world,
+                            pool);
+            fewest = ClimateCoverage.fewest(terrain, world, pool);
+        }
+    }
+
     /**
      * Where in-build parallelism runs. The game's maps start on the calling thread until the host
      * supplies its pool; the tools' constructors below use the tools' shared pool.
@@ -60,32 +100,34 @@ public final class GenerationMaps {
             WorldScale world,
             boolean tools) {
         if (tools) pool.use(BuildPool.tools());
-        temperature = new TemperatureMap(seed, world);
         plates = new PlateMap(seed, world);
         land = LandShare.choose(seed, heights, world);
         outline = land.outline;
         baseElevation = new BaseElevationMap(seed, plates, heights);
         climateStructure = new ClimateStructureMap(outline, baseElevation, heights);
         climateForcing = new ClimateForcingMap(climateStructure, heights, world);
-        climate = new ClimateMap(seed, temperature, climateForcing);
         continents = new ContinentalMap(seed, heights, outline);
         spines = new SpineMap(continents, world, pool);
-        provinces = new ProvinceMap(seed, world, plates, continents, spines, climate);
         substrate = new SubstrateMap();
         regions = new RegionalProfileMap(seed, heights);
-        baseTerrain = new BaseTerrainMap(seed, baseElevation, provinces, heights, regions, policy);
-        terrain =
-                new TerrainMap(
-                        seed,
-                        plates,
-                        heights,
-                        climate,
-                        provinces,
-                        continents,
-                        substrate,
-                        baseTerrain,
-                        world,
-                        pool);
+        // The climate draw: the first phase in which every climate forms enough patches, else
+        // the draw with the most for its rarest climate (ClimateCoverage).
+        Draw kept = null;
+        int draws = 0;
+        for (int attempt = 0; attempt < ClimateCoverage.ATTEMPTS; attempt++) {
+            Draw draw = new Draw(seed, heights, policy, world, attempt);
+            draws++;
+            if (kept == null || draw.fewest > kept.fewest) kept = draw;
+            if (draw.fewest >= ClimateCoverage.MIN_PATCHES) break;
+        }
+        climateAttempt = kept.attempt;
+        climateDraws = draws;
+        climateFewest = kept.fewest;
+        temperature = kept.temperature;
+        climate = kept.climate;
+        provinces = kept.provinces;
+        baseTerrain = kept.baseTerrain;
+        terrain = kept.terrain;
         surfaces = new SurfaceRules(heights);
         columns = new NativeColumns(terrain, surfaces, heights);
         boulders = new Boulders(seed, terrain);

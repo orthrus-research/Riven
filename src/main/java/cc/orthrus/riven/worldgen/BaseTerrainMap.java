@@ -35,6 +35,9 @@ public final class BaseTerrainMap {
      */
     private final double scarpWidth, plateauEdge, plateauEdgeScale, plateauFlatten, scarpTerrace;
 
+    /** The spine weights over which a plateau's cap yields to a range. */
+    private final double spineYieldFrom, spineYieldFull;
+
     /** Landform palettes: each field's wavelength in blocks, and how much the character varies them. */
     private final double hillScale, spurScale, swellScale, hollowScale, variety;
 
@@ -132,6 +135,8 @@ public final class BaseTerrainMap {
         plateauEdgeScale = Rules.number(pl, "edgeWavelengthBlocks", 64, 8192);
         plateauFlatten = Rules.number(pl, "flatten", 0, 1);
         scarpTerrace = Rules.number(pl, "scarpTerrace", 0, 1);
+        spineYieldFrom = Rules.number(pl, "spineYieldFrom", 0, 1);
+        spineYieldFull = Rules.number(pl, "spineYieldFull", spineYieldFrom + .01, 1);
         JsonObject lf = j.getAsJsonObject("palette");
         hillScale = Rules.number(lf, "hillWavelengthBlocks", 32, 4096);
         spurScale = Rules.number(lf, "spurWavelengthBlocks", 32, 4096);
@@ -180,6 +185,8 @@ public final class BaseTerrainMap {
 
         /** The continents' spine weight and a plateau's cap weight here (REGIONAL), else 0. */
         private double spine, plateau;
+
+        private double minimumY, maximumY;
 
         /** Province fields and their x and z derivatives (ProvinceGround.sample). */
         private final double[] fields = new double[3 * ProvinceGround.FIELDS];
@@ -232,12 +239,17 @@ public final class BaseTerrainMap {
             return broadDz;
         }
 
+        /**
+         * The room land stages may raise and cut within: on province ground (REGIONAL) from one
+         * block above the sea to the soft ceiling, so the bands, spines and plateaus are legal
+         * parents; the intent elevation's landform band otherwise.
+         */
         public double minimumY() {
-            return elevation.minimumY();
+            return minimumY;
         }
 
         public double maximumY() {
-            return elevation.maximumY();
+            return maximumY;
         }
 
         public double uplift() {
@@ -351,7 +363,11 @@ public final class BaseTerrainMap {
             out.ground = e.meanHeight() - seaLevel;
             out.position = e.legacyPosition();
             out.spine = out.plateau = 0;
+            out.minimumY = e.minimumY();
+            out.maximumY = e.maximumY();
         } else {
+            out.minimumY = seaLevel + 1;
+            out.maximumY = ceiling;
             profiles.sample(x, z, out.region);
             wide.sample(x / wideScale + .53, z / wideScale + .17, out.wide);
             // S4: the province bands set the level; their characters shape it. Every term below
@@ -375,6 +391,15 @@ public final class BaseTerrainMap {
                 double slope = smoothSlope(q) / scarpWidth;
                 capDx = slope * (f[fx + 3] + ex);
                 capDz = slope * (f[fz + 3] + ez);
+                // A spine wins over a cap: ranges keep their ridges where they cross a plateau.
+                double yq = (f[4] - spineYieldFrom) / (spineYieldFull - spineYieldFrom);
+                double yieldW = Rules.smooth(yq);
+                if (yieldW > 0) {
+                    double ys = smoothSlope(yq) / (spineYieldFull - spineYieldFrom);
+                    capDx = capDx * (1 - yieldW) - cap * ys * f[fx + 4];
+                    capDz = capDz * (1 - yieldW) - cap * ys * f[fz + 4];
+                    cap *= 1 - yieldW;
+                }
                 double gap = f[5] - f[6];
                 f[0] = f[6] + gap * cap;
                 f[fx] = f[fx + 6] + (f[fx + 5] - f[fx + 6]) * cap + gap * capDx;
@@ -678,6 +703,7 @@ public final class BaseTerrainMap {
         out.ground = 0;
         out.position = -1;
         out.spine = out.plateau = 0;
+        out.minimumY = out.maximumY = 0;
         elevation.clear(out.elevation);
         profiles.clear(out.region);
     }

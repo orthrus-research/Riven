@@ -227,7 +227,15 @@ public final class TerrainAtlas {
     private static final class Raster {
         final int width, height, footprint;
         final short[] surface, water, plate, province, waterBody;
-        final byte[] habitat, region, level, character, waterKind, flags, provinceType, coast;
+        final byte[] habitat,
+                region,
+                level,
+                character,
+                landform,
+                waterKind,
+                flags,
+                provinceType,
+                coast;
         final byte[] river, mouth, channelBeyond;
         final float[] celsius, moisture, micros;
         final float[][] delta, footprintDelta;
@@ -256,6 +264,7 @@ public final class TerrainAtlas {
             region = new byte[n];
             level = new byte[n];
             character = new byte[n];
+            landform = new byte[n];
             waterKind = new byte[n];
             flags = new byte[n];
             celsius = new float[n];
@@ -424,6 +433,7 @@ public final class TerrainAtlas {
         j.add("regions", array(ClimateRegion.values()));
         j.add("levels", array(Terrain.Level.values()));
         j.add("characters", array(Terrain.Character.values()));
+        j.add("landforms", array(Terrain.Landform.values()));
         j.add("waterKinds", array(Hydro.Kind.values()));
         // Index 0 is "none" in each list; plate ids and packed province cells are 64-bit, so text.
         j.add("provinceTypes", array(provinceTypes));
@@ -506,6 +516,7 @@ public final class TerrainAtlas {
         r.region[i] = (byte) (s.climate.region == null ? -1 : s.climate.region.ordinal());
         r.level[i] = (byte) s.land.level.ordinal();
         r.character[i] = (byte) s.land.character.ordinal();
+        r.landform[i] = (byte) (s.ocean.marine ? 255 : s.land.landform.ordinal());
         r.waterKind[i] = (byte) s.water.kind.ordinal();
         r.flags[i] =
                 (byte)
@@ -717,6 +728,7 @@ public final class TerrainAtlas {
         bytes(out, "region.u8", r.region, digest);
         bytes(out, "level.u8", r.level, digest);
         bytes(out, "character.u8", r.character, digest);
+        bytes(out, "landform.u8", r.landform, digest);
         bytes(out, "water_kind.u8", r.waterKind, digest);
         bytes(out, "flags.u8", r.flags, digest);
         floats(out, "celsius.f32", r.celsius, digest);

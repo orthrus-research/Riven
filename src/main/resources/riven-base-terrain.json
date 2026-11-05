@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 5,
+  "revision": 6,
   "policy": "REGIONAL",
   "bodySeed": "544552424f445931",
   "detailSeed": "5445524445544149",
@@ -14,7 +14,7 @@
   "character": {"wavelengthBlocks": 700, "strongFrom": 0.55, "strongAt": 0.8, "calmStrength": 0.35, "rollingGain": 2.2},
   "ridges": {"wavelengthBlocks": 1100, "gain": 5, "warpBlocks": 450, "warpWavelengthBlocks": 2400},
   "spine": {"liftBlocks": 170, "reliefBlocks": 110, "ridged": 0.85},
-  "plateau": {"scarpWidth": 0.06, "edgeAmplitude": 0.3, "edgeWavelengthBlocks": 900, "flatten": 0.9, "scarpTerrace": 0.9},
+  "plateau": {"scarpWidth": 0.06, "edgeAmplitude": 0.3, "edgeWavelengthBlocks": 900, "flatten": 0.9, "scarpTerrace": 0.9, "spineYieldFrom": 0.25, "spineYieldFull": 0.55},
   "palette": {"hillWavelengthBlocks": 420, "spurWavelengthBlocks": 260, "swellWavelengthBlocks": 1600, "hollowWavelengthBlocks": 180, "variety": 0.6},
   "terraces": {"stepBlocks": 14, "riserShare": 0.3},
   "ceilingMarginBlocks": 4,

@@ -30,6 +30,21 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
 
 ## Climate
 
+- **Every climate in every world** (terrain-v129, climate-v6): at 32 km each of the 15
+  temperature x moisture combinations forms at least 3 separate land patches of 1 km2 or more,
+  and frozen land averages 15-20%, checked over 16 seeds by `ClimateCoverageCheck` (all pass;
+  frozen 19.7%, worst 26.8%). Climate lengths follow the world's layout raised to
+  `layoutExponent` 0.5, so a 32 km world stretches them 2 times, not 4, and holds about two
+  temperature and two moisture belt cycles (belt periods 9,000 blocks before scaling); the
+  temperature noise is +/-9 C; the lapse rate starts 120 blocks above the sea (the S4 bands lifted
+  uplands to +90 and tablelands to +130); and the moisture profile gives the cold bands more
+  contrast (1.8 at -15 C, 1.5 at 5 C) and dries the polar edge (-0.1 at -15 C). Where a world's
+  geography still leaves a climate short, the maps draw the belts' phase again
+  (`ClimateCoverage`, `coverage` in `riven-climate.json`, up to 6 draws, golden-ratio shifts of
+  each belt, nothing else): the first draw in which every climate forms 3 patches on a 128-cell
+  grid is kept, else the one with the most for its rarest climate. A pure function of seed and
+  definitions; 15 of 16 worlds keep their first draw. The paragraphs below give the 8 km
+  tuning these scale from.
 - **Temperature** (`TemperatureMap`, v45, `riven-climate.json`): a 16 km latitude belt (+/-19.5 C,
   offset so the origin sits on the 10 C mean) plus +/-7 C warped noise at 2,500 blocks; five bands
   (below -5, -5 to 5, 5 to 15, 15 to 25, 25 C and up). Tuned for 8 km worlds: about 20% FROZEN,
@@ -145,6 +160,22 @@ relief recipe in `riven-provinces.json`: plain 5-35 blocks, basin 2-25, upland 6
 terraced shares. Each province draws one level inside its band; levels, relief and shares blend
 across the 500-block edge with smooth weights. `ProvinceGround` holds these fields as a bounded
 regional plan: a Catmull-Rom raster at a fifth of the edge width, with exact derivatives.
+
+**Landform classes (terrain-v129).** Every land column carries one class from the ground model,
+with its strength, for biomes to key on (`Terrain.Landform`, `landforms` in `riven-terrain.json`):
+MOUNTAIN where the spine weight passes 0.4 (strength rising from 0.25 to 0.55), PLATEAU on a cap,
+SCARP on its edge, else its province type's class: basin BASIN, plain PLAIN, upland HILLS,
+foreland FOOTHILLS, rift RIFT (a tableland off its cap reads HILLS, a range off its spine
+FOOTHILLS). Selector character follows the class (FLOOR, PLAIN, HILLS, PLATEAU, RIDGE; DUNES
+where hot and dry), and `Fit.PLATEAU` reads the cap and scarp. Over 16 worlds at 32 km: foothills
+29%, hills 20%, plain 17%, mountain 13%, rift 8%, plateau 7%, basin 6%.
+
+**Gating on the new ground (terrain-v129).** Land stages raise and cut within one block above
+the sea to the soft ceiling, not the tectonic intent's landform band, which the S4 ground left on
+54% of land; mountain kernels read the spine as their uplift; water sources skip strong spines
+instead of plate belts. Plateau caps stay calm: the passes and mountains fade on them, and a cap
+yields to a spine as its weight rises from 0.25 to 0.55, so ranges keep their ridges across
+tablelands. Passes' ridges thin on spines, which carry their own.
 
 **Spines (terrain-v127).** Mountain ranges follow each landmass's own axis. `SpineMap`
 (`riven-provinces.json` `spines`) finds the land's medial axis: the ridge of the distance to the

@@ -207,8 +207,8 @@ public final class RegionalReliefCheck {
                 require(
                         Double.doubleToLongBits(sample.meanHeight())
                                         == Double.doubleToLongBits(old.meanHeight())
-                                && sample.minimumY() == old.minimumY()
-                                && sample.maximumY() == old.maximumY()
+                                && sample.elevation().minimumY() == old.minimumY()
+                                && sample.elevation().maximumY() == old.maximumY()
                                 && sample.legacyPosition() == old.legacyPosition(),
                         "Elevation policy changed");
                 require(sample.amplitude() >= 0, "Negative relief amplitude");

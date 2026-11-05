@@ -186,7 +186,8 @@ public final class MountainTerrain {
                 // The major envelope (TerrainMap) keeps the coast; shores are not excluded.
                 false,
                 Math.max(0, Math.min(1, base.land.high)),
-                Math.max(0, Math.min(1, base.uplift)),
+                // The kernels' uplift is the continents' spine (plates no longer raise ranges).
+                base.base.spine(),
                 parent,
                 base.minimumY,
                 base.maximumY,

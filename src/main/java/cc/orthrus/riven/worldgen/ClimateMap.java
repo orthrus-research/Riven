@@ -79,7 +79,9 @@ public final class ClimateMap {
         broadBlocks = BROAD_BLOCKS * temperature.layout;
         detailBlocks = DETAIL_BLOCKS * temperature.layout;
         beltPeriod = BELT_PERIOD * temperature.layout;
-        beltOffset = BELT_OFFSET * temperature.layout;
+        beltOffset =
+                BELT_OFFSET * temperature.layout
+                        + TemperatureMap.phase(temperature.attempt, .3819660113) * beltPeriod;
     }
 
     /** Call-sequence scratch, never shared by the immutable map. */

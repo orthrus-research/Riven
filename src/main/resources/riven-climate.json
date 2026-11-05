@@ -1,15 +1,17 @@
 {
   "schema": 1,
-  "revision": 5,
+  "revision": 6,
+  "layoutExponent": 0.5,
+  "coverage": {"attempts": 6, "minimumPatches": 3, "minimumPatchSquareKilometres": 1, "gridCells": 128},
   "temperature": {
     "meanCelsius": 10,
-    "noiseAmplitudeCelsius": 7,
+    "noiseAmplitudeCelsius": 9,
     "scaleBlocks": 2500,
     "detailWeight": 0.3,
     "detailScaleFraction": 0.43,
     "warpScaleInScales": 1.7222222222222223,
     "warpAmplitudeInScales": 0.1527777777777778,
-    "beltPeriodBlocks": 16000,
+    "beltPeriodBlocks": 9000,
     "beltAmplitudeCelsius": 19.5,
     "beltOffsetBlocks": 4000
   },
@@ -17,14 +19,14 @@
     "broadBlocks": 2000,
     "detailBlocks": 800,
     "detailWeight": 0.35,
-    "beltPeriodBlocks": 16000,
+    "beltPeriodBlocks": 9000,
     "beltAmplitude": 0.15,
     "beltOffsetBlocks": 4000,
-    "temperatureProfile": [[16, 0, 1], [22, -0.13, 1.5], [26, -0.16, 2], [30, 0.02, 2], [33, 0.1, 1.5]]
+    "temperatureProfile": [[-15, -0.1, 1.8], [-5, -0.04, 1.6], [5, 0, 1.5], [16, 0, 1.2], [22, -0.13, 1.5], [26, -0.16, 2], [30, 0.02, 2], [33, 0.1, 1.5]]
   },
   "lapse": {
     "celsiusPerBlock": 0.2,
-    "startAboveSeaBlocks": 70
+    "startAboveSeaBlocks": 120
   },
   "contract": [
     "Surface temperature = meanCelsius + beltAmplitudeCelsius * cos(2 pi z / beltPeriodBlocks) + noiseAmplitudeCelsius * (broad + detailWeight * detail) / (1 + detailWeight), with broad noise at scaleBlocks and detail at scaleBlocks * detailScaleFraction, both on domain-warped coordinates that ClimateMap shares. A belt period of 0 disables the belt.",
