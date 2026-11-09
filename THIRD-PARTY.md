@@ -38,7 +38,7 @@ where used.
 | Erosion filter (after Rune Skovbo Johansen via Luke Mitchell's CPU reference, commit `57e79cc`) | `supersymmetry/riven/worldgen/ErosionFilter.java` | MPL-2.0, `META-INF/licenses/erosion/` |
 | Terrain height reference data | `src/main/resources/riven-terrain-height-reference.json` | Independently authored contract data, NRR |
 | Gradle wrapper | `gradle/`, `gradlew*` | Upstream terms |
-| Cubature | `dev/CubicChunks` (separate repository) | CubicChunks MIT, Forge-derived LGPL-2.1; see its `NOTICE.md` and `MODIFICATIONS.md` |
+| Cubature | `../Cubature` (separate repository beside Riven) | CubicChunks MIT, Forge-derived LGPL-2.1; see its `NOTICE.md` and `MODIFICATIONS.md` |
 | Runtime dependencies | `runtime.lock.json` | Cleanroom, Distant Horizons (LGPL), Fugue, Scalar Legacy and Minecraft keep their own terms |
 | GregTech CE Unofficial (optional runtime dependency, compile-only) | `dev/pins/gregtech-1.12.2-2.8.10-beta.jar`, called from `supersymmetry/riven/GregTechOres.java`; `riven-ores.json` names its overworld veins' minerals and layer roles (facts, no copied files or code) | LGPL-3.0; not bundled, redistributed or modified |
 | ZenScript 4.1.20.700 (CraftTweaker, compile-only) | `dev/pins/ZenScript-4.1.20.700.jar` (`CraftTweaker2:ZenScript` from maven.blamejared.com, the version GTCEu builds with); its annotations are on GTCEu's material classes, which `content/GregTechMaterials.java` builds | MIT; not bundled, redistributed or modified |

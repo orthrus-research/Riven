@@ -1,6 +1,6 @@
 """Refuse a push whose commits have not passed `ci`: the pre-push hook of Riven and Cubature.
 
-  python tools/push_gate.py install [--force]   write the hook into Riven and dev/CubicChunks
+  python tools/push_gate.py install [--force]   write the hook into Riven and Cubature
   python tools/push_gate.py check riven|cubature [remote url]
                                                 the hook's check; git lists the refs on stdin
 
@@ -45,7 +45,7 @@ def refusal(
         try:
             pinned = actions.git(cubature, "rev-parse", "--verify", f"{pin}^{{tree}}")
         except subprocess.CalledProcessError:
-            return f"its Cubature pin {pin[:8]} is not in dev/CubicChunks"
+            return f"its Cubature pin {pin[:8]} is not in the Cubature checkout"
         done = passed.get((tree, pinned), set())
         trees = f"Riven tree {tree[:8]} with Cubature {pin[:8]}"
     else:
@@ -75,7 +75,7 @@ def check(repository: str, lines: Iterable[str]) -> int:
             print(f"push_gate: refusing {fields[0]} ({fields[1][:8]}): {reason}.", file=sys.stderr)
     if refused:
         print(
-            "Check out the pushed commits in Riven and dev/CubicChunks with nothing uncommitted, run"
+            "Check out the pushed commits in Riven and Cubature with nothing uncommitted, run"
             " `python tools/actions.py ci --if-needed`, and push again.",
             file=sys.stderr,
         )

@@ -7,10 +7,12 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from checkouts import CUBATURE_TOOLS
+
 from .evidence import timestamp_ns
 from .profiles import ROOT, configuration, read_json, sha
 
-sys.path.insert(0, str(ROOT / "dev/CubicChunks/tools"))
+sys.path.insert(0, str(CUBATURE_TOOLS))
 from analyze_cubic_profile import duration_ns, iter_jfr_events, methods
 
 EVENTS = ",".join(
@@ -249,7 +251,7 @@ def aggregate(events, windows, side, targets=None, limit=LIMIT):
 def trace_run(report, output):
     phase = Path(report["phase"])
     java = read_json(ROOT / ".local/settings.json")["java26"]
-    helper = ROOT / "dev/CubicChunks/tools/JfrWindowExport.java"
+    helper = CUBATURE_TOOLS / "JfrWindowExport.java"
     registry = report["manifest"].get("observability", {}).get("configuration")
     registry_source = (
         "frozen capture configuration"

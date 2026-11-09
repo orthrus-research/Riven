@@ -10,9 +10,11 @@ from pathlib import Path
 from statistics import mean
 from typing import Any
 
-from .profiles import ROOT, read_json, sha
+from checkouts import CUBATURE_TOOLS
 
-sys.path.insert(0, str(ROOT / "dev/CubicChunks/tools"))
+from .profiles import read_json, sha
+
+sys.path.insert(0, str(CUBATURE_TOOLS))
 from analyze_cubic_profile import timestamp_ns
 from lab_repeated_statistics import paired_interval
 

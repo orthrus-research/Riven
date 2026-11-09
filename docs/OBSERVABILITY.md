@@ -96,7 +96,7 @@ python -m venv .local/observability-venv
 .local/observability-venv/Scripts/python.exe -m pip install -r tools/observability/requirements.txt
 ```
 
-Build the optional lab observer from `dev/CubicChunks/lab` with the existing
+Build the optional lab observer from Cubature's `lab` with the existing
 `../cleanroom/gradlew.bat test assemble -PcubicArtifact=<frozen-cubature.jar>`.
 Use a fixed copy of that observer for an entire comparison. A changed
 observer starts a new comparison.
@@ -222,7 +222,7 @@ names instances and artifacts and stays local.
 
 The lab's `LabLodTrace` records each DH section's path through generation, delivery and
 rendering, on both JVMs, from start until exit. Build the observer first
-(`dev/CubicChunks/tools/build_cubature.py`, or the lab's Gradle build against the pinned Cubature).
+(Cubature's `tools/build_cubature.py`, or the lab's Gradle build against the pinned Cubature).
 
 - Directed route: `riven_observe.py capture ... --lod-trace` (any workload, such as
   `dev/benchmarks/cube-flight-lifecycle.json`) writes `<instance>/lod-trace`. The lab job's

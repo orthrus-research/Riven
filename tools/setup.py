@@ -1,10 +1,10 @@
 """Prepare a fresh clone for building and testing Riven.
 
 Steps, each skipped when already done: record the JDK 25 and Java 26 paths in
-.local/settings.json, clone Cubature into dev/CubicChunks, download every third-party pin named
-in runtime.lock.json (verified by SHA-256), build the Cubature artifacts that dev/cc.lock.json
-pins, and create the Python environments the local CI uses. --check reports without changing
-anything. The tooling targets Windows.
+.local/settings.json, clone Cubature where dev/cc.lock.json's checkout names (../Cubature),
+download every third-party pin named in runtime.lock.json (verified by SHA-256), build the
+Cubature artifacts that dev/cc.lock.json pins, and create the Python environments the local CI
+uses. --check reports without changing anything. The tooling targets Windows.
 """
 
 import argparse
@@ -19,8 +19,9 @@ import urllib.request
 import venv
 from pathlib import Path
 
+from checkouts import CUBATURE
+
 ROOT = Path(__file__).resolve().parents[1]
-CUBATURE = ROOT / "dev/CubicChunks"
 SETTINGS = ROOT / ".local/settings.json"
 ENVIRONMENTS = {
     "quality-venv": "tools/requirements-quality.txt",
@@ -94,7 +95,7 @@ def clone_cubature(args: argparse.Namespace) -> bool:
     pin = load(ROOT / "dev/cc.lock.json")
     if not (CUBATURE / ".git").exists():
         if args.check:
-            print("missing  dev/CubicChunks (Cubature checkout)")
+            print(f"missing  {CUBATURE} (Cubature checkout)")
             return False
         source = args.cubature_url or pin["repository"]
         subprocess.run(["git", "clone", source, str(CUBATURE)], check=True)
@@ -106,7 +107,7 @@ def clone_cubature(args: argparse.Namespace) -> bool:
         if head == pin["commit"]
         else f"at {head[:12]}, pin {pin['commit'][:12]}"
     )
-    print(f"present  dev/CubicChunks ({state})")
+    print(f"present  {CUBATURE} ({state})")
     return True
 
 
@@ -159,9 +160,15 @@ def build_cubature(args: argparse.Namespace) -> bool:
     if args.check:
         print("missing  Cubature artifacts: run setup without --check to build them")
         return False
-    print("building Cubature from dev/CubicChunks (with tests)")
+    print(f"building Cubature from {CUBATURE} (with tests)")
     subprocess.run(
-        [sys.executable, str(CUBATURE / "tools/build_cubature.py"), "--no-lab"],
+        [
+            sys.executable,
+            str(CUBATURE / "tools/build_cubature.py"),
+            "--workspace",
+            str(ROOT),
+            "--no-lab",
+        ],
         check=True,
     )
     exact = True

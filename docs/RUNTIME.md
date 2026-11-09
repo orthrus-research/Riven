@@ -26,13 +26,16 @@ Riven's generation range: set them to -1664 and 384 before creating a world. `ru
 writes them from the height reference; with the old -128 a test player teleported to Y-500 took out-of-world damage and died.
 
 Distances are 12 on all four native axes (server horizontal and vertical, client render and
-vertical). Cubature development in `dev/CubicChunks` may be ahead of the pinned artifact; the pin
-is what instances use.
+vertical). Cubature development in its checkout may be ahead of the pinned artifact; the pin is what
+instances use.
 
 Cubature keeps `cubicchunks`/`cubicchunkscore` mod IDs, `io.github.opencubicchunks` packages,
 registry IDs and save formats as compatibility interfaces. It is published as
-`orthrus-research/Cubature`, a GitHub fork of OpenCubicChunks/CubicChunks, and checked out at
-`dev/CubicChunks`.
+`orthrus-research/Cubature`, a GitHub fork of OpenCubicChunks/CubicChunks, and checked out beside
+Riven at `../Cubature`, the path `dev/cc.lock.json`'s `checkout` names. Riven's tools find it through
+`tools/checkouts.py` and export `RIVEN_WORKSPACE`, which Cubature's tools and Gradle build read to find
+Riven (without it they assume a sibling `../Riven`). Cubature never lives inside Riven, so nothing
+that cleans or deletes Riven's ignored files can reach it.
 
 ## Distant Horizons
 
@@ -246,7 +249,7 @@ so `execute {player} ~ ~ ~ riven digest 48 <x> <z>` there digests the previous v
 installs the lab observer so every `play` records DH LOD stages (OBSERVABILITY.md, DH LOD stage
 trace).
 
-`tools/runtime.py` imports `cubic_lab` and `cubic_standalone` from `dev/CubicChunks/tools`, so the
+`tools/runtime.py` imports `cubic_lab` and `cubic_standalone` from Cubature's `tools`, so the
 Cubature checkout must be present. `prepare` writes the local runtime identity to
 `.local/native-runtime.json`: the pinned Cleanroom release from `dev/native-runtime.json` plus the
 Java 26 named in `.local/settings.json` and the hashes of its critical files. A Java 26 other than
@@ -265,7 +268,7 @@ either changed while it ran. A pass recorded before a commit therefore names tha
 remaining job needs. The record assumes the tool environments, `.local/settings.json` and the
 pinned JARs are unchanged between runs.
 
-`python tools/push_gate.py install` writes a pre-push hook into Riven and `dev/CubicChunks`; it
+`python tools/push_gate.py install` writes a pre-push hook into Riven and Cubature; it
 stays local, since git never commits `.git/hooks`. The hook refuses a push whose tip has not
 passed every `ci` job: a Riven commit on its own tree together with the tree of the Cubature
 commit its `dev/cc.lock.json` pins, a Cubature commit on its tree with one Riven tree. Running
@@ -284,7 +287,7 @@ jobs; `git push --no-verify` skips the check.
 
 - `tools/build_riven.py [--diagnostics] [--freeze LABEL]` builds Riven for Cleanroom and
   writes `.local/builds/riven-latest.json`.
-- `dev/CubicChunks/tools/build_cubature.py [--skip-tests] [--no-lab] [--freeze LABEL]`
+- `../Cubature/tools/build_cubature.py [--workspace RIVEN] [--skip-tests] [--no-lab] [--freeze LABEL]`
   builds Cubature with its Java 26 tests, then the lab observer against that exact artifact, and
   writes `.local/builds/cubature-latest.json` with test counts.
 - `--freeze LABEL` copies both projects' artifacts into `.local/frozen/LABEL/` with a shared
@@ -330,7 +333,7 @@ Forge fallback was retired on 2026-10-30 (docs/DECISIONS.md), so code may use an
 `check` verifies Google Java Format (AOSP) and Ruff formatting, runs Ruff and gradual Mypy, and
 compiles production and `tools/checks` Java with Java 26 with lint warnings as errors. It runs no tests or game. `.local/settings.json` supplies the `java25` and `java26`
 paths. The `quality` job adds `tools/content/build_content.py --check` and both projects' tool
-tests, `unittest discover` over `tools` and `dev/CubicChunks/tools` in the observability
+tests, `unittest discover` over `tools` and Cubature's `tools` in the observability
 environment.
 
 ## Known runtime warnings

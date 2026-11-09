@@ -2,7 +2,6 @@
 build/
 run/
 .local/
-dev/CubicChunks/
 dev/DistantHorizons/
 dev/pins/*.jar
 dev/pins/shaderpacks/

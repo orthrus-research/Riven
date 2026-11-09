@@ -1,6 +1,7 @@
 # Local actions for Riven and Cubature. Run with: python tools/actions.py <workflow|job> ...
 # Placeholders: {python} the runner's interpreter, {quality_python}, {atlas_python},
-# {observability_python}, {run_id} the run's identifier, {frozen} .local/frozen/{run_id}.
+# {observability_python}, {run_id} the run's identifier, {frozen} .local/frozen/{run_id},
+# {riven} Riven's root, {cubature} the Cubature checkout dev/cc.lock.json names.
 
 [interpreters]
 quality_python = ".local/quality-venv/Scripts/python.exe"
@@ -19,7 +20,7 @@ steps = [
   { name = "code quality", run = ["{quality_python}", "tools/code_quality.py", "check"] },
   { name = "content assets", run = ["{quality_python}", "tools/content/build_content.py", "--check"] },
   { name = "riven tool tests", run = ["{observability_python}", "-B", "-m", "unittest", "discover", "-s", "tools", "-p", "test_*.py"] },
-  { name = "cubature tool tests", run = ["{observability_python}", "-B", "-m", "unittest", "discover", "-s", "dev/CubicChunks/tools", "-p", "test_*.py"] },
+  { name = "cubature tool tests", run = ["{observability_python}", "-B", "-m", "unittest", "discover", "-s", "{cubature}/tools", "-p", "test_*.py"] },
 ]
 
 [jobs.riven-build]
@@ -31,7 +32,7 @@ steps = [
 [jobs.cubature-build]
 description = "Build Cubature and the lab observer with Java 26 tests and freeze them"
 steps = [
-  { name = "build cubature", run = ["{python}", "dev/CubicChunks/tools/build_cubature.py", "--no-daemon", "--freeze", "{run_id}"] },
+  { name = "build cubature", run = ["{python}", "{cubature}/tools/build_cubature.py", "--workspace", "{riven}", "--no-daemon", "--freeze", "{run_id}"] },
 ]
 
 [jobs.atlas-golden]
@@ -64,7 +65,7 @@ steps = [
 
 [quick]
 # `actions.py quick` runs the ci jobs that the changes since HEAD can affect: Riven's working tree
-# against its HEAD and dev/CubicChunks against its own. A changed path takes the jobs of the first
+# against its HEAD and the Cubature checkout against its own. A changed path takes the jobs of the first
 # rule it matches ("**" crosses folders, "*" does not); a path no rule matches takes every ci job.
 # A push still needs every ci job passed for its tree (tools/push_gate.py): ci --if-needed.
 riven = [

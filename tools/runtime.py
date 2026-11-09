@@ -15,10 +15,11 @@ import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 
+from checkouts import CUBATURE_TOOLS, LAB_OBSERVER
 from observability.profiles import sha
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "dev/CubicChunks/tools"))
+sys.path.insert(0, str(CUBATURE_TOOLS))
 import cubic_lab as lab
 import cubic_standalone as standalone
 import lab_files
@@ -102,7 +103,7 @@ def shader_packs(pins, entries):
     return packs
 
 
-LOD_OBSERVER = ROOT / "dev/CubicChunks/lab/build/cleanroom/libs/cubicchunks-lab-0.1.0-cleanroom.jar"
+LOD_OBSERVER = LAB_OBSERVER
 
 
 def lod_trace_directory(path):
@@ -156,7 +157,7 @@ def prepare(
         lod_observer = Path(lod_observer).resolve()
         if not lod_observer.is_file():
             raise RuntimeError(
-                "Build the lab observer first (dev/CubicChunks/tools/build_cubature.py): "
+                "Build the lab observer first (Cubature's tools/build_cubature.py): "
                 + str(lod_observer)
             )
     if not 1 <= dh_bandwidth_kbps <= 1000000 or not 1 <= dh_request_limit <= 100:

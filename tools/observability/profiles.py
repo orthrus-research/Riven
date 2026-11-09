@@ -7,6 +7,8 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
+from checkouts import LAB_OBSERVER
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -119,11 +121,7 @@ def doctor(riven, cubature=None, observer=None, check_java=True):
         "cubature": Path(cubature).resolve() if cubature else ROOT / cc_pin["artifact"],
         "dh": ROOT / next(m["file"] for m in pins["mods"] if "DistantHorizons-" in m["file"]),
     }
-    observer = (
-        Path(observer).resolve()
-        if observer
-        else ROOT / "dev/CubicChunks/lab/build/cleanroom/libs/cubicchunks-lab-0.1.0-cleanroom.jar"
-    )
+    observer = Path(observer).resolve() if observer else LAB_OBSERVER
     checks, artifacts = [], {}
     for mod in pins["mods"]:
         path = ROOT / mod["file"]

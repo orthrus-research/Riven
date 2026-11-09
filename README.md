@@ -76,7 +76,7 @@ python tools/setup.py
 ```
 
 `tools/setup.py` records the Java paths in `.local/settings.json` (it looks in the usual install
-folders; pass `--java25` and `--java26` to choose), clones Cubature into `dev/CubicChunks`,
+folders; pass `--java25` and `--java26` to choose), clones Cubature beside Riven into `../Cubature`,
 downloads the third-party JARs pinned in [runtime.lock.json](runtime.lock.json) and checks each
 against its SHA-256, builds the Cubature artifacts that [dev/cc.lock.json](dev/cc.lock.json) pins,
 and creates the Python environments for the checks and the atlas. `--check` reports what is

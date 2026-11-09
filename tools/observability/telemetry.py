@@ -19,6 +19,8 @@ from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from checkouts import CUBATURE
+
 from observability.profiles import ROOT
 
 SCHEMA = "riven.telemetry.v1"
@@ -496,7 +498,7 @@ def write(record):
 def collect(instance, commits=True):
     """Record an instance's runs in the ledger and refresh the index; returns the written paths."""
     instance = Path(instance)
-    tools = {"riven": _git(ROOT), "cubature": _git(ROOT / "dev/CubicChunks")} if commits else None
+    tools = {"riven": _git(ROOT), "cubature": _git(CUBATURE)} if commits else None
     records = [capture_record(instance, tools)] + pregeneration_records(instance)
     paths = [write(r) for r in records if r]
     build_index()

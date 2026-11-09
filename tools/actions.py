@@ -30,8 +30,9 @@ import tomllib
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from checkouts import CUBATURE
+
 ROOT = Path(__file__).resolve().parents[1]
-CUBATURE = ROOT / "dev/CubicChunks"
 CONFIG = ROOT / "tools/actions.toml"
 RUNS = ROOT / ".local/actions"
 REPOSITORIES = (("riven", ROOT), ("cubature", CUBATURE))
@@ -76,6 +77,8 @@ def placeholders(config, run_id):
         "python": sys.executable,
         "run_id": run_id,
         "frozen": str(ROOT / ".local/frozen" / run_id),
+        "riven": str(ROOT),
+        "cubature": str(CUBATURE),
     }
     for key, relative in config.get("interpreters", {}).items():
         values[key] = str(ROOT / relative)

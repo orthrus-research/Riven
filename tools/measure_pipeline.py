@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import runtime
+from checkouts import LAB_OBSERVER
 from observability import telemetry
 from observability.profiles import sha
 
@@ -118,8 +119,7 @@ def main(argv=None):
     parser.add_argument(
         "--lab-artifact",
         type=Path,
-        default=ROOT
-        / "dev/CubicChunks/lab/build/cleanroom/libs/cubicchunks-lab-0.1.0-cleanroom.jar",
+        default=LAB_OBSERVER,
     )
     parser.add_argument(
         "--jfr",

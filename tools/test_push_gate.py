@@ -49,7 +49,7 @@ class RefusalTests(Scratch):
         commit = self.riven_commit("f" * 40)
         tree = git(self.riven, "rev-parse", "HEAD^{tree}")
         reason = self.refusal("riven", commit, {(tree, self.cubature_tree): set(CI)})
-        self.assertEqual(reason, "its Cubature pin ffffffff is not in dev/CubicChunks")
+        self.assertEqual(reason, "its Cubature pin ffffffff is not in the Cubature checkout")
 
     def test_a_cubature_commit_needs_every_job_with_one_riven_tree(self):
         split = {("r1", self.cubature_tree): {"quality"}, ("r2", self.cubature_tree): set(CI[1:])}
