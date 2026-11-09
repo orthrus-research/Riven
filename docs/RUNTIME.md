@@ -338,5 +338,5 @@ environment.
 
 ## Known runtime warnings
 
-Cubature logs a missing `MixinItemMap` mixin on both sides at startup; it is not fatal and
-held-map behavior is unqualified. The Unimined Gradle plugin prints deprecation notices.
+Cubature logs no startup warning; held maps in cubic worlds remain unqualified. The Unimined
+Gradle plugin prints deprecation notices.

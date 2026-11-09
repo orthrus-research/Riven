@@ -27,7 +27,7 @@
       "No new client rendering, performance or restart claim"
     ],
     "runtime": "Java 26.0.2.1 / official Cleanroom 0.7.9-alpha",
-    "knownExistingWarning": "Missing MixinItemMap remains; held-map behavior unqualified"
+    "knownExistingWarning": "None from Cubature at startup; held-map behavior unqualified"
   },
   "profile": {
     "sharedWorkersPerJvm": 4,
