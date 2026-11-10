@@ -1,6 +1,8 @@
 .gradle/
 build/
 run/
+# Game logs that diagnostics runs write at the root
+logs/
 .local/
 dev/DistantHorizons/
 dev/pins/*.jar
