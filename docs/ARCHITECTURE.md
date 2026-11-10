@@ -20,7 +20,12 @@ value again, so a miss that raced a build ending finds the value instead of buil
 In-build parallelism (drainage scans, network and plan builds) runs through `BuildPool` on the
 host's bounded pool (Cubature's build pool in the game, a shared bounded pool in tools) or on the
 calling thread, never the JVM's common pool; the caller always works its own loop, so a bounded
-pool cannot deadlock on a single build. Preview columns build on their own thread alone
+pool cannot deadlock on a single build. At world load `RivenWorldType` requests Cubature's pool
+before constructing the biome provider and passes it through `WorldGenerationContext` to
+`GenerationMaps`, so the climate coverage and the spine tiles it needs already use the host's
+pool. The cube provider later adopts the same pool; Cubature owns shutdown. Failed map or biome
+provider construction abandons the request, allowing Cubature to close an unadopted pool.
+Preview columns build on their own thread alone
 (`BuildPool.alone`): a distant preview tile can start regional builds native generation needs
 much later, and on the shared pool those would hold the helpers native builds wait for. Cubature also prepares regional plans ahead of the
 players through `ICubeGenerator.prepareRegion` ("Preparation within bounds" in DECISIONS.md):

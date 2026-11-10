@@ -16,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ForkJoinPool;
 
 /** Owns biome selection at world construction, before columns and cubes are generated. */
 final class ClimateBiomeProvider extends BiomeProvider {
@@ -25,8 +26,8 @@ final class ClimateBiomeProvider extends BiomeProvider {
     final WorldGenerationContext context;
     private final List<Biome> spawn;
 
-    ClimateBiomeProvider(long seed, WorldScale scale) {
-        context = new WorldGenerationContext(seed, scale);
+    ClimateBiomeProvider(long seed, WorldScale scale, ForkJoinPool pool) {
+        context = new WorldGenerationContext(seed, scale, pool);
         maps = context.maps;
         LOG.info("Riven land: {}", maps.land);
         LOG.info("Riven provinces: {}", maps.provinces.summary());

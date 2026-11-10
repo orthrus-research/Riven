@@ -437,8 +437,9 @@ public final class RegionalCacheProbe {
             TerrainHeightReference heights = TerrainHeightReference.DEFAULT;
             if (production) {
                 GenerationMaps actual =
-                        step("GenerationMaps.game", () -> new GenerationMaps(seed, heights, world));
-                actual.pool.use(executor);
+                        step(
+                                "GenerationMaps.game",
+                                () -> new GenerationMaps(seed, heights, world, executor));
                 land = actual.land;
                 outline = actual.outline;
                 provinces = actual.provinces;
@@ -551,12 +552,12 @@ public final class RegionalCacheProbe {
         String[][] sources = {
             {
                 "worldgen/GenerationMaps.java",
-                "2ea8966740f977343c6b9d018dd0d94cb12feb23d806dc978fe516176e9a151c"
+                "4e073469d07978f942b979415c29487c7389f2a675050729a7adbef3da515ae4"
             },
             {"RivenSpawn.java", "75299e43ffdeadc9012bb3b49c310ee8dcb95ac3d214f8a5d5608808ba357fae"},
             {
                 "ClimateBiomeProvider.java",
-                "e16de5d09e350916b128ec48e30724fb733f285a9495ef6e2f76b87ee74f92fd"
+                "b4f1640c125c07b3c79b6562edcd75ad96a604e036dcf3793495cfbc5b48ef68"
             }
         };
         for (String[] source : sources) {
@@ -702,7 +703,7 @@ public final class RegionalCacheProbe {
                         || !oracle.get("generatorFingerprint").getAsString().equals(fingerprint)))
             throw new IllegalArgumentException(
                     "Oracle must be a production parity result for the same sources, definitions, seed, scale and scenario");
-        // One thread means the actual game startup shape: caller-only, not caller plus helper.
+        // One thread means caller-only; other values select the host pool's helper count.
         buildPool = threads == 1 ? null : BuildPool.bounded(threads, "probe-build");
         try {
             boolean production = scenario.equals("arrival");
@@ -764,8 +765,12 @@ public final class RegionalCacheProbe {
             // All timing ends before parity; a same-source oracle avoids repeating cold builds.
             String digest = columnDigest(maps.columns, at[0], at[2]);
             if (oracle == null && !production) {
-                GenerationMaps actual = new GenerationMaps(seed, new WorldScale(scale));
-                actual.pool.use(buildPool);
+                GenerationMaps actual =
+                        new GenerationMaps(
+                                seed,
+                                TerrainHeightReference.DEFAULT,
+                                new WorldScale(scale),
+                                buildPool);
                 if (maps.attempt != actual.climateAttempt
                         || maps.draws != actual.climateDraws
                         || maps.fewest != actual.climateFewest
@@ -799,13 +804,13 @@ public final class RegionalCacheProbe {
             report.addProperty("seed", seed);
             report.addProperty("scale", scale);
             report.addProperty("buildThreads", threads);
-            report.addProperty("t0CallerOnly", production || threads == 1);
-            report.addProperty("t0BuildThreads", production || threads == 1 ? 0 : threads);
+            report.addProperty("t0CallerOnly", threads == 1);
+            report.addProperty("t0BuildThreads", threads == 1 ? 0 : threads);
             report.addProperty("demandBuildThreads", threads);
             report.addProperty(
                     "priorWarming",
                     production
-                            ? "game constructor only; no spawn or preparation"
+                            ? "production constructor on requested host pool; no spawn or preparation"
                             : "reconstructed constructor only; no spawn or preparation");
             report.addProperty("scenario", scenario);
             report.addProperty("mapSeconds", maps.seconds);

@@ -341,8 +341,8 @@ nested lighting or encoding twice.
   production-constructor metadata, spawn and native block/ore/unstable parity are checked afterward.
   `oracle=PATH` reuses an independent spawn report for another thread count, checking the same
   generator and definition fingerprint, seed, scale, kept-draw metadata, spawn and native-column
-  digest. Arrival mode uses the actual game constructor on the caller alone, installs the
-  requested pool before demand, and times the native chunk column at `x=8102 z=4552`, recording
+  digest. Arrival mode uses the actual game constructor with the requested pool from construction,
+  then times the native chunk column at `x=8102 z=4552`, recording
   its digest directly. Each report ranks memo build time, count and worst build, records waits
   by thread kind, and lists built keys. Nested build and wait times overlap and must not be added
   as elapsed cost. The ordinary demand probe constructs its maps on the tools' all-processors-but-one

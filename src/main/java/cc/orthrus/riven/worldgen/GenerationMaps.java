@@ -1,5 +1,7 @@
 package cc.orthrus.riven.worldgen;
 
+import java.util.concurrent.ForkJoinPool;
+
 /** One seed-owned set of pure maps. Callers sample only the layer they need. */
 public final class GenerationMaps {
     public final TemperatureMap temperature;
@@ -56,8 +58,8 @@ public final class GenerationMaps {
     }
 
     /**
-     * Where in-build parallelism runs. The game's maps start on the calling thread until the host
-     * supplies its pool; the tools' constructors below use the tools' shared pool.
+     * Where in-build parallelism runs. The host supplies its pool before these maps are built;
+     * the tools' constructors below use the tools' shared pool. Null keeps work on the caller.
      */
     public final BuildPool pool = new BuildPool();
 
@@ -67,21 +69,17 @@ public final class GenerationMaps {
 
     /** A world at a layout scale (1 = 8 km tuning, 4 = 32 km worlds). */
     public GenerationMaps(long seed, WorldScale world) {
-        this(seed, TerrainHeightReference.DEFAULT, world, true);
+        this(seed, TerrainHeightReference.DEFAULT, world, BuildPool.tools());
     }
 
     GenerationMaps(long seed, TerrainHeightReference heights) {
-        this(seed, heights, WorldScale.DEFAULT, true);
+        this(seed, heights, WorldScale.DEFAULT, BuildPool.tools());
     }
 
-    /** The game's maps ({@link WorldGenerationContext}): no pool until the host supplies one. */
-    GenerationMaps(long seed, TerrainHeightReference heights, WorldScale world) {
-        this(seed, heights, world, false);
-    }
-
-    private GenerationMaps(
-            long seed, TerrainHeightReference heights, WorldScale world, boolean tools) {
-        if (tools) pool.use(BuildPool.tools());
+    /** The game's maps ({@link WorldGenerationContext}), built on the host's pool or caller. */
+    GenerationMaps(
+            long seed, TerrainHeightReference heights, WorldScale world, ForkJoinPool executor) {
+        pool.use(executor);
         plates = new PlateMap(seed, world);
         land = LandShare.choose(seed, heights, world);
         outline = land.outline;

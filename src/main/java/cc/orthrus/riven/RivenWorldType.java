@@ -16,6 +16,7 @@ import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldType;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubicTerrainPreview;
+import io.github.opencubicchunks.cubicchunks.api.worldgen.WorldBuildPool;
 
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EnumCreatureType;
@@ -46,11 +47,21 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
     @Override
     public BiomeProvider getBiomeProvider(World world) {
         // Remote clients consume authoritative chunk biome arrays, never a guessed seed.
-        return world.isRemote
-                ? new BiomeProviderSingle(Biomes.PLAINS)
-                : new ClimateBiomeProvider(
-                        world.getSeed(),
-                        WorldScale.parse(world.getWorldInfo().getGeneratorOptions()));
+        if (world.isRemote) return new BiomeProviderSingle(Biomes.PLAINS);
+        ForkJoinPool pool = WorldBuildPool.request(world);
+        try {
+            return new ClimateBiomeProvider(
+                    world.getSeed(),
+                    WorldScale.parse(world.getWorldInfo().getGeneratorOptions()),
+                    pool);
+        } catch (RuntimeException | Error failure) {
+            try {
+                WorldBuildPool.abandon(world);
+            } catch (RuntimeException | Error cleanup) {
+                if (cleanup != failure) failure.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
     }
 
     /** Vanilla clouds and shader packs (Iris's cloudHeight uniform) both read this. */
@@ -168,7 +179,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
                     sampleColumn(x, z, 1, consumer);
                 }
 
-                /** Cubature 2026-10-25 API; without @Override Riven still builds against older pins. */
+                @Override
                 public void sampleColumn(int x, int z, int footprint, ColumnConsumer consumer) {
                     if (!ClimateBiomeProvider.inWorld(x, z)) {
                         consumer.begin(Biomes.PLAINS);
@@ -208,10 +219,8 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             return true;
         }
 
-        /**
-         * Warms the shared native column for a Cubature generation worker (Cubature 2026-10-23 API;
-         * no @Override so Riven still builds against older Cubature, where this is never called).
-         */
+        /** Warms the shared native column for a Cubature generation worker. */
+        @Override
         public void prepareColumn(int columnX, int columnZ) {
             long west = (long) columnX * 16, north = (long) columnZ * 16;
             if (ClimateBiomeProvider.inWorld(west, north)
@@ -246,7 +255,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             return biomes.maps.terrain.prepareRegion(regionX, regionZ);
         }
 
-        @SuppressWarnings("deprecation") // Preserve the older CC generator entry point.
+        @SuppressWarnings("deprecation") // ICubeGenerator requires this deprecated entry point.
         @Override
         public CubePrimer generateCube(int x, int y, int z) {
             return generateCube(x, y, z, new CubePrimer());
