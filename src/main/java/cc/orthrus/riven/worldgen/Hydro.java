@@ -513,10 +513,20 @@ public final class Hydro
     boolean prepareRegion(int cellX, int cellZ) {
         int held = 0;
         for (int i = 0; i < memo.length(); i++) if (memo.get(i) != null) held++;
-        if (held > cacheCapacity / 4) return false;
+        boolean room = held <= cacheCapacity / 4;
+        // Without a regional store, networks live only in memory, so a full plan memo declines.
+        if (!room && !drainage.bakes()) return false;
         double x = (cellX + .5) * cellBlocks, z = (cellZ + .5) * cellBlocks;
-        if (!drainage.prepareAround(x, z, cellBlocks * Math.sqrt(.5))) return false;
-        plan(cellX, cellZ);
+        // A baked region covers what its plan reads: columns of this cell and of the neighbours
+        // it plans, each asking clearance up to one owner width beyond its reach.
+        double margin =
+                drainage.bakes()
+                        ? cellBlocks * (1.5 * Math.sqrt(2) + 1)
+                        : cellBlocks * Math.sqrt(.5);
+        if (!drainage.prepareAround(x, z, margin)) return false;
+        // With a store the networks are baked to disk; the cell's own plan waits for demand when
+        // the plan memo has no room.
+        if (room) plan(cellX, cellZ);
         return true;
     }
 

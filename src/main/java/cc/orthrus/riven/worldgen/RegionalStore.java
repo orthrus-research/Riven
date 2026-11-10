@@ -124,6 +124,20 @@ public final class RegionalStore implements AutoCloseable {
         }
     }
 
+    /**
+     * Whether an entry file exists for the key, without reading or validating it: a corrupt or
+     * stale file still reads as a miss in {@link #get}. For callers that only skip rebuilding.
+     */
+    public boolean contains(String kind, long x, long z, Codec<?> codec) {
+        Path file = path(kind, x, z, codec);
+        lifetime.readLock().lock();
+        try {
+            return !closed && Files.isRegularFile(file);
+        } finally {
+            lifetime.readLock().unlock();
+        }
+    }
+
     public Statistics statistics() {
         return new Statistics(hits.get(), misses.get(), writes.get(), failedWrites.get());
     }

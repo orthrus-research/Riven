@@ -152,6 +152,7 @@ class QuickRuleTests(unittest.TestCase):
             "tools/checks/CubePrimerFixture.java": ["quality", "riven-build"],
             "tools/checks/CubeClassificationCheck.java": ["quality", "riven-build"],
             "tools/checks/DrainagePruneCheck.java": ["quality", "drainage-prune"],
+            "tools/checks/RegionalBakeCheck.java": ["quality", "regional-bake"],
             "tools/checks/RegionalCacheProbeReportingCheck.java": atlas,
             "tools/checks/StoredAtlasParityCheck.java": atlas,
             "tools/atlas-golden.json": atlas,

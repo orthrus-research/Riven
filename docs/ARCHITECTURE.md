@@ -32,8 +32,13 @@ Preview columns build on their own thread alone
 much later, and on the shared pool those would hold the helpers native builds wait for. Cubature also prepares regional plans ahead of the
 players through `ICubeGenerator.prepareRegion` ("Preparation within bounds" in DECISIONS.md):
 `TerrainMap.prepareRegion` builds one hydrology owner cell's drainage networks and plan, then its
-coast forms and sediment, and declines once a memo would pass its headroom: a quarter of a
-set-associative memo, half the drainage memo, or 10 MB x layout squared of networks. A `CellMemo`
+coast forms and sediment. With a regional store (a world on a host that offers one) it bakes: it
+writes every network the cell's plan and its neighbours' could read (the cell, 1.5 cells of
+neighbours and one owner width of clearance, plus reach) straight to the store, keeps none in the
+drainage memo and skips those already stored, so preparation is bounded by disk rather than heap;
+the cell's own plan waits for demand while the plan memo has no room. Without a store it declines
+once a memo would pass its headroom: a quarter of a set-associative memo, half the drainage memo,
+or 10 MB x layout squared of networks. A `CellMemo`
 keeps each cell in either of two slots and a miss replaces the older entry, so cells no longer read age out and
 two cells sharing a slot do not rebuild each other on every read (with a fixed victim, two
 continents' drainage networks did, and a 16 km check on seed 5 ran for hours). A drainage query

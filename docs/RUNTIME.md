@@ -296,8 +296,8 @@ jobs; `git push --no-verify` skips the check.
 | --- | --- |
 | `python tools/setup.py` (`riven.ps1 setup`) | One-time preparation of a clone: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports |
 | `riven.ps1 quick` | Before a commit: the `ci` jobs the changes since HEAD (Riven's and Cubature's) can affect, by the `[quick]` rules in `tools/actions.toml`; a path no rule matches takes every `ci` job |
-| `riven.ps1 check` | `quality`, `regional-store`, `drainage-prune`, `atlas-golden`, `definitions` and `sample-history` |
-| `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `regional-store`, `drainage-prune`, `atlas-golden`, `definitions`, `sample-history` |
+| `riven.ps1 check` | `quality`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions` and `sample-history` |
+| `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history` |
 | `python tools/actions.py ci --if-needed` | The `ci` jobs that have not passed for the current trees |
 | `riven.ps1 full` | `ci` plus `smoke`, a native timing capture of the run's frozen artifacts |
 | `python tools/actions.py --list` / `<job> ...` / `--dry-run` | Inspect or run individual jobs |
@@ -354,6 +354,9 @@ nested lighting or encoding twice.
   fresh one in every field except the scratch and count-bounded arrays the check names.
 - The `drainage-prune` job runs `DrainagePruneCheck` at layout scales 1 and 4: drainage answers
   over a grid and scattered columns, with continent pruning on and off, must be bit-identical.
+- The `regional-bake` job runs `RegionalBakeCheck` at layout scales 1 and 4: preparing a region
+  with a store writes its networks to disk, builds none through the memory memo, writes nothing
+  when repeated, and a baked network reads back with the same bytes as a fresh build.
 - The `regional-store` job runs `RegionalStoreCheck` on disposable fixture directories. It
   checks complete definition identities, corrupt and oversized entries, raw floating bits,
   concurrent publication and mapped-read lifetime without constructing terrain. It also compiles

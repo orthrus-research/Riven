@@ -1268,6 +1268,11 @@ final class Drainage {
      * preparedBytes}, so preparation never evicts what demand needs (timing only).
      */
     boolean prepareAround(double x, double z, double margin) {
+        RegionalStore store = regionalStore;
+        if (store != null) {
+            bakeAround(x, z, margin, store);
+            return true;
+        }
         long[] held = new long[2];
         memo.forEachHeld(
                 n -> {
@@ -1280,6 +1285,34 @@ final class Drainage {
         long[] pairs = Arrays.copyOf(q.cells, 2 * cells);
         pool.forEach(cells, k -> network(pairs[2 * k], pairs[2 * k + 1]));
         return true;
+    }
+
+    /** Whether preparation bakes networks to the regional store instead of the memory memo. */
+    boolean bakes() {
+        return regionalStore != null;
+    }
+
+    /**
+     * Preparation with a regional store: builds each candidate network neither held in memory nor
+     * stored, and writes it to the store without keeping it in the memo, so preparation never
+     * displaces what demand holds and its reach is bounded by disk instead of heap. Demand loads a
+     * baked network from the store. A network demand builds at the same moment is built twice,
+     * which changes only time.
+     */
+    private void bakeAround(double x, double z, double margin, RegionalStore store) {
+        ContinentalOutlineMap.CellScratch q = query.get();
+        // Queries within margin ask at most their own reach beyond it.
+        int cells = candidates(x, z, margin + reach, q);
+        long[] pairs = Arrays.copyOf(q.cells, 2 * cells);
+        pool.forEach(
+                cells,
+                k -> {
+                    long gx = pairs[2 * k], gz = pairs[2 * k + 1];
+                    int ix = (int) gx, iz = (int) gz;
+                    if (memo.holds(ix, iz) || store.contains("drainage", ix, iz, NETWORK_CODEC))
+                        return;
+                    store.put("drainage", ix, iz, build(gx, gz), NETWORK_CODEC);
+                });
     }
 
     /** Routing relief at a column: gentle multi-scale relief that gathers flats into valleys. */
