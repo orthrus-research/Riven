@@ -238,10 +238,12 @@ public final class ClimateForcingMap {
                 tz,
                 () -> {
                     double[] t = new double[TILE * TILE];
+                    // One sample for the whole tile: its scratch keeps the continental cells the
+                    // nodes share (a fresh sample per node rebuilt every candidate cell).
+                    ClimateStructureMap.Sample s = new ClimateStructureMap.Sample();
                     for (int j = 0; j < TILE; j++)
                         for (int i = 0; i < TILE; i++) {
                             int ix = (tx << TILE_SHIFT) + i, iz = (tz << TILE_SHIFT) + j;
-                            ClimateStructureMap.Sample s = new ClimateStructureMap.Sample();
                             structure.sample(ix * latticeBlocks, iz * latticeBlocks, s);
                             t[j << TILE_SHIFT | i] = s.obstructionAboveDatum();
                         }
