@@ -60,17 +60,18 @@ capture` passes `--dh-workers`, `--dh-ignore-server-health` and `--dh-native-fee
 
 The pinned Cubature generates cubes and prepares columns on worker threads for Riven,
 which declares concurrent generation (`concurrentGenerationThreads`: a quarter of the processors,
-1 to 4); the server thread installs them within `concurrentGenerationTickMillis` (20 ms). Fresh
-instances set Cubature `deliveryMode=PREFETCH` (`--cubature-delivery`): incremental maintenance,
+1 to 4); the server thread installs them within `concurrentGenerationTickMillis` (20 ms).
+Interactive preparations set Cubature `deliveryMode=PREFETCH` (`--cubature-delivery`): incremental maintenance,
 continuous autosave discovery and ahead preparation. Observation captures, including the
 `full` workflow's smoke, default to `BASELINE`; `riven_observe.py capture
 --delivery-experiment prefetch` selects the other mode explicitly. Compare captures made in
-the same delivery mode. A teleport (`/tp` and any other
-`setPlayerLocation`) into a column that is neither loaded nor saved waits while the workers
-prepare that column, at most 600 ticks, and the player stays put meanwhile; before, the server
-thread generated it in one tick (2.0 s with Riven's drainage networks, every player stalled).
-Measured with `tools/measure_pipeline.py`: the first tick after the teleport 37-43 ms, the player
-arrives after 2.3 s, tick p95 47 to 56 ms while the old position's view stays loaded. Respawn,
+the same delivery mode. A teleport (`/tp` and any other `setPlayerLocation`) into an unprepared
+column waits while workers prepare its destination, with urgent regional preparation ahead of
+ordinary work. It remains held until ready, replaced, abandoned or explicitly forced. Players
+receive a preparation message at most once a second; waits beyond 600 ticks produce a diagnostic
+instead of forcing generation on the server thread. The optional retained-column contract keeps
+prepared data through installation. Generators without that capability keep their existing
+readiness and failure path; worlds without generation workers arrive immediately. Respawn,
 portal and join arrivals still load their column at once.
 
 DH pauses its world-generation executor while the server is unhealthy (average tick 25 ms or more,
@@ -368,5 +369,11 @@ environment.
 
 ## Known runtime warnings
 
-Cubature logs no startup warning; held maps in cubic worlds remain unqualified. The Unimined
-Gradle plugin prints deprecation notices.
+The pinned build passed stationary timing and a 60 s, 16 blocks/s spectator flight in BASELINE
+with four DH workers per JVM on Java 26.0.2.1, using 8 GiB/ZGC. Independent tick totals and phase
+counters agreed within a 1% weighted gap. Destination teleports remained held during preparation;
+arrival was first observed 70-77 s after target-view capture start and full client residency by
+93 s. Captured join/flight ticks reached 145 ms, startup reached 546 ms, and an explicit post-flight
+save/purge/flush tick reached 1.861 s, including 1.441 s of blocking flush. Existing refmap warnings
+and controlled-shutdown connection resets remain; client rendering and held maps are unqualified.
+Unimined prints deprecation notices.
