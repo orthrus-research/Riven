@@ -432,12 +432,14 @@ environment.
 
 ## Known runtime warnings
 
-The recorded native timing predates connected drainage storage and describes the earlier Riven
-build with the same Cubature pin. That capture passed stationary timing and a 60 s, 16 blocks/s
-spectator flight in BASELINE with four DH workers per JVM on Java 26.0.2.1, using 8 GiB/ZGC.
-Independent tick totals and phase counters agreed within a 1% weighted gap. Destination teleports remained held during preparation;
-arrival was first observed 70-77 s after target-view capture start and full client residency by
-93 s. Captured join/flight ticks reached 145 ms, startup reached 546 ms, and an explicit post-flight
-save/purge/flush tick reached 1.861 s, including 1.441 s of blocking flush. Existing refmap warnings
+The recorded native timing is a stationary capture of this Riven build with this Cubature pin
+(seed 8675309, BASELINE, four DH workers per JVM, Java 26.0.2.1, 8 GiB/ZGC): full-view server tick
+p95 31.2 ms and worst 143 ms, frame p95 11.0 ms, idle tick p95 4.7 ms. Against the previous pin in
+the same session, first light plus light queue over the full view fell from 4.0 s to 1.3 s and
+install time from 0.22 to 0.12 ms per cube; saved blocks, storage and completed light matched,
+apart from surface water that random ticks froze or thawed differently. Arrival, flight and save
+were last measured on the previous pin: arrival first observed 70-77 s after target-view capture
+start, join/flight ticks up to 145 ms, startup up to 546 ms, and an explicit post-flight
+save/purge/flush tick of 1.861 s, including 1.441 s of blocking flush. Existing refmap warnings
 and controlled-shutdown connection resets remain; client rendering and held maps are unqualified.
 Unimined prints deprecation notices.

@@ -4,14 +4,14 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "63c5c4841b07a56fdaf9e73029ec7d597adb18f9",
+  "commit": "2a0130c0100e206c28b7839d94396400ca115fb7",
   "checkout": "../Cubature",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
-  "sha256": "7ae776d85bf9879ad0e9df010d7bfb50c349c2f1ced46d9a6096f56aa5f45ce3",
+  "sha256": "c389104cb9bf9cdbe680573f2e65bd90268957da4b7841948f8339210a71b821",
   "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
-  "sourcesSha256": "e1a053f310a603b6cea49e0ff697ea6bce093306d77e477ce0c9f182879d79b3",
-  "javaSourceFilesMatchedToArtifactSources": 432,
+  "sourcesSha256": "b79da1dc9f9427f0fbe04fa075e4249827ff8b50627f8e17ceb074eb0370478b",
+  "javaSourceFilesMatchedToArtifactSources": 435,
   "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
   "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
   "compatibility": {
@@ -21,13 +21,13 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Built from this clean Cubature main commit as Java 25 bytecode; all production Java sources match the archive and core and matching-artifact lab tests pass on Java 26. Native stationary timing and a 60 s scripted flight passed in BASELINE with four DH workers per JVM; tick accounting was independently paired.",
-    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; optional cached cube classification and surface-band contracts; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting paired with an independent lab timer and a separate first-minute startup observer. Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
+    "status": "Built from this clean Cubature commit as Java 25 bytecode; all 435 Java sources in the sources artifact match the commit, and core (448) and matching-artifact lab (100) tests pass on Java 26. A native stationary capture passed in BASELINE with four DH workers per JVM.",
+    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting and client native-capture counters. Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
       "Client rendering remains unqualified"
     ],
-    "knownExistingWarning": "Destination teleports remained held during preparation: arrival was first observed 70-77 s after target-view capture start, with full client residency by 93 s. Startup ticks reached 546 ms; explicit save/purge/flush produced a 1.861 s tick. Refmap warnings and connection resets during controlled client shutdown remain. Client rendering and held maps remain unqualified."
+    "knownExistingWarning": "Arrival, flight and save were last measured on the previous pin: arrival first observed 70-77 s after target-view capture start; startup ticks up to 546 ms; an explicit save/purge/flush tick of 1.861 s. Refmap warnings and connection resets during controlled client shutdown remain. Client rendering and held maps remain unqualified."
   },
   "licensing": {
     "default": "MIT with separately licensed components",
