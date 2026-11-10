@@ -9,10 +9,10 @@ atlas_python = ".local/atlas-venv/Scripts/python.exe"
 observability_python = ".local/observability-venv/Scripts/python.exe"
 
 [workflows]
-check = ["quality", "atlas-golden", "definitions", "sample-history"]
+check = ["quality", "regional-store", "atlas-golden", "definitions", "sample-history"]
 build = ["riven-build", "cubature-build"]
-ci = ["quality", "riven-build", "cubature-build", "atlas-golden", "definitions", "sample-history"]
-full = ["quality", "riven-build", "cubature-build", "atlas-golden", "definitions", "sample-history", "smoke"]
+ci = ["quality", "riven-build", "cubature-build", "regional-store", "atlas-golden", "definitions", "sample-history"]
+full = ["quality", "riven-build", "cubature-build", "regional-store", "atlas-golden", "definitions", "sample-history", "smoke"]
 
 [jobs.quality]
 description = "Formatting, lint, types, both-loader compile, content assets and the Riven and Cubature tool tests"
@@ -47,6 +47,12 @@ steps = [
   { name = "definitions", run = ["{atlas_python}", "tools/run_check.py", "DefinitionsCheck", "src/main/resources", "."] },
 ]
 
+[jobs.regional-store]
+description = "Derived-file identity, corruption, primitive bits, atomic publication and mapped-read lifetime without constructing terrain"
+steps = [
+  { name = "regional file store", run = ["{atlas_python}", "tools/run_check.py", "RegionalStoreCheck", "{frozen}/regional-store-fixtures"] },
+]
+
 [jobs.sample-history]
 description = "A reused terrain sample reports what a fresh one does (tools/checks/SampleHistoryCheck)"
 steps = [
@@ -72,6 +78,12 @@ riven = [
   { paths = ["docs/**", "tools/tours/**", ".github/**", "CONTRIBUTING.md", "THIRD-PARTY.md", ".editorconfig"], jobs = [] },
   { paths = ["CHANGELOG.md", "README.md"], jobs = ["definitions"] },
   { paths = ["LICENSE", "NOTICE.md", "src/main/resources/assets/**"], jobs = ["quality", "riven-build"] },
+  { paths = [
+      "src/main/java/cc/orthrus/riven/worldgen/RegionalData.java",
+      "src/main/java/cc/orthrus/riven/worldgen/RegionalIdentity.java",
+      "src/main/java/cc/orthrus/riven/worldgen/RegionalStore.java",
+      "tools/checks/RegionalStoreCheck.java",
+    ], jobs = ["quality", "riven-build", "regional-store"] },
   { paths = ["tools/atlas/**", "tools/atlas_golden.py", "tools/terrain_atlas.py", "tools/run_check.py", "tools/checks/**", "tools/atlas-golden.json"], jobs = ["quality", "atlas-golden", "definitions", "sample-history"] },
   { paths = ["tools/build_riven.py"], jobs = ["quality", "riven-build"] },
   { paths = ["tools/**/*.py", "tools/content/**", "pyproject.toml"], jobs = ["quality"] },

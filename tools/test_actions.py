@@ -122,6 +122,7 @@ class QuickRuleTests(unittest.TestCase):
 
     def test_riven_paths(self):
         atlas = ["quality", "atlas-golden", "definitions", "sample-history"]
+        store = ["quality", "riven-build", "regional-store"]
         cases = {
             "docs/ART-REQUISITIONS.md": [],
             "tools/tours/caves-8675309.json": [],
@@ -131,12 +132,19 @@ class QuickRuleTests(unittest.TestCase):
             "src/main/resources/assets/riven/textures/blocks/a.png": ["quality", "riven-build"],
             "tools/atlas/build.py": atlas,
             "tools/checks/TerrainAtlas.java": atlas,
+            "src/main/java/cc/orthrus/riven/worldgen/RegionalData.java": store,
+            "src/main/java/cc/orthrus/riven/worldgen/RegionalIdentity.java": store,
+            "src/main/java/cc/orthrus/riven/worldgen/RegionalStore.java": store,
+            "tools/checks/RegionalStoreCheck.java": store,
             "tools/atlas-golden.json": atlas,
             "tools/build_riven.py": ["quality", "riven-build"],
             "tools/actions.py": ["quality"],
             "tools/observability/profiles.py": ["quality"],
             "tools/content/riven-content-source.json": ["quality"],
             "src/main/java/riven/worldgen/TerrainMap.java": self.ci,
+            "src/main/java/cc/orthrus/riven/worldgen/Drainage.java": self.ci,
+            "src/main/java/cc/orthrus/riven/worldgen/GenerationMaps.java": self.ci,
+            "src/main/java/cc/orthrus/riven/worldgen/RegionalTerrainPasses.java": self.ci,
             "src/main/resources/riven-terrain.json": self.ci,
             "tools/actions.toml": self.ci,
             "dev/cc.lock.json": self.ci,
@@ -156,6 +164,14 @@ class QuickRuleTests(unittest.TestCase):
         self.assertEqual(
             self.jobs("riven", "docs/RUNTIME.md", "README.md", "tools/build_riven.py"),
             ["quality", "riven-build", "definitions"],
+        )
+        self.assertEqual(
+            self.jobs(
+                "riven",
+                "src/main/java/cc/orthrus/riven/worldgen/RegionalStore.java",
+                "src/main/java/cc/orthrus/riven/worldgen/Drainage.java",
+            ),
+            self.ci,
         )
 
 

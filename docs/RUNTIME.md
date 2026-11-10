@@ -283,8 +283,8 @@ jobs; `git push --no-verify` skips the check.
 | --- | --- |
 | `python tools/setup.py` (`riven.ps1 setup`) | One-time preparation of a clone: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports |
 | `riven.ps1 quick` | Before a commit: the `ci` jobs the changes since HEAD (Riven's and Cubature's) can affect, by the `[quick]` rules in `tools/actions.toml`; a path no rule matches takes every `ci` job |
-| `riven.ps1 check` | `quality`, `atlas-golden`, `definitions` and `sample-history` |
-| `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `atlas-golden`, `definitions`, `sample-history` |
+| `riven.ps1 check` | `quality`, `regional-store`, `atlas-golden`, `definitions` and `sample-history` |
+| `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `regional-store`, `atlas-golden`, `definitions`, `sample-history` |
 | `python tools/actions.py ci --if-needed` | The `ci` jobs that have not passed for the current trees |
 | `riven.ps1 full` | `ci` plus `smoke`, a native timing capture of the run's frozen artifacts |
 | `python tools/actions.py --list` / `<job> ...` / `--dry-run` | Inspect or run individual jobs |
@@ -317,6 +317,11 @@ nested lighting or encoding twice.
   job runs `SampleHistoryCheck` on six seeds: every stage result in `TerrainMap.Sample` is
   registered with one phase, and a sample reused across 640 shuffled land and sea visits equals a
   fresh one in every field except the scratch and count-bounded arrays the check names.
+- The `regional-store` job runs `RegionalStoreCheck` on disposable fixture directories. It
+  checks complete definition identities, corrupt and oversized entries, raw floating bits,
+  concurrent publication and mapped-read lifetime without constructing terrain. Only the three
+  standalone storage helpers and their checker have the narrow quality/build/filesystem quick
+  rule; generator consumers and changes to the workflow configuration retain full validation.
 - `run_check.py RegionalCacheProbe out=DIR scale=1|4 players=N [spread=dispersed|clustered]`
   measures what Riven's memos must hold under N players' demand: Distant Horizons' 4,096-block
   reach every 32 blocks plus the native view every 4, nearest first, on 12 threads, inside the
