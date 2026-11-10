@@ -317,8 +317,10 @@ The `OTHER` phase closes the full server-tick envelope, so phases can be added w
 nested lighting or encoding twice. Besides cube installation, lighting, sending, encoding, DH feed,
 unload/save, arrivals and regional preparation, phases separate random ticks (`RANDOM_TICK`), the
 player cube map's own bookkeeping (`PLAYER_MAP`), queued packet handlers with the network tick
-(`NETWORK`) and Forge's server and world tick events (`TICK_EVENTS`, where the lab observer runs);
-`OTHER` is under 4% of flight and 2% of full-view tick time. `riven_observe.py capture --jfr`
+(`NETWORK`) and Forge's server and world tick events (`TICK_EVENTS`, where the lab observer runs).
+Only the lab charges `NETWORK` and `TICK_EVENTS`, by wrapping those vanilla call sites; the mod adds
+no mixin there, because other mods may overwrite or move them. In the creative flight `OTHER`
+is 11% of tick time and in the full view 3%. `riven_observe.py capture --jfr`
 records both JVMs with JFR's profile settings for attributing a phase further.
 
 - `tools/build_riven.py [--diagnostics] [--freeze LABEL]` builds Riven for Cleanroom and
