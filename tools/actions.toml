@@ -9,10 +9,10 @@ atlas_python = ".local/atlas-venv/Scripts/python.exe"
 observability_python = ".local/observability-venv/Scripts/python.exe"
 
 [workflows]
-check = ["quality", "regional-store", "atlas-golden", "definitions", "sample-history"]
+check = ["quality", "regional-store", "drainage-prune", "atlas-golden", "definitions", "sample-history"]
 build = ["riven-build", "cubature-build"]
-ci = ["quality", "riven-build", "cubature-build", "regional-store", "atlas-golden", "definitions", "sample-history"]
-full = ["quality", "riven-build", "cubature-build", "regional-store", "atlas-golden", "definitions", "sample-history", "smoke"]
+ci = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "atlas-golden", "definitions", "sample-history"]
+full = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "atlas-golden", "definitions", "sample-history", "smoke"]
 
 [jobs.quality]
 description = "Formatting, lint, types, both-loader compile, content assets and the Riven and Cubature tool tests"
@@ -82,6 +82,13 @@ for main, fixture, arguments in [
 ''', "{riven}/tools", "{riven}/src/main", "{riven}/tools/checks/RegionalStoreCheck.java", "{frozen}/regional-graph-fixtures", "{riven}/tools/checks/DrainageCodecCheck.java", "{riven}/src/main/java/cc/orthrus/riven/RegionalOwnership.java", "{riven}/src/main/java/cc/orthrus/riven/RegionalCleanup.java", "{riven}/tools/checks/RegionalOwnershipCheck.java", "{riven}/tools/checks/RegionalCleanupCheck.java"] },
 ]
 
+[jobs.drainage-prune]
+description = "Drainage answers are unchanged by skipping continents too far to reach a column (tools/checks/DrainagePruneCheck)"
+steps = [
+  { name = "prune, scale 1", run = ["{atlas_python}", "tools/run_check.py", "DrainagePruneCheck", "8675309", "1", "8104", "4552", "1000", "250"] },
+  { name = "prune, scale 4", run = ["{atlas_python}", "tools/run_check.py", "DrainagePruneCheck", "8675309", "4", "64", "-64", "1000", "250"] },
+]
+
 [jobs.sample-history]
 description = "A reused terrain sample reports what a fresh one does (tools/checks/SampleHistoryCheck)"
 steps = [
@@ -113,6 +120,7 @@ riven = [
       "tools/checks/RegionalOwnershipCheck.java",
       "tools/checks/RegionalCleanupCheck.java",
     ], jobs = ["quality", "regional-store"] },
+  { paths = ["tools/checks/DrainagePruneCheck.java"], jobs = ["quality", "drainage-prune"] },
   { paths = [
       "tools/checks/CubePrimerBootstrapCheck.java",
       "tools/checks/CubePrimerFixture.java",

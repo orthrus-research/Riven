@@ -669,6 +669,20 @@ final class Drainage {
 
     private final CellMemo<Network> memo;
 
+    /** Each continent's own cells on its network grid, for pruning; pure, so eviction is timing. */
+    private final CellMemo<Land> lands;
+
+    /**
+     * How far any channel point, mouth or drainage lake cell can lie from the centre of a cell its
+     * continent owns, beyond the grid cells themselves: the largest meander offset. Course points
+     * lie within their cells, a mouth in the marine cell beside the last own cell, junctions on
+     * another course of the same network, and a lake's cells and ring within two cells of land.
+     */
+    private final double strayBlocks;
+
+    /** Whether queries skip continents whose own land is too far to matter (checks turn it off). */
+    private boolean pruning = true;
+
     /** Heap of networks past which preparation declines (demand still builds them). */
     private final long preparedBytes;
 
@@ -789,9 +803,18 @@ final class Drainage {
         braidWave = Rules.number(braids, "wavelengthInBeds", 1, 64);
         binBlocks = Rules.number(j, "binBlocks", 16, 1024);
         memo = new CellMemo<>((int) Rules.number(j, "continentMemo", 4, 4096));
+        lands = new CellMemo<>(memo.capacity());
         // The farthest a channel's water, bank or valley reaches beyond its centreline.
         double widest = widthMax * .5 * Math.max(estuaryFlare, 1 + braidSpan);
         reach = widest * (1 + 2 * bankScale) + 2 + Math.max(valleyCap, valleyRatio * maxCut);
+        // meander: offset = amplitude * wave * flat * strength * fade * (sin + skew sin 3), where
+        // flat, strength and fade are at most 1, and wave = max(minimumWave, meanderWaves * width)
+        // * (1 + .3 drift) with |drift| <= 1 and width at most twice the widest bed.
+        strayBlocks =
+                amplitude
+                        * Math.max(minimumWave, meanderWaves * 2 * widest)
+                        * 1.3
+                        * (1 + Math.abs(skew));
     }
 
     /**
@@ -802,7 +825,9 @@ final class Drainage {
      */
     Hit nearest(double x, double z, Hit wet, Hit near, double mouthRadius, double[] mouth) {
         ContinentalOutlineMap.CellScratch q = query.get();
-        int cells = outline.continentCells(x, z, reach, q);
+        // Candidates come from the support within reach, as before; a network is kept while its
+        // channels or a mouth (within a cell of its land) could lie within reach or mouthRadius.
+        int cells = candidates(x, z, reach, Math.max(reach, mouthRadius), q);
         prepare(q, cells);
         double wetScore = Double.POSITIVE_INFINITY, nearScore = Double.POSITIVE_INFINITY;
         double levee = Double.NEGATIVE_INFINITY;
@@ -932,7 +957,7 @@ final class Drainage {
      */
     double clearance(double x, double z, double clearance) {
         ContinentalOutlineMap.CellScratch q = query.get();
-        int cells = outline.continentCells(x, z, clearance + reach, q);
+        int cells = candidates(x, z, clearance + reach, q);
         prepare(q, cells);
         for (int k = 0; k < cells; k++) {
             Network n = network(q.cells[2 * k], q.cells[2 * k + 1]);
@@ -1044,6 +1069,139 @@ final class Drainage {
     }
 
     /**
+     * A continent's own cells on its network grid, decided by the same continental samples at the
+     * same points as {@link #build}, with an 8 x 8-cell summary for distance queries.
+     */
+    private static final class Land {
+        static final Land NONE = new Land(1, 0, 0, 0, 0, new long[0], new long[0]);
+        private static final int BLOCK = 8;
+        final double cell;
+        final int x0, z0, nx, nz;
+        private final long[] own, blocks;
+
+        Land(double cell, int x0, int z0, int nx, int nz, long[] own, long[] blocks) {
+            this.cell = cell;
+            this.x0 = x0;
+            this.z0 = z0;
+            this.nx = nx;
+            this.nz = nz;
+            this.own = own;
+            this.blocks = blocks;
+        }
+
+        private boolean owns(int i, int j) {
+            int k = j * nx + i;
+            return (own[k >>> 6] & 1L << k) != 0;
+        }
+
+        private boolean blockOwns(int bi, int bj) {
+            int k = bj * ((nx + BLOCK - 1) / BLOCK) + bi;
+            return (blocks[k >>> 6] & 1L << k) != 0;
+        }
+
+        /** Whether an own cell's centre lies within {@code radius} of (x, z). */
+        boolean within(double x, double z, double radius) {
+            if (nx == 0) return false;
+            int i0 = Math.max(0, (int) Math.floor((x - radius) / cell) - x0);
+            int i1 = Math.min(nx - 1, (int) Math.floor((x + radius) / cell) - x0);
+            int j0 = Math.max(0, (int) Math.floor((z - radius) / cell) - z0);
+            int j1 = Math.min(nz - 1, (int) Math.floor((z + radius) / cell) - z0);
+            double r2 = radius * radius;
+            for (int bj = j0 / BLOCK; bj <= j1 / BLOCK; bj++)
+                for (int bi = i0 / BLOCK; bi <= i1 / BLOCK; bi++) {
+                    if (!blockOwns(bi, bj)) continue;
+                    for (int j = Math.max(j0, bj * BLOCK);
+                            j <= Math.min(j1, bj * BLOCK + BLOCK - 1);
+                            j++)
+                        for (int i = Math.max(i0, bi * BLOCK);
+                                i <= Math.min(i1, bi * BLOCK + BLOCK - 1);
+                                i++) {
+                            if (!owns(i, j)) continue;
+                            double dx = (x0 + i + .5) * cell - x, dz = (z0 + j + .5) * cell - z;
+                            if (dx * dx + dz * dz <= r2) return true;
+                        }
+                }
+            return false;
+        }
+    }
+
+    private Land land(long gx, long gz) {
+        return lands.get((int) gx, (int) gz, () -> buildLand(gx, gz));
+    }
+
+    private Land buildLand(long gx, long gz) {
+        Grid g = grid(gx, gz);
+        if (g == null) return Land.NONE;
+        int nx = g.nx, nz = g.nz, bx = (nx + Land.BLOCK - 1) / Land.BLOCK;
+        int by = (nz + Land.BLOCK - 1) / Land.BLOCK;
+        long[] own = new long[(nx * nz + 63) >>> 6], blocks = new long[(bx * by + 63) >>> 6];
+        boolean[][] rows = new boolean[nz][];
+        pool.forEach(
+                nz,
+                j -> {
+                    ContinentalMap.Sample c = new ContinentalMap.Sample();
+                    boolean[] row = new boolean[nx];
+                    for (int i = 0; i < nx; i++) {
+                        continents.sample((g.x0 + i + .5) * g.cell, (g.z0 + j + .5) * g.cell, c);
+                        row[i] = !c.marine && c.owner == g.owner;
+                    }
+                    rows[j] = row;
+                });
+        for (int j = 0; j < nz; j++)
+            for (int i = 0; i < nx; i++)
+                if (rows[j][i]) {
+                    int k = j * nx + i, b = (j / Land.BLOCK) * bx + i / Land.BLOCK;
+                    own[k >>> 6] |= 1L << k;
+                    blocks[b >>> 6] |= 1L << b;
+                }
+        return new Land(g.cell, g.x0, g.z0, nx, nz, own, blocks);
+    }
+
+    /** Tools: whether queries skip continents whose land cannot reach them (on by default). */
+    void pruning(boolean on) {
+        pruning = on;
+    }
+
+    /**
+     * The query's continent cells: the support query within {@code margin}, keeping only
+     * continents with an own cell centre within margin plus the stray bound plus three cells (the
+     * cell itself and a mouth's or a lake ring's neighbour). A skipped network holds nothing
+     * within margin, so the query's result is unchanged, and its continent's hydrology is never
+     * built for this column.
+     */
+    private int candidates(double x, double z, double margin, ContinentalOutlineMap.CellScratch q) {
+        return candidates(x, z, margin, margin, q);
+    }
+
+    /** As above, keeping networks whose land lies within {@code reachable} of the column. */
+    private int candidates(
+            double x,
+            double z,
+            double margin,
+            double reachable,
+            ContinentalOutlineMap.CellScratch q) {
+        int cells = outline.continentCells(x, z, margin, q);
+        if (!pruning || cells == 0) return cells;
+        int missing = 0;
+        for (int k = 0; k < cells; k++)
+            if (!lands.holds((int) q.cells[2 * k], (int) q.cells[2 * k + 1])) missing++;
+        if (missing > 1) {
+            long[] pairs = Arrays.copyOf(q.cells, 2 * cells);
+            pool.forEach(cells, k -> land(pairs[2 * k], pairs[2 * k + 1]));
+        }
+        int kept = 0;
+        for (int k = 0; k < cells; k++) {
+            long cx = q.cells[2 * k], cz = q.cells[2 * k + 1];
+            Land l = land(cx, cz);
+            if (!l.within(x, z, reachable + strayBlocks + 3 * l.cell)) continue;
+            q.cells[2 * kept] = cx;
+            q.cells[2 * kept + 1] = cz;
+            kept++;
+        }
+        return kept;
+    }
+
+    /**
      * Builds the networks of a query's continent cells together when more than one is missing,
      * so a column waits for the slowest build instead of their sum (timing only).
      */
@@ -1095,7 +1253,7 @@ final class Drainage {
                 });
         if (held[0] > memo.capacity() / 2 || held[1] > preparedBytes) return false;
         ContinentalOutlineMap.CellScratch q = query.get();
-        int cells = outline.continentCells(x, z, margin, q);
+        int cells = candidates(x, z, margin, q);
         long[] pairs = Arrays.copyOf(q.cells, 2 * cells);
         pool.forEach(cells, k -> network(pairs[2 * k], pairs[2 * k + 1]));
         return true;
@@ -1123,7 +1281,15 @@ final class Drainage {
         return Math.max(runoffMin, Math.min(runoffMax, (moisture - runoffDry) / runoffSpan));
     }
 
-    private Network build(long gx, long gz) {
+    /**
+     * A continent's network grid: owner, its land box (refined by the coarse scan), cell size,
+     * stream head and the cells' index box.
+     */
+    private record Grid(
+            long owner, double[] box, double cell, double head, int x0, int z0, int nx, int nz) {}
+
+    /** The grid a continent's network is built on, or null when the continent holds no land. */
+    private Grid grid(long gx, long gz) {
         ContinentalOutlineMap.CellScratch q = new ContinentalOutlineMap.CellScratch();
         double[] box = new double[4];
         long owner = outline.continentBounds(gx, gz, q, box);
@@ -1159,7 +1325,7 @@ final class Drainage {
             lz0 = Math.min(lz0, zs[r]);
             lz1 = Math.max(lz1, zs[r]);
         }
-        if (lx0 > lx1) return Network.EMPTY;
+        if (lx0 > lx1) return null;
         box[0] = Math.max(box[0], lx0 - 2 * coarse);
         box[1] = Math.max(box[1], lz0 - 2 * coarse);
         box[2] = Math.min(box[2], lx1 + 2 * coarse);
@@ -1171,6 +1337,16 @@ final class Drainage {
         int x0 = (int) Math.floor(box[0] / cell), z0 = (int) Math.floor(box[1] / cell);
         int nx = (int) Math.floor(box[2] / cell) - x0 + 1,
                 nz = (int) Math.floor(box[3] / cell) - z0 + 1;
+        return new Grid(owner, box, cell, head, x0, z0, nx, nz);
+    }
+
+    private Network build(long gx, long gz) {
+        Grid g = grid(gx, gz);
+        if (g == null) return Network.EMPTY;
+        long owner = g.owner;
+        double[] box = g.box;
+        double cell = g.cell, head = g.head;
+        int x0 = g.x0, z0 = g.z0, nx = g.nx, nz = g.nz;
         int total = nx * nz;
         // Grid: each cell's own land, ground (intent height), routing height, rain and receivers.
         boolean[] own = new boolean[total], marine = new boolean[total], sink = new boolean[total];
@@ -1768,7 +1944,7 @@ final class Drainage {
      */
     long lake(double x, double z, double[] out) {
         ContinentalOutlineMap.CellScratch q = query.get();
-        int cells = outline.continentCells(x, z, reach, q);
+        int cells = candidates(x, z, reach, q);
         prepare(q, cells);
         long found = 0;
         double best = Double.NEGATIVE_INFINITY;

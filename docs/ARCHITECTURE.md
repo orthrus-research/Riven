@@ -36,7 +36,12 @@ coast forms and sediment, and declines once a memo would pass its headroom: a qu
 set-associative memo, half the drainage memo, or 10 MB x layout squared of networks. A `CellMemo`
 keeps each cell in either of two slots and a miss replaces the older entry, so cells no longer read age out and
 two cells sharing a slot do not rebuild each other on every read (with a fixed victim, two
-continents' drainage networks did, and a 16 km check on seed 5 ran for hours). The terrain
+continents' drainage networks did, and a 16 km check on seed 5 ran for hours). A drainage query
+takes the continents whose support reaches the column, then builds only those with an own cell of
+their network grid within the query's reach plus a bound on how far a channel strays from its
+cells (the largest meander offset and three cells). Each continent's own cells come from the same
+continental samples its network reads, so a skipped network could not have answered;
+`tools/checks/DrainagePruneCheck` compares answers with and without the skip. The terrain
 atlas proves this per render: `tools/terrain_atlas.py render --verify` re-samples in reverse
 order on a different thread count and requires an identical SHA-256 digest of every layer and
 site decision. Samples are reused per thread, so each stage result registers with
