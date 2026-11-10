@@ -130,6 +130,25 @@ public final class ContinentalMap {
         private final ContinentalKernels.Scratch work = new ContinentalKernels.Scratch();
     }
 
+    /** Caller-owned scratch and result of {@link #ownership}: marine and owner only. */
+    public static final class Ownership {
+        public boolean marine;
+        public long owner;
+        private final ContinentalKernels.Sample value = new ContinentalKernels.Sample();
+        private final ContinentalKernels.Scratch work = new ContinentalKernels.Scratch();
+    }
+
+    /**
+     * A column's marine flag and owner, exactly as {@link #sample} reports them, without the coast
+     * normal's probes or the shelter traits: both read the same score, and the traits only widen
+     * which candidates the kernel visits, never which one owns the column.
+     */
+    public void ownership(double x, double z, Ownership out) {
+        outline.sampleScore(x, z, out.value, out.work);
+        out.marine = out.value.marine;
+        out.owner = out.value.owner;
+    }
+
     /** Conservative distance outside the scaffold; nonpositive means reserved. No topology plan is queried. */
     public double scaffoldClearance(double x, double z) {
         return outline.scaffoldClearance(x, z);

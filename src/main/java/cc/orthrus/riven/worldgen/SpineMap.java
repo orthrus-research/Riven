@@ -179,10 +179,10 @@ public final class SpineMap {
         pool.forEach(
                 n,
                 r -> {
-                    ContinentalMap.Sample s = new ContinentalMap.Sample();
+                    ContinentalMap.Ownership s = new ContinentalMap.Ownership();
                     double z = inside((j0 + r) * cell);
                     for (int a = 0; a < n; a++) {
-                        continents.sample(inside((i0 + a) * cell), z, s);
+                        continents.ownership(inside((i0 + a) * cell), z, s);
                         land[r * n + a] = !s.marine;
                     }
                 });

@@ -1157,10 +1157,10 @@ final class Drainage {
         pool.forEach(
                 nz,
                 j -> {
-                    ContinentalMap.Sample c = new ContinentalMap.Sample();
+                    ContinentalMap.Ownership c = new ContinentalMap.Ownership();
                     boolean[] row = new boolean[nx], sea = new boolean[nx];
                     for (int i = 0; i < nx; i++) {
-                        continents.sample((g.x0 + i + .5) * g.cell, (g.z0 + j + .5) * g.cell, c);
+                        continents.ownership((g.x0 + i + .5) * g.cell, (g.z0 + j + .5) * g.cell, c);
                         sea[i] = c.marine;
                         row[i] = !c.marine && c.owner == g.owner;
                     }
@@ -1329,10 +1329,10 @@ final class Drainage {
         pool.forEach(
                 zs.length,
                 r -> {
-                    ContinentalMap.Sample c = new ContinentalMap.Sample();
+                    ContinentalMap.Ownership c = new ContinentalMap.Ownership();
                     double x0 = Double.POSITIVE_INFINITY, x1 = Double.NEGATIVE_INFINITY;
                     for (double px : xs) {
-                        continents.sample(px, zs[r], c);
+                        continents.ownership(px, zs[r], c);
                         if (c.marine || c.owner != owner) continue;
                         x0 = Math.min(x0, px);
                         x1 = Math.max(x1, px);

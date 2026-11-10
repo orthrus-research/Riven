@@ -163,15 +163,15 @@ public final class CoastShape {
         nz /= norm;
         // One fixed bracket on the earlier continental boundary, with bounded bisection.
         double bracket = host.support() * .5;
-        ContinentalMap.Sample probe = new ContinentalMap.Sample();
-        continents.sample(host.x - nx * bracket, host.z - nz * bracket, probe);
+        ContinentalMap.Ownership probe = new ContinentalMap.Ownership();
+        continents.ownership(host.x - nx * bracket, host.z - nz * bracket, probe);
         if (!probe.marine) return reject(family, "OCEAN_BRACKET", 0, 0);
-        continents.sample(host.x + nx * bracket, host.z + nz * bracket, probe);
+        continents.ownership(host.x + nx * bracket, host.z + nz * bracket, probe);
         if (probe.marine) return reject(family, "LAND_BRACKET", 0, 0);
         double lo = -bracket, hi = bracket;
         for (int i = 0; i < 32; i++) {
             double at = (lo + hi) * .5;
-            continents.sample(host.x + nx * at, host.z + nz * at, probe);
+            continents.ownership(host.x + nx * at, host.z + nz * at, probe);
             if (probe.marine) lo = at;
             else hi = at;
         }

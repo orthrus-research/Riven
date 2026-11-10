@@ -423,11 +423,11 @@ public final class ProvinceMap {
         Map<Long, int[]> area = new HashMap<>();
         Map<Long, double[]> spineSums = new HashMap<>();
         double step = scale.side() / def.side, origin = -half + step / 2;
-        ContinentalMap.Sample c = new ContinentalMap.Sample();
+        ContinentalMap.Ownership c = new ContinentalMap.Ownership();
         for (int a = 0; a < def.side; a++)
             for (int b = 0; b < def.side; b++) {
                 double x = origin + a * step, z = origin + b * step;
-                continents.sample(x, z, c);
+                continents.ownership(x, z, c);
                 long owner = nearest(x, z);
                 int[] counts = area.computeIfAbsent(owner, k -> new int[2]);
                 counts[c.marine ? 1 : 0]++;
@@ -880,8 +880,8 @@ public final class ProvinceMap {
 
     /** A column's province, intensity and blended climate offsets; its ground read here. */
     public void sample(double x, double z, Sample out) {
-        ContinentalMap.Sample c = new ContinentalMap.Sample();
-        continents.sample(x, z, c);
+        ContinentalMap.Ownership c = new ContinentalMap.Ownership();
+        continents.ownership(x, z, c);
         sample(x, z, c.marine, out);
     }
 
