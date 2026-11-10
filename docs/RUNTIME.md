@@ -434,14 +434,16 @@ environment.
 
 ## Known runtime warnings
 
-The recorded native timing is a stationary capture of this Riven build with this Cubature pin
-(seed 8675309, BASELINE, four DH workers per JVM, Java 26.0.2.1, 8 GiB/ZGC): full-view server tick
-p95 31.2 ms and worst 143 ms, frame p95 11.0 ms, idle tick p95 4.7 ms. Against the previous pin in
-the same session, first light plus light queue over the full view fell from 4.0 s to 1.3 s and
-install time from 0.22 to 0.12 ms per cube; saved blocks, storage and completed light matched,
-apart from surface water that random ticks froze or thawed differently. Arrival, flight and save
-were last measured on the previous pin: arrival first observed 70-77 s after target-view capture
-start, join/flight ticks up to 145 ms, startup up to 546 ms, and an explicit post-flight
-save/purge/flush tick of 1.861 s, including 1.441 s of blocking flush. Existing refmap warnings
-and controlled-shutdown connection resets remain; client rendering and held maps are unqualified.
+The recorded native timing is a lifecycle capture of this Riven build with this Cubature pin
+(seed 8675309, BASELINE, four DH workers per JVM, Java 26.0.2.1, 8 GiB/ZGC), beside a control of
+the previous Riven main and pin in the same session: server launch to ready 86.9 s to 38.9 s
+(207 to 86 CPU s), the target view's first cubes 87.9 s to 11.9 s after capture start, the full
+view delivered 104.9 s to 22.9 s; worst full-view tick 277 to 173 ms, while the tick p95 rose from
+36.4 to 39.9 ms because the same delivery ran in 460 ticks instead of 2,100. Idle tick p95 8.7 ms.
+A stationary capture of the pin showed first light plus light queue falling from 4.0 s to 1.3 s and
+saved blocks, storage and completed light unchanged, apart from surface water that random ticks
+froze or thawed differently. Flight and the explicit save were last measured on the previous pin:
+join/flight ticks up to 145 ms and a post-flight save/purge/flush tick of 1.861 s, including 1.441 s
+of blocking flush. Existing refmap warnings and controlled-shutdown connection resets remain;
+client rendering and held maps are unqualified.
 Unimined prints deprecation notices.
