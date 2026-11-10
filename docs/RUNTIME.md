@@ -437,16 +437,18 @@ environment.
 
 ## Known runtime warnings
 
-The recorded native timing is a lifecycle capture of this Riven build with this Cubature pin
-(seed 8675309, BASELINE, four DH workers per JVM, Java 26.0.2.1, 8 GiB/ZGC), beside a control of
-the previous Riven main and pin in the same session: server launch to ready 86.9 s to 38.9 s
-(207 to 86 CPU s), the target view's first cubes 87.9 s to 11.9 s after capture start, the full
-view delivered 104.9 s to 22.9 s; worst full-view tick 277 to 173 ms, while the tick p95 rose from
-36.4 to 39.9 ms because the same delivery ran in 460 ticks instead of 2,100. Idle tick p95 8.7 ms.
-A stationary capture of the pin showed first light plus light queue falling from 4.0 s to 1.3 s and
-saved blocks, storage and completed light unchanged, apart from surface water that random ticks
-froze or thawed differently. Flight and the explicit save were last measured on the previous pin:
-join/flight ticks up to 145 ms and a post-flight save/purge/flush tick of 1.861 s, including 1.441 s
-of blocking flush. Existing refmap warnings and controlled-shutdown connection resets remain;
-client rendering and held maps are unqualified.
+The recorded native timing comes from captures of this Riven build with this Cubature pin (seed
+8675309, BASELINE, four DH workers per JVM, Java 26.0.2.1, 8 GiB/ZGC), each beside a control run
+in the same session. Against the Riven main and pin before the regional work, a lifecycle capture
+went from 86.9 s to 38.9 s from server launch to ready (207 to 86 CPU s), and from 104.9 s to
+22.9 s to deliver the full view. With baking, against the same build without it, a flight
+lifecycle capture (full view, a 60 s spectator flight at 16 blocks/s, settle, save and purge)
+delivered the full view's first cubes 0.55 s after capture start instead of 8.9 s and the whole
+view in 10.8 s instead of 20.9 s; worst ticks: full view 159 ms, flight 78 ms (113 without), settle
+39 ms. Tick p95 is about 42 ms in the full view and 34 ms in flight, where the same delivery runs in
+fewer, busier ticks. The explicit post-flight save/purge/flush tick reached 2.72 s, 2.22 s of it in
+the writer's blocking flush (2.22 and 1.78 s without baking). A stationary capture of the earlier
+pin showed saved blocks, storage and completed light unchanged, apart from surface water that
+random ticks froze or thawed differently. Existing refmap warnings and controlled-shutdown
+connection resets remain; client rendering and held maps are unqualified.
 Unimined prints deprecation notices.
