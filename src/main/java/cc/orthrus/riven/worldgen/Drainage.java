@@ -1069,29 +1069,46 @@ final class Drainage {
     }
 
     /**
-     * A continent's own cells on its network grid, decided by the same continental samples at the
-     * same points as {@link #build}, with an 8 x 8-cell summary for distance queries.
+     * A continent's own and marine cells on its network grid, decided by the same continental
+     * samples at the same points as {@link #build} (which takes full samples only at own cells),
+     * with an 8 x 8-cell summary of own cells for distance queries.
      */
     private static final class Land {
-        static final Land NONE = new Land(1, 0, 0, 0, 0, new long[0], new long[0]);
+        static final Land NONE = new Land(1, 0, 0, 0, 0, new long[0], new long[0], new long[0]);
         private static final int BLOCK = 8;
         final double cell;
         final int x0, z0, nx, nz;
-        private final long[] own, blocks;
+        private final long[] own, marine, blocks;
 
-        Land(double cell, int x0, int z0, int nx, int nz, long[] own, long[] blocks) {
+        Land(
+                double cell,
+                int x0,
+                int z0,
+                int nx,
+                int nz,
+                long[] own,
+                long[] marine,
+                long[] blocks) {
             this.cell = cell;
             this.x0 = x0;
             this.z0 = z0;
             this.nx = nx;
             this.nz = nz;
             this.own = own;
+            this.marine = marine;
             this.blocks = blocks;
         }
 
-        private boolean owns(int i, int j) {
-            int k = j * nx + i;
+        boolean owns(int k) {
             return (own[k >>> 6] & 1L << k) != 0;
+        }
+
+        boolean marine(int k) {
+            return (marine[k >>> 6] & 1L << k) != 0;
+        }
+
+        private boolean owns(int i, int j) {
+            return owns(j * nx + i);
         }
 
         private boolean blockOwns(int bi, int bj) {
@@ -1135,26 +1152,32 @@ final class Drainage {
         int nx = g.nx, nz = g.nz, bx = (nx + Land.BLOCK - 1) / Land.BLOCK;
         int by = (nz + Land.BLOCK - 1) / Land.BLOCK;
         long[] own = new long[(nx * nz + 63) >>> 6], blocks = new long[(bx * by + 63) >>> 6];
-        boolean[][] rows = new boolean[nz][];
+        long[] marine = new long[own.length];
+        boolean[][] rows = new boolean[nz][], seas = new boolean[nz][];
         pool.forEach(
                 nz,
                 j -> {
                     ContinentalMap.Sample c = new ContinentalMap.Sample();
-                    boolean[] row = new boolean[nx];
+                    boolean[] row = new boolean[nx], sea = new boolean[nx];
                     for (int i = 0; i < nx; i++) {
                         continents.sample((g.x0 + i + .5) * g.cell, (g.z0 + j + .5) * g.cell, c);
+                        sea[i] = c.marine;
                         row[i] = !c.marine && c.owner == g.owner;
                     }
                     rows[j] = row;
+                    seas[j] = sea;
                 });
         for (int j = 0; j < nz; j++)
-            for (int i = 0; i < nx; i++)
+            for (int i = 0; i < nx; i++) {
+                int k = j * nx + i;
+                if (seas[j][i]) marine[k >>> 6] |= 1L << k;
                 if (rows[j][i]) {
-                    int k = j * nx + i, b = (j / Land.BLOCK) * bx + i / Land.BLOCK;
+                    int b = (j / Land.BLOCK) * bx + i / Land.BLOCK;
                     own[k >>> 6] |= 1L << k;
                     blocks[b >>> 6] |= 1L << b;
                 }
-        return new Land(g.cell, g.x0, g.z0, nx, nz, own, blocks);
+            }
+        return new Land(g.cell, g.x0, g.z0, nx, nz, own, marine, blocks);
     }
 
     /** Tools: whether queries skip continents whose land cannot reach them (on by default). */
@@ -1343,6 +1366,9 @@ final class Drainage {
     private Network build(long gx, long gz) {
         Grid g = grid(gx, gz);
         if (g == null) return Network.EMPTY;
+        // The same grid and the same continental samples decide own and marine cells; full intent
+        // samples are taken only where the network reads more than those two facts.
+        Land mask = land(gx, gz);
         long owner = g.owner;
         double[] box = g.box;
         double cell = g.cell, head = g.head;
@@ -1362,10 +1388,10 @@ final class Drainage {
                     TerrainMap.BaseSample s = new TerrainMap.BaseSample();
                     for (int i = 0; i < nx; i++) {
                         int k = j * nx + i;
+                        marine[k] = mask.marine(k);
+                        if (!mask.owns(k)) continue;
                         double px = (x0 + i + .5) * cell, pz = (z0 + j + .5) * cell;
                         intent.sample(px, pz, s);
-                        marine[k] = s.ocean.marine;
-                        if (marine[k] || s.ocean.owner != owner) continue;
                         own[k] = true;
                         ground[k] = s.shore.height;
                         route[k] = ground[k] + relief(px, pz);
