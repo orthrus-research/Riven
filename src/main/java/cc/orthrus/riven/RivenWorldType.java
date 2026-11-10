@@ -2,6 +2,7 @@ package cc.orthrus.riven;
 
 import cc.orthrus.riven.worldgen.BuildPool;
 import cc.orthrus.riven.worldgen.NativeColumns;
+import cc.orthrus.riven.worldgen.OreMap;
 import cc.orthrus.riven.worldgen.RealmMap;
 import cc.orthrus.riven.worldgen.RivenBiomeTable;
 import cc.orthrus.riven.worldgen.TerrainBlock;
@@ -13,14 +14,18 @@ import io.github.opencubicchunks.cubicchunks.api.util.IntRange;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldType;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
+import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeClassification;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubicTerrainPreview;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.IRetainedColumnPreparation;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.init.Biomes;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
@@ -109,7 +114,10 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
     }
 
     private static final class Generator
-            implements ICubeGenerator, ICubicTerrainPreview, IRetainedColumnPreparation {
+            implements ICubeGenerator,
+                    ICubicTerrainPreview,
+                    IRetainedColumnPreparation,
+                    ICubeClassification {
         private final ClimateBiomeProvider biomes;
         private final World world;
 
@@ -120,6 +128,8 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             snapshot = Mappings.load(world);
             trees = new TreeSites(world.getSeed(), biomes, HEIGHTS, snapshot);
             cover = new GroundCover(world.getSeed(), biomes, trees);
+            groundKindsSupported = groundKindsSupported();
+            surfaceBandSupported = trees.surfaceBandSupported() && groundPreservingBodies();
             animals = new FirstAnimals(world.getSeed(), biomes);
             realms = new RealmMap(world.getSeed(), HEIGHTS);
             List<Biome> realmBiomes = new ArrayList<>();
@@ -151,6 +161,113 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
 
         /** Riven's population: each chunk column's first animals. */
         private final FirstAnimals animals;
+
+        private final boolean surfaceBandSupported;
+        private final boolean[] groundKindsSupported;
+
+        private static boolean[] groundKindsSupported() {
+            TerrainBlock[] kinds = TerrainBlock.values();
+            boolean[] supported = new boolean[kinds.length];
+            for (TerrainBlock kind : kinds) {
+                if (kind == TerrainBlock.AIR
+                        || kind == TerrainBlock.WATER
+                        || kind == TerrainBlock.LAVA) continue;
+                Material material = TerrainColumn.state(kind).getMaterial();
+                supported[kind.index()] = material != Material.AIR && !material.isLiquid();
+            }
+            return supported;
+        }
+
+        private static boolean groundPreservingBodies() {
+            for (String id : OreMap.BLOCK) {
+                if (id == null) continue;
+                try {
+                    Block block = Block.REGISTRY.getObject(new ResourceLocation(id));
+                    Material material = block.getDefaultState().getMaterial();
+                    if (material == Material.AIR || material.isLiquid()) return false;
+                } catch (IllegalArgumentException unsupported) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public CubeClass cubeClass(int cubeX, int cubeY, int cubeZ) {
+            long bottom = (long) cubeY * 16, top = bottom + 15;
+            TerrainMap terrain = biomes.maps.terrain;
+            // These are precisely the original generator's unconditional all-air branches.
+            if (outsideColumn(cubeX, cubeZ)
+                    || bottom >= HEIGHTS.maximumYExclusive
+                    || bottom > terrain.maximumSurfaceY) return CubeClass.EMPTY;
+            // Realm generation and depth biomes are deliberately not inferred from air runs.
+            if (top < HEIGHTS.minimumY) return CubeClass.DETAILED;
+            NativeColumns.Column column = biomes.maps.columns.cachedColumn(cubeX, cubeZ);
+            if (column == null) return CubeClass.UNKNOWN;
+            if (top < column.minimumGround()) return CubeClass.DETAILED;
+            long upper = cachedUpper(cubeX, cubeZ, column);
+            if (upper == Long.MAX_VALUE) return CubeClass.UNKNOWN;
+            return bottom >= upper ? CubeClass.EMPTY : CubeClass.DETAILED;
+        }
+
+        @Override
+        public SurfaceBand surfaceBand(int columnX, int columnZ) {
+            if (outsideColumn(columnX, columnZ) || !surfaceBandSupported) return null;
+            NativeColumns.Column column = biomes.maps.columns.cachedColumn(columnX, columnZ);
+            if (column == null) return null;
+            for (TerrainBlock kind : column.groundKinds())
+                if (!groundKindsSupported[kind.index()]) return null;
+            long upper = cachedUpper(columnX, columnZ, column);
+            if (upper == Long.MAX_VALUE) return null;
+            long lower =
+                    Math.min(
+                            (long) column.minimumGround() - cover.maximumDepth(),
+                            column.minimumRawBlockY());
+            long minimum = Math.max(Math.floorDiv(lower, 16), Math.floorDiv(HEIGHTS.minimumY, 16));
+            long maximum =
+                    Math.min(
+                            Math.floorDiv(upper - 1, 16),
+                            Math.min(
+                                    Math.floorDiv(biomes.maps.terrain.maximumSurfaceY, 16),
+                                    Math.floorDiv((long) HEIGHTS.maximumYExclusive - 1, 16)));
+            return minimum > maximum
+                    ? null
+                    : new SurfaceBand(Math.toIntExact(minimum), Math.toIntExact(maximum));
+        }
+
+        private static boolean outsideColumn(int columnX, int columnZ) {
+            long west = (long) columnX * 16, north = (long) columnZ * 16;
+            return !ClimateBiomeProvider.inWorld(west, north)
+                    || !ClimateBiomeProvider.inWorld(west + 15, north + 15);
+        }
+
+        /** Exclusive occupied upper bound, or MAX_VALUE when required immutable data is absent. */
+        private long cachedUpper(int columnX, int columnZ, NativeColumns.Column column) {
+            long boulderRise =
+                    (long) biomes.maps.boulders.maximumSlope() + biomes.maps.boulders.maximumRise();
+            long upper =
+                    Math.max(
+                            (long) column.maximumTop() + cover.maximumHeight(),
+                            column.maximumRawTop() + boulderRise);
+            if (trees.maximumTop() == 0) return upper;
+            // Reach includes the trunk width. Every possible trunk column fits this neighbourhood.
+            if (trees.reach() >= 16) return Long.MAX_VALUE;
+            for (int dz = -1; dz <= 1; dz++)
+                for (int dx = -1; dx <= 1; dx++) {
+                    NativeColumns.Column neighbour =
+                            dx == 0 && dz == 0
+                                    ? column
+                                    : biomes.maps.columns.cachedColumn(columnX + dx, columnZ + dz);
+                    if (neighbour == null) return Long.MAX_VALUE;
+                    // A boulder under a trunk may be centred farther away. Its slope rule bounds
+                    // the centre from this local raw ground, so no farther column is needed.
+                    upper =
+                            Math.max(
+                                    upper,
+                                    neighbour.maximumRawTop() + boulderRise + trees.maximumTop());
+                }
+            return upper;
+        }
 
         @Override
         public Sampler createTerrainPreviewSampler() {

@@ -113,6 +113,11 @@ riven = [
       "tools/checks/RegionalOwnershipCheck.java",
       "tools/checks/RegionalCleanupCheck.java",
     ], jobs = ["quality", "regional-store"] },
+  { paths = [
+      "tools/checks/CubePrimerBootstrapCheck.java",
+      "tools/checks/CubePrimerFixture.java",
+      "tools/checks/CubeClassificationCheck.java",
+    ], jobs = ["quality", "riven-build"] },
   { paths = ["tools/atlas/**", "tools/atlas_golden.py", "tools/terrain_atlas.py", "tools/run_check.py", "tools/checks/**", "tools/atlas-golden.json"], jobs = ["quality", "atlas-golden", "definitions", "sample-history"] },
   { paths = ["tools/build_riven.py"], jobs = ["quality", "riven-build"] },
   { paths = ["tools/**/*.py", "tools/content/**", "pyproject.toml"], jobs = ["quality"] },

@@ -1,11 +1,15 @@
 package cc.orthrus.riven.worldgen;
 
+import cc.orthrus.riven.contrib.rocky.RockyCoasts.Edit;
 import cc.orthrus.riven.worldgen.engine.AssembledColumn;
 import cc.orthrus.riven.worldgen.engine.Assembler;
+import cc.orthrus.riven.worldgen.engine.Horizons;
 import cc.orthrus.riven.worldgen.engine.Role;
 
 import com.google.gson.JsonObject;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
@@ -32,7 +36,9 @@ public final class NativeColumns {
         private final int[] cellOffsets, cellBottoms;
         private final byte[] cellDepths;
         private final int[] unstableOffsets, unstableLo, unstableHi;
-        private final int minimumGround;
+        private final int minimumGround, maximumTop, minimumRawBlockY;
+        private final long maximumRawTop;
+        private final List<TerrainBlock> groundKinds;
 
         private Column(
                 int[] offsets,
@@ -51,7 +57,11 @@ public final class NativeColumns {
                 int[] unstableOffsets,
                 int[] unstableLo,
                 int[] unstableHi,
-                int minimumGround) {
+                int minimumGround,
+                int maximumTop,
+                int minimumRawBlockY,
+                long maximumRawTop,
+                List<TerrainBlock> groundKinds) {
             this.offsets = offsets;
             this.bottoms = bottoms;
             this.blocks = blocks;
@@ -69,14 +79,38 @@ public final class NativeColumns {
             this.unstableLo = unstableLo;
             this.unstableHi = unstableHi;
             this.minimumGround = minimumGround;
+            this.maximumTop = maximumTop;
+            this.minimumRawBlockY = minimumRawBlockY;
+            this.maximumRawTop = maximumRawTop;
+            this.groundKinds = groundKinds;
         }
 
         /**
-         * The lowest ground of the chunk column's 256 columns: the top of each one's highest
+         * The minimum occupied ground Y of the chunk column's 256 columns: each one's highest
          * block that is neither air nor fluid. A cube wholly below it holds no surface.
          */
         public int minimumGround() {
             return minimumGround;
+        }
+
+        /** Highest exclusive non-air run top, or MIN_VALUE when every column is air. */
+        public int maximumTop() {
+            return maximumTop;
+        }
+
+        /** Lowest sampled surface block Y before native cave carving; boulders begin here. */
+        public int minimumRawBlockY() {
+            return minimumRawBlockY;
+        }
+
+        /** Conservative exclusive top before native carving, including raw placement ground. */
+        public long maximumRawTop() {
+            return maximumRawTop;
+        }
+
+        /** Distinct highest logical-ground entries, or AIR where a block column has no ground. */
+        public List<TerrainBlock> groundKinds() {
+            return groundKinds;
         }
 
         /**
@@ -249,6 +283,11 @@ public final class NativeColumns {
         double n = Rules.number(j, key, min, max);
         if (n != (int) n) throw new IllegalStateException(key);
         return (int) n;
+    }
+
+    /** A completed immutable chunk column already held by a reservation or memo, or null. */
+    public Column cachedColumn(int chunkX, int chunkZ) {
+        return held(((long) chunkX << 32) ^ (chunkZ & 0xffffffffL));
     }
 
     public Column column(int chunkX, int chunkZ) {
@@ -496,10 +535,30 @@ public final class NativeColumns {
         byte[] cellDepths = new byte[cellBottoms.length];
         int[] unstableOffsets = new int[257], unstableLo = new int[512], unstableHi = new int[512];
         int n = 0, ores = 0, cells = 0, unstables = 0, minimumGround = Integer.MAX_VALUE;
+        int maximumTop = Integer.MIN_VALUE, minimumRawBlockY = Integer.MAX_VALUE;
+        long maximumRawTop =
+                Math.max(
+                        frameTop(crust.zone.cavity(0).floor), frameTop(crust.zone.cavity(0).level));
+        long[] rawTop = {Long.MIN_VALUE};
+        TerrainBlock[] kinds = TerrainBlock.values();
+        boolean[] groundKindSeen = new boolean[kinds.length];
+        CrustShape.Sink rawBounds =
+                (horizon, y) -> {
+                    if (y != Horizons.ABSENT) rawTop[0] = Math.max(rawTop[0], (long) y + 1);
+                };
         for (int z = 0; z < 16; z++)
             for (int x = 0; x < 16; x++) {
                 int index = (z << 4) | x;
                 terrain.sample(chunkX * 16 + x, chunkZ * 16 + z, sample);
+                minimumRawBlockY = Math.min(minimumRawBlockY, sample.blockY());
+                rawTop[0] = (long) sample.blockY() + 1;
+                // Raw tree ground includes rocky volumes and cavity fills. Read their existing
+                // endpoints before full cave carving, without assembling a second column.
+                CrustShape.horizons(sample, rawBounds);
+                for (int i = 0; i < sample.rocky.runs(); i++)
+                    if (sample.rocky.edit(i) == Edit.SOLID)
+                        rawTop[0] = Math.max(rawTop[0], sample.rocky.top(i));
+                maximumRawTop = Math.max(maximumRawTop, rawTop[0]);
                 terrain.caves.carve(chunkX * 16 + x, chunkZ * 16 + z, sample);
                 terrain.ores.bodies(chunkX * 16 + x, chunkZ * 16 + z, sample, bodies);
                 AssembledColumn c = crust.assemble(sample, assembled);
@@ -531,11 +590,18 @@ public final class NativeColumns {
                     roles = java.util.Arrays.copyOf(roles, grown);
                 }
                 offsets[index] = n;
+                TerrainBlock groundKind = TerrainBlock.AIR;
                 for (int i = 0; i < count; i++) {
                     bottoms[n] = c.bottom(i);
                     roles[n] = c.runRole(i).code();
-                    blocks[n++] = c.runBlock(i);
+                    TerrainBlock block = c.runBlock(i);
+                    blocks[n++] = block;
+                    if (block != TerrainBlock.AIR) maximumTop = Math.max(maximumTop, c.top(i));
+                    if (block != TerrainBlock.AIR
+                            && block != TerrainBlock.WATER
+                            && block != TerrainBlock.LAVA) groundKind = block;
                 }
+                groundKindSeen[groundKind.index()] = true;
                 // The allocation top closes the column; it is never read as a run block.
                 bottoms[n] = c.topY();
                 roles[n] = Role.AIR.code();
@@ -565,6 +631,8 @@ public final class NativeColumns {
         oreOffsets[256] = ores;
         cellOffsets[16] = cells;
         unstableOffsets[256] = unstables;
+        List<TerrainBlock> groundKinds = new ArrayList<>();
+        for (TerrainBlock kind : kinds) if (groundKindSeen[kind.index()]) groundKinds.add(kind);
         return new Column(
                 offsets,
                 java.util.Arrays.copyOf(bottoms, n),
@@ -582,7 +650,22 @@ public final class NativeColumns {
                 unstableOffsets,
                 java.util.Arrays.copyOf(unstableLo, unstables),
                 java.util.Arrays.copyOf(unstableHi, unstables),
-                minimumGround);
+                minimumGround,
+                maximumTop,
+                minimumRawBlockY,
+                maximumRawTop,
+                List.copyOf(groundKinds));
+    }
+
+    /** Fixed-frame horizons matter only when the loaded cavity actually references them. */
+    private long frameTop(int horizon) {
+        return switch (horizon) {
+            case Horizons.TOP -> (long) heights.maximumYExclusive + 1;
+            case Horizons.SEA -> (long) heights.seaLevel + 1;
+            case Horizons.CRUST_FLOOR -> (long) heights.minimumY + 1;
+            case Horizons.WORLD_FLOOR -> (long) heights.worldMinimumY + 1;
+            default -> Long.MIN_VALUE;
+        };
     }
 
     /**

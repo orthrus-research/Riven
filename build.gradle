@@ -6,6 +6,57 @@ group = 'cc.orthrus.riven'
 version = mod_version
 // Cleanroom on Java 25 or 26 is the only target (docs/DECISIONS.md, 2026-10-30).
 def compilerJavaVersion = providers.gradleProperty('rivenJavaVersion').getOrElse('25').toInteger()
+def diagnosticGameSetting = providers.gradleProperty('rivenDiagnosticGameBootstrap').getOrElse('false')
+if (!(diagnosticGameSetting in ['true', 'false'])) {
+    throw new GradleException('rivenDiagnosticGameBootstrap must be true or false')
+}
+def diagnosticGameBootstrap = diagnosticGameSetting == 'true'
+def diagnosticGameMods
+def diagnosticCubature
+def diagnosticCubatureHash
+def diagnosticInputJar
+def diagnosticInputCoordinates
+def diagnosticPinLock
+def diagnosticPinLockHash
+def diagnosticSha256 = { File artifact ->
+    java.security.MessageDigest.getInstance('SHA-256').digest(artifact.bytes).encodeHex().toString()
+}
+if (diagnosticGameBootstrap) {
+    diagnosticCubature = file(providers.gradleProperty('rivenCubicArtifact')
+        .getOrElse('dev/pins/Cubature-cleanroom.jar'))
+    if (!diagnosticCubature.isFile()) {
+        throw new GradleException('Game diagnostics require the selected pinned Cubature artifact')
+    }
+    diagnosticCubatureHash = diagnosticSha256(diagnosticCubature)
+    diagnosticPinLock = new groovy.json.JsonSlurper().parse(file('dev/cc.lock.json'))
+    diagnosticPinLockHash = diagnosticSha256(file('dev/cc.lock.json'))
+    if (diagnosticPinLock.sha256 != diagnosticCubatureHash || !diagnosticPinLock.commit) {
+        throw new GradleException('Game diagnostics Cubature artifact does not match its lock')
+    }
+    def inputVersion = 'cleanroom-' + diagnosticCubatureHash
+    def inputRepository = file('.gradle/diagnostic-mod-inputs')
+    diagnosticInputJar = new File(inputRepository,
+        "local/cubicchunks/CubicChunks/${inputVersion}/CubicChunks-${inputVersion}.jar")
+    if (!diagnosticInputJar.exists()) {
+        diagnosticInputJar.parentFile.mkdirs()
+        java.nio.file.Files.copy(diagnosticCubature.toPath(), diagnosticInputJar.toPath())
+    }
+    if (diagnosticSha256(diagnosticInputJar) != diagnosticCubatureHash) {
+        throw new GradleException('Game diagnostics Maven input does not match the selected pin')
+    }
+    repositories {
+        maven {
+            url = inputRepository
+            content { includeGroup 'local.cubicchunks' }
+            metadataSources { artifact() }
+        }
+    }
+    diagnosticGameMods = configurations.create('diagnosticGameMods') {
+        canBeConsumed = false
+    }
+    diagnosticInputCoordinates = "local.cubicchunks:CubicChunks:${inputVersion}"
+    dependencies.add(diagnosticGameMods.name, diagnosticInputCoordinates)
+}
 base {
     archivesName = 'riven'
 }
@@ -46,6 +97,9 @@ unimined.minecraft {
     remap(tasks.named('jar').get())
     mods {
         remap(configurations.modCompileOnly)
+        if (diagnosticGameBootstrap) {
+            remap(diagnosticGameMods)
+        }
     }
 }
 tasks.withType(JavaCompile).configureEach {
@@ -53,18 +107,111 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.addAll(['-Xlint:all,-options', '-Werror'])
 }
 
+sourceSets {
+    diagnostics {
+        java.srcDir 'tools/checks'
+        compileClasspath = sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath = output + compileClasspath
+    }
+}
+
 // Compile the retained diagnostic entry points without executing their workloads.
-tasks.register('compileDiagnosticsJava', JavaCompile) {
+tasks.named('compileDiagnosticsJava', JavaCompile) {
     group = 'verification'
     description = 'Lint and type-check diagnostic helpers without running them.'
-    source = fileTree('tools/checks') { include '**/*.java' }
-    classpath = sourceSets.main.output + sourceSets.main.compileClasspath
-    destinationDirectory = layout.buildDirectory.dir('classes/java/diagnostics')
     javaCompiler = javaToolchains.compilerFor {
         languageVersion = JavaLanguageVersion.of(compilerJavaVersion)
     }
     sourceCompatibility = JavaVersion.VERSION_25.toString()
     targetCompatibility = JavaVersion.VERSION_25.toString()
+}
+
+// Select an entry point with -PrivenDiagnosticMain and pass its arguments with --args.
+// Game bootstrap additionally requires -PrivenDiagnosticGameBootstrap=true.
+tasks.register('runDiagnostics', JavaExec) {
+    group = 'verification'
+    description = 'Run an explicitly selected diagnostic entry point on Java 26.'
+    dependsOn tasks.named('classes'), tasks.named('diagnosticsClasses')
+    classpath = sourceSets.diagnostics.runtimeClasspath
+    mainClass = providers.gradleProperty('rivenDiagnosticMain')
+    javaLauncher = javaToolchains.launcherFor {
+        languageVersion = JavaLanguageVersion.of(26)
+    }
+    if (diagnosticGameBootstrap) {
+        // Unimined remaps this separate configuration without changing the main compile view.
+        classpath = sourceSets.diagnostics.runtimeClasspath.filter {
+            it.canonicalFile != diagnosticCubature.canonicalFile
+        } + diagnosticGameMods
+        // Cleanroom's mapped test bootstrap removes final modifiers from object-holder fields.
+        jvmArgs '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED'
+        doFirst {
+            if (diagnosticSha256(diagnosticCubature) != diagnosticCubatureHash
+                    || diagnosticSha256(diagnosticInputJar) != diagnosticCubatureHash
+                    || diagnosticSha256(file('dev/cc.lock.json')) != diagnosticPinLockHash) {
+                throw new GradleException('Game diagnostics Cubature input changed after configuration')
+            }
+            def runtimeFiles = classpath.files.toList()
+            if (runtimeFiles.any { it.canonicalFile == diagnosticCubature.canonicalFile }) {
+                throw new GradleException('Game diagnostics runtime still contains the raw Cubature pin')
+            }
+            def apiProviders = ['CubePrimer', 'ICubeGenerator'].collectEntries { type ->
+                def entryName = "io/github/opencubicchunks/cubicchunks/api/worldgen/${type}.class"
+                def artifacts = runtimeFiles.findAll { artifact ->
+                    if (artifact.isDirectory()) return new File(artifact, entryName).isFile()
+                    if (!artifact.isFile()) return false
+                    def archive = new java.util.zip.ZipFile(artifact)
+                    try {
+                        return archive.getEntry(entryName) != null
+                    } finally {
+                        archive.close()
+                    }
+                }
+                if (artifacts.size() != 1 || !artifacts.first().isFile()) {
+                    throw new GradleException("Game diagnostics require one mapped ${type} JAR: ${artifacts}")
+                }
+                [(type): artifacts.first().canonicalFile]
+            }
+            def mappedArtifacts = diagnosticGameMods.resolvedConfiguration.resolvedArtifacts.toList()
+            if (mappedArtifacts.size() != 1) {
+                throw new GradleException("Game diagnostics require one remapped dependency: ${mappedArtifacts}")
+            }
+            def mappedSelection = mappedArtifacts.first()
+            def mappedComponent = mappedSelection.moduleVersion.id
+            if (mappedComponent.group != 'remapped_local.cubicchunks'
+                    || mappedComponent.name != 'CubicChunks'
+                    || mappedComponent.version != 'cleanroom-' + diagnosticCubatureHash
+                    || mappedSelection.extension != 'jar' || mappedSelection.classifier != null) {
+                throw new GradleException("Unexpected game diagnostics remapped component: ${mappedSelection}")
+            }
+            def mappedArtifact = mappedSelection.file.canonicalFile
+            if (mappedArtifact != apiProviders.CubePrimer
+                    || mappedArtifact != apiProviders.ICubeGenerator) {
+                throw new GradleException('Game diagnostics Cubature API classes have different providers')
+            }
+            def mappedHash = diagnosticSha256(mappedArtifact)
+            if (mappedHash == diagnosticCubatureHash) {
+                throw new GradleException('Game diagnostics Cubature artifact was not remapped')
+            }
+            def evidence = [
+                plugin: 'xyz.wagyourtail.unimined:1.4.43-kappa',
+                mappings: 'mcp:stable:39-1.12',
+                loader: cleanroom_api,
+                lock: [path: file('dev/cc.lock.json').canonicalPath,
+                    sha256: diagnosticPinLockHash, commit: diagnosticPinLock.commit],
+                inputCoordinates: diagnosticInputCoordinates.toString(),
+                original: [path: diagnosticCubature.canonicalPath, sha256: diagnosticCubatureHash],
+                moduleCopy: [path: diagnosticInputJar.canonicalPath, sha256: diagnosticCubatureHash],
+                mapped: [component: mappedComponent.toString(),
+                    path: mappedArtifact.canonicalPath, sha256: mappedHash],
+                runtimeClasspath: runtimeFiles.collect { it.canonicalPath }
+            ]
+            def evidenceFile = layout.buildDirectory.file('diagnostics/cubature-mapping.json').get().asFile
+            evidenceFile.parentFile.mkdirs()
+            evidenceFile.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(evidence))
+                + System.lineSeparator(), 'UTF-8')
+            logger.lifecycle("Cubature diagnostics mapping: ${diagnosticCubatureHash} -> ${mappedHash}; ${evidenceFile}")
+        }
+    }
 }
 processResources {
     inputs.property('version', project.version)

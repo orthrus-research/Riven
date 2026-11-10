@@ -116,6 +116,7 @@ public final class Boulders {
 
     private final long seed;
     private final int cell, spacing, reach, slope;
+    private final int maximumRise;
     private final Map<String, Owner> owners = new HashMap<>();
     private final TerrainMap terrain;
     private final CellMemo<Site> sites = new CellMemo<>(1 << 13);
@@ -132,8 +133,17 @@ public final class Boulders {
         // Neighbour checks reach one cell; cells two apart are always farther than the spacing.
         if (spacing > cell + 1) throw new IllegalStateException("Range: spacingBlocks");
         Map<String, Kind> kinds = new HashMap<>();
-        for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("kinds").entrySet())
-            kinds.put(e.getKey(), new Kind(e.getKey(), e.getValue().getAsJsonObject(), reach));
+        int highest = 0;
+        for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("kinds").entrySet()) {
+            Kind kind = new Kind(e.getKey(), e.getValue().getAsJsonObject(), reach);
+            kinds.put(e.getKey(), kind);
+            int rise =
+                    kind.model.equals("tor")
+                            ? kind.maxTiers * kind.maxTierHeight
+                            : (int) Math.floor(kind.maxHeight + kind.roughness + .5);
+            highest = Math.max(highest, rise);
+        }
+        maximumRise = highest;
         for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("biomes").entrySet()) {
             JsonObject b = e.getValue().getAsJsonObject();
             List<Kind> list = new ArrayList<>();
@@ -157,6 +167,16 @@ public final class Boulders {
     /** The widest footprint radius: a column's site lies within this many blocks of it. */
     public int reach() {
         return reach;
+    }
+
+    /** Largest exclusive-top rise above a site's centre ground, from the loaded kinds. */
+    public int maximumRise() {
+        return maximumRise;
+    }
+
+    /** Greatest permitted difference between a footprint column's ground and its centre. */
+    public int maximumSlope() {
+        return slope;
     }
 
     /** Every site whose centre lies in [minX, maxX) x [minZ, maxZ), in cell order. */

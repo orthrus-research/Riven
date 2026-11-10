@@ -101,6 +101,40 @@ final class TreeShapes {
 
         final int crownBottom, crownTop;
 
+        /** Conservative exclusive relative top of every shape this species can draw. */
+        int maximumTop() {
+            int h = height[1], highest;
+            switch (family) {
+                case BROADLEAF:
+                    highest = h - 1 + (int) Math.ceil(crownDepth);
+                    if (branches != null && branches[1] > 0) {
+                        int start = Math.max(1, h - 1);
+                        highest =
+                                Math.max(
+                                        highest,
+                                        (int)
+                                                        Math.ceil(
+                                                                start
+                                                                        + Math.max(0, branchRise)
+                                                                                * branchLength[1])
+                                                + (int) Math.ceil(crownDepth));
+                    }
+                    break;
+                case CONIFER:
+                    highest = h - 1 + topRows;
+                    break;
+                case PALM:
+                    highest = h;
+                    break;
+                default:
+                    highest =
+                            (int) Math.ceil(h - 1 + limbRise * limbLength[1])
+                                    + (int) Math.ceil(discDepth);
+            }
+            if (rootCount > 0) highest = Math.max(highest, rootHeight);
+            return highest + 1;
+        }
+
         Species(String id, JsonObject j, Mappings.Snapshot snapshot) {
             this.id = id;
             wood = j.get("wood").getAsString();

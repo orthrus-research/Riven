@@ -146,6 +146,8 @@ final class GroundCover {
     /** How far above its surface any entry's plant reaches: its tallest stack less one. */
     private int reach;
 
+    private int maximumHeight, maximumDepth;
+
     private final ClimateBiomeProvider provider;
     private final TreeSites trees;
 
@@ -185,6 +187,8 @@ final class GroundCover {
                     throw new IllegalStateException("Range: scaled density in " + e.getKey());
                 blocks.add(entries[i].state.getBlock());
                 reach = Math.max(reach, entries[i].tallest - 1);
+                maximumHeight = Math.max(maximumHeight, entries[i].tallest);
+                if (entries[i].submerged) maximumDepth = Math.max(maximumDepth, entries[i].deepest);
             }
             biomes.put(biome, entries);
         }
@@ -195,6 +199,16 @@ final class GroundCover {
     /** Whether a block is one ground cover places (parity checks). */
     boolean places(Block block) {
         return blocks.contains(block);
+    }
+
+    /** Tallest configured stack, including entries that stand underwater. */
+    int maximumHeight() {
+        return maximumHeight;
+    }
+
+    /** Deepest configured submerged bed below a native surface. */
+    int maximumDepth() {
+        return maximumDepth;
     }
 
     /**

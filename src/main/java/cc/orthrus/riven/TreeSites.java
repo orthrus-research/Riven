@@ -201,6 +201,8 @@ final class TreeSites {
     }
 
     private final int coarse, reach;
+    private final int maximumTop;
+    private final boolean surfaceBandSupported;
     private final double coverThreshold;
     private final Map<String, TreeShapes.Species> species;
     private final List<Layer> layers = new ArrayList<>();
@@ -234,9 +236,17 @@ final class TreeSites {
         coarse = (int) Rules.number(j, "coarseFootprintBlocks", 2, 4096);
         coverThreshold = Rules.number(j, "coverThreshold", 0, 1);
         species = TreeShapes.species(j, snapshot);
-        int widest = 0;
-        for (TreeShapes.Species s : species.values()) widest = Math.max(widest, s.reach);
+        int widest = 0, highest = 0;
+        boolean completeTrunks = true;
+        for (TreeShapes.Species s : species.values()) {
+            widest = Math.max(widest, s.reach);
+            highest = Math.max(highest, s.maximumTop());
+            // Other shapes clear every soil column at trunk Y=0. A wide palm does not.
+            completeTrunks &= s.width == 1 || s.family != TreeShapes.Family.PALM;
+        }
         reach = widest;
+        maximumTop = highest;
+        surfaceBandSupported = completeTrunks;
         for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("layers").entrySet())
             layers.add(
                     new Layer(
@@ -262,6 +272,21 @@ final class TreeSites {
     /** Every species, by id, as this world resolves them. */
     Map<String, TreeShapes.Species> species() {
         return Collections.unmodifiableMap(species);
+    }
+
+    /** Largest loaded horizontal reach from a site's corner. */
+    int reach() {
+        return reach;
+    }
+
+    /** Conservative exclusive relative top from loaded shape parameters, never crown averages. */
+    int maximumTop() {
+        return maximumTop;
+    }
+
+    /** Whether shape clearance also proves the soil columns' lower surface bound. */
+    boolean surfaceBandSupported() {
+        return surfaceBandSupported;
     }
 
     private static volatile Map<String, TreeShapes.Species> defaults;

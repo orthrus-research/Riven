@@ -41,6 +41,13 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   demanded terrain and within Cubature's budget.
 - **Arrival waits.** Joins, respawns, portal arrivals and teleports into unprepared terrain may
   wait visibly for their destination instead of generating synchronously on the server thread.
+- **Conservative cached cube classification.** Riven may classify cubes from completed column
+  summaries already held in memory, including cached neighbouring columns, using conservative
+  bounds on raw terrain and feature heights from the loaded definitions. Queries return
+  `UNKNOWN` when required cached facts or feature bounds are unavailable, and never build, load,
+  prepare or wait to obtain them. `EMPTY` certifies that ordinary generation into a fresh primer
+  produces only air and no 3D biome entries, including features rooted across column boundaries.
+  Eviction may make later queries unknown but cannot invalidate an earlier `EMPTY` result.
 
 ## Adopted 2026-11-03
 

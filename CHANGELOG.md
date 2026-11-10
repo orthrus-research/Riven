@@ -170,3 +170,5 @@ worlds.
 | 2026-11-10 | Pin Cubature 63c5c484 with early build pools, retained arrivals and independently paired tick accounting; native timing passed, while cold arrival waits and explicit save/purge stalls remain. |
 | 2026-11-10 | Connect pure drainage networks to the host-owned, deletable regional cache, with scoped mapped reads, world-lifetime ownership and exact graph reload and sampled atlas parity checks. |
 | 2026-11-10 | Keep the world's measured land and climate choices in the regional cache, so a restart rebuilds only the kept draw instead of measuring every candidate. Seed 8675309 in a fresh process: constructor 32.5 s to 2.3 s at scale 1 and 16.7 s to 2.0 s at scale 4, with identical atlas digests. |
+| 2026-11-10 | Add explicit mapped game diagnostics and real registry and primer bootstrap controls; ordinary CI compiles the helpers without running their workloads. |
+| 2026-11-10 | Expose conservative cached native-cube and surface-band summaries, returning UNKNOWN or no band when required column data is missing. |

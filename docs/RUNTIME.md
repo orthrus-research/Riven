@@ -326,6 +326,24 @@ nested lighting or encoding twice.
 - `tools/atlas_golden.py check|update [--verify]` compares four fixed atlas windows
   (`tools/atlas-golden.json`) with their stored digests. A content-changing commit updates the
   goldens in the same commit, after reviewing `terrain_atlas.py compare`.
+- Gradle's `runDiagnostics -PrivenDiagnosticMain=<class> --args="<arguments>"` runs a selected
+  `tools/checks` entry point on Java 26. `compileDiagnosticsJava` compiles the helpers as Java 25
+  bytecode. Game API checks also need
+  `-PrivenDiagnosticGameBootstrap=true`, which remaps the locked Cubature artifact into development
+  names in a separate configuration and records its input, mapped artifact and ordered classpath in
+  `build/diagnostics/cubature-mapping.json`.
+- `cc.orthrus.riven.CubePrimerBootstrapCheck` takes `<fixture parent> [registries|generate]`.
+  Its `registries` mode validates real block and biome registrations and primer IDs. `generate`
+  also checks the actual generator's sky, surface and realm cubes, scanning every block and biome
+  cell and recording an oracle receipt. Use a fresh fixture parent. Both modes require the mapped
+  game option. Ordinary CI compiles these bootstrap helpers; their exact paths have a
+  quality-and-build quick rule. Invoke their registry or generation workload explicitly.
+- `cc.orthrus.riven.CubeClassificationCheck` takes `<new receipt.json> [seed ...]` through
+  `runDiagnostics` with the mapped game option. The receipt path must be new. Without seed
+  arguments it checks all six intended seeds; optional seed arguments select a partition. Each
+  unique `EMPTY` cube is generated into a fresh checked primer. Receipts separate
+  `selectedSeedsPassed` from `fullIntendedProofPassed`; the full flag requires all six intended
+  seeds to finish successfully. CI compiles this check; invoke its workload explicitly.
 - `tools/run_check.py <Check> [argument ...]` compiles the working tree's worldgen with one
   `tools/checks` entry point, as the atlas compiles its sampler, and runs it. The `definitions` job
   runs `DefinitionsCheck`: `worldgen/Definitions` lists exactly the packaged `riven-*.json` files,

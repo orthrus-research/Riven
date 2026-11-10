@@ -90,6 +90,7 @@ rebuild and store the same value.
 | `RivenWorldType.Generator.generateCube` | Cubature, native cubes | One `NativeColumns` entry per chunk column: `TerrainMap.sample` once per column, assembled by the column engine and stored as its runs of blocks and roles, read by every cube between the lowest soil and the reference top (Y 351); cubes wholly under the ground also read each 4x4x4 cell's depth biome from the entry |
 | `RivenWorldType.Generator.generateColumn` | Cubature, biome arrays | The same `NativeColumns` entry's habitats |
 | `RivenWorldType.Generator.prepareRetainedColumn` | Cubature generation workers, held arrivals | Retains the immutable `NativeColumns` entry until the host installs the destination column or releases the last arrival |
+| `RivenWorldType.Generator.cubeClass` / `surfaceBand` | Optional host capability (`ICubeClassification`) | Loaded bounds and completed memo or retained columns, including required neighbours; missing required facts yield `UNKNOWN` or no surface band |
 | `createTerrainPreviewSampler` | Cubature DH provider | `TerrainMap.sample` per preview column, assembled by the column engine and emitted as its runs |
 | `ClimateBiomeProvider` | Minecraft biome queries | `surfaceHabitat`; spawn biomes exclude ocean, deep ocean, river, swamp and all three beach biomes |
 | `RivenSpawn` | Forge `CreateSpawnPosition` | First dry land column, in 64-block rings out to 16,384 blocks, with a 16-block dry margin |
@@ -105,6 +106,16 @@ reservations first. Overlapping reservations share their value and release it af
 closes. Cubature bounds the held keys and owns release after installation, replacement, departure or
 shutdown, including a worker finishing an abandoned request. Builds run outside reservation-map
 locks; an ordinary same-key build in flight cannot block a lookup of a prepared reservation.
+
+Completed entries also record their highest native non-air top, conservative raw geometry bounds
+and logical ground kinds. `ICubeClassification` combines these with loaded boulder, tree and
+ground-cover limits and completed neighbouring entries. Queries use only already-held memo or
+retained values and never build, load, prepare or wait for missing data. `EMPTY` certifies that
+ordinary generation into a fresh primer produces only air and no 3D biome entries. Missing
+required summaries or unsupported feature reach yields `UNKNOWN`; `DETAILED` and `UNKNOWN`
+require ordinary generation. The optional inclusive cube-Y `surfaceBand` covers generated
+surface ground, fluids and decorations, or is absent when its bounds cannot be proved.
+
 Surface and water queries (`NativeColumns.surface` for tree sites' clearance,
 `NativeColumns.water` for reeds beside water) read a held chunk column or resolve just their one
 column, with a small per-thread cache, so distant previews do not build whole chunk columns for
