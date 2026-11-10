@@ -10,18 +10,26 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * Exact closed drainage graph round trips. The fixture-only mode constructs no terrain; the
- * default also builds one nonempty network for each of six seeds. No game or store wiring.
- * Usage: {@code DrainageCodecCheck <fixture parent> [fixtures | scale=N [seed ...]]}.
+ * default also builds and reloads a stored network for each of six seeds, retaining fresh cache
+ * directories for inspection. The verify mode reads an existing current-identity namespace and
+ * compares selected entries with fresh, cache-free builds; it creates or repairs no files.
+ * Usage: {@code DrainageCodecCheck <fixture parent> [fixtures | scale=N [seed ...]]}, or
+ * {@code DrainageCodecCheck verify <cache root> seed=N scale=N entries=N random=N}.
  */
 public final class DrainageCodecCheck {
     private static final Class<?> CHANNEL = nested("Channel"), NETWORK = nested("Network");
@@ -180,8 +188,13 @@ public final class DrainageCodecCheck {
     }
 
     private static Object roundTrip(Object original, String label) throws Exception {
+        Object loaded = decode(encode(original));
+        equivalent(original, loaded, label);
+        return loaded;
+    }
+
+    private static void equivalent(Object original, Object loaded, String label) throws Exception {
         byte[] encoded = encode(original);
-        Object loaded = decode(encoded);
         same(original, loaded, label);
         require(Arrays.equals(encoded, encode(loaded)), label + ": encoded bytes changed");
         Method estimate = CODEC.getClass().getDeclaredMethod("detachedBytes", NETWORK);
@@ -192,7 +205,6 @@ public final class DrainageCodecCheck {
         System.out.printf(
                 "%s: %d body bytes, %d live estimated bytes, %d detached estimated bytes%n",
                 label, encoded.length, (Long) get(loaded, "bytes"), complete);
-        return loaded;
     }
 
     private static Object channel(boolean compact) throws Exception {
@@ -491,12 +503,11 @@ public final class DrainageCodecCheck {
             malformed(invalid);
         }
         binReferenceFixtures();
+        keyFixtures();
         cacheFailureBoundary(parent, structuralFailures(body), original);
     }
 
-    private static void generated(long seed, double scale) throws Exception {
-        GenerationMaps maps = new GenerationMaps(seed, new WorldScale(scale));
-        Drainage drainage = maps.terrain.hydro.drainage;
+    private static Set<Long> nearby(Drainage drainage, double scale) {
         Set<Long> cells = new LinkedHashSet<>();
         for (int ring = 0; ring <= 2; ring++)
             for (int z = -ring; z <= ring; z++)
@@ -505,23 +516,209 @@ public final class DrainageCodecCheck {
                     for (int i = 0; i < pairs.length; i += 2)
                         cells.add((pairs[i] << 32) ^ (pairs[i + 1] & 0xffffffffL));
                 }
-        Method network = Drainage.class.getDeclaredMethod("network", long.class, long.class);
-        for (long key : cells) {
-            Object value = invoke(network, drainage, key >> 32, (long) (int) key);
-            if (Array.getLength(get(value, "channels")) == 0) continue;
-            roundTrip(
-                    value,
-                    "seed=" + seed + " scale=" + scale + " key=" + (key >> 32) + "," + (int) key);
-            return;
+        return cells;
+    }
+
+    /** No sampler or build is active when its synchronous network request returns. */
+    private static void evictDrainage(Drainage drainage) throws ReflectiveOperationException {
+        Object memo = get(drainage, "memo");
+        AtomicReferenceArray<?> slots = (AtomicReferenceArray<?>) get(memo, "slots");
+        for (int i = 0; i < slots.length(); i++) slots.set(i, null);
+    }
+
+    /** Snapshot the original memo before any request, instrumentation or eviction can change it. */
+    private static void constructorBoundary(Drainage drainage, RegionalStore store)
+            throws ReflectiveOperationException {
+        Object memo = get(drainage, "memo");
+        AtomicReferenceArray<?> slots = (AtomicReferenceArray<?>) get(memo, "slots");
+        Set<Key> keys = new LinkedHashSet<>(), nonempty = new LinkedHashSet<>();
+        for (int i = 0; i < slots.length(); i++) {
+            Object entry = slots.get(i);
+            if (entry == null) continue;
+            Key key = new Key((Integer) get(entry, "x"), (Integer) get(entry, "z"));
+            keys.add(key);
+            if (Array.getLength(get(get(entry, "value"), "channels")) > 0) nonempty.add(key);
         }
-        throw new AssertionError("No nonempty drainage fixture for seed " + seed);
+        List<Key> ordered =
+                keys.stream()
+                        .sorted(Comparator.comparingLong(Key::x).thenComparingLong(Key::z))
+                        .toList();
+        RegionalStore.Statistics stats = store.statistics();
+        System.out.printf(
+                "Constructor boundary: historical pre-bind builds=0 (source audit); "
+                        + "observed surviving keys=%s; nonempty keys=%d; store=%s%n",
+                ordered, nonempty.size(), stats);
+        require(keys.isEmpty(), "Source-audited constructor zero-history premise changed");
+        require(
+                stats.hits() == 0
+                        && stats.misses() == 0
+                        && stats.writes() == 0
+                        && stats.failedWrites() == 0,
+                "Construction performed regional store operations before the first request");
+    }
+
+    private static void generated(Path parent, long seed, WorldScale world) throws Exception {
+        Files.createDirectories(parent);
+        Path root = Files.createTempDirectory(parent, "drainage-store-");
+        require(root.toRealPath().startsWith(parent.toRealPath()), "Cache escaped its parent");
+        System.out.printf("Retained cache root=%s seed=%d scale=%s%n", root, seed, world.layout);
+        try (RegionalStore store = new RegionalStore(root, RegionalIdentity.capture(seed, world))) {
+            GenerationMaps maps =
+                    new GenerationMaps(
+                            seed, TerrainHeightReference.DEFAULT, world, BuildPool.tools(), store);
+            Drainage drainage = maps.terrain.hydro.drainage;
+            constructorBoundary(drainage, store);
+            Method network = Drainage.class.getDeclaredMethod("network", long.class, long.class);
+            for (long key : nearby(drainage, world.layout)) {
+                long x = key >> 32, z = (int) key;
+                Object built = invoke(network, drainage, x, z);
+                if (Array.getLength(get(built, "channels")) == 0) continue;
+                RegionalStore.Statistics cold = store.statistics();
+                require(
+                        cold.misses() > 0 && cold.writes() > 0 && cold.failedWrites() == 0,
+                        "Fresh store did not retain its generated networks");
+                evictDrainage(drainage);
+                Object loaded = invoke(network, drainage, x, z);
+                RegionalStore.Statistics repeat = store.statistics();
+                require(
+                        loaded != built && Array.getLength(get(loaded, "channels")) > 0,
+                        "Memo eviction did not return a distinct nonempty network");
+                require(
+                        repeat.hits() == cold.hits() + 1
+                                && repeat.misses() == cold.misses()
+                                && repeat.writes() == cold.writes()
+                                && repeat.failedWrites() == cold.failedWrites(),
+                        "Reload rebuilt or rewrote a network instead of reading its stored entry");
+                equivalent(
+                        built,
+                        loaded,
+                        "seed=" + seed + " scale=" + world.layout + " key=" + x + "," + z);
+                System.out.printf("Store cold=%s reload=%s%n", cold, repeat);
+                return;
+            }
+            throw new AssertionError("No nonempty drainage fixture for seed " + seed);
+        }
+    }
+
+    private record Key(long x, long z) {
+        String filename() {
+            return Long.toUnsignedString(x, 16) + "-" + Long.toUnsignedString(z, 16) + ".bin";
+        }
+    }
+
+    /** Accept only the store's unique lowercase unsigned-hex representation of a key. */
+    private static Key canonicalKey(Path file) {
+        String name = file.getFileName().toString();
+        if (!name.endsWith(".bin")) return null;
+        String stem = name.substring(0, name.length() - 4);
+        int split = stem.indexOf('-');
+        if (split < 1 || split == stem.length() - 1) return null;
+        try {
+            Key key =
+                    new Key(
+                            Long.parseUnsignedLong(stem.substring(0, split), 16),
+                            Long.parseUnsignedLong(stem.substring(split + 1), 16));
+            return key.filename().equals(name) ? key : null;
+        } catch (NumberFormatException invalid) {
+            return null;
+        }
+    }
+
+    private static void keyFixtures() {
+        require(
+                new Key(-1, Long.MIN_VALUE)
+                        .equals(canonicalKey(Path.of("ffffffffffffffff-8000000000000000.bin"))),
+                "Unsigned key bits changed");
+        require(
+                new Key(0, 1).equals(canonicalKey(Path.of("0-1.bin"))),
+                "Canonical key was rejected");
+        for (String invalid :
+                List.of(
+                        "00-0.bin",
+                        "0-00.bin",
+                        "FF-0.bin",
+                        "-1-0.bin",
+                        "10000000000000000-0.bin",
+                        "0-0.part",
+                        "0-.bin"))
+            require(canonicalKey(Path.of(invalid)) == null, "Noncanonical key was accepted");
+    }
+
+    private static void verify(Path root, long seed, WorldScale world, int count, long randomSeed)
+            throws Exception {
+        if (count <= 0)
+            throw new IllegalArgumentException("Verification entry count must be positive");
+        try (RegionalStore store = new RegionalStore(root, RegionalIdentity.capture(seed, world))) {
+            Path namespace = store.path("drainage", 0, 0, CODEC).getParent();
+            List<Key> keys = new ArrayList<>();
+            try (var paths = Files.list(namespace)) {
+                for (Path path :
+                        paths.filter(p -> Files.isRegularFile(p, LinkOption.NOFOLLOW_LINKS))
+                                .toList()) {
+                    Key key = canonicalKey(path);
+                    if (key != null) keys.add(key);
+                }
+            }
+            keys.sort(Comparator.comparing(Key::filename));
+            require(
+                    !keys.isEmpty(),
+                    "No canonical entries in current drainage namespace " + namespace);
+            require(
+                    count <= keys.size(),
+                    "Requested more entries than the current namespace contains");
+            Random random = new Random(randomSeed);
+            for (int i = 0; i < count; i++)
+                Collections.swap(keys, i, i + random.nextInt(keys.size() - i));
+            GenerationMaps fresh = new GenerationMaps(seed, world);
+            Drainage drainage = fresh.terrain.hydro.drainage;
+            Method build = Drainage.class.getDeclaredMethod("build", long.class, long.class);
+            for (Key key : keys.subList(0, count)) {
+                require(
+                        key.x() == (int) key.x() && key.z() == (int) key.z(),
+                        "Stored drainage key is outside its signed-int cell domain");
+                Object loaded = store.get("drainage", key.x(), key.z(), CODEC);
+                require(
+                        loaded != null,
+                        "Selected entry is stale, corrupt or missing: " + key.filename());
+                Object recomputed = invoke(build, drainage, key.x(), key.z());
+                equivalent(recomputed, loaded, "Verified " + key.filename());
+            }
+            RegionalStore.Statistics stats = store.statistics();
+            require(
+                    stats.hits() == count
+                            && stats.misses() == 0
+                            && stats.writes() == 0
+                            && stats.failedWrites() == 0,
+                    "Verification did not remain a read-only hit-only pass");
+            System.out.printf(
+                    "Verified %d of %d entries seed=%d scale=%s random=%d namespace=%s%n",
+                    count, keys.size(), seed, world.layout, randomSeed, namespace);
+        }
+    }
+
+    private static String option(String value, String prefix) {
+        if (!value.startsWith(prefix)) throw new IllegalArgumentException("Expected " + prefix);
+        return value.substring(prefix.length());
     }
 
     public static void main(String[] args) throws Exception {
+        if (args.length > 0 && args[0].equals("verify")) {
+            if (args.length != 6)
+                throw new IllegalArgumentException(
+                        "Use verify <cache root> seed=N scale=N entries=N random=N");
+            verify(
+                    Path.of(args[1]).toAbsolutePath().normalize(),
+                    Long.parseLong(option(args[2], "seed=")),
+                    new WorldScale(Double.parseDouble(option(args[3], "scale="))),
+                    Integer.parseInt(option(args[4], "entries=")),
+                    Long.parseLong(option(args[5], "random=")));
+            return;
+        }
         if (args.length == 0)
             throw new IllegalArgumentException(
                     "Give a parent directory for temporary cache fixtures");
-        fixtures(Path.of(args[0]).toAbsolutePath().normalize());
+        Path parent = Path.of(args[0]).toAbsolutePath().normalize();
+        fixtures(parent);
         if (args.length == 2 && args[1].equals("fixtures")) return;
         double scale = 1;
         int first = 1;
@@ -529,8 +726,11 @@ public final class DrainageCodecCheck {
             scale = Double.parseDouble(args[1].substring(6));
             first++;
         }
-        if (first == args.length) for (long seed : SEEDS) generated(seed, scale);
-        else for (int i = first; i < args.length; i++) generated(Long.parseLong(args[i]), scale);
-        System.out.println("Drainage complete-field raw-bit round trips passed");
+        WorldScale world = new WorldScale(scale);
+        if (first == args.length) for (long seed : SEEDS) generated(parent, seed, world);
+        else
+            for (int i = first; i < args.length; i++)
+                generated(parent, Long.parseLong(args[i]), world);
+        System.out.println("Drainage complete-field raw-bit store reloads passed");
     }
 }

@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import java.lang.management.ManagementFactory;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,6 +23,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -56,11 +58,18 @@ import java.util.function.Supplier;
  * <pre>
  * python tools/run_check.py RegionalCacheProbe out=DIR scale=4 players=12
  * </pre>
+ *
+ * <p>{@code store=ROOT drainageSlots=2} uses the real optional store with a tool-only tiny
+ * Drainage memo. After cold demand it drops only that memo and explicitly replays every unique
+ * cold key, requiring file hits and no builds or writes. This separate phase avoids mistaking
+ * warm Hydro plans for evidence of disk reuse. Do not combine it with {@code prepareReach}.
+ * Per-flight continent detail is omitted in this mode; aggregate counters and cold keys remain
+ * complete.
  */
 public final class RegionalCacheProbe {
     // The demand passes, then the optional preparation run before them (prepareReach=).
-    private static final String[] PASSES = {"cold", "repeat", "moved", "prepare"};
-    private static final int DEMAND = 3, PREPARE = 3;
+    private static final String[] PASSES = {"cold", "repeat", "moved", "prepare", "disk-repeat"};
+    private static final int DEMAND = 3, PREPARE = 3, DISK_REPEAT = 4;
     private static final String[] KINDS = {"worker", "common", "build", "other"};
     private static final int WORKER = 0, COMMON = 1, BUILD = 2, OTHER = 3;
     // Per-pass counters of a memo.
@@ -73,6 +82,7 @@ public final class RegionalCacheProbe {
     private static volatile int pass;
     private static volatile Field flightOwner;
     private static volatile ForkJoinPool buildPool;
+    private static boolean storeMode;
 
     private RegionalCacheProbe() {}
 
@@ -89,6 +99,7 @@ public final class RegionalCacheProbe {
         final ConcurrentHashMap<Object, ConcurrentLinkedQueue<long[]>> waiters =
                 new ConcurrentHashMap<>();
         final ConcurrentLinkedQueue<long[]> timeline = new ConcurrentLinkedQueue<>();
+        Set<Long> coldKeys;
         volatile boolean timed;
         boolean instrumented;
         long retained = -1;
@@ -157,6 +168,7 @@ public final class RegionalCacheProbe {
 
         void started(Long key, Object flight) {
             int p = pass;
+            if (p == 0 && coldKeys != null) coldKeys.add(key);
             if (built.computeIfAbsent(key, k -> new AtomicInteger()).incrementAndGet() > 1)
                 counts[p][REBUILDS].increment();
             counts[p][BUILDS].increment();
@@ -281,9 +293,28 @@ public final class RegionalCacheProbe {
             a.put(arg.substring(0, eq), arg.substring(eq + 1));
         }
         if (a.containsKey("attribute")) {
+            if (a.containsKey("store") || a.containsKey("drainageSlots"))
+                throw new IllegalArgumentException(
+                        "Store replay is a demand probe, not attribution");
             attribute(a);
             return;
         }
+        storeMode = a.containsKey("store");
+        if (!storeMode && a.containsKey("drainageSlots"))
+            throw new IllegalArgumentException("drainageSlots requires store");
+        if (storeMode) {
+            long seed = Long.parseLong(value(a, "seed", "8675309"));
+            WorldScale world = new WorldScale(Double.parseDouble(value(a, "scale", "1")));
+            try (RegionalStore store =
+                    new RegionalStore(
+                            Paths.get(required(a, "store")),
+                            RegionalIdentity.capture(seed, world))) {
+                demand(a, store);
+            }
+        } else demand(a, null);
+    }
+
+    private static void demand(Map<String, String> a, RegionalStore store) throws Exception {
         Path out = Paths.get(required(a, "out"));
         long seed = Long.parseLong(value(a, "seed", "8675309"));
         double scale = Double.parseDouble(value(a, "scale", "1"));
@@ -304,11 +335,30 @@ public final class RegionalCacheProbe {
         String spread = value(a, "spread", "dispersed");
         boolean sizes = Boolean.parseBoolean(value(a, "sizes", "true"));
         double prepareReach = Double.parseDouble(value(a, "prepareReach", "0"));
+        if (store != null && prepareReach != 0)
+            throw new IllegalArgumentException(
+                    "Store replay requires no preparation before cold demand");
         double half = 4000 * scale;
         Files.createDirectories(out);
 
         long t0 = System.nanoTime();
-        GenerationMaps maps = new GenerationMaps(seed, new WorldScale(scale));
+        WorldScale world = new WorldScale(scale);
+        GenerationMaps maps =
+                store == null
+                        ? new GenerationMaps(seed, world)
+                        : new GenerationMaps(
+                                seed,
+                                TerrainHeightReference.DEFAULT,
+                                world,
+                                BuildPool.tools(),
+                                store);
+        StoreRun stored =
+                store == null
+                        ? null
+                        : new StoreRun(
+                                store,
+                                maps.terrain.hydro.drainage,
+                                Integer.parseInt(value(a, "drainageSlots", "2")));
         buildPool = buildThreads == 0 ? null : BuildPool.bounded(buildThreads, "probe-build");
         maps.pool.use(buildPool);
         double mapSeconds = (System.nanoTime() - t0) / 1e9;
@@ -323,7 +373,8 @@ public final class RegionalCacheProbe {
         }
         if (plans == null || networks == null)
             throw new IllegalStateException("Hydro plan or drainage memo not found");
-        plans.timed = networks.timed = true;
+        plans.timed = networks.timed = !storeMode;
+        if (stored != null) networks.coldKeys = ConcurrentHashMap.newKeySet();
 
         double[][] at = players(maps, seed, players, half, spread);
         double[][] moved = new double[players][];
@@ -354,8 +405,10 @@ public final class RegionalCacheProbe {
         watcher.start();
         JsonObject preparation = prepare(maps, at, half, prepareReach);
         JsonArray passes = new JsonArray();
+        JsonObject diskRepeat = null;
         for (int p = 0; p < DEMAND; p++) {
             pass = p;
+            RegionalStore.Statistics diskBefore = store == null ? null : store.statistics();
             List<double[]> work = p == 2 ? second : first;
             Object[][] before = new Object[caches.size()][];
             for (int i = 0; i < caches.size(); i++)
@@ -367,7 +420,10 @@ public final class RegionalCacheProbe {
                 if (before[i] != null) caches.get(i).compare(p, before[i]);
             // Snapshots hold entries; drop them so retained() sees only the memos' own.
             Arrays.fill(before, null);
-            passes.add(passJson(p, seconds, work, taskNanos, watch, caches));
+            JsonObject result = passJson(p, seconds, work, taskNanos, watch, caches);
+            if (store != null) result.add("store", delta(diskBefore, store.statistics()));
+            passes.add(result);
+            if (p == 0 && stored != null) diskRepeat = stored.replay(networks, plans);
         }
         watch.stop = true;
         pool.shutdown();
@@ -400,11 +456,22 @@ public final class RegionalCacheProbe {
         report.add("movedPositions", points(moved));
         report.add("passes", passes);
         report.add("preparation", preparation);
+        if (stored != null) {
+            report.addProperty("storeRoot", required(a, "store"));
+            report.add("constructorBoundary", stored.initial);
+            report.add("diskRepeat", diskRepeat);
+            report.add("regionalFlightDetails", flightDetails(plans, networks));
+            report.addProperty(
+                    "flightAccounting",
+                    "builds/rebuilds count memo flights, including disk reads;"
+                            + " buildSeconds is their summed wall time;"
+                            + " Drainage build attempts are store misses");
+        }
         JsonArray cacheJson = new JsonArray();
         for (int i = 0; i < caches.size(); i++)
             cacheJson.add(cacheJson(caches.get(i), resident[i], overflow[i]));
         report.add("caches", cacheJson);
-        report.add("continents", continents(maps, plans, networks));
+        report.add("continents", continents(maps, plans, networks, storeMode));
         Files.write(
                 out.resolve("probe.json"),
                 new GsonBuilder()
@@ -413,6 +480,142 @@ public final class RegionalCacheProbe {
                         .toJson(report)
                         .getBytes(StandardCharsets.UTF_8));
         print(report);
+    }
+
+    /** All numeric counters remain complete; store demand omits per-flight geometry detail. */
+    static JsonObject flightDetails(Cache plans, Cache networks) {
+        JsonObject j = new JsonObject();
+        j.addProperty("detailMode", "summary");
+        j.addProperty("perFlightDetails", "not collected");
+        j.addProperty("omittedDrainageMemoFlights", networks.total(BUILDS));
+        j.addProperty("omittedHydroMemoFlights", plans.total(BUILDS));
+        j.addProperty(
+                "networkBuildAttemptCountSource",
+                "RegionalStore misses, followed by Drainage.build");
+        return j;
+    }
+
+    private static JsonObject delta(
+            RegionalStore.Statistics before, RegionalStore.Statistics after) {
+        JsonObject j = new JsonObject();
+        j.addProperty("hits", after.hits() - before.hits());
+        j.addProperty("misses", after.misses() - before.misses());
+        j.addProperty("writes", after.writes() - before.writes());
+        j.addProperty("failedWrites", after.failedWrites() - before.failedWrites());
+        return j;
+    }
+
+    /** Tool-only tiny memo and a quiescent replay of every unique cold Drainage key. */
+    private static final class StoreRun {
+        final RegionalStore store;
+        final Drainage drainage;
+        final JsonObject initial = new JsonObject();
+
+        StoreRun(RegionalStore store, Drainage drainage, int capacity) throws Exception {
+            if (capacity < 1 || (capacity & (capacity - 1)) != 0)
+                throw new IllegalArgumentException("drainageSlots must be a positive power of two");
+            this.store = store;
+            this.drainage = drainage;
+            // Capture the ORIGINAL memo before replacing it, wrapping flights, or making any query.
+            Object memo = read(drainage, "memo");
+            AtomicReferenceArray<?> slots = (AtomicReferenceArray<?>) read(memo, "slots");
+            List<Long> keys = new ArrayList<>();
+            int nonempty = 0;
+            for (int i = 0; i < slots.length(); i++) {
+                Object entry = slots.get(i);
+                if (entry == null) continue;
+                int x = (int) read(entry, "x"), z = (int) read(entry, "z");
+                keys.add(((long) x << 32) ^ (z & 0xffffffffL));
+                if (Array.getLength(read(read(entry, "value"), "channels")) > 0) nonempty++;
+            }
+            keys.sort(Long::compare);
+            JsonArray held = new JsonArray();
+            for (long key : keys) {
+                JsonArray pair = new JsonArray();
+                pair.add((int) (key >> 32));
+                pair.add((int) key);
+                held.add(pair);
+            }
+            RegionalStore.Statistics stats = store.statistics();
+            initial.addProperty(
+                    "historicalPrebindKeys",
+                    "zero by audited constructor callchain;"
+                            + " surviving-key measurement alone cannot recover historical evictions");
+            initial.add("measuredSurvivingKeys", held);
+            initial.addProperty("measuredNonemptySurvivors", nonempty);
+            initial.addProperty("originalMemoCapacity", slots.length());
+            initial.addProperty("testMemoCapacity", capacity);
+            initial.add("store", delta(new RegionalStore.Statistics(0, 0, 0, 0), stats));
+            System.out.println("Store constructor boundary " + initial);
+            if (!keys.isEmpty()
+                    || stats.hits() != 0
+                    || stats.misses() != 0
+                    || stats.writes() != 0
+                    || stats.failedWrites() != 0)
+                throw new AssertionError(
+                        "Drainage constructor boundary changed; initial entries were not discarded");
+            Field field = Drainage.class.getDeclaredField("memo");
+            field.setAccessible(true);
+            field.set(drainage, new CellMemo<>(capacity));
+        }
+
+        JsonObject replay(Cache networks, Cache plans) throws Exception {
+            List<Long> keys = new ArrayList<>(networks.coldKeys);
+            keys.sort(Long::compare);
+            if (keys.isEmpty()) throw new AssertionError("Cold demand requested no Drainage keys");
+            RegionalStore.Statistics before = store.statistics();
+            if (before.failedWrites() != 0)
+                throw new AssertionError("Cold demand had a failed cache write");
+            int evicted = networks.resident();
+            for (int i = 0; i < networks.capacity(); i++) networks.slots.set(i, null);
+            Object[] beforeReplay = networks.snapshot();
+            // Hydro plans deliberately remain warm; exact file-hit deltas prove their warmth cannot
+            // mask a rebuild.
+            Method network = Drainage.class.getDeclaredMethod("network", long.class, long.class);
+            network.setAccessible(true);
+            pass = DISK_REPEAT;
+            long started = System.nanoTime();
+            for (long key : keys) {
+                try {
+                    network.invoke(drainage, (long) (int) (key >> 32), (long) (int) key);
+                } catch (java.lang.reflect.InvocationTargetException wrapped) {
+                    Throwable cause = wrapped.getCause();
+                    if (cause instanceof Exception e) throw e;
+                    if (cause instanceof Error e) throw e;
+                    throw new AssertionError(cause);
+                }
+            }
+            networks.compare(DISK_REPEAT, beforeReplay);
+            Arrays.fill(beforeReplay, null);
+            RegionalStore.Statistics after = store.statistics();
+            JsonObject result = delta(before, after);
+            result.addProperty("uniqueColdKeys", keys.size());
+            JsonArray requested = new JsonArray();
+            for (long key : keys) {
+                JsonArray pair = new JsonArray();
+                pair.add((int) (key >> 32));
+                pair.add((int) key);
+                requested.add(pair);
+            }
+            result.add("coldKeys", requested);
+            result.addProperty("evictedDrainageSlots", evicted);
+            result.addProperty(
+                    "slotAccounting", "after the forced clear through the completed replay");
+            result.addProperty("seconds", (System.nanoTime() - started) / 1e9);
+            result.addProperty("drainageMemoFlights", networks.count(DISK_REPEAT, BUILDS));
+            result.addProperty("hydroPlanFlights", plans.count(DISK_REPEAT, BUILDS));
+            result.addProperty("networkBuilds", after.misses() - before.misses());
+            System.out.println("Forced Drainage disk repeat " + result);
+            if (after.hits() - before.hits() != keys.size()
+                    || after.misses() != before.misses()
+                    || after.writes() != before.writes()
+                    || after.failedWrites() != before.failedWrites()
+                    || networks.count(DISK_REPEAT, BUILDS) != keys.size()
+                    || plans.count(DISK_REPEAT, BUILDS) != 0)
+                throw new AssertionError(
+                        "Cold-key replay did not load every file without rebuilding");
+            return result;
+        }
     }
 
     /**
@@ -1262,7 +1465,8 @@ public final class RegionalCacheProbe {
     }
 
     /** Each continent's drainage scan: its support, the plans it covers and the plans it built. */
-    static JsonArray continents(GenerationMaps maps, Cache plans, Cache networks) {
+    static JsonArray continents(GenerationMaps maps, Cache plans, Cache networks, boolean stored) {
+        if (stored) return new JsonArray();
         int cell = maps.terrain.hydro.cellBlocks;
         List<long[]> planBuilds = new ArrayList<>(plans.timeline);
         JsonArray out = new JsonArray();
@@ -1387,6 +1591,7 @@ public final class RegionalCacheProbe {
         j.addProperty("retainedBytes", c.retained);
         JsonObject passes = new JsonObject();
         for (int p = 0; p < PASSES.length; p++) {
+            if (p == DISK_REPEAT && !storeMode) continue;
             JsonObject q = new JsonObject();
             q.addProperty("builds", c.count(p, BUILDS));
             q.addProperty("rebuilds", c.count(p, REBUILDS));
@@ -1407,6 +1612,13 @@ public final class RegionalCacheProbe {
     }
 
     private static void print(JsonObject r) {
+        boolean stored = r.has("regionalFlightDetails");
+        if (r.has("flightAccounting")) {
+            System.out.println(r.get("flightAccounting").getAsString());
+            System.out.println("Constructor boundary " + r.get("constructorBoundary"));
+            System.out.println("Forced disk repeat " + r.get("diskRepeat"));
+            System.out.println("Regional flight detail " + r.get("regionalFlightDetails"));
+        }
         System.out.printf(
                 "seed %d, scale %s (%.0f-block world), %d %s players, %d threads, build pool %d,"
                         + " common pool parallelism %d, maps %.1fs%n",
@@ -1435,8 +1647,8 @@ public final class RegionalCacheProbe {
                 "taskP50",
                 "taskP99",
                 "taskMax",
-                "builds",
-                "rebuild",
+                stored ? "memoF" : "builds",
+                stored ? "repeatF" : "rebuild",
                 "raced",
                 "cmnWaitS",
                 "bldWaitS",
@@ -1470,10 +1682,10 @@ public final class RegionalCacheProbe {
                 "cap",
                 "held",
                 "keys",
-                "builds c/r/m",
-                "rebuild",
+                stored ? "memoF c/r/m" : "builds c/r/m",
+                stored ? "repeatF" : "rebuild",
                 "raced",
-                "buildS",
+                stored ? "flightS" : "buildS",
                 "waitS",
                 "over",
                 "replaced c/r/m",
@@ -1487,6 +1699,7 @@ public final class RegionalCacheProbe {
             double buildS = 0, waitS = 0;
             for (int p = 0; p < PASSES.length; p++) {
                 JsonObject q = ps.getAsJsonObject(PASSES[p]);
+                if (q == null) continue;
                 b[p] = q.get("builds").getAsLong();
                 rep[p] = q.get("slotsReplaced").getAsLong();
                 rebuilds += q.get("rebuilds").getAsLong();
@@ -1516,6 +1729,7 @@ public final class RegionalCacheProbe {
                             ? "-"
                             : String.format("%.1f", bytes / 1024.0 / denominator));
         }
+        if (stored) return;
         System.out.printf(
                 "%-10s %7s %7s %6s %6s %7s %7s %6s %7s%n",
                 "continent",
