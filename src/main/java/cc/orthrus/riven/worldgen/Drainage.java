@@ -132,6 +132,41 @@ final class Drainage {
             maxZ = d + margin;
         }
 
+        /** Stored fields are already compact; neither recompute bounds nor expand null arrays. */
+        private Channel(RegionalData.Reader in) throws RegionalData.Malformed {
+            id = in.longValue();
+            x = in.doubles();
+            z = in.doubles();
+            level = in.doubles();
+            radius = in.doubles();
+            depth = in.doubles();
+            gradient = in.doubles();
+            valley = in.doubles();
+            braid = in.doubles();
+            bar = in.doubles();
+            weave = in.doubles();
+            riffle = in.bytes();
+            river = in.bool();
+            minX = in.doubleValue();
+            minZ = in.doubleValue();
+            maxX = in.doubleValue();
+            maxZ = in.doubleValue();
+            mouthX = in.doubleValue();
+            mouthZ = in.doubleValue();
+            NetworkCodec.require(x != null && x.length >= 2, "Channel point count");
+            int points = x.length;
+            for (double[] a : new double[][] {z, level, radius, depth, gradient})
+                NetworkCodec.require(a != null && a.length == points, "Channel array length");
+            for (double[] a : new double[][] {valley, braid, bar, weave})
+                NetworkCodec.require(
+                        a == null || a.length == points, "Optional channel array length");
+            NetworkCodec.require((braid == null) == (weave == null), "Channel weave presence");
+            NetworkCodec.require(
+                    riffle != null && riffle.length == points, "Channel riffle length");
+            for (byte value : riffle)
+                NetworkCodec.require(value == 0 || value == 1, "Channel riffle value");
+        }
+
         /** Whether every value is +0.0 (by its bits, so -0.0 keeps its array). */
         private static boolean zero(double[] values) {
             for (double v : values) if (Double.doubleToRawLongBits(v) != 0) return false;
@@ -380,6 +415,217 @@ final class Drainage {
                     + 4L * (start.length + count.length);
         }
     }
+
+    /** Closed flat graph only: no owner, memo, sampler or receiving-plan references. */
+    private static final class NetworkCodec implements RegionalStore.Codec<Network> {
+        @Override
+        public int version() {
+            return 1;
+        }
+
+        @Override
+        public void write(RegionalData.Writer out, Network n) {
+            out.doubleValue(n.originX);
+            out.doubleValue(n.originZ);
+            out.doubleValue(n.bin);
+            out.integer(n.bins);
+            out.integer(n.binsZ);
+            out.integer(n.channels.length);
+            for (Channel c : n.channels) {
+                out.longValue(c.id);
+                for (double[] a :
+                        new double[][] {
+                            c.x,
+                            c.z,
+                            c.level,
+                            c.radius,
+                            c.depth,
+                            c.gradient,
+                            c.valley,
+                            c.braid,
+                            c.bar,
+                            c.weave
+                        }) out.doubles(a);
+                out.bytes(c.riffle);
+                out.bool(c.river);
+                out.doubleValue(c.minX);
+                out.doubleValue(c.minZ);
+                out.doubleValue(c.maxX);
+                out.doubleValue(c.maxZ);
+                out.doubleValue(c.mouthX);
+                out.doubleValue(c.mouthZ);
+            }
+            bins(out, n.refs);
+            bins(out, n.rivers);
+            out.doubles(n.mouths);
+            out.bool(n.lakes != null);
+            if (n.lakes != null) {
+                Lakes l = n.lakes;
+                out.doubleValue(l.originX);
+                out.doubleValue(l.originZ);
+                out.doubleValue(l.cell);
+                out.integer(l.nx);
+                out.integer(l.nz);
+                out.integers(l.lakeOf);
+                out.floats(l.ground);
+                out.integers(l.level);
+                out.longs(l.id);
+                out.doubles(l.box);
+            }
+        }
+
+        @Override
+        public Network read(RegionalData.Reader in) throws RegionalData.Malformed {
+            double originX = in.doubleValue(), originZ = in.doubleValue(), bin = in.doubleValue();
+            int bins = in.integer(), binsZ = in.integer();
+            long cells = (long) bins * binsZ;
+            require(bins > 0 && binsZ > 0 && cells <= Integer.MAX_VALUE, "Network grid size");
+            require(bin > 0 && Double.isFinite(bin), "Network bin width");
+            int count = in.integer();
+            // Even an empty-array channel occupies 101 bytes in the flat layout.
+            require(count >= 0 && count <= in.remaining() / 101, "Network channel count");
+            Channel[] channels = new Channel[count];
+            for (int c = 0; c < count; c++) channels[c] = new Channel(in);
+            Bins refs = bins(in, (int) cells, channels);
+            Bins rivers = bins(in, (int) cells, channels);
+            double[] mouths = in.doubles();
+            require(mouths != null && mouths.length % 2 == 0, "Network mouth pairs");
+            Lakes lakes = in.bool() ? lakes(in) : null;
+            // The live accounting is recomputed by the same constructor as a fresh build.
+            return new Network(
+                    channels, originX, originZ, bin, bins, binsZ, refs, rivers, mouths, lakes);
+        }
+
+        private static void bins(RegionalData.Writer out, Bins b) {
+            out.longs(b.occupied);
+            out.integers(b.before);
+            out.integers(b.first);
+            out.integers(b.start);
+            out.integers(b.count);
+        }
+
+        private static Bins bins(RegionalData.Reader in, int cells, Channel[] channels)
+                throws RegionalData.Malformed {
+            long[] occupied = in.longs();
+            int[] before = in.integers(), first = in.integers();
+            int[] start = in.integers(), count = in.integers();
+            int words = (int) ((cells + 63L) >>> 6);
+            require(occupied != null && occupied.length == words, "Bin bitmap length");
+            require(before != null && before.length == words, "Bin rank length");
+            int present = 0;
+            for (int w = 0; w < words; w++) {
+                require(before[w] == present, "Bin rank");
+                present += Long.bitCount(occupied[w]);
+            }
+            if ((cells & 63) != 0)
+                require((occupied[words - 1] >>> (cells & 63)) == 0, "Bin bitmap padding");
+            require(first != null && first.length == (long) present + 1, "Bin first length");
+            require(
+                    start != null && count != null && start.length == count.length,
+                    "Bin run lengths");
+            require(first[0] == 0 && first[present] == start.length, "Bin run extent");
+            for (int b = 1; b < first.length; b++)
+                require(first[b] >= first[b - 1] && first[b] <= start.length, "Bin run order");
+            for (int r = 0; r < start.length; r++) {
+                long firstRef = Integer.toUnsignedLong(start[r]), end = firstRef + count[r];
+                require(count[r] > 0, "Bin run range");
+                references(firstRef, Math.min(end, 0x1_0000_0000L), channels);
+                if (end > 0x1_0000_0000L) references(0, end - 0x1_0000_0000L, channels);
+            }
+            return new Bins(occupied, before, first, start, count);
+        }
+
+        /** A positive int run can cross unsigned zero once; validate each non-wrapping piece. */
+        private static void references(long first, long end, Channel[] channels)
+                throws RegionalData.Malformed {
+            long last = end - 1;
+            int firstChannel = (int) (first >>> 16), lastChannel = (int) (last >>> 16);
+            require(
+                    firstChannel <= lastChannel && lastChannel < channels.length,
+                    "Bin channel reference");
+            for (int c = firstChannel; c <= lastChannel; c++) {
+                require(channels[c] != null, "Missing bin channel");
+                int segment = c == lastChannel ? (int) (last & 0xffff) : 0xffff;
+                require(segment < channels[c].x.length - 1, "Bin segment reference");
+            }
+        }
+
+        private static Lakes lakes(RegionalData.Reader in) throws RegionalData.Malformed {
+            double originX = in.doubleValue(), originZ = in.doubleValue(), cell = in.doubleValue();
+            int nx = in.integer(), nz = in.integer();
+            int[] lakeOf = in.integers();
+            float[] ground = in.floats();
+            int[] level = in.integers();
+            long[] id = in.longs();
+            double[] box = in.doubles();
+            long cells = (long) nx * nz;
+            require(nx > 0 && nz > 0 && cells <= Integer.MAX_VALUE, "Lake grid size");
+            require(cell > 0 && Double.isFinite(cell), "Lake cell width");
+            require(lakeOf != null && lakeOf.length == cells, "Lake grid length");
+            require(ground != null && ground.length == cells, "Lake ground length");
+            require(
+                    level != null && id != null && id.length == level.length,
+                    "Lake identity length");
+            require(box != null && box.length == 4L * level.length, "Lake box length");
+            for (int lake : lakeOf) require(lake >= -1 && lake < level.length, "Lake reference");
+            return new Lakes(originX, originZ, cell, nx, nz, lakeOf, ground, level, id, box);
+        }
+
+        private static void require(boolean condition, String reason)
+                throws RegionalData.Malformed {
+            if (!condition) throw new RegionalData.Malformed(reason);
+        }
+
+        /**
+         * Detached heap estimate: 16-byte headers, 4-byte references and 8-byte alignment. Counts
+         * the independent arrays a decode allocates, including every object and lake array. The
+         * live memo's existing estimate is deliberately unchanged.
+         */
+        private static long detachedBytes(Network n) {
+            long bytes = 80 + array(n.channels.length, 4) + array(n.mouths.length, 8);
+            for (Channel c : n.channels) {
+                bytes += 120 + array(c.riffle.length, 1);
+                for (double[] a :
+                        new double[][] {
+                            c.x,
+                            c.z,
+                            c.level,
+                            c.radius,
+                            c.depth,
+                            c.gradient,
+                            c.valley,
+                            c.braid,
+                            c.bar,
+                            c.weave
+                        }) if (a != null) bytes += array(a.length, 8);
+            }
+            for (Bins b : new Bins[] {n.refs, n.rivers})
+                bytes +=
+                        40
+                                + array(b.occupied.length, 8)
+                                + array(b.before.length, 4)
+                                + array(b.first.length, 4)
+                                + array(b.start.length, 4)
+                                + array(b.count.length, 4);
+            if (n.lakes != null) {
+                Lakes l = n.lakes;
+                bytes +=
+                        72
+                                + array(l.lakeOf.length, 4)
+                                + array(l.ground.length, 4)
+                                + array(l.level.length, 4)
+                                + array(l.id.length, 8)
+                                + array(l.box.length, 8);
+            }
+            return bytes;
+        }
+
+        private static long array(int length, int width) {
+            return (16 + (long) length * width + 7) & ~7L;
+        }
+    }
+
+    private static final NetworkCodec NETWORK_CODEC = new NetworkCodec();
 
     /** Dry columns this close to a bed stand at least as high as any water beside them. */
     static final double LEVEE = 1.5;
