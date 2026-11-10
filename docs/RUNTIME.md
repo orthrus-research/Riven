@@ -344,6 +344,13 @@ nested lighting or encoding twice.
   unique `EMPTY` cube is generated into a fresh checked primer. Receipts separate
   `selectedSeedsPassed` from `fullIntendedProofPassed`; the full flag requires all six intended
   seeds to finish successfully. CI compiles this check; invoke its workload explicitly.
+- `CUBATURE_LAB_JVM=g1-ship8-nmt` prepares a capture on the shipping G1 profile with native memory
+  tracking. After every scenario it records each process's NMT summary, the JVM's tagged
+  address-space map (`jcmd System.map`) and, with Sysinternals VMMap on PATH, VMMap's CSV, and joins
+  them into `<scenario>-<side>-memory-account.json`: Java heap, other JVM reservations, JVM malloc,
+  native malloc beyond it, native VirtualAlloc the JVM did not reserve, thread stacks and image pages,
+  closing on VMMap's private total, with write-combined (GPU-visible) pages and the largest modules.
+  `python ../Cubature/tools/lab_memory.py <evidence directory>` prints the accounts.
 - `tools/run_check.py <Check> [argument ...]` compiles the working tree's worldgen with one
   `tools/checks` entry point, as the atlas compiles its sampler, and runs it. The `definitions` job
   runs `DefinitionsCheck`: `worldgen/Definitions` lists exactly the packaged `riven-*.json` files,
@@ -458,7 +465,10 @@ collections; a 12 GiB heap with the same flags measured no better. Flight tick p
 under every collector setting tried. Native memory tracking showed 2.26 GB of the client's memory outside the heap
 in vanilla's chunk-mesh builders, which reserve 10 MiB of direct memory each, about ten per
 processor; with this pin they start small and grow on demand, and in the same capture the client's
-direct allocations fell to 0.41 GB and its private commit from 12.7 to 10.9 GB. A stationary capture of the earlier
+direct allocations fell to 0.41 GB and its private commit from 12.7 to 10.9 GB. The full account after flight
+on the client: 8.0 GiB heap, 0.38 GiB other JVM reservations, 0.52 GiB JVM malloc, 0.65 GiB native
+malloc beyond the JVM and 0.97 GiB native VirtualAlloc (0.53 GiB of it write-combined, GPU-visible
+driver memory); the server carries almost nothing beside the JVM. A stationary capture of the earlier
 pin showed saved blocks, storage and completed light unchanged, apart from surface water that
 random ticks froze or thawed differently. Existing refmap warnings and controlled-shutdown
 connection resets remain; client rendering and held maps are unqualified.
