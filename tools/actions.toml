@@ -48,9 +48,38 @@ steps = [
 ]
 
 [jobs.regional-store]
-description = "Derived-file identity, corruption, primitive bits, atomic publication and mapped-read lifetime without constructing terrain"
+description = "Derived-file and graph integrity, mapped-read lifetime, world ownership and cleanup without constructing terrain"
 steps = [
   { name = "regional file store", run = ["{atlas_python}", "tools/run_check.py", "RegionalStoreCheck", "{frozen}/regional-store-fixtures"] },
+  { name = "regional graph and lifetime", run = ["{atlas_python}", "-B", "-c", '''
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+tools, source, store_check, fixtures, *checks = map(Path, sys.argv[1:])
+sys.path.insert(0, str(tools))
+from atlas import build
+
+base = build.compile_sampler(source, store_check)
+java = build.java()
+gson = build.gson()
+fixtures.mkdir(parents=True, exist_ok=True)
+output = Path(tempfile.mkdtemp(prefix="helpers-", dir=fixtures))
+subprocess.run([
+    str(java.with_name("javac.exe")), "--release", "25", "-Xlint:all,-options", "-Werror",
+    "-implicit:none", "-cp", os.pathsep.join(map(str, (base, gson))), "-d", str(output),
+    *map(str, checks),
+], check=True)
+classpath = os.pathsep.join(map(str, (output, base, gson)))
+for main, fixture, arguments in [
+    ("cc.orthrus.riven.worldgen.DrainageCodecCheck", "codec", ["fixtures"]),
+    ("cc.orthrus.riven.RegionalOwnershipCheck", "ownership", []),
+    ("cc.orthrus.riven.RegionalCleanupCheck", "cleanup", []),
+]:
+    subprocess.run([str(java), "-cp", classpath, main, str(output / fixture), *arguments], check=True)
+''', "{riven}/tools", "{riven}/src/main", "{riven}/tools/checks/RegionalStoreCheck.java", "{frozen}/regional-graph-fixtures", "{riven}/tools/checks/DrainageCodecCheck.java", "{riven}/src/main/java/cc/orthrus/riven/RegionalOwnership.java", "{riven}/src/main/java/cc/orthrus/riven/RegionalCleanup.java", "{riven}/tools/checks/RegionalOwnershipCheck.java", "{riven}/tools/checks/RegionalCleanupCheck.java"] },
 ]
 
 [jobs.sample-history]
@@ -79,11 +108,11 @@ riven = [
   { paths = ["CHANGELOG.md", "README.md"], jobs = ["definitions"] },
   { paths = ["LICENSE", "NOTICE.md", "src/main/resources/assets/**"], jobs = ["quality", "riven-build"] },
   { paths = [
-      "src/main/java/cc/orthrus/riven/worldgen/RegionalData.java",
-      "src/main/java/cc/orthrus/riven/worldgen/RegionalIdentity.java",
-      "src/main/java/cc/orthrus/riven/worldgen/RegionalStore.java",
       "tools/checks/RegionalStoreCheck.java",
-    ], jobs = ["quality", "riven-build", "regional-store"] },
+      "tools/checks/DrainageCodecCheck.java",
+      "tools/checks/RegionalOwnershipCheck.java",
+      "tools/checks/RegionalCleanupCheck.java",
+    ], jobs = ["quality", "regional-store"] },
   { paths = ["tools/atlas/**", "tools/atlas_golden.py", "tools/terrain_atlas.py", "tools/run_check.py", "tools/checks/**", "tools/atlas-golden.json"], jobs = ["quality", "atlas-golden", "definitions", "sample-history"] },
   { paths = ["tools/build_riven.py"], jobs = ["quality", "riven-build"] },
   { paths = ["tools/**/*.py", "tools/content/**", "pyproject.toml"], jobs = ["quality"] },

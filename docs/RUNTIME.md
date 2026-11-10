@@ -37,6 +37,19 @@ Riven at `../Cubature`, the path `dev/cc.lock.json`'s `checkout` names. Riven's 
 Riven (without it they assume a sibling `../Riven`). Cubature never lives inside Riven, so nothing
 that cleans or deletes Riven's ignored files can reach it.
 
+## Derived regional cache
+
+When the host supplies a derived-data directory, server worlds use a sibling of the save named
+`<save-directory-name>.cubature-cache`. A null directory leaves generation memory-only.
+Riven namespaces its drainage files there by the complete generation identity and kind/codec
+version. A memo miss loads a checked file or builds the same pure value and writes it on the
+builder's thread. Store ownership follows biome-provider construction, world unload and server
+stop. Offline tools use memory-only constructors unless a check explicitly supplies a store.
+
+The directory is derived data: removing it makes later misses rebuild the same terrain. Files
+remain until removal; the current cache has no automatic disk eviction. Memory hits return the
+held value directly, and a later memory miss can rebuild a missing file.
+
 ## Distant Horizons
 
 DH is installed byte-for-byte from the official release on client and server. Cubature binds a
@@ -323,9 +336,17 @@ nested lighting or encoding twice.
   fresh one in every field except the scratch and count-bounded arrays the check names.
 - The `regional-store` job runs `RegionalStoreCheck` on disposable fixture directories. It
   checks complete definition identities, corrupt and oversized entries, raw floating bits,
-  concurrent publication and mapped-read lifetime without constructing terrain. Only the three
-  standalone storage helpers and their checker have the narrow quality/build/filesystem quick
-  rule; generator consumers and changes to the workflow configuration retain full validation.
+  concurrent publication and mapped-read lifetime without constructing terrain. It also compiles
+  the codec and loader-free ownership/cleanup checks into fresh output and runs their fixture-only
+  modes. Changes to connected production helpers retain full validation; only the exact diagnostic
+  paths this job executes have a quality-and-filesystem quick rule.
+- `run_check.py DrainageCodecCheck PARENT fixtures` checks the flat graph's primitive bits,
+  nullable fields, indexes and malformed input without constructing terrain. Its default mode
+  also runs six seeds through real file writes, memo drops and complete-field reload comparison;
+  `verify ROOT seed=N scale=N entries=N random=N` recomputes a random stored sample without
+  repairing files. `RegionalOwnershipCheck` and `RegionalCleanupCheck` cover loader-free world
+  identity, construction tokens, terminal epochs and cleanup exception handling. They are in the
+  root Java package and compile with their helpers; `run_check.py` targets worldgen entry points.
 - `run_check.py RegionalCacheProbe out=DIR scale=1|4 players=N [spread=dispersed|clustered]`
   measures what Riven's memos must hold under N players' demand: Distant Horizons' 4,096-block
   reach every 32 blocks plus the native view every 4, nearest first, on 12 threads, inside the
@@ -341,6 +362,14 @@ nested lighting or encoding twice.
   by reflection (Java 26 warns once) and changes no generator code. It drives `TerrainMap.sample`
   only: trees, ores and native column builds are outside it, and retained heap is coarse below
   about 1 MB.
+  Optional `store=ROOT drainageSlots=2` runs demand with a test-only small drainage memo and
+  separately clears it to replay every unique cold key from disk. Its file hits and zero store
+  misses establish disk reuse even while hydrology plans remain warm. In store mode,
+  build/rebuild counters count memo flights, including file decodes; store misses count drainage
+  build attempts, and `buildSeconds` sums flight wall time, including waits. It retains aggregate
+  counters and cold keys while omitting per-flight continent detail. Store demand cannot be
+  combined with attribution or ahead preparation. `RegionalCacheProbeReportingCheck` exercises
+  the bounded summary and the unchanged default report schema.
 - `run_check.py RegionalCacheProbe attribute=spawn|arrival out=DIR seed=8675309 scale=1
   buildThreads=1|4` attributes cold startup and arrival cost without launching the game.
   Run each combination in a fresh JVM so the land-share memo is cold. Spawn mode reconstructs
@@ -360,6 +389,13 @@ nested lighting or encoding twice.
   is tuned over `8192 * scale`; the game's legal X and Z range is `[-30000000,30000000)`.
 - `run_check.py DrainageFootprint <seed> <scale>` builds the drainage network of every continent
   reaching the world square and reports its heap: channel arrays against the bin index.
+- `StoredAtlasParityCheck` compares the actual atlas layer digest for a fixed 4x4 window with a
+  fresh cache and with fresh maps reading its populated cache. It records constructor memo state,
+  cold writes and full-pass file hits without rebuilding. The same owned pool and a possible
+  process-local land-share decision reuse make it a content/persistence check, not a startup
+  timing measurement. It compiles with `TerrainAtlas`; the reporting check similarly compiles
+  with `RegionalCacheProbe`, rather than using the single-source `run_check.py` path. Bound the
+  atlas check's process lifetime because the sampler's executor can survive a failed task.
 
 Riven and Cubature build for Cleanroom only, as Java 25 bytecode run on Java 25 or 26; the Java 8
 Forge fallback was retired on 2026-10-30 (docs/DECISIONS.md), so code may use any Java 25 API.
@@ -378,9 +414,10 @@ environment.
 
 ## Known runtime warnings
 
-The pinned build passed stationary timing and a 60 s, 16 blocks/s spectator flight in BASELINE
-with four DH workers per JVM on Java 26.0.2.1, using 8 GiB/ZGC. Independent tick totals and phase
-counters agreed within a 1% weighted gap. Destination teleports remained held during preparation;
+The recorded native timing predates connected drainage storage and describes the earlier Riven
+build with the same Cubature pin. That capture passed stationary timing and a 60 s, 16 blocks/s
+spectator flight in BASELINE with four DH workers per JVM on Java 26.0.2.1, using 8 GiB/ZGC.
+Independent tick totals and phase counters agreed within a 1% weighted gap. Destination teleports remained held during preparation;
 arrival was first observed 70-77 s after target-view capture start and full client residency by
 93 s. Captured join/flight ticks reached 145 ms, startup reached 546 ms, and an explicit post-flight
 save/purge/flush tick reached 1.861 s, including 1.441 s of blocking flush. Existing refmap warnings
