@@ -30,6 +30,18 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   anchor, and its cone fades toward cooler columns as cold forms do (terrain-v55). A dedicated
   design pass is open.
 
+## Adopted 2026-11-09
+
+- **Derived regional storage.** Riven may keep pure derived regional data in a deletable cache
+  beside the save, verified against the world's definition fingerprint and a checksum. Disk
+  capacity bounds preparation beyond the in-memory memos; eviction and deletion must only
+  change the time needed to reproduce the same content.
+- **Preparation at startup.** Prepare spawn and nearby terrain before the server reports
+  "Done"; bake the remaining regional data and distant coverage in the background, behind
+  demanded terrain and within Cubature's budget.
+- **Arrival waits.** Joins, respawns, portal arrivals and teleports into unprepared terrain may
+  wait visibly for their destination instead of generating synchronously on the server thread.
+
 ## Adopted 2026-11-03
 
 - **Tidal creeks hold the sea's water as land.** A marsh's creek columns stay land, so the marsh
@@ -171,11 +183,12 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   becomes too planned, and stops, when any of these holds:
   - it changes content, or lets a result depend on what was prepared or in what order (prepared
     values are the same pure functions, published through the same bounded memos);
-  - it prepares more than the memos hold with headroom, so plans are evicted before they are read
-    (a 32 km drainage network holds about 14 MB);
+  - it exceeds the derived cache's disk budget, or, without persistent storage, prepares more
+    than the memos hold with headroom so plans are evicted before they are read;
   - it runs ahead of demanded work: the native view comes first, then previews, then preparation,
     within the governor's permits and never on the server thread;
-  - it reaches further than players can arrive before the plans would be evicted.
+  - without persistent storage, it reaches further than players can arrive before the plans
+    would be evicted.
 
   Order-dependent state and unbounded memory stay forbidden.
 
