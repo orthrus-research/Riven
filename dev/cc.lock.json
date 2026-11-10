@@ -4,7 +4,7 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "e6b8a3d0ec212118d22ee96ab8b63ab4113186fd",
+  "commit": "129b8a05032e59d619b63ef1022da0e4f87a7f3e",
   "checkout": "../Cubature",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",

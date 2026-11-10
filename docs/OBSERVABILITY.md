@@ -165,13 +165,16 @@ sealed plan's cases through `capture` serially, checking its input hashes before
 journaling every start and finish beside the plan. The 1024-cube default is unchanged. Short
 screening runs remain exploratory and do not promote runtime pins.
 
-`capture --mode lifecycle` uses the spectator lifecycle workload to measure
+`capture --mode lifecycle` uses the flight lifecycle workload to measure
 60 wall seconds of real client flight at 16 blocks/s, moving residency and
 natural writes/unloads, followed by 30 s of final-view settling and explicit
 save/purge/flush. ChunkGc starts an unload pass every 10 s, so a shorter settle
 ends at whatever phase the GC clock has reached, which shifts with how long the
 full view took; 30 s always reaches the resting floor (20,538 loaded cubes on
-the default seed). Storage spans are enabled without JFR or NBT queue-byte
+the default seed). The participant is a creative player flying from the full view
+onward, so the server ticks, spawns and tracks around it as around any player; a
+spectator would exempt it from random ticks and spawning. The route flies 82 blocks
+above deep ocean for its whole length. Storage spans are enabled without JFR or NBT queue-byte
 accounting. Use its rebuilt observer and retained client/server traces.
 `compare --diagnostic-screen` explicitly permits matched instrumented screens,
 keeps all controls strict and never accepts a production optimization.

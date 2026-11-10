@@ -466,13 +466,14 @@ and 31.8 MB of cube regions instead of 43.8 MB. Worst flight ticks varied from 1
 these captures. Newly prepared lab instances use the shipping G1 profile (8 GiB, 4 MB regions, a
 50 ms pause target, concurrent explicit collections). Against G1's defaults on the same heap it cut
 server young pauses from 43/63/76 ms (median/p95/max) to 29/44/48 ms and removed the 180-220 ms full
-collections; a 12 GiB heap with the same flags measured no better. Flight tick p95 stayed near 35 ms
-under every collector setting tried. A quarter of flight tick time was the random-tick iterator
-scanning every cube watcher for a non-spectator in range; with this pin it skips the scan while only
-spectators are present, and two flight captures measured tick p95 33.1 and 33.5 ms (mean 9.6 and
-9.7 ms, from 12.2 ms). The flight p95 is now set by once-a-second install bursts as the player
-crosses a cube boundary: the first two burst ticks spend the 20 ms concurrent install budget and
-then 6-9 ms of light queue on the cubes they installed. Native memory tracking showed 2.26 GB of the client's memory outside the heap
+collections; a 12 GiB heap with the same flags measured no better. The figures above flew a spectator,
+which exempts the server from random ticks and spawning; its flight tick p95 stayed near 35 ms under
+every collector setting tried, and 33.1-33.5 ms once the random-tick iterator skipped its watcher scan
+while only spectators are present. The flight workload (v3) now flies a creative player. Its first
+capture measured flight tick p95 37.4 ms and mean 14.3 ms, with the random-tick scan back at 23% of
+flight tick time (3.3 ms per tick), uninstrumented work at 11% and settle p95 9.7 ms. Install bursts
+still set the flight p95: once a second the player crosses a cube boundary, and the first two burst
+ticks spend the 20 ms concurrent install budget and then 6-9 ms of light queue. Native memory tracking showed 2.26 GB of the client's memory outside the heap
 in vanilla's chunk-mesh builders, which reserve 10 MiB of direct memory each, about ten per
 processor; with this pin they start small and grow on demand, and in the same capture the client's
 direct allocations fell to 0.41 GB and its private commit from 12.7 to 10.9 GB. The full account after flight
