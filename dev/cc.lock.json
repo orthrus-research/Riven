@@ -4,13 +4,13 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "72b2a81da178ac53afb497fa5b7524bcb74856d7",
+  "commit": "e6b8a3d0ec212118d22ee96ab8b63ab4113186fd",
   "checkout": "../Cubature",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
-  "sha256": "c2ae32ef59147daafbc55fc0ecb281b344376a570537510220d108714d08cbcd",
+  "sha256": "ab5acef9c3321f3f9c320a756876e7e921064e1e9e747353a9967bae69fb856f",
   "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
-  "sourcesSha256": "cd15102637da7ee4d7ebdc4ac8ece25ecc10f4a9185d542f4b57c9e36e5f041f",
+  "sourcesSha256": "da89bb65a32cfd8b9b2c57e89e3bb8592b0599c4225260b6f3b8e6d10af2bb11",
   "javaSourceFilesMatchedToArtifactSources": 436,
   "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
   "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
@@ -22,7 +22,7 @@
   },
   "qualification": {
     "status": "Built from this clean Cubature commit as Java 25 bytecode; all 436 Java sources in the sources artifact match the commit, and core (454) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM, on 8 GiB ZGC and on the shipping G1 profile (8 GiB, 4 MB regions, 50 ms pause target, concurrent explicit collections), which newly prepared lab instances now use.",
-    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting and client native-capture counters; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved; chunk-mesh builders that start with small layer buffers. Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
+    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting, with random ticks, player-map bookkeeping, network work and tick events separated, and client native-capture counters; a random-tick scan skipped while only spectators are present; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved; chunk-mesh builders that start with small layer buffers. Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
       "Client rendering remains unqualified"

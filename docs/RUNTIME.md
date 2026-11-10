@@ -314,7 +314,12 @@ cost per cube, split into construction, population, first light and surface trac
 cost divides aggregate work by unique generated-or-loaded cube registrations in the capture;
 it does not follow an individual cube across ticks. Construction excludes work on I/O workers.
 The `OTHER` phase closes the full server-tick envelope, so phases can be added without counting
-nested lighting or encoding twice.
+nested lighting or encoding twice. Besides cube installation, lighting, sending, encoding, DH feed,
+unload/save, arrivals and regional preparation, phases separate random ticks (`RANDOM_TICK`), the
+player cube map's own bookkeeping (`PLAYER_MAP`), queued packet handlers with the network tick
+(`NETWORK`) and Forge's server and world tick events (`TICK_EVENTS`, where the lab observer runs);
+`OTHER` is under 4% of flight and 2% of full-view tick time. `riven_observe.py capture --jfr`
+records both JVMs with JFR's profile settings for attributing a phase further.
 
 - `tools/build_riven.py [--diagnostics] [--freeze LABEL]` builds Riven for Cleanroom and
   writes `.local/builds/riven-latest.json`.
@@ -461,8 +466,13 @@ and 31.8 MB of cube regions instead of 43.8 MB. Worst flight ticks varied from 1
 these captures. Newly prepared lab instances use the shipping G1 profile (8 GiB, 4 MB regions, a
 50 ms pause target, concurrent explicit collections). Against G1's defaults on the same heap it cut
 server young pauses from 43/63/76 ms (median/p95/max) to 29/44/48 ms and removed the 180-220 ms full
-collections; a 12 GiB heap with the same flags measured no better. Flight tick p95 stays near 35 ms
-under every collector setting tried. Native memory tracking showed 2.26 GB of the client's memory outside the heap
+collections; a 12 GiB heap with the same flags measured no better. Flight tick p95 stayed near 35 ms
+under every collector setting tried. A quarter of flight tick time was the random-tick iterator
+scanning every cube watcher for a non-spectator in range; with this pin it skips the scan while only
+spectators are present, and two flight captures measured tick p95 33.1 and 33.5 ms (mean 9.6 and
+9.7 ms, from 12.2 ms). The flight p95 is now set by once-a-second install bursts as the player
+crosses a cube boundary: the first two burst ticks spend the 20 ms concurrent install budget and
+then 6-9 ms of light queue on the cubes they installed. Native memory tracking showed 2.26 GB of the client's memory outside the heap
 in vanilla's chunk-mesh builders, which reserve 10 MiB of direct memory each, about ten per
 processor; with this pin they start small and grow on demand, and in the same capture the client's
 direct allocations fell to 0.41 GB and its private commit from 12.7 to 10.9 GB. The full account after flight

@@ -44,6 +44,11 @@ def main(argv=None):
     capture.add_argument("--port", type=int, default=25940)
     capture.add_argument("--render-ready", action="store_true")
     capture.add_argument(
+        "--jfr",
+        action="store_true",
+        help="Record both JVMs with JFR's profile settings; diagnostic, not a timing comparison",
+    )
+    capture.add_argument(
         "--storage", action="store_true", help="Include storage spans in diagnostic mode"
     )
     capture.add_argument(
@@ -211,6 +216,8 @@ def main(argv=None):
             options.append("--lifecycle-diagnostics")
         if args.render_ready:
             options.append("--render-ready")
+        if args.jfr:
+            options.append("--jfr")
         if args.delivery_trace:
             options.append("--delivery-trace")
         options += ["--delivery-experiment", args.delivery_experiment]
