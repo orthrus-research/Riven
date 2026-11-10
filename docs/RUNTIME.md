@@ -451,7 +451,11 @@ batch, compression runs on reused deflaters and bounded workers, and empty cubes
 regenerable are not saved), the explicit post-flight save/purge/flush tick fell from 2.72 s to
 0.61 s and its blocking flush from 2.22 to 0.33 s; the run saved 52,610 cubes instead of 75,122
 and 31.8 MB of cube regions instead of 43.8 MB. Worst flight ticks varied from 110 to 176 ms across
-these captures. A stationary capture of the earlier
+these captures. Newly prepared lab instances use the shipping G1 profile (8 GiB, 4 MB regions, a
+50 ms pause target, concurrent explicit collections). Against G1's defaults on the same heap it cut
+server young pauses from 43/63/76 ms (median/p95/max) to 29/44/48 ms and removed the 180-220 ms full
+collections; a 12 GiB heap with the same flags measured no better. Flight tick p95 stays near 35 ms
+under every collector setting tried. A stationary capture of the earlier
 pin showed saved blocks, storage and completed light unchanged, apart from surface water that
 random ticks froze or thawed differently. Existing refmap warnings and controlled-shutdown
 connection resets remain; client rendering and held maps are unqualified.

@@ -4,7 +4,7 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "7bf7d5d531cf8f562a2612aea216c7d5b3f01c2c",
+  "commit": "86452eeaf269a0e0657e0bbf6e7f2755c8817366",
   "checkout": "../Cubature",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
@@ -21,7 +21,7 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Built from this clean Cubature commit as Java 25 bytecode; all 435 Java sources in the sources artifact match the commit, and core (454) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM.",
+    "status": "Built from this clean Cubature commit as Java 25 bytecode; all 435 Java sources in the sources artifact match the commit, and core (454) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM, on 8 GiB ZGC and on the shipping G1 profile (8 GiB, 4 MB regions, 50 ms pause target, concurrent explicit collections), which newly prepared lab instances now use.",
     "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting and client native-capture counters; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved. Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
