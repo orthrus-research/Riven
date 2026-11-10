@@ -16,6 +16,7 @@ import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldType;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubicTerrainPreview;
+import io.github.opencubicchunks.cubicchunks.api.worldgen.IRetainedColumnPreparation;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.WorldBuildPool;
 
 import net.minecraft.block.state.IBlockState;
@@ -125,7 +126,8 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         return generator == null ? null : generator.realms;
     }
 
-    private static final class Generator implements ICubeGenerator, ICubicTerrainPreview {
+    private static final class Generator
+            implements ICubeGenerator, ICubicTerrainPreview, IRetainedColumnPreparation {
         private final ClimateBiomeProvider biomes;
         private final World world;
 
@@ -226,6 +228,25 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             if (ClimateBiomeProvider.inWorld(west, north)
                     && ClimateBiomeProvider.inWorld(west + 15, north + 15))
                 biomes.maps.columns.column(columnX, columnZ);
+        }
+
+        /** Holds the prepared native column independently of memo eviction until arrival ends. */
+        @Override
+        public ColumnLease prepareRetainedColumn(int columnX, int columnZ) {
+            long west = (long) columnX * 16, north = (long) columnZ * 16;
+            if (!ClimateBiomeProvider.inWorld(west, north)
+                    || !ClimateBiomeProvider.inWorld(west + 15, north + 15)) return () -> {};
+            NativeColumns.Reservation reservation = biomes.maps.columns.retain(columnX, columnZ);
+            try {
+                return reservation::close;
+            } catch (RuntimeException | Error failure) {
+                try {
+                    reservation.close();
+                } catch (RuntimeException | Error cleanup) {
+                    if (cleanup != failure) failure.addSuppressed(cleanup);
+                }
+                throw failure;
+            }
         }
 
         /**

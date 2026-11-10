@@ -6,7 +6,10 @@ import cc.orthrus.riven.worldgen.engine.Role;
 
 import com.google.gson.JsonObject;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
@@ -167,12 +170,62 @@ public final class NativeColumns {
         }
     }
 
+    private static final class RetainedEntry {
+        final Column column;
+        final AtomicInteger references = new AtomicInteger(1);
+
+        RetainedEntry(Column column) {
+            this.column = column;
+        }
+
+        boolean acquire() {
+            for (int count = references.get(); count != 0; count = references.get()) {
+                if (count == Integer.MAX_VALUE)
+                    throw new IllegalStateException("Too many reservations for one native column");
+                if (references.compareAndSet(count, count + 1)) return true;
+            }
+            return false;
+        }
+    }
+
+    /**
+     * A host-owned strong reference to one immutable chunk column. It outlives ordinary memo
+     * eviction and closes once, on the host thread or on a worker finishing an abandoned request.
+     */
+    public static final class Reservation implements AutoCloseable {
+        private final ConcurrentHashMap<Long, RetainedEntry> retained;
+        private final long key;
+        private final AtomicReference<RetainedEntry> entry;
+
+        private Reservation(
+                ConcurrentHashMap<Long, RetainedEntry> retained, long key, RetainedEntry entry) {
+            this.retained = retained;
+            this.key = key;
+            this.entry = new AtomicReference<>(entry);
+        }
+
+        /** The prepared immutable value while this reservation remains open. */
+        public Column column() {
+            RetainedEntry held = entry.get();
+            if (held == null)
+                throw new IllegalStateException("Native column reservation is closed");
+            return held.column;
+        }
+
+        @Override
+        public void close() {
+            RetainedEntry held = entry.getAndSet(null);
+            if (held != null && held.references.decrementAndGet() == 0) retained.remove(key, held);
+        }
+    }
+
     private final TerrainMap terrain;
     private final Assembler<TerrainMap.Sample> crust;
     private final TerrainHeightReference heights;
     private final int sets, ways;
     private final AtomicReferenceArray<Entry> memo;
     private final AtomicIntegerArray next;
+    private final ConcurrentHashMap<Long, RetainedEntry> retained = new ConcurrentHashMap<>();
 
     NativeColumns(TerrainMap terrain, SurfaceRules rules, TerrainHeightReference heights) {
         this.terrain = terrain;
@@ -212,8 +265,47 @@ public final class NativeColumns {
         return built;
     }
 
-    /** The chunk column of a key if the memo holds it now (timing only). */
+    /**
+     * Resolves and retains a column until the host releases it. The host bounds the number of
+     * requests; overlapping owners share one retained value. Building happens outside map locks,
+     * so an ordinary build in flight cannot make retention wait on a publication lock.
+     */
+    public Reservation retain(int chunkX, int chunkZ) {
+        long key = ((long) chunkX << 32) ^ (chunkZ & 0xffffffffL);
+        Column prepared = null;
+        for (; ; ) {
+            RetainedEntry held = retained.get(key);
+            if (held != null) {
+                if (held.acquire()) return reservation(key, held);
+                retained.remove(key, held);
+                continue;
+            }
+            if (prepared == null) prepared = column(chunkX, chunkZ);
+            RetainedEntry made = new RetainedEntry(prepared);
+            held = retained.putIfAbsent(key, made);
+            if (held == null) return reservation(key, made);
+            if (held.acquire()) return reservation(key, held);
+            retained.remove(key, held);
+        }
+    }
+
+    private Reservation reservation(long key, RetainedEntry held) {
+        try {
+            return new Reservation(retained, key, held);
+        } catch (RuntimeException | Error failure) {
+            try {
+                if (held.references.decrementAndGet() == 0) retained.remove(key, held);
+            } catch (RuntimeException | Error cleanup) {
+                if (cleanup != failure) failure.addSuppressed(cleanup);
+            }
+            throw failure;
+        }
+    }
+
+    /** The chunk column of a key if a reservation or the ordinary memo holds it now. */
     private Column held(long key) {
+        RetainedEntry reservation = retained.get(key);
+        if (reservation != null && reservation.references.get() != 0) return reservation.column;
         int first = ((int) SeededNoise.mix(key) & (sets - 1)) * ways;
         for (int i = 0; i < ways; i++) {
             Entry e = memo.get(first + i);

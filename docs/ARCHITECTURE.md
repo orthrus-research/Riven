@@ -52,6 +52,7 @@ instance.
 | --- | --- | --- |
 | `RivenWorldType.Generator.generateCube` | Cubature, native cubes | One `NativeColumns` entry per chunk column: `TerrainMap.sample` once per column, assembled by the column engine and stored as its runs of blocks and roles, read by every cube between the lowest soil and the reference top (Y 351); cubes wholly under the ground also read each 4x4x4 cell's depth biome from the entry |
 | `RivenWorldType.Generator.generateColumn` | Cubature, biome arrays | The same `NativeColumns` entry's habitats |
+| `RivenWorldType.Generator.prepareRetainedColumn` | Cubature generation workers, held arrivals | Retains the immutable `NativeColumns` entry until the host installs the destination column or releases the last arrival |
 | `createTerrainPreviewSampler` | Cubature DH provider | `TerrainMap.sample` per preview column, assembled by the column engine and emitted as its runs |
 | `ClimateBiomeProvider` | Minecraft biome queries | `surfaceHabitat`; spawn biomes exclude ocean, deep ocean, river, swamp and all three beach biomes |
 | `RivenSpawn` | Forge `CreateSpawnPosition` | First dry land column, in 64-block rings out to 16,384 blocks, with a 16-block dry margin |
@@ -61,7 +62,13 @@ Cubes entirely below the lowest possible soil are filled with stone directly unl
 intersects them; cubes above the highest possible surface are air. `NativeColumns` holds
 resolved chunk columns in a set-associative cache (`nativeColumnCache` in `riven-terrain.json`,
 1,024 entries, about 8 MB) of immutable entries, so a column is sampled once rather than once per
-cube. Surface and water queries (`NativeColumns.surface` for tree sites' clearance,
+cube. Held arrivals use the optional `IRetainedColumnPreparation` contract: a worker reserves one
+immutable column independently of ordinary memo eviction, and every column lookup checks those
+reservations first. Overlapping reservations share their value and release it after the last owner
+closes. Cubature bounds the held keys and owns release after installation, replacement, departure or
+shutdown, including a worker finishing an abandoned request. Builds run outside reservation-map
+locks; an ordinary same-key build in flight cannot block a lookup of a prepared reservation.
+Surface and water queries (`NativeColumns.surface` for tree sites' clearance,
 `NativeColumns.water` for reeds beside water) read a held chunk column or resolve just their one
 column, with a small per-thread cache, so distant previews do not build whole chunk columns for
 them. Clearance only asks whether a column rises above a height (`NativeColumns.surfaceAbove`):
