@@ -545,16 +545,16 @@ public final class DrainageCodecCheck {
                         .toList();
         RegionalStore.Statistics stats = store.statistics();
         System.out.printf(
-                "Constructor boundary: historical pre-bind builds=0 (source audit); "
+                "Constructor boundary: historical pre-bind Drainage builds=0 (source audit); "
                         + "observed surviving keys=%s; nonempty keys=%d; store=%s%n",
                 ordered, nonempty.size(), stats);
         require(keys.isEmpty(), "Source-audited constructor zero-history premise changed");
         require(
                 stats.hits() == 0
-                        && stats.misses() == 0
-                        && stats.writes() == 0
+                        && stats.misses() == 1
+                        && stats.writes() == 1
                         && stats.failedWrites() == 0,
-                "Construction performed regional store operations before the first request");
+                "Fresh construction did not perform exactly one world selection miss and write");
     }
 
     private static void generated(Path parent, long seed, WorldScale world) throws Exception {
@@ -571,11 +571,14 @@ public final class DrainageCodecCheck {
             Method network = Drainage.class.getDeclaredMethod("network", long.class, long.class);
             for (long key : nearby(drainage, world.layout)) {
                 long x = key >> 32, z = (int) key;
+                RegionalStore.Statistics before = store.statistics();
                 Object built = invoke(network, drainage, x, z);
                 if (Array.getLength(get(built, "channels")) == 0) continue;
                 RegionalStore.Statistics cold = store.statistics();
                 require(
-                        cold.misses() > 0 && cold.writes() > 0 && cold.failedWrites() == 0,
+                        cold.misses() > before.misses()
+                                && cold.writes() > before.writes()
+                                && cold.failedWrites() == before.failedWrites(),
                         "Fresh store did not retain its generated networks");
                 evictDrainage(drainage);
                 Object loaded = invoke(network, drainage, x, z);
@@ -593,7 +596,8 @@ public final class DrainageCodecCheck {
                         built,
                         loaded,
                         "seed=" + seed + " scale=" + world.layout + " key=" + x + "," + z);
-                System.out.printf("Store cold=%s reload=%s%n", cold, repeat);
+                System.out.printf(
+                        "Aggregate store before=%s cold=%s reload=%s%n", before, cold, repeat);
                 return;
             }
             throw new AssertionError("No nonempty drainage fixture for seed " + seed);

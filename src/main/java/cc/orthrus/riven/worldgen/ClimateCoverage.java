@@ -28,6 +28,18 @@ public final class ClimateCoverage {
 
     private ClimateCoverage() {}
 
+    /** Bounds and stopping rules of a stored selection, without measuring its intent grid. */
+    static boolean validSelection(int attempt, int draws, int fewest) {
+        int regions = TemperatureBand.values().length * MoistureBand.values().length;
+        return attempt >= 0
+                && attempt < draws
+                && draws >= 1
+                && draws <= ATTEMPTS
+                && fewest >= 0
+                && fewest <= GRID * GRID / regions
+                && (fewest >= MIN_PATCHES ? draws == attempt + 1 : draws == ATTEMPTS);
+    }
+
     /** The fewest patches any combination forms in this world. */
     static int fewest(TerrainMap terrain, WorldScale world, BuildPool pool) {
         int n = GRID, regions = TemperatureBand.values().length * MoistureBand.values().length;

@@ -28,7 +28,7 @@ public final class GenerationMaps {
 
     /** The maps that read the climate, built for one draw. */
     private final class Draw {
-        final int attempt, fewest;
+        final int attempt;
         final TemperatureMap temperature;
         final ClimateMap climate;
         final ProvinceMap provinces;
@@ -53,7 +53,6 @@ public final class GenerationMaps {
                             baseTerrain,
                             world,
                             pool);
-            fewest = ClimateCoverage.fewest(terrain, world, pool);
         }
     }
 
@@ -87,7 +86,12 @@ public final class GenerationMaps {
             throw new IllegalArgumentException("Stored maps require the standard terrain heights");
         pool.use(executor);
         plates = new PlateMap(seed, world);
-        land = LandShare.choose(seed, heights, world);
+        WorldSelection stored =
+                store == null ? null : store.get(WorldSelection.KIND, 0, 0, WorldSelection.CODEC);
+        land =
+                stored == null
+                        ? LandShare.choose(seed, heights, world)
+                        : LandShare.restore(seed, heights, world, stored);
         outline = land.outline;
         baseElevation = new BaseElevationMap(seed, plates, heights);
         climateStructure = new ClimateStructureMap(outline, baseElevation, heights);
@@ -99,16 +103,26 @@ public final class GenerationMaps {
         // The climate draw: the first phase in which every climate forms enough patches, else
         // the draw with the most for its rarest climate (ClimateCoverage).
         Draw kept = null;
-        int draws = 0;
-        for (int attempt = 0; attempt < ClimateCoverage.ATTEMPTS; attempt++) {
-            Draw draw = new Draw(seed, heights, world, attempt);
-            draws++;
-            if (kept == null || draw.fewest > kept.fewest) kept = draw;
-            if (draw.fewest >= ClimateCoverage.MIN_PATCHES) break;
+        int draws = 0, keptFewest = -1;
+        if (stored != null) {
+            kept = new Draw(seed, heights, world, stored.climateAttempt());
+            draws = stored.climateDraws();
+            keptFewest = stored.climateFewest();
+        } else {
+            for (int attempt = 0; attempt < ClimateCoverage.ATTEMPTS; attempt++) {
+                Draw draw = new Draw(seed, heights, world, attempt);
+                int fewest = ClimateCoverage.fewest(draw.terrain, world, pool);
+                draws++;
+                if (kept == null || fewest > keptFewest) {
+                    kept = draw;
+                    keptFewest = fewest;
+                }
+                if (fewest >= ClimateCoverage.MIN_PATCHES) break;
+            }
         }
         climateAttempt = kept.attempt;
         climateDraws = draws;
-        climateFewest = kept.fewest;
+        climateFewest = keptFewest;
         temperature = kept.temperature;
         climate = kept.climate;
         provinces = kept.provinces;
@@ -118,5 +132,17 @@ public final class GenerationMaps {
         surfaces = new SurfaceRules(heights);
         columns = new NativeColumns(terrain, surfaces, heights);
         boulders = new Boulders(seed, terrain);
+        if (store != null && stored == null)
+            store.put(
+                    WorldSelection.KIND,
+                    0,
+                    0,
+                    new WorldSelection(
+                            land.outline.attempt,
+                            land.share,
+                            climateAttempt,
+                            climateDraws,
+                            climateFewest),
+                    WorldSelection.CODEC);
     }
 }

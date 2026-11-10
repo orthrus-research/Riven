@@ -169,3 +169,4 @@ worlds.
 | 2026-11-10 | The PowerShell launcher forwards workflow options without consuming them as instance parameters. |
 | 2026-11-10 | Pin Cubature 63c5c484 with early build pools, retained arrivals and independently paired tick accounting; native timing passed, while cold arrival waits and explicit save/purge stalls remain. |
 | 2026-11-10 | Connect pure drainage networks to the host-owned, deletable regional cache, with scoped mapped reads, world-lifetime ownership and exact graph reload and sampled atlas parity checks. |
+| 2026-11-10 | Keep the world's measured land and climate choices in the regional cache, so a restart rebuilds only the kept draw instead of measuring every candidate. Seed 8675309 in a fresh process: constructor 32.5 s to 2.3 s at scale 1 and 16.7 s to 2.0 s at scale 4, with identical atlas digests. |

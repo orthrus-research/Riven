@@ -23,8 +23,8 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 /**
  * A fixed production-atlas content check across fresh and populated drainage stores. Usage:
  * {@code StoredAtlasParityCheck <output parent>}. Retains its fresh cache and both atlas outputs.
- * LandShare's process memo and the owned build workers may be reused by the second construction;
- * this proves drainage persistence and content parity, not initial preparation persistence or speed.
+ * The second construction reads the kept world selection and reuses the owned build workers.
+ * Both constructions share one process, so this proves cache content parity, not restart speed.
  * The launcher must bound the process: the unchanged atlas executor can survive a failed task.
  */
 public final class StoredAtlasParityCheck {
@@ -98,11 +98,13 @@ public final class StoredAtlasParityCheck {
         return out;
     }
 
-    private static boolean zero(RegionalStore.Statistics stats) {
-        return stats.hits() == 0
-                && stats.misses() == 0
-                && stats.writes() == 0
-                && stats.failedWrites() == 0;
+    private static RegionalStore.Statistics delta(
+            RegionalStore.Statistics before, RegionalStore.Statistics after) {
+        return new RegionalStore.Statistics(
+                after.hits() - before.hits(),
+                after.misses() - before.misses(),
+                after.writes() - before.writes(),
+                after.failedWrites() - before.failedWrites());
     }
 
     private static void raster(GenerationMaps maps, Path out, double mapSeconds) throws Exception {
@@ -140,35 +142,42 @@ public final class StoredAtlasParityCheck {
             Memo initial = memo(maps);
             RegionalStore.Statistics before = store.statistics();
             System.out.printf(
-                    "%s constructor: historical pre-bind builds=0 (source audit); "
+                    "%s constructor: historical pre-bind Drainage builds=0 (source audit); "
                             + "observed surviving keys=%s; nonempty=%d; store=%s%n",
                     name, initial.keys(), initial.nonempty(), before);
             require(
                     initial.keys().isEmpty(),
                     "Source-audited constructor zero-history premise changed");
-            require(zero(before), "Construction performed regional store operations: " + before);
+            require(
+                    before.hits() == (full ? 1 : 0)
+                            && before.misses() == (full ? 0 : 1)
+                            && before.writes() == (full ? 0 : 1)
+                            && before.failedWrites() == 0,
+                    "Construction did not perform only the expected world selection access: "
+                            + before);
 
             // Do not add a sites key: the atlas tests presence, even when its value is false.
             raster(maps, out, mapSeconds);
             RegionalStore.Statistics after = store.statistics();
+            RegionalStore.Statistics rasterStore = delta(before, after);
             Memo retained = memo(maps);
             System.out.printf(
-                    "%s completed: store=%s; nonempty retained networks=%d%n",
-                    name, after, retained.nonempty());
+                    "%s completed: aggregate raster store=%s; nonempty retained networks=%d%n",
+                    name, rasterStore, retained.nonempty());
             require(retained.nonempty() > 0, name + " retained no nonempty drainage network");
             if (full) {
                 require(
-                        after.hits() > 0
-                                && after.misses() == 0
-                                && after.writes() == 0
-                                && after.failedWrites() == 0,
-                        "Populated store rebuilt or rewrote drainage: " + after);
+                        rasterStore.hits() > 0
+                                && rasterStore.misses() == 0
+                                && rasterStore.writes() == 0
+                                && rasterStore.failedWrites() == 0,
+                        "Populated store missed or rewrote a regional value: " + rasterStore);
             } else {
                 require(
-                        after.misses() > 0
-                                && after.writes() == after.misses()
-                                && after.failedWrites() == 0,
-                        "Fresh store did not retain every drainage build: " + after);
+                        rasterStore.misses() > 0
+                                && rasterStore.writes() == rasterStore.misses()
+                                && rasterStore.failedWrites() == 0,
+                        "Fresh store did not retain every regional miss: " + rasterStore);
             }
             String digest;
             try (Reader in = Files.newBufferedReader(out.resolve("atlas.json"))) {
@@ -183,8 +192,12 @@ public final class StoredAtlasParityCheck {
             report.addProperty("historicalPreBindBuilds", "0, established by source audit");
             report.add("constructorMemo", json(initial));
             report.add("constructorStore", json(before));
+            report.addProperty("constructorStoreScope", "world selection only");
             report.add("finalMemo", json(retained));
             report.add("finalStore", json(after));
+            report.add("rasterStore", json(rasterStore));
+            report.addProperty(
+                    "storeCounterScope", "all bound regional kinds; not per-kind builds");
             return new Pass(digest, report);
         }
     }
@@ -219,10 +232,11 @@ public final class StoredAtlasParityCheck {
             report.add("raster", raster);
             report.addProperty("sites", "not requested");
             report.addProperty("buildWorkers", 4);
-            report.addProperty("landShareProcessMemoMayBeReused", true);
+            report.addProperty("freshJvmPerConstruction", false);
             report.addProperty("buildPoolReused", true);
             report.addProperty("timingsArePerformanceEvidence", false);
-            report.addProperty("scope", "Drainage persistence and atlas content parity");
+            report.addProperty(
+                    "scope", "World selection, regional persistence and atlas content parity");
             report.add("cold", first.report());
             report.add("full", second.report());
             report.addProperty("digestEqual", true);

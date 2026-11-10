@@ -44,6 +44,14 @@ public final class LandShare {
         this.share = share;
     }
 
+    /** Reconstructs an already validated stored choice, without measuring or consulting the memo. */
+    static LandShare restore(
+            long seed, TerrainHeightReference heights, WorldScale world, WorldSelection selection) {
+        return new LandShare(
+                new ContinentalOutlineMap(seed, heights, world, selection.landAttempt()),
+                selection.landShare());
+    }
+
     /** Whether the kept attempt is inside the band (false only once every attempt missed it). */
     public boolean inBand() {
         return share >= LOW && share <= HIGH;

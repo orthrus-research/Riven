@@ -465,7 +465,8 @@ public final class RegionalCacheProbe {
                     "flightAccounting",
                     "builds/rebuilds count memo flights, including disk reads;"
                             + " buildSeconds is their summed wall time;"
-                            + " Drainage build attempts are store misses");
+                            + " store counters aggregate all bound regional kinds;"
+                            + " per-kind network build attempts are not counted");
         }
         JsonArray cacheJson = new JsonArray();
         for (int i = 0; i < caches.size(); i++)
@@ -491,7 +492,8 @@ public final class RegionalCacheProbe {
         j.addProperty("omittedHydroMemoFlights", plans.total(BUILDS));
         j.addProperty(
                 "networkBuildAttemptCountSource",
-                "RegionalStore misses, followed by Drainage.build");
+                "not collected: aggregate store misses cover all bound kinds");
+        j.addProperty("storeCounterScope", "all bound regional kinds; no per-kind build counts");
         return j;
     }
 
@@ -546,14 +548,16 @@ public final class RegionalCacheProbe {
             initial.addProperty("originalMemoCapacity", slots.length());
             initial.addProperty("testMemoCapacity", capacity);
             initial.add("store", delta(new RegionalStore.Statistics(0, 0, 0, 0), stats));
+            boolean selectionHit = stats.hits() == 1 && stats.misses() == 0 && stats.writes() == 0;
+            boolean selectionWritten =
+                    stats.hits() == 0 && stats.misses() == 1 && stats.writes() == 1;
+            initial.addProperty("storeCounterScope", "world selection only during construction");
+            initial.addProperty("worldSelection", selectionHit ? "hit" : "miss and write");
             System.out.println("Store constructor boundary " + initial);
-            if (!keys.isEmpty()
-                    || stats.hits() != 0
-                    || stats.misses() != 0
-                    || stats.writes() != 0
-                    || stats.failedWrites() != 0)
+            if (!keys.isEmpty() || !(selectionHit || selectionWritten) || stats.failedWrites() != 0)
                 throw new AssertionError(
-                        "Drainage constructor boundary changed; initial entries were not discarded");
+                        "Constructor boundary changed: expected only world selection store activity"
+                                + " and no pre-bind Drainage entries");
             Field field = Drainage.class.getDeclaredField("memo");
             field.setAccessible(true);
             field.set(drainage, new CellMemo<>(capacity));
@@ -604,7 +608,8 @@ public final class RegionalCacheProbe {
             result.addProperty("seconds", (System.nanoTime() - started) / 1e9);
             result.addProperty("drainageMemoFlights", networks.count(DISK_REPEAT, BUILDS));
             result.addProperty("hydroPlanFlights", plans.count(DISK_REPEAT, BUILDS));
-            result.addProperty("networkBuilds", after.misses() - before.misses());
+            result.addProperty("aggregateStoreMisses", after.misses() - before.misses());
+            result.addProperty("storeCounterScope", "all bound regional kinds");
             System.out.println("Forced Drainage disk repeat " + result);
             if (after.hits() - before.hits() != keys.size()
                     || after.misses() != before.misses()
@@ -755,7 +760,7 @@ public final class RegionalCacheProbe {
         String[][] sources = {
             {
                 "worldgen/GenerationMaps.java",
-                "8d24cfc4d7d6aa0582cded927448ebd1d9cb81cebaf160f25d4253da4e450a0f"
+                "c4bed5ce8b79aa279330986990a0d8c313a322b4eb4c291cb56780432d13e532"
             },
             {"RivenSpawn.java", "75299e43ffdeadc9012bb3b49c310ee8dcb95ac3d214f8a5d5608808ba357fae"},
             {

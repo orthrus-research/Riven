@@ -159,8 +159,13 @@ public final class RegionalCacheProbeReportingCheck {
         require(
                 detail.get("networkBuildAttemptCountSource")
                         .getAsString()
-                        .equals("RegionalStore misses, followed by Drainage.build"),
+                        .equals("not collected: aggregate store misses cover all bound kinds"),
                 "Memo flights were labeled network builds");
+        require(
+                detail.get("storeCounterScope")
+                        .getAsString()
+                        .equals("all bound regional kinds; no per-kind build counts"),
+                "Aggregate store counters were labeled as per-kind builds");
         JsonObject summary = new JsonObject();
         summary.add("regionalFlightDetails", detail);
         JsonObject networkJson = cacheJson(networks, 0, 0);
