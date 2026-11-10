@@ -168,3 +168,4 @@ worlds.
 | 2026-11-09 | Regional file-store primitives validate complete input identity and body checksums, use atomic writes, and decode heap values from scoped mapped reads. A fast filesystem CI check covers corruption, floating bits and concurrent publication; the store is not yet connected to generation. |
 | 2026-11-10 | The PowerShell launcher forwards workflow options without consuming them as instance parameters. |
 | 2026-11-10 | Pin Cubature 63c5c484 with early build pools, retained arrivals and independently paired tick accounting; native timing passed, while cold arrival waits and explicit save/purge stalls remain. |
+| 2026-11-10 | Connect pure drainage networks to the host-owned, deletable regional cache, with scoped mapped reads, world-lifetime ownership and exact graph reload and sampled atlas parity checks. |

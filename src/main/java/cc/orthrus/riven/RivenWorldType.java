@@ -7,7 +7,6 @@ import cc.orthrus.riven.worldgen.RivenBiomeTable;
 import cc.orthrus.riven.worldgen.TerrainBlock;
 import cc.orthrus.riven.worldgen.TerrainHeightReference;
 import cc.orthrus.riven.worldgen.TerrainMap;
-import cc.orthrus.riven.worldgen.WorldScale;
 
 import io.github.opencubicchunks.cubicchunks.api.util.Box;
 import io.github.opencubicchunks.cubicchunks.api.util.IntRange;
@@ -17,7 +16,6 @@ import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubicTerrainPreview;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.IRetainedColumnPreparation;
-import io.github.opencubicchunks.cubicchunks.api.worldgen.WorldBuildPool;
 
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.EnumCreatureType;
@@ -29,7 +27,6 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
-import net.minecraft.world.biome.BiomeProviderSingle;
 import net.minecraft.world.chunk.Chunk;
 
 import java.util.ArrayList;
@@ -47,22 +44,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
 
     @Override
     public BiomeProvider getBiomeProvider(World world) {
-        // Remote clients consume authoritative chunk biome arrays, never a guessed seed.
-        if (world.isRemote) return new BiomeProviderSingle(Biomes.PLAINS);
-        ForkJoinPool pool = WorldBuildPool.request(world);
-        try {
-            return new ClimateBiomeProvider(
-                    world.getSeed(),
-                    WorldScale.parse(world.getWorldInfo().getGeneratorOptions()),
-                    pool);
-        } catch (RuntimeException | Error failure) {
-            try {
-                WorldBuildPool.abandon(world);
-            } catch (RuntimeException | Error cleanup) {
-                if (cleanup != failure) failure.addSuppressed(cleanup);
-            }
-            throw failure;
-        }
+        return RegionalWorlds.biomes(world);
     }
 
     /** Vanilla clouds and shader packs (Iris's cloudHeight uniform) both read this. */

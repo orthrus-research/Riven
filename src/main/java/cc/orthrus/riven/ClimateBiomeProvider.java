@@ -3,6 +3,7 @@ package cc.orthrus.riven;
 import cc.orthrus.riven.worldgen.GenerationMaps;
 import cc.orthrus.riven.worldgen.Habitats;
 import cc.orthrus.riven.worldgen.NativeColumns;
+import cc.orthrus.riven.worldgen.RegionalStore;
 import cc.orthrus.riven.worldgen.TerrainMap;
 import cc.orthrus.riven.worldgen.WorldGenerationContext;
 import cc.orthrus.riven.worldgen.WorldScale;
@@ -26,8 +27,8 @@ final class ClimateBiomeProvider extends BiomeProvider {
     final WorldGenerationContext context;
     private final List<Biome> spawn;
 
-    ClimateBiomeProvider(long seed, WorldScale scale, ForkJoinPool pool) {
-        context = new WorldGenerationContext(seed, scale, pool);
+    ClimateBiomeProvider(long seed, WorldScale scale, ForkJoinPool pool, RegionalStore store) {
+        context = new WorldGenerationContext(seed, scale, pool, store);
         maps = context.maps;
         LOG.info("Riven land: {}", maps.land);
         LOG.info("Riven provinces: {}", maps.provinces.summary());

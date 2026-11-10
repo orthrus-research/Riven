@@ -6,9 +6,10 @@ the runtime stack is in [RUNTIME.md](RUNTIME.md); version history is in
 
 ## Determinism contract
 
-Generated content is a pure function of the world seed, the packaged definitions
+Generated geometry is a pure function of the world seed, the packaged definitions
 (`src/main/resources/riven-*.json`) and the world's layout scale (`WorldScale`, from the
-generator options level.dat saves; blank means 1). Request order, thread count, cache state and eviction must
+generator options level.dat saves; blank means 1). Final block states and biome colors also use
+the world's resolved definitions snapshot. Request order, thread count, cache state and eviction must
 not change any result. Memos publish immutable decisions through atomic references; concurrent
 misses may duplicate cold work but cannot produce different values. An evicted entry rebuilds as
 a new object equal to the old, so a value that refers to another memo's entries compares them by
@@ -24,7 +25,8 @@ pool cannot deadlock on a single build. At world load `RivenWorldType` requests 
 before constructing the biome provider and passes it through `WorldGenerationContext` to
 `GenerationMaps`, so the climate coverage and the spine tiles it needs already use the host's
 pool. The cube provider later adopts the same pool; Cubature owns shutdown. Failed map or biome
-provider construction abandons the request, allowing Cubature to close an unadopted pool.
+provider construction releases its own resources. Riven's failure cleanup abandons a completed
+pool request only when no other pending or live construction owns it.
 Preview columns build on their own thread alone
 (`BuildPool.alone`): a distant preview tile can start regional builds native generation needs
 much later, and on the shared pool those would hold the helpers native builds wait for. Cubature also prepares regional plans ahead of the
@@ -45,6 +47,41 @@ fresh one.
 Each definition carries a fingerprint that fresh instances record. Changing a definition, a
 composition order, a tie-break or a loop order at a budget limit changes worlds and needs a fresh
 instance.
+
+## Derived regional storage
+
+The kept climate draw's `Drainage` checks its bounded memory memo first. On a miss, the existing
+single-flight computation rechecks the memo, then tries a verified regional file before the pure
+build and a cache write on that builder's thread. The store is bound after climate selection and
+before the context is published. Hydrology plans and the other regional services retain their
+memory memos. Public tools constructors, the ordinary atlas and no-store goldens are memory-only;
+dedicated storage checks opt in explicitly. Stored maps require the standard terrain-height
+reference.
+
+`RegionalIdentity` freezes the complete packaged definition catalogue before use. The seed,
+exact layout bits and terrain version join those fingerprints in the namespace; each file also
+verifies its kind, region key, format and codec versions, full identity and body checksum.
+Geometry reads the packaged rules; world-resolved block bindings and biome colors are applied
+outside this stored graph. Missing, stale, malformed or unreadable files are misses. Cache-write
+failures leave the computed value usable, while unexpected codec failures propagate.
+
+The flat drainage layout preserves channel and bin order, nullable arrays, lake fields and raw
+floating bits. A read maps the file through a confined FFM arena, reconstructs an immutable heap
+graph and closes the arena before publishing it. The graph retains no mapped segment or entry
+from another memo. Writers force a temporary file and atomically rename it; concurrent writers
+of one key publish identical content. Riven starts no storage threads.
+
+Cubature supplies the cache root beside the save. The `WorldServer` factory uses a separate token
+per construction, with its own store handle when the host directory is non-null. A failure
+releases only that construction's resources. World unload terminates that world's ownership,
+while server stop closes the server epoch's stores. Late results release their detached handles.
+The factory and selected pool abandonment run on the server thread; terminal unload cleanup
+also accepts the shutdown hook. Store closure and host callbacks run outside ownership locks.
+A null host directory leaves generation on its memory-only path.
+
+Demand fills the persistent tier and files remain until removal. Memory hits perform no storage
+work, so they do not retry failed writes or recreate deleted files. A later memory miss can
+rebuild and store the same value.
 
 ## Entry points
 

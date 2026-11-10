@@ -439,7 +439,7 @@ public final class RegionalCacheProbe {
                 GenerationMaps actual =
                         step(
                                 "GenerationMaps.game",
-                                () -> new GenerationMaps(seed, heights, world, executor));
+                                () -> new GenerationMaps(seed, heights, world, executor, null));
                 land = actual.land;
                 outline = actual.outline;
                 provinces = actual.provinces;
@@ -552,12 +552,12 @@ public final class RegionalCacheProbe {
         String[][] sources = {
             {
                 "worldgen/GenerationMaps.java",
-                "4e073469d07978f942b979415c29487c7389f2a675050729a7adbef3da515ae4"
+                "8d24cfc4d7d6aa0582cded927448ebd1d9cb81cebaf160f25d4253da4e450a0f"
             },
             {"RivenSpawn.java", "75299e43ffdeadc9012bb3b49c310ee8dcb95ac3d214f8a5d5608808ba357fae"},
             {
                 "ClimateBiomeProvider.java",
-                "b4f1640c125c07b3c79b6562edcd75ad96a604e036dcf3793495cfbc5b48ef68"
+                "d91a2bef6af5ac5d81c7bc75d18b6fbb473745388d2b0f6a82949c0110ac49fa"
             }
         };
         for (String[] source : sources) {
@@ -770,7 +770,8 @@ public final class RegionalCacheProbe {
                                 seed,
                                 TerrainHeightReference.DEFAULT,
                                 new WorldScale(scale),
-                                buildPool);
+                                buildPool,
+                                null);
                 if (maps.attempt != actual.climateAttempt
                         || maps.draws != actual.climateDraws
                         || maps.fewest != actual.climateFewest

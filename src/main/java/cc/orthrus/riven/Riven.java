@@ -3,7 +3,9 @@ package cc.orthrus.riven;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 
 /** Registers Riven at the earliest generation entry point. */
 @Mod(
@@ -37,6 +39,7 @@ public final class Riven {
         cc.orthrus.riven.content.RivenContent.treeGrower(TreeGrowth::grow);
         MinecraftForge.EVENT_BUS.register(RivenSpawn.class);
         MinecraftForge.EVENT_BUS.register(PlayerEffects.class);
+        MinecraftForge.EVENT_BUS.register(RegionalWorlds.class);
         // Every packaged definition loads here, so a malformed one fails at startup; the log names
         // each with its revision and fingerprint (Definitions).
         org.apache.logging.log4j.Logger log = event.getModLog();
@@ -63,6 +66,16 @@ public final class Riven {
         if (net.minecraftforge.fml.common.Loader.isModLoaded("gregtech"))
             org.apache.logging.log4j.LogManager.getLogger("riven")
                     .info(GregTechOres.unification(cc.orthrus.riven.content.RivenContent.blocks()));
+    }
+
+    @Mod.EventHandler
+    public void serverAboutToStart(FMLServerAboutToStartEvent event) {
+        RegionalWorlds.start(event.getServer());
+    }
+
+    @Mod.EventHandler
+    public void serverStopped(FMLServerStoppedEvent event) {
+        RegionalWorlds.stopped();
     }
 
     @Mod.EventHandler

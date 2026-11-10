@@ -1017,9 +1017,30 @@ final class Drainage {
         return out;
     }
 
+    private volatile RegionalStore regionalStore;
+
+    /** Initialization-only: binds the kept climate draw before its context is published. */
+    void useStore(RegionalStore store) {
+        if (store == null || regionalStore != null)
+            throw new IllegalStateException("Drainage store must be bound once");
+        regionalStore = store;
+    }
+
     private Network network(long gx, long gz) {
         int ix = (int) gx, iz = (int) gz;
-        return memo.get(ix, iz, () -> build(gx, gz));
+        return memo.get(
+                ix,
+                iz,
+                () -> {
+                    RegionalStore store = regionalStore;
+                    if (store != null) {
+                        Network loaded = store.get("drainage", ix, iz, NETWORK_CODEC);
+                        if (loaded != null) return loaded;
+                    }
+                    Network built = build(gx, gz);
+                    if (store != null) store.put("drainage", ix, iz, built, NETWORK_CODEC);
+                    return built;
+                });
     }
 
     /**

@@ -67,18 +67,24 @@ public final class GenerationMaps {
         this(seed, TerrainHeightReference.DEFAULT);
     }
 
-    /** A world at a layout scale (1 = 8 km tuning, 4 = 32 km worlds). */
+    /** Cache-free tools maps at a layout scale (1 = 8 km tuning, 4 = 32 km worlds). */
     public GenerationMaps(long seed, WorldScale world) {
-        this(seed, TerrainHeightReference.DEFAULT, world, BuildPool.tools());
+        this(seed, TerrainHeightReference.DEFAULT, world, BuildPool.tools(), null);
     }
 
     GenerationMaps(long seed, TerrainHeightReference heights) {
-        this(seed, heights, WorldScale.DEFAULT, BuildPool.tools());
+        this(seed, heights, WorldScale.DEFAULT, BuildPool.tools(), null);
     }
 
-    /** The game's maps ({@link WorldGenerationContext}), built on the host's pool or caller. */
+    /** The game's maps, built on the host's pool or caller; only the kept draw uses the store. */
     GenerationMaps(
-            long seed, TerrainHeightReference heights, WorldScale world, ForkJoinPool executor) {
+            long seed,
+            TerrainHeightReference heights,
+            WorldScale world,
+            ForkJoinPool executor,
+            RegionalStore store) {
+        if (store != null && heights != TerrainHeightReference.DEFAULT)
+            throw new IllegalArgumentException("Stored maps require the standard terrain heights");
         pool.use(executor);
         plates = new PlateMap(seed, world);
         land = LandShare.choose(seed, heights, world);
@@ -108,6 +114,7 @@ public final class GenerationMaps {
         provinces = kept.provinces;
         baseTerrain = kept.baseTerrain;
         terrain = kept.terrain;
+        if (store != null) terrain.hydro.drainage.useStore(store);
         surfaces = new SurfaceRules(heights);
         columns = new NativeColumns(terrain, surfaces, heights);
         boulders = new Boulders(seed, terrain);
