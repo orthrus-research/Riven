@@ -12,10 +12,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Supplier;
 
 /**
  * Regional cache probe (tools only). Drives the real {@link TerrainMap} with simulated players'
@@ -47,11 +50,11 @@ import java.util.concurrent.atomic.LongAdder;
  * and every nearStep blocks out to near (the native view), nearest first, in tasks of task columns
  * dealt round-robin across players to a pool of threads. Passes: cold (first demand), repeat (the
  * same demand again, so any build is a capacity miss) and moved (each player displaced by move
- * blocks). The world is the square of side 8000 x scale blocks centred on the origin, and demand
- * stops at its edge, as a world border would stop it.
+ * blocks). Simulated demand stops at the edge of a square of side 8000 x scale blocks centred on
+ * the origin. The generation layout is tuned over 8192 x scale; legal game coordinates are wider.
  *
  * <pre>
- * .local/atlas-venv/Scripts/python tools/run_check.py RegionalCacheProbe out=DIR scale=4 players=12
+ * python tools/run_check.py RegionalCacheProbe out=DIR scale=4 players=12
  * </pre>
  */
 public final class RegionalCacheProbe {
@@ -178,7 +181,9 @@ public final class RegionalCacheProbe {
                 if (timed) timeline.add(new long[] {key, start, end});
             }
             ConcurrentLinkedQueue<long[]> q = waiters.remove(flight);
-            if (q != null) for (long[] w : q) counts[p][WAIT_NANOS + (int) w[0]].add(end - w[1]);
+            // A waiter enrolled after the end timestamp joins an already-complete result.
+            if (q != null)
+                for (long[] w : q) counts[p][WAIT_NANOS + (int) w[0]].add(Math.max(0, end - w[1]));
         }
     }
 
@@ -274,6 +279,10 @@ public final class RegionalCacheProbe {
             int eq = arg.indexOf('=');
             if (eq < 1) throw new IllegalArgumentException("Expected key=value: " + arg);
             a.put(arg.substring(0, eq), arg.substring(eq + 1));
+        }
+        if (a.containsKey("attribute")) {
+            attribute(a);
+            return;
         }
         Path out = Paths.get(required(a, "out"));
         long seed = Long.parseLong(value(a, "seed", "8675309"));
@@ -404,6 +413,453 @@ public final class RegionalCacheProbe {
                         .toJson(report)
                         .getBytes(StandardCharsets.UTF_8));
         print(report);
+    }
+
+    /**
+     * Reconstructs the production constructor in tools so its individual steps can be timed
+     * without changing generator code. Source guards fail before measurement if the copied
+     * constructor or spawn sequence changes; native-column parity checks its output afterward.
+     */
+    private static final class AttributedMaps {
+        final BuildPool pool = new BuildPool();
+        final JsonArray steps = new JsonArray();
+        final LandShare land;
+        final ContinentalOutlineMap outline;
+        final ProvinceMap provinces;
+        final TerrainMap terrain;
+        final NativeColumns columns;
+        final int attempt, draws, fewest;
+        final double seconds;
+
+        AttributedMaps(long seed, WorldScale world, ForkJoinPool executor, boolean production) {
+            long started = System.nanoTime();
+            pool.use(executor);
+            TerrainHeightReference heights = TerrainHeightReference.DEFAULT;
+            if (production) {
+                GenerationMaps actual =
+                        step("GenerationMaps.game", () -> new GenerationMaps(seed, heights, world));
+                actual.pool.use(executor);
+                land = actual.land;
+                outline = actual.outline;
+                provinces = actual.provinces;
+                terrain = actual.terrain;
+                columns = actual.columns;
+                attempt = actual.climateAttempt;
+                draws = actual.climateDraws;
+                fewest = actual.climateFewest;
+                seconds = (System.nanoTime() - started) / 1e9;
+                return;
+            }
+            PlateMap plates = step("PlateMap", () -> new PlateMap(seed, world));
+            land = step("LandShare.choose", () -> LandShare.choose(seed, heights, world));
+            outline = land.outline;
+            BaseElevationMap elevation =
+                    step("BaseElevationMap", () -> new BaseElevationMap(seed, plates, heights));
+            ClimateStructureMap structure =
+                    step(
+                            "ClimateStructureMap",
+                            () -> new ClimateStructureMap(outline, elevation, heights));
+            ClimateForcingMap forcing =
+                    step(
+                            "ClimateForcingMap",
+                            () -> new ClimateForcingMap(structure, heights, world));
+            ContinentalMap continents =
+                    step("ContinentalMap", () -> new ContinentalMap(seed, heights, outline));
+            SpineMap spines = step("SpineMap", () -> new SpineMap(seed, continents, world, pool));
+            SubstrateMap substrate = step("SubstrateMap", SubstrateMap::new);
+            RegionalProfileMap regions =
+                    step("RegionalProfileMap", () -> new RegionalProfileMap(seed, heights));
+            ProvinceMap keptProvinces = null;
+            TerrainMap keptTerrain = null;
+            int keptAttempt = -1, keptFewest = -1, drawn = 0;
+            for (int draw = 0; draw < ClimateCoverage.ATTEMPTS; draw++) {
+                int phase = draw;
+                String prefix = "draw[" + phase + "].";
+                TemperatureMap temperature =
+                        step(
+                                prefix + "TemperatureMap",
+                                () -> new TemperatureMap(seed, world, phase));
+                ClimateMap climate =
+                        step(
+                                prefix + "ClimateMap",
+                                () -> new ClimateMap(seed, temperature, forcing));
+                ProvinceMap province =
+                        step(
+                                prefix + "ProvinceMap",
+                                () ->
+                                        new ProvinceMap(
+                                                seed, world, plates, continents, spines, climate));
+                BaseTerrainMap base =
+                        step(
+                                prefix + "BaseTerrainMap",
+                                () ->
+                                        new BaseTerrainMap(
+                                                seed, elevation, province, heights, regions));
+                TerrainMap map =
+                        step(
+                                prefix + "TerrainMap",
+                                () ->
+                                        new TerrainMap(
+                                                seed,
+                                                plates,
+                                                heights,
+                                                climate,
+                                                province,
+                                                continents,
+                                                substrate,
+                                                base,
+                                                world,
+                                                pool));
+                int patches =
+                        step(
+                                prefix + "ClimateCoverage.fewest",
+                                () -> ClimateCoverage.fewest(map, world, pool));
+                drawn++;
+                if (keptTerrain == null || patches > keptFewest) {
+                    keptAttempt = phase;
+                    keptFewest = patches;
+                    keptProvinces = province;
+                    keptTerrain = map;
+                }
+                if (patches >= ClimateCoverage.MIN_PATCHES) break;
+            }
+            attempt = keptAttempt;
+            draws = drawn;
+            fewest = keptFewest;
+            provinces = keptProvinces;
+            terrain = keptTerrain;
+            SurfaceRules surfaces = step("SurfaceRules", () -> new SurfaceRules(heights));
+            columns = step("NativeColumns", () -> new NativeColumns(terrain, surfaces, heights));
+            step("Boulders", () -> new Boulders(seed, terrain));
+            seconds = (System.nanoTime() - started) / 1e9;
+        }
+
+        private <T> T step(String name, Supplier<T> build) {
+            long started = System.nanoTime();
+            T value = build.get();
+            double seconds = (System.nanoTime() - started) / 1e9;
+            JsonObject step = new JsonObject();
+            step.addProperty("step", name);
+            step.addProperty("seconds", seconds);
+            steps.add(step);
+            System.out.printf("T0 %-38s %9.3f s%n", name, seconds);
+            return value;
+        }
+    }
+
+    private static void sourceGuard() throws Exception {
+        String[][] sources = {
+            {
+                "worldgen/GenerationMaps.java",
+                "2ea8966740f977343c6b9d018dd0d94cb12feb23d806dc978fe516176e9a151c"
+            },
+            {"RivenSpawn.java", "75299e43ffdeadc9012bb3b49c310ee8dcb95ac3d214f8a5d5608808ba357fae"},
+            {
+                "ClimateBiomeProvider.java",
+                "e16de5d09e350916b128ec48e30724fb733f285a9495ef6e2f76b87ee74f92fd"
+            }
+        };
+        for (String[] source : sources) {
+            String text =
+                    Files.readString(Paths.get("src/main/java/cc/orthrus/riven", source[0]))
+                            .replace("\r\n", "\n");
+            String hash =
+                    HexFormat.of()
+                            .formatHex(
+                                    MessageDigest.getInstance("SHA-256")
+                                            .digest(text.getBytes(StandardCharsets.UTF_8)));
+            if (!hash.equals(source[1]))
+                throw new IllegalStateException(
+                        "Attribution reconstruction needs review: " + source[0]);
+        }
+    }
+
+    /** The exact dry-land ring and biome selection used by RivenSpawn, without game objects. */
+    private static final class SpawnProbe {
+        final ContinentalOutlineMap outline;
+        final TerrainMap terrain;
+        final NativeColumns columns;
+        final ContinentalOutlineMap.Sample land = new ContinentalOutlineMap.Sample();
+        final TerrainMap.Sample sample = new TerrainMap.Sample();
+        int tested;
+
+        SpawnProbe(ContinentalOutlineMap outline, TerrainMap terrain, NativeColumns columns) {
+            this.outline = outline;
+            this.terrain = terrain;
+            this.columns = columns;
+        }
+
+        boolean dry(int x, int z) {
+            tested++;
+            outline.sample(x, z, land);
+            if (land.marine()) return false;
+            String key = columns.column(x >> 4, z >> 4).key(((z & 15) << 4) | (x & 15));
+            if (!RivenBiomeTable.inland().contains(RivenBiomeTable.select(key).id)) return false;
+            return column(x, z)
+                    && column(x - 16, z - 16)
+                    && column(x + 16, z - 16)
+                    && column(x - 16, z + 16)
+                    && column(x + 16, z + 16);
+        }
+
+        boolean column(int x, int z) {
+            terrain.sample(x, z, sample);
+            return !sample.ocean.marine
+                    && sample.blockY() > TerrainHeightReference.DEFAULT.waterTopY
+                    && sample.waterY() <= sample.blockY();
+        }
+
+        int[] find() {
+            if (dry(0, 0)) return at(0, 0);
+            for (int r = 64; r <= 16384; r += 64)
+                for (int i = -r; i < r; i += 64) {
+                    if (dry(i, -r)) return at(i, -r);
+                    if (dry(r, i)) return at(r, i);
+                    if (dry(-i, r)) return at(-i, r);
+                    if (dry(-r, -i)) return at(-r, -i);
+                }
+            throw new IllegalStateException("No dry spawn within 16384 blocks");
+        }
+
+        int[] at(int x, int z) {
+            terrain.sample(x, z, sample);
+            return new int[] {x, sample.blockY() + 1, z};
+        }
+    }
+
+    private static String columnDigest(NativeColumns columns, int x, int z) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        NativeColumns.Column column = columns.column(x >> 4, z >> 4);
+        TerrainHeightReference heights = TerrainHeightReference.DEFAULT;
+        for (int index = 0; index < 256; index++) {
+            digest.update(column.key(index).getBytes(StandardCharsets.UTF_8));
+            int wx = (x & ~15) + (index & 15), wz = (z & ~15) + (index >> 4);
+            for (int y = heights.minimumY; y < heights.maximumYExclusive; y++) {
+                digest.update(column.block(index, y).id.getBytes(StandardCharsets.UTF_8));
+                digest.update((byte) column.ore(index, wx, y, wz));
+                digest.update((byte) (column.unstable(index, y) ? 1 : 0));
+            }
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static String generatorFingerprint() throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        for (String root :
+                new String[] {
+                    "src/main/java/cc/orthrus/riven/worldgen",
+                    "src/main/java/cc/orthrus/riven/contrib",
+                    "src/main/resources"
+                }) {
+            try (var files = Files.walk(Paths.get(root))) {
+                for (Path file :
+                        files.filter(Files::isRegularFile)
+                                .filter(
+                                        p ->
+                                                p.toString().endsWith(".java")
+                                                        || p.toString().endsWith(".json"))
+                                .sorted()
+                                .toList()) {
+                    digest.update(
+                            file.toString().replace('\\', '/').getBytes(StandardCharsets.UTF_8));
+                    digest.update(Files.readAllBytes(file));
+                }
+            }
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static void attribute(Map<String, String> args) throws Exception {
+        sourceGuard();
+        String scenario = args.get("attribute");
+        if (!scenario.equals("spawn") && !scenario.equals("arrival"))
+            throw new IllegalArgumentException("attribute=spawn|arrival");
+        Path out = Paths.get(required(args, "out"));
+        Files.createDirectories(out);
+        long seed = Long.parseLong(value(args, "seed", "8675309"));
+        double scale = Double.parseDouble(value(args, "scale", "1"));
+        int threads = Integer.parseInt(value(args, "buildThreads", "4"));
+        if (threads < 1) throw new IllegalArgumentException("buildThreads must be positive");
+        String fingerprint = generatorFingerprint();
+        byte[] oracleBytes =
+                args.containsKey("oracle")
+                        ? Files.readAllBytes(Paths.get(args.get("oracle")))
+                        : null;
+        JsonObject oracle =
+                oracleBytes != null
+                        ? new GsonBuilder()
+                                .create()
+                                .fromJson(
+                                        new String(oracleBytes, StandardCharsets.UTF_8),
+                                        JsonObject.class)
+                        : null;
+        if (oracle != null
+                && (!oracle.get("productionParity").getAsBoolean()
+                        || !oracle.get("parityMode").getAsString().equals("production")
+                        || oracle.get("seed").getAsLong() != seed
+                        || oracle.get("scale").getAsDouble() != scale
+                        || !oracle.get("scenario").getAsString().equals(scenario)
+                        || !oracle.get("generatorFingerprint").getAsString().equals(fingerprint)))
+            throw new IllegalArgumentException(
+                    "Oracle must be a production parity result for the same sources, definitions, seed, scale and scenario");
+        // One thread means the actual game startup shape: caller-only, not caller plus helper.
+        buildPool = threads == 1 ? null : BuildPool.bounded(threads, "probe-build");
+        try {
+            boolean production = scenario.equals("arrival");
+            AttributedMaps maps =
+                    new AttributedMaps(seed, new WorldScale(scale), buildPool, production);
+            List<Cache> caches = discover(maps);
+            for (Cache cache : caches) cache.timed = true;
+            pass = 0;
+            long started = System.nanoTime();
+            int[] at;
+            int candidates = 0;
+            if (scenario.equals("spawn")) {
+                SpawnProbe probe = new SpawnProbe(maps.outline, maps.terrain, maps.columns);
+                at = probe.find();
+                candidates = probe.tested;
+            } else {
+                at =
+                        new int[] {
+                            Integer.parseInt(value(args, "x", "8102")),
+                            0,
+                            Integer.parseInt(value(args, "z", "4552"))
+                        };
+                maps.columns.column(at[0] >> 4, at[2] >> 4);
+            }
+            double demandSeconds = (System.nanoTime() - started) / 1e9;
+            JsonArray memoJson = new JsonArray();
+            caches.sort((a, b) -> Long.compare(b.count(0, BUILD_NANOS), a.count(0, BUILD_NANOS)));
+            for (Cache cache : caches) {
+                JsonObject memo = cacheJson(cache, cache.resident(), overflow(cache));
+                JsonArray builds = new JsonArray();
+                for (long[] event : cache.timeline) {
+                    JsonObject build = new JsonObject();
+                    build.addProperty("key", event[0]);
+                    build.addProperty("cellX", (int) (event[0] >> 32));
+                    build.addProperty("cellZ", (int) event[0]);
+                    build.addProperty("seconds", (event[2] - event[1]) / 1e9);
+                    builds.add(build);
+                }
+                memo.add("buildTimeline", builds);
+                memoJson.add(memo);
+                if (cache.count(0, BUILDS) == 0) continue;
+                System.out.printf(
+                        "T1 %-58s builds=%d total=%.3fs worst=%.3fs",
+                        cache.name,
+                        cache.count(0, BUILDS),
+                        cache.count(0, BUILD_NANOS) / 1e9,
+                        cache.longest[0].get() / 1e9);
+                for (int k = 0; k < KINDS.length; k++)
+                    System.out.printf(
+                            " %sWaits=%d/%.3fs",
+                            KINDS[k],
+                            cache.count(0, WAITS + k),
+                            cache.count(0, WAIT_NANOS + k) / 1e9);
+                System.out.println();
+            }
+            System.out.printf(
+                    "%s at %s: %.3fs (%d candidates); T0 %.3fs%n",
+                    scenario, Arrays.toString(at), demandSeconds, candidates, maps.seconds);
+            // All timing ends before parity; a same-source oracle avoids repeating cold builds.
+            String digest = columnDigest(maps.columns, at[0], at[2]);
+            if (oracle == null && !production) {
+                GenerationMaps actual = new GenerationMaps(seed, new WorldScale(scale));
+                actual.pool.use(buildPool);
+                if (maps.attempt != actual.climateAttempt
+                        || maps.draws != actual.climateDraws
+                        || maps.fewest != actual.climateFewest
+                        || maps.land.share != actual.land.share
+                        || maps.land.outline.attempt != actual.land.outline.attempt)
+                    throw new IllegalStateException(
+                            "Attribution constructor metadata parity changed");
+                if (scenario.equals("spawn")
+                        && !Arrays.equals(
+                                at,
+                                new SpawnProbe(actual.outline, actual.terrain, actual.columns)
+                                        .find()))
+                    throw new IllegalStateException("Attribution spawn parity changed");
+                if (!digest.equals(columnDigest(actual.columns, at[0], at[2])))
+                    throw new IllegalStateException("Attribution native-column parity changed");
+            } else if (oracle != null
+                    && (maps.attempt != oracle.get("climateAttempt").getAsInt()
+                            || maps.draws != oracle.get("climateDraws").getAsInt()
+                            || maps.fewest != oracle.get("climateFewest").getAsInt()
+                            || maps.land.share != oracle.get("landShare").getAsDouble()
+                            || maps.land.outline.attempt != oracle.get("landAttempt").getAsInt()
+                            || !Arrays.equals(
+                                    at,
+                                    new GsonBuilder()
+                                            .create()
+                                            .fromJson(oracle.get("position"), int[].class))
+                            || !digest.equals(oracle.get("nativeColumnDigest").getAsString())))
+                throw new IllegalStateException(
+                        "Attribution oracle metadata, spawn or native-column parity changed");
+            JsonObject report = new JsonObject();
+            report.addProperty("seed", seed);
+            report.addProperty("scale", scale);
+            report.addProperty("buildThreads", threads);
+            report.addProperty("t0CallerOnly", production || threads == 1);
+            report.addProperty("t0BuildThreads", production || threads == 1 ? 0 : threads);
+            report.addProperty("demandBuildThreads", threads);
+            report.addProperty(
+                    "priorWarming",
+                    production
+                            ? "game constructor only; no spawn or preparation"
+                            : "reconstructed constructor only; no spawn or preparation");
+            report.addProperty("scenario", scenario);
+            report.addProperty("mapSeconds", maps.seconds);
+            report.addProperty("demandSeconds", demandSeconds);
+            report.addProperty("spawnCandidates", candidates);
+            report.addProperty("nativeColumnDigest", digest);
+            report.addProperty("productionParity", !production);
+            report.addProperty("directProduction", production);
+            report.addProperty(
+                    "parityMode",
+                    production ? "direct-production" : oracle == null ? "production" : "oracle");
+            if (oracle != null) {
+                report.addProperty("oracle", args.get("oracle"));
+                report.addProperty(
+                        "oracleSha256",
+                        HexFormat.of()
+                                .formatHex(
+                                        MessageDigest.getInstance("SHA-256").digest(oracleBytes)));
+            }
+            report.addProperty("generatorFingerprint", fingerprint);
+            report.addProperty(
+                    "probeSourceSha256",
+                    HexFormat.of()
+                            .formatHex(
+                                    MessageDigest.getInstance("SHA-256")
+                                            .digest(
+                                                    Files.readAllBytes(
+                                                            Paths.get(
+                                                                    "tools/checks/RegionalCacheProbe.java")))));
+            report.addProperty("landShare", maps.land.share);
+            report.addProperty("landAttempt", maps.land.outline.attempt);
+            report.addProperty("climateAttempt", maps.attempt);
+            report.addProperty("climateDraws", maps.draws);
+            report.addProperty("climateFewest", maps.fewest);
+            report.add("position", new GsonBuilder().create().toJsonTree(at));
+            report.add("steps", maps.steps);
+            report.add("caches", memoJson);
+            Files.writeString(
+                    out.resolve("attribution.json"),
+                    new GsonBuilder().setPrettyPrinting().create().toJson(report));
+            System.out.println(
+                    production
+                            ? "Direct production native-column digest: " + digest
+                            : (oracle == null
+                                            ? "Production constructor"
+                                            : "Same-source production oracle")
+                                    + ", spawn and native-column parity passed: "
+                                    + digest);
+        } finally {
+            if (buildPool != null) {
+                buildPool.shutdown();
+                if (!buildPool.awaitTermination(1, TimeUnit.MINUTES)) buildPool.shutdownNow();
+            }
+        }
     }
 
     private static String required(Map<String, String> a, String key) {

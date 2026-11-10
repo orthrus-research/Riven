@@ -318,6 +318,23 @@ jobs; `git push --no-verify` skips the check.
   by reflection (Java 26 warns once) and changes no generator code. It drives `TerrainMap.sample`
   only: trees, ores and native column builds are outside it, and retained heap is coarse below
   about 1 MB.
+- `run_check.py RegionalCacheProbe attribute=spawn|arrival out=DIR seed=8675309 scale=1
+  buildThreads=1|4` attributes cold startup and arrival cost without launching the game.
+  Run each combination in a fresh JVM so the land-share memo is cold. Spawn mode reconstructs
+  and times each world-map constructor and climate draw, then the exact dry-land spawn search.
+  One thread means caller-only construction; larger values supply that many build-pool workers,
+  with the caller also helping. Source fingerprints reject a stale reconstruction before timing;
+  production-constructor metadata, spawn and native block/ore/unstable parity are checked afterward.
+  `oracle=PATH` reuses an independent spawn report for another thread count, checking the same
+  generator and definition fingerprint, seed, scale, kept-draw metadata, spawn and native-column
+  digest. Arrival mode uses the actual game constructor on the caller alone, installs the
+  requested pool before demand, and times the native chunk column at `x=8102 z=4552`, recording
+  its digest directly. Each report ranks memo build time, count and worst build, records waits
+  by thread kind, and lists built keys. Nested build and wait times overlap and must not be added
+  as elapsed cost. The ordinary demand probe constructs its maps on the tools' all-processors-but-one
+  pool before installing `buildThreads`; its `mapSeconds` is not a startup measurement at the
+  requested pool size. Its demand square is `8000 * scale` blocks across; the generation layout
+  is tuned over `8192 * scale`; the game's legal X and Z range is `[-30000000,30000000)`.
 - `run_check.py DrainageFootprint <seed> <scale>` builds the drainage network of every continent
   reaching the world square and reports its heap: channel arrays against the bin index.
 
