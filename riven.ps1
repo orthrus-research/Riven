@@ -1,6 +1,6 @@
-[CmdletBinding()]
+[CmdletBinding(PositionalBinding=$false)]
 param(
-    [ValidateSet('setup','build','prepare','play','command','check','quick','ci','full','actions')][string]$Action='play',
+    [Parameter(Position=0)][ValidateSet('setup','build','prepare','play','command','check','quick','ci','full','actions')][string]$Action='play',
     [string]$Name,
     [int]$Port=25870,
     [string]$Text,

@@ -166,4 +166,5 @@ worlds.
 | 2026-11-09 | World maps use Cubature's build pool during biome-provider construction, before the cube generator exists; pool ownership and shutdown stay with Cubature |
 | 2026-11-09 | Held arrivals retain immutable native columns through installation independently of memo eviction; overlapping reservations share their value and release it when their host-owned requests end. No generated content changes. |
 | 2026-11-09 | Regional file-store primitives validate complete input identity and body checksums, use atomic writes, and decode heap values from scoped mapped reads. A fast filesystem CI check covers corruption, floating bits and concurrent publication; the store is not yet connected to generation. |
+| 2026-11-10 | The PowerShell launcher forwards workflow options without consuming them as instance parameters. |
 | 2026-11-10 | Pin Cubature 63c5c484 with early build pools, retained arrivals and independently paired tick accounting; native timing passed, while cold arrival waits and explicit save/purge stalls remain. |

@@ -289,6 +289,10 @@ jobs; `git push --no-verify` skips the check.
 | `riven.ps1 full` | `ci` plus `smoke`, a native timing capture of the run's frozen artifacts |
 | `python tools/actions.py --list` / `<job> ...` / `--dry-run` | Inspect or run individual jobs |
 
+The PowerShell launcher forwards workflow options, so `riven.ps1 full --if-needed`
+reuses jobs already passed for the same source trees. Runtime commands take named
+`-Name`, `-Port` and `-Text` parameters.
+
 The lab's `deliveryTickCosts` records exclusive server-thread phase times for every captured
 tick, alongside installed-cube counts and the share installed without block storage. Its
 bounded chronological CSV keeps the per-tick phase vectors for replay; dropped rows remain
