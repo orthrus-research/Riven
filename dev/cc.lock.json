@@ -4,14 +4,14 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "86452eeaf269a0e0657e0bbf6e7f2755c8817366",
+  "commit": "7be3bc8e310211c868e9db78f3b72da886e1b232",
   "checkout": "../Cubature",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
-  "sha256": "04b2c0a6f1e862ffb247bf39df0ac28776dca8caa380d733855a7947dd339b49",
+  "sha256": "c2ae32ef59147daafbc55fc0ecb281b344376a570537510220d108714d08cbcd",
   "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
-  "sourcesSha256": "3cc9731e0b2627978c4c141df15e9feded525b091397333fcd0a1b4e87617431",
-  "javaSourceFilesMatchedToArtifactSources": 435,
+  "sourcesSha256": "cd15102637da7ee4d7ebdc4ac8ece25ecc10f4a9185d542f4b57c9e36e5f041f",
+  "javaSourceFilesMatchedToArtifactSources": 436,
   "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
   "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
   "compatibility": {
@@ -21,8 +21,8 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Built from this clean Cubature commit as Java 25 bytecode; all 435 Java sources in the sources artifact match the commit, and core (454) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM, on 8 GiB ZGC and on the shipping G1 profile (8 GiB, 4 MB regions, 50 ms pause target, concurrent explicit collections), which newly prepared lab instances now use.",
-    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting and client native-capture counters; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved. Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
+    "status": "Built from this clean Cubature commit as Java 25 bytecode; all 436 Java sources in the sources artifact match the commit, and core (454) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM, on 8 GiB ZGC and on the shipping G1 profile (8 GiB, 4 MB regions, 50 ms pause target, concurrent explicit collections), which newly prepared lab instances now use.",
+    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting and client native-capture counters; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved; chunk-mesh builders that start with small layer buffers. Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
       "Client rendering remains unqualified"

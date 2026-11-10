@@ -455,7 +455,10 @@ these captures. Newly prepared lab instances use the shipping G1 profile (8 GiB,
 50 ms pause target, concurrent explicit collections). Against G1's defaults on the same heap it cut
 server young pauses from 43/63/76 ms (median/p95/max) to 29/44/48 ms and removed the 180-220 ms full
 collections; a 12 GiB heap with the same flags measured no better. Flight tick p95 stays near 35 ms
-under every collector setting tried. A stationary capture of the earlier
+under every collector setting tried. Native memory tracking showed 2.26 GB of the client's memory outside the heap
+in vanilla's chunk-mesh builders, which reserve 10 MiB of direct memory each, about ten per
+processor; with this pin they start small and grow on demand, and in the same capture the client's
+direct allocations fell to 0.41 GB and its private commit from 12.7 to 10.9 GB. A stationary capture of the earlier
 pin showed saved blocks, storage and completed light unchanged, apart from surface water that
 random ticks froze or thawed differently. Existing refmap warnings and controlled-shutdown
 connection resets remain; client rendering and held maps are unqualified.
