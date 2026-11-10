@@ -100,7 +100,7 @@ rebuild and store the same value.
 | `RivenWorldType.Generator.generateCube` | Cubature, native cubes | One `NativeColumns` entry per chunk column: `TerrainMap.sample` once per column, assembled by the column engine and stored as its runs of blocks and roles, read by every cube between the lowest soil and the reference top (Y 351); cubes wholly under the ground also read each 4x4x4 cell's depth biome from the entry |
 | `RivenWorldType.Generator.generateColumn` | Cubature, biome arrays | The same `NativeColumns` entry's habitats |
 | `RivenWorldType.Generator.prepareRetainedColumn` | Cubature generation workers, held arrivals | Retains the immutable `NativeColumns` entry until the host installs the destination column or releases the last arrival |
-| `RivenWorldType.Generator.cubeClass` / `surfaceBand` | Optional host capability (`ICubeClassification`) | Loaded bounds and completed memo or retained columns, including required neighbours; missing required facts yield `UNKNOWN` or no surface band |
+| `RivenWorldType.Generator.cubeClass` / `regenerable` / `surfaceBand` | Optional host capability (`ICubeClassification`) | Loaded bounds and completed memo or retained columns, including required neighbours; missing required facts yield `UNKNOWN` or no surface band |
 | `createTerrainPreviewSampler` | Cubature DH provider | `TerrainMap.sample` per preview column, assembled by the column engine and emitted as its runs |
 | `ClimateBiomeProvider` | Minecraft biome queries | `surfaceHabitat`; spawn biomes exclude ocean, deep ocean, river, swamp and all three beach biomes |
 | `RivenSpawn` | Forge `CreateSpawnPosition` | First dry land column, in 64-block rings out to 16,384 blocks, with a 16-block dry margin |
@@ -125,6 +125,10 @@ ordinary generation into a fresh primer produces only air and no 3D biome entrie
 required summaries or unsupported feature reach yields `UNKNOWN`; `DETAILED` and `UNKNOWN`
 require ordinary generation. The optional inclusive cube-Y `surfaceBand` covers generated
 surface ground, fluids and decorations, or is absent when its bounds cannot be proved.
+`regenerable` holds for an `EMPTY` cube over an `EMPTY` cube: population spawns animals only from
+the cube holding their feet, on the raw surface every `EMPTY` cube lies above, so populating such a
+cube creates nothing, and Cubature leaves it unsaved until something changes it. Population that
+places blocks would have to narrow this.
 
 Surface and water queries (`NativeColumns.surface` for tree sites' clearance,
 `NativeColumns.water` for reeds beside water) read a held chunk column or resolve just their one

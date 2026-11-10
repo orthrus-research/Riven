@@ -193,6 +193,12 @@ public final class CubeClassificationCheck {
                 controls = new JsonArray(),
                 oracle = new JsonArray();
         final Set<CubePosition> pending = new LinkedHashSet<>(), proved = new HashSet<>();
+
+        /** EMPTY cubes the classifier calls regenerable, and those it keeps saved. */
+        final Set<CubePosition> regenerable = new LinkedHashSet<>();
+
+        long regenerableProved, emptyKept;
+        final FirstAnimals animals;
         final Set<ColumnPosition> summaries = new HashSet<>();
         long retainCalls, summaryAssertions, classificationQueries, unchangedCacheAssertions;
         int held, maximumHeld;
@@ -210,6 +216,7 @@ public final class CubeClassificationCheck {
                     generator instanceof ICubeClassification,
                     "Actual generator lacks classification");
             classifier = (ICubeClassification) generator;
+            animals = new FirstAnimals(seed, biomes);
             result.addProperty("seed", seed);
             result.addProperty("layoutScale", 1);
             result.addProperty("generatorClass", generator.getClass().getName());
@@ -311,9 +318,15 @@ public final class CubeClassificationCheck {
             classificationQueries++;
             NativeColumns.Column[] before = cached(x, z);
             CubeClass value = classifier.cubeClass(x, y, z);
+            boolean again = classifier.regenerable(x, y, z);
             unchanged(x, z, before);
             require(value != null, "Null cube classification");
-            if (value == CubeClass.EMPTY) pending.add(new CubePosition(seed, x, y, z));
+            require(!again || value == CubeClass.EMPTY, "A non-EMPTY cube was called regenerable");
+            if (value == CubeClass.EMPTY) {
+                pending.add(new CubePosition(seed, x, y, z));
+                if (again) regenerable.add(new CubePosition(seed, x, y, z));
+                else emptyKept++;
+            }
             return value;
         }
 
@@ -417,6 +430,14 @@ public final class CubeClassificationCheck {
                 proved.add(position);
             }
             pending.clear();
+            // Population of a regenerable cube must create nothing: no animal stands in it.
+            for (CubePosition position : regenerable) {
+                require(
+                        animals.plan(position.x, position.z, position.y * 16).isEmpty(),
+                        "A regenerable cube plans animals at " + position);
+                regenerableProved++;
+            }
+            regenerable.clear();
         }
 
         void surfaceBand(NativeColumns.Column column) {
@@ -554,6 +575,11 @@ public final class CubeClassificationCheck {
             result.addProperty("maximumTopAssertions", summaryAssertions);
             result.addProperty("uniqueColumnsWithMaximumTopChecked", summaries.size());
             result.addProperty("actualGenerateCubeCalls", proved.size());
+            require(
+                    regenerableProved > 0 && emptyKept > 0,
+                    "Regenerable classification was not exercised both ways");
+            result.addProperty("regenerableCubesProved", regenerableProved);
+            result.addProperty("emptyCubesKeptSaved", emptyKept);
             result.addProperty("emptyViolations", 0);
         }
     }

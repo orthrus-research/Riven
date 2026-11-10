@@ -446,8 +446,12 @@ lifecycle capture (full view, a 60 s spectator flight at 16 blocks/s, settle, sa
 delivered the full view's first cubes 0.55 s after capture start instead of 8.9 s and the whole
 view in 10.8 s instead of 20.9 s; worst ticks: full view 159 ms, flight 78 ms (113 without), settle
 39 ms. Tick p95 is about 42 ms in the full view and 34 ms in flight, where the same delivery runs in
-fewer, busier ticks. The explicit post-flight save/purge/flush tick reached 2.72 s, 2.22 s of it in
-the writer's blocking flush (2.22 and 1.78 s without baking). A stationary capture of the earlier
+fewer, busier ticks. With this pin's storage changes (a flush writes each region's backlog in one
+batch, compression runs on reused deflaters and bounded workers, and empty cubes Riven reports
+regenerable are not saved), the explicit post-flight save/purge/flush tick fell from 2.72 s to
+0.61 s and its blocking flush from 2.22 to 0.33 s; the run saved 52,610 cubes instead of 75,122
+and 31.8 MB of cube regions instead of 43.8 MB. Worst flight ticks varied from 110 to 176 ms across
+these captures. A stationary capture of the earlier
 pin showed saved blocks, storage and completed light unchanged, apart from surface water that
 random ticks froze or thawed differently. Existing refmap warnings and controlled-shutdown
 connection resets remain; client rendering and held maps are unqualified.

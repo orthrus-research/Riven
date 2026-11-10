@@ -4,13 +4,13 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "221ef55decfd5251f0d278a7dc1fee5ae75e965f",
+  "commit": "7bf7d5d531cf8f562a2612aea216c7d5b3f01c2c",
   "checkout": "../Cubature",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
-  "sha256": "fe743c1e470ffe8746fa357b3e72aeb0f32f7aa88c555956aa5a99144937a953",
+  "sha256": "04b2c0a6f1e862ffb247bf39df0ac28776dca8caa380d733855a7947dd339b49",
   "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
-  "sourcesSha256": "ab553f2715ebcc9cca9ba51be2e827b4ff51f95427f41353ca64d81b2a523cb2",
+  "sourcesSha256": "3cc9731e0b2627978c4c141df15e9feded525b091397333fcd0a1b4e87617431",
   "javaSourceFilesMatchedToArtifactSources": 435,
   "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
   "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
@@ -21,13 +21,13 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Built from this clean Cubature commit as Java 25 bytecode; all 435 Java sources in the sources artifact match the commit, and core (448) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM.",
-    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting and client native-capture counters; regional preparation around spawn while no player is present. Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
+    "status": "Built from this clean Cubature commit as Java 25 bytecode; all 435 Java sources in the sources artifact match the commit, and core (454) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM.",
+    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting and client native-capture counters; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved. Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
       "Client rendering remains unqualified"
     ],
-    "knownExistingWarning": "Arrival, flight and save were last measured on the previous pin: arrival first observed 70-77 s after target-view capture start; startup ticks up to 546 ms; an explicit save/purge/flush tick of 1.861 s. Refmap warnings and connection resets during controlled client shutdown remain. Client rendering and held maps remain unqualified."
+    "knownExistingWarning": "Arrival, flight and save were last measured on the previous pin: arrival first observed 70-77 s after target-view capture start; startup ticks up to 546 ms; an explicit save/purge/flush tick of 1.861 s; on this pin the post-flight save/purge/flush tick measured 0.61 s. Refmap warnings and connection resets during controlled client shutdown remain. Client rendering and held maps remain unqualified."
   },
   "licensing": {
     "default": "MIT with separately licensed components",

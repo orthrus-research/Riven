@@ -210,6 +210,19 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             return bottom >= upper ? CubeClass.EMPTY : CubeClass.DETAILED;
         }
 
+        /**
+         * Population spawns an animal only from the cube holding its feet, on the column's raw
+         * surface, which every EMPTY cube lies above. An EMPTY cube over an EMPTY cube holds no
+         * such feet, so population creates nothing there. Population that places blocks would
+         * have to narrow this.
+         */
+        @Override
+        public boolean regenerable(int cubeX, int cubeY, int cubeZ) {
+            return cubeY != Integer.MIN_VALUE
+                    && cubeClass(cubeX, cubeY, cubeZ) == CubeClass.EMPTY
+                    && cubeClass(cubeX, cubeY - 1, cubeZ) == CubeClass.EMPTY;
+        }
+
         @Override
         public SurfaceBand surfaceBand(int columnX, int columnZ) {
             if (outsideColumn(columnX, columnZ) || !surfaceBandSupported) return null;
