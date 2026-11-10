@@ -62,7 +62,10 @@ The pinned Cubature generates cubes and prepares columns on worker threads for R
 which declares concurrent generation (`concurrentGenerationThreads`: a quarter of the processors,
 1 to 4); the server thread installs them within `concurrentGenerationTickMillis` (20 ms). Fresh
 instances set Cubature `deliveryMode=PREFETCH` (`--cubature-delivery`): incremental maintenance,
-continuous autosave discovery and ahead preparation. A teleport (`/tp` and any other
+continuous autosave discovery and ahead preparation. Observation captures, including the
+`full` workflow's smoke, default to `BASELINE`; `riven_observe.py capture
+--delivery-experiment prefetch` selects the other mode explicitly. Compare captures made in
+the same delivery mode. A teleport (`/tp` and any other
 `setPlayerLocation`) into a column that is neither loaded nor saved waits while the workers
 prepare that column, at most 600 ticks, and the player stays put meanwhile; before, the server
 thread generated it in one tick (2.0 s with Riven's drainage networks, every player stalled).
@@ -284,6 +287,16 @@ jobs; `git push --no-verify` skips the check.
 | `python tools/actions.py ci --if-needed` | The `ci` jobs that have not passed for the current trees |
 | `riven.ps1 full` | `ci` plus `smoke`, a native timing capture of the run's frozen artifacts |
 | `python tools/actions.py --list` / `<job> ...` / `--dry-run` | Inspect or run individual jobs |
+
+The lab's `deliveryTickCosts` records exclusive server-thread phase times for every captured
+tick, alongside installed-cube counts and the share installed without block storage. Its
+bounded chronological CSV keeps the per-tick phase vectors for replay; dropped rows remain
+visible in the summary. The telemetry ledger keeps each phase's mean and p95 and the install
+cost per cube, split into construction, population, first light and surface tracking. The
+cost divides aggregate work by unique generated-or-loaded cube registrations in the capture;
+it does not follow an individual cube across ticks. Construction excludes work on I/O workers.
+The `OTHER` phase closes the full server-tick envelope, so phases can be added without counting
+nested lighting or encoding twice.
 
 - `tools/build_riven.py [--diagnostics] [--freeze LABEL]` builds Riven for Cleanroom and
   writes `.local/builds/riven-latest.json`.

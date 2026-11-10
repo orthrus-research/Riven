@@ -108,6 +108,40 @@ class Ledger(unittest.TestCase):
         self.assertEqual(telemetry._utc("2026-11-01T00:30:00-04:00"), "2026-11-01T04:30:00Z")
         self.assertEqual(telemetry._utc("2026-11-01T04:30:00.123456+00:00"), "2026-11-01T04:30:00Z")
 
+    def test_delivery_costs_keep_phase_units_counts_and_unknown_empty_install_cost(self):
+        fixture = scenario("full-view", "2026-11-01T04:30:00Z")
+        fixture["server"]["deliveryTickCosts"] = {
+            "ticks": 100,
+            "storedTicks": 90,
+            "droppedTicks": 10,
+            "maximumTickAccountingErrorNanos": 0,
+            "complete": timing(20, 50),
+            "phases": {"CUBE_CONSTRUCT": timing(2, 4), "OTHER": timing(18, 46)},
+            "installedCubes": 50,
+            "emptyCubes": 20,
+            "emptyCubeShare": 0.4,
+            "installMsPerCube": 4.123456,
+            "installPartsMsPerCube": {"CUBE_CONSTRUCT": 4.123456},
+            "scope": "Exclusive server-thread phases inside MinecraftServer.tick",
+        }
+        result = telemetry._scenario(fixture, None)["delivery"]
+        self.assertEqual(result["tick"], {"mean": 20, "p95": 45.0, "count": 100})
+        self.assertEqual(result["phases"]["CUBE_CONSTRUCT"]["mean"], 2)
+        self.assertEqual(result["installedCubes"], 50)
+        self.assertEqual(result["emptyCubeShare"], 0.4)
+        self.assertEqual(result["installMsPerCube"], 4.1235)
+        self.assertEqual(result["installPartsMsPerCube"], {"CUBE_CONSTRUCT": 4.1235})
+        self.assertEqual((result["storedTicks"], result["droppedTicks"]), (90, 10))
+        self.assertEqual(result["maximumTickAccountingErrorNanos"], 0)
+        fixture["server"]["deliveryTickCosts"]["installMsPerCube"] = None
+        fixture["server"]["deliveryTickCosts"]["emptyCubeShare"] = None
+        self.assertIsNone(telemetry._scenario(fixture, None)["delivery"]["installMsPerCube"])
+        self.assertIsNone(telemetry._scenario(fixture, None)["delivery"]["emptyCubeShare"])
+
+    def test_missing_delivery_costs_remain_absent(self):
+        fixture = scenario("idle", "2026-11-01T04:30:00Z")
+        self.assertNotIn("delivery", telemetry._scenario(fixture, None))
+
     def test_the_index_numbers_runs_in_the_order_they_ran(self):
         telemetry.collect(self.instance("riven-late-001", "2026-11-02T10:00:00Z"), commits=False)
         telemetry.collect(self.instance("smoke-early", "2026-10-30T09:00:00Z"), commits=False)

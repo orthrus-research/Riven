@@ -126,6 +126,28 @@ def _scenario(scenario, lod):
         }
         save["events"] = storage.get("events")
     out["save"] = save
+    delivery = server.get("deliveryTickCosts")
+    if delivery and delivery.get("ticks"):
+        out["delivery"] = {
+            "ticks": delivery["ticks"],
+            "storedTicks": delivery.get("storedTicks"),
+            "droppedTicks": delivery.get("droppedTicks"),
+            "maximumTickAccountingErrorNanos": delivery.get("maximumTickAccountingErrorNanos"),
+            "tick": _timing(delivery.get("complete"), ("mean", "p95")),
+            "phases": {
+                name: _timing(sample, ("mean", "p95"))
+                for name, sample in (delivery.get("phases") or {}).items()
+            },
+            "installedCubes": delivery.get("installedCubes"),
+            "emptyCubes": delivery.get("emptyCubes"),
+            "emptyCubeShare": _r(delivery.get("emptyCubeShare"), 4),
+            "installMsPerCube": _r(delivery.get("installMsPerCube"), 4),
+            "installPartsMsPerCube": {
+                name: _r(value, 4)
+                for name, value in (delivery.get("installPartsMsPerCube") or {}).items()
+            },
+            "scope": delivery.get("scope"),
+        }
     out["gcCollections"] = client.get("gcCollections")
     if lod:
         out["lod"] = lod
