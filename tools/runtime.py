@@ -44,8 +44,19 @@ def build():
     settings = load_json(ROOT / ".local/settings.json")
     env = os.environ.copy()
     env["JAVA_HOME"] = str(Path(settings["java25"]).parent.parent)
+    # As tools/build_riven.py: the Java 26 compiler reads GTCEu: Reloaded's Java 26 classes; bytecode stays 25.
+    java26 = Path(settings["java26"]).parent.parent
     subprocess.run(
-        [str(ROOT / "gradlew.bat"), "assemble", "--console=plain"], cwd=ROOT, env=env, check=True
+        [
+            str(ROOT / "gradlew.bat"),
+            "assemble",
+            "--console=plain",
+            "-PrivenJavaVersion=26",
+            f"-Dorg.gradle.java.installations.paths={java26}",
+        ],
+        cwd=ROOT,
+        env=env,
+        check=True,
     )
 
 

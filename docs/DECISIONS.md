@@ -368,8 +368,9 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
 
 - **Subsurface.** The underground is to be the richest and most adventurous part of the world.
   Order: geology first, then ore, then caves; the world floor moves to Y-512; caves are mixed
-  and rooted in rock type and open to the sky only at planned 2D entrance sites. Ores: GregTech CE
-  Unofficial 2.8.10-beta (pinned, optional) supplies a catalog of veins and deposits; Riven
+  and rooted in rock type and open to the sky only at planned 2D entrance sites. Ores: GTCEu:
+  Reloaded, Orthrus Research's GTCEu continuation (pinned, optional; it replaced GregTech CE
+  Unofficial 2.8.10-beta on 2026-11-10), supplies a catalog of veins and deposits; Riven
   places them with its own geology- and lithology-driven generators in the cube fill, never with
   GTCEu's world generator. Supersymmetry's realistic host stones and their ore variants are
   recreated as Riven content (no Susy-Core code runs). Without GTCEu the same generators place

@@ -7,13 +7,14 @@
 | Component | Version | Role |
 | --- | --- | --- |
 | Minecraft | 1.12.2 | Target game |
-| Cleanroom | 0.7.9-alpha, official and unchanged | Loader; supplies MixinBooter and ConfigAnytime |
+| Cleanroom | 0.7.14-alpha, official and unchanged | Loader; supplies MixinBooter and ConfigAnytime |
 | Java | 26.0.2.1, 8 GiB heap, ZGC per JVM | Native runtime and development compiler |
 | Cubature | `dev/pins/Cubature-cleanroom.jar` (`dev/cc.lock.json`) | The Orthrus Research CubicChunks fork: scheduling, lighting, lifetime, storage, delivery, DH integration |
 | Distant Horizons | 3.3.3-1.12.2, official upstream (`dev/dh.lock.json`) | Distant terrain renderer and delivery, both sides |
 | Fugue | 0.25.5 | Modern-Java compatibility layer |
 | Scalar Legacy | 1.0.1 | Scala 2.11 provider |
-| GregTech CE Unofficial | 1.12.2-2.8.10-beta, official upstream (`runtime.lock.json`), with CodeChickenLib 1.12.2-3.2.3.358 | Optional ore provider (prototype): `riven-ores.json` transcribes its overworld vein catalog, Riven places the bodies, and GTCEu supplies the ore block for each mineral and host stone type; GTCEu's own world generator never runs |
+| GTCEu: Reloaded | 3.0.0-reloaded.1-alpha.1, built from its published `master` (`runtime.lock.json`), with CodeChickenLib CRE 3.3.10 and ModularUI 3.1.6 | Optional ore provider (prototype): Orthrus Research's GTCEu continuation, mod ID `gregtech`. `riven-ores.json` transcribes its overworld vein catalog, Riven places the bodies, and GregTech supplies the ore block for each mineral and host stone type; its own world generator never runs. Riven compiles against it with the Java 26 compiler, since its classes are Java 26 |
+| OrthLib | 0.5.0-dev with its Cubature adapter, built from source (`runtime.lock.json`) | Orthrus Research's shared library: random-tick participation through Cubature's listener API, and services for Orthrus mods; the exact artifacts of its native random-tick qualification |
 | Demonica | 0.9.0, official release (`runtime.lock.json`, optional `shaders`) | Client shader stack: Iris on its bundled Celeritas d94ec1e5; installed only by `prepare --shaders` |
 | Shader packs | BSL 10.1.8, Complementary Reimagined r5.9.3, Complementary Unbound r5.9.3, official Modrinth releases (`runtime.lock.json` `shaderPacks`) | The targeted packs under Demonica (docs/DECISIONS.md, Shader packs); local zips in `dev/pins/shaderpacks`, never committed or redistributed |
 | Riven | `build/libs/riven-0.0.1-cleanroom.jar` | Terrain, water, biomes and block content |

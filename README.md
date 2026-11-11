@@ -30,7 +30,7 @@ published on GitHub Releases. Known structural limits are listed in
 | Continents and climate | Seeded continents and oceans; temperature and moisture with an upwind moisture correction. |
 | Land | Base relief with erosion and regional passes, and fifteen contributed landform families, from continental outlines and ocean floors to mountains, coasts and rivers ([THIRD-PARTY.md](THIRD-PARTY.md)). |
 | Water | Drainage networks per continent, from headwater streams to rivers; lakes, wetlands and lagoons; underground lakes and flooded caves. |
-| Underground | Geology with 13 host stones and their deposits, and 21 rocks of the deep realms' own; ores from a mineral catalog (GregTech CE Unofficial's overworld veins when it is installed, vanilla ores otherwise); caves through ten depth biomes. |
+| Underground | Geology with 13 host stones and their deposits, and 21 rocks of the deep realms' own; ores from a mineral catalog (GTCEu: Reloaded's overworld veins when it is installed, vanilla ores otherwise); caves through ten depth biomes. |
 | Surface life | 61 `riven:` biomes chosen from climate and terrain; trees from 34 species; boulders and ground cover. |
 | Distant view | Distant Horizons samples the same model as native cubes. |
 
@@ -41,12 +41,12 @@ Every layer and its definition file: [docs/FEATURES.md](docs/FEATURES.md).
 | Component | Version | |
 | --- | --- | --- |
 | Minecraft | 1.12.2 | |
-| Cleanroom | 0.7.9-alpha, official | Required |
+| Cleanroom | 0.7.14-alpha, official | Required |
 | Java | 26 | The tested runtime |
 | Cubature | 0.1.4.0, pinned in [dev/cc.lock.json](dev/cc.lock.json) | Required |
 | Distant Horizons | 3.3.3-1.12.2, official | Optional: the distant view |
-| GregTech CE Unofficial | 1.12.2-2.8.10-beta | Optional: the ore catalog |
-| Fugue, Scalar Legacy | 0.25.5, 1.0.1 | In the tested profile |
+| GTCEu: Reloaded | 3.0.0-reloaded.1-alpha.1 | Optional: the ore catalog |
+| Fugue, Scalar Legacy, OrthLib | 0.25.5, 1.0.1, 0.5.0-dev | In the tested profile |
 
 The complete tested profile, with every file's SHA-256, is [runtime.lock.json](runtime.lock.json).
 
