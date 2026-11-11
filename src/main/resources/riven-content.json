@@ -5172,14 +5172,14 @@
         "light": 7
       },
       "infernal_rock": {
-        "name": "Infernal Rock",
+        "name": "Sulfurous Scoria",
         "faces": [
           "req05-infernal-rock-main",
           "req05-infernal-rock-alternate"
         ]
       },
       "slag_stone": {
-        "name": "Slag Stone",
+        "name": "Clinker",
         "faces": [
           "req05-slag-stone-main",
           "req05-slag-stone-alternate"
@@ -5193,14 +5193,14 @@
         ]
       },
       "cinder_rock": {
-        "name": "Cinder Rock",
+        "name": "Scoria",
         "faces": [
           "req05-cinder-rock-main",
           "req05-cinder-rock-alternate"
         ]
       },
       "ash_shale": {
-        "name": "Ash Shale",
+        "name": "Tuffaceous Shale",
         "faces": [
           "req05-ash-shale-main",
           "req05-ash-shale-alternate"

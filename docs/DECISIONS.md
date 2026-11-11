@@ -26,9 +26,31 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   parent classifications: earlier stages (provinces, the coast plan) own broad intent,
   marine/shore ownership, supplied-water reservations and legal headroom, and downstream stages
   consume them with explicit reasons and coverage.
-- **2026-10-21. Volcanoes.** Volcanoes are reserved for hot climates: a volcano needs a HOT
-  anchor, and its cone fades toward cooler columns as cold forms do (terrain-v55). A dedicated
-  design pass is open.
+- **2026-10-21. Volcanoes.** Volcanism follows tectonics in any climate: its potential is the
+  strongest of rift weight, arc weight along ranges and a sparse hotspot field (terrain-v130,
+  `riven-volcanic.json`). Climate changes what grows on and around a volcano, never whether it
+  stands.
+
+## Adopted 2026-11-11
+
+- **Pack-neutral capabilities.** Riven implements nothing for one modpack. When a pack such as
+  Supersymmetry has a requirement, Riven meets it with a generic, definition-driven capability
+  (a deposit kind, a host stone, a fluid reservoir rule, a mapping layer), and the pack expresses
+  its own needs through that capability's data. Pack catalogues may inform what Riven places, as
+  real geology; no code path names a pack.
+- **Real science at every level.** New worldgen content follows real Earth geology and ecology,
+  from the high alpine band and the oceans down through the crust, the Beneath and the Infernal
+  Deep. The moonstone seams and soul ash are the only liberties; no other invented block is
+  placed, and display names follow the real rock (the Infernal Deep's sulfurous scoria, scoria,
+  clinker and tuffaceous shale). Strata vary by geological terrane chosen from plates and
+  provinces, not one global column. Diversity comes first as variants inside existing biomes; a
+  new registered biome only where identity, weather or spawns must differ. Life is plants, fungi,
+  corals and microbial mats as blocks, plus client ambience: no new mobs, no animals drawn as
+  decoration and no structures built by animals. The wonders boundary (No wonders, 2026-11-02)
+  also holds out pingos, maars and tuff rings, geysers, tufa aprons and barrage pools, rapids and
+  falls of any size, and granite slabs, whalebacks and kopjes. Seasons and the Moon are out of
+  scope. Ore hosts may grow past one ore block's 16 states as far as the geology needs. The
+  research catalogue behind this lives under `.local/research/worldgen-diversity`.
 
 ## Adopted 2026-11-09
 
@@ -156,6 +178,8 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   carries the commissioned textures under their `riven:` paths with Survey Plate's vanilla
   redraws. The commit that makes the build take textures from the pack removes the commissioned
   textures from the tip. Requisitions 04 and 07 and the Survey Plate rework arrive by the pack.
+  A block that needs art before the pack delivers it ships with a quickly painted Riven
+  placeholder, which the pack replaces under the same `riven:` path.
 
 ## Adopted 2026-10-30
 
@@ -379,9 +403,8 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   Phase 1: a geological-history model (an event sequence traced backward per block); surface
   outcrops come from the geology; chasms both open to the sky (rare, planned in 2D) and hidden;
   hazards are flooding water-bearing layers, lava depths and chambers, unstable sand and gravel,
-  and sheer drops. No glowstone or other invented blocks (it does not exist in nature and could
-  break GTCEu progression). The rock is the adventure: no underground structures, chests or
-  special creatures. No guaranteed routes between depth realms: networks break off and continue
+  and sheer drops. No glowstone or other invented blocks (see Real science at every level). The
+  rock is the adventure: no underground structures, chests or special creatures. No guaranteed routes between depth realms: networks break off and continue
   in lower layers.
   Phase 2 (2026-10-24): the ore catalog is GTCEu's overworld veins only. Nether and End
   veins (platinum, tungsten, uranium, beryllium, monazite) stay out so GTCEu's dimension

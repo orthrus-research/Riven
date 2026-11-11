@@ -1115,16 +1115,16 @@ taking a rock by its zone's weights, which are volume shares; a body's zone foll
 depth, so zones interlock along body walls. The Beneath runs from granulite and migmatite through
 blueschist and eclogite (garnet-studded pods) to peridotite (chromite pods) and serpentinite
 (jadeite veins), crossed by moonstone seams (light 4, with a light 7 core). The Infernal Deep runs
-from infernal rock, cinder rock (soul ash pods, light 3) and ash shale through jasper bands to slag
-stone (brimstone pods), crossed by animated molten seams (light 12). Seams and veins follow the
+from sulfurous scoria (`infernal_rock`), scoria (`cinder_rock`, soul ash pods, light 3) and
+tuffaceous shale (`ash_shale`) through jasper bands to clinker (`slag_stone`, brimstone pods), crossed by animated molten seams (light 12). Seams and veins follow the
 zero sheets of gradient noise, so they wander freely. Bedrock lies on the world floor. The distant
 preview draws each realm as its representative rock (granulite); the deep realms have no caves yet. Realm cubes never run crust rules (the crust floor lies on a cube boundary), so their cost is
 a fill and the crust is unchanged except that its floor row is rock instead of bedrock.
 `tools/checks/RealmCheck.java` verifies solid realms, bedrock only on the world floor and order
 independence, prints the fades and each realm's shares, and draws a section in the rocks' colors.
 On seed 8675309 the Beneath is 21% peridotite, 21% granulite, 18% eclogite, 14% blueschist, 10%
-serpentinite, 9% migmatite and 0.8% moonstone; the Infernal Deep 43% infernal rock, 24% slag, 12%
-jasper, 9% ash shale, 7% cinder rock, 3% brimstone and 1% each soul ash and molten seams. Seed 101
+serpentinite, 9% migmatite and 0.8% moonstone; the Infernal Deep 43% sulfurous scoria, 24% clinker,
+12% jasper, 9% tuffaceous shale, 7% scoria, 3% brimstone and 1% each soul ash and molten seams. Seed 101
 matches within half a percent.
 
 **Subsurface climate** (prototype, `riven-subsurface-climate.json`, `SubsurfaceClimate`): the
