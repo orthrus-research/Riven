@@ -4,14 +4,14 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "539e1625d8558ba8b036765e69289ce0ec29d1b3",
+  "commit": "60cadb63fe854e151d9aec48666e268612f2d98f",
   "checkout": "../Cubature",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
-  "sha256": "5fb6817fc4ca4a2a8ea59ab4696a162ab5b82cfdcaf230970b186fe230e05d3e",
+  "sha256": "09e70d36341f7c76037b98fdc1fd5b1b117840c1916237f0921dde2fdb2d39ce",
   "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
-  "sourcesSha256": "9b03ca4bb17f654097faa49f7e74be133c4ff448a2b3a13252ea88f22ee49aab",
-  "javaSourceFilesMatchedToArtifactSources": 385,
+  "sourcesSha256": "c4742736e3f03850ffa7ca68be603a514f98108b12a59e41a97ca58675622ebb",
+  "javaSourceFilesMatchedToArtifactSources": 386,
   "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
   "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
   "compatibility": {
@@ -21,8 +21,8 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Built from this clean Cubature commit as Java 25 bytecode; all 385 Java sources in the sources artifact match the commit, and core (456) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM, on 8 GiB ZGC and on the shipping G1 profile (8 GiB, 4 MB regions, 50 ms pause target, concurrent explicit collections), which newly prepared lab instances now use.",
-    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting, with block ticks and player-map bookkeeping separated (the lab alone wraps vanilla call sites for network and tick-event phases), and client native-capture counters; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved; chunk-mesh builders that start with small layer buffers; a public random-tick listener API on the cubic pass; no compatibility code for mods or platforms outside the runtime (Demonica and its Celeritas kept), no upstream code that nothing calls, and one build (cleanroom/). Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
+    "status": "Built from this clean Cubature commit as Java 25 bytecode; all 386 Java sources in the sources artifact match the commit, and core (460) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM, on 8 GiB ZGC and on the shipping G1 profile (8 GiB, 4 MB regions, 50 ms pause target, concurrent explicit collections), which newly prepared lab instances now use.",
+    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting, with block ticks and player-map bookkeeping separated (the lab alone wraps vanilla call sites for network and tick-event phases), and client native-capture counters; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved; chunk-mesh builders that start with small layer buffers; a public random-tick listener API on the cubic pass; entity chunk-loading tickets that keep their entity's cube; no compatibility code for mods or platforms outside the runtime (Demonica and its Celeritas kept), no upstream code that nothing calls, and one build (cleanroom/). Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
       "Client rendering remains unqualified"
