@@ -191,6 +191,18 @@ def logs(phase):
     }
 
 
+def reviewed_runtime(runtime):
+    """Java 26 on the 8 GiB floor, every collector bean from one reviewed family: the lab's ZGC profile or
+    its G1 profiles (the shipping default since Cubature 86452eea)."""
+    collectors = runtime.get("garbageCollectors") or []
+    families = {name.split(" ", 1)[0] for name in collectors}
+    return (
+        runtime.get("java", "").startswith("26.")
+        and runtime.get("maxHeapBytes") == 8 * 1024**3
+        and families in ({"ZGC"}, {"G1"})
+    )
+
+
 def inspect_run(value):
     phase = phase_path(value)
     result_path = phase / "result.json"
@@ -257,14 +269,8 @@ def inspect_run(value):
             ("server", server, "completeServerTicks"),
             ("client", client, "frameIntervals"),
         ]:
-            runtime = capture.get("runtime", {})
-            if (
-                not runtime.get("java", "").startswith("26.")
-                or runtime.get("maxHeapBytes") != 8 * 1024**3
-                or not runtime.get("garbageCollectors")
-                or not all(n.startswith("ZGC") for n in runtime["garbageCollectors"])
-            ):
-                row["errors"].append(side + " runtime is outside Java 26 / 8 GiB / ZGC")
+            if not reviewed_runtime(capture.get("runtime", {})):
+                row["errors"].append(side + " runtime is outside Java 26 / 8 GiB / ZGC or G1")
             try:
                 row[side] = samples(phase, run_id, side, capture[metric])
                 if not row[side]["count"]:

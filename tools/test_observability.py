@@ -13,6 +13,7 @@ from observability.evidence import (
     compare_runs,
     controls,
     inspect_run,
+    reviewed_runtime,
     samples,
     verify_snapshots,
     worker_costs,
@@ -54,6 +55,19 @@ class EvidenceTests(unittest.TestCase):
             "chronologicalCsv": "ticks.csv",
         }
         return summary
+
+    def test_reviewed_runtime_accepts_one_lab_collector_on_java_26_at_8_gib(self):
+        def runtime(collectors, java="26.0.2.1", heap=8 * 1024**3):
+            return {"java": java, "maxHeapBytes": heap, "garbageCollectors": collectors}
+
+        g1 = ["G1 Young Generation", "G1 Concurrent GC", "G1 Old Generation"]
+        self.assertTrue(reviewed_runtime(runtime(g1)))
+        self.assertTrue(reviewed_runtime(runtime(["ZGC Cycles", "ZGC Pauses"])))
+        self.assertFalse(reviewed_runtime(runtime(["ZGC Cycles", "G1 Old Generation"])))
+        self.assertFalse(reviewed_runtime(runtime(["PS Scavenge", "PS MarkSweep"])))
+        self.assertFalse(reviewed_runtime(runtime([])))
+        self.assertFalse(reviewed_runtime(runtime(g1, java="25.0.5")))
+        self.assertFalse(reviewed_runtime(runtime(g1, heap=6 * 1024**3)))
 
     def test_raw_quantiles_and_nanosecond_anchor(self):
         result = samples(self.home, "run", "server", self.sample_fixture())
