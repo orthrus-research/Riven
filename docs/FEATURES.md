@@ -806,6 +806,27 @@ biomes grow trees; peaks, deserts, polar ground, salt flats, rocky shores and op
 `/riven trees [radius]` compares preview and world block by block and counts sites whose every log
 stands; `/riven find <biome>` names the nearest column of a riven: biome.
 
+**Forest signatures** (trees revision 6, terrain-v135): each forest's stand gives its layers a band
+of visible tree heights (`heightBlocks` on the layer), so forests differ by stature rather than
+sharing one band; a species keeps its own `heightBlocks` where a stand gives none and a
+`limitBlocks` band it never leaves, and draws a stand band as stems, less the crown it measures
+above its stem on sample trees, inside its limit (loading fails when a species cannot reach a
+band). A tree's crown scales with its stem: crown and cluster radii, branch and limb lengths by
+the square root of the stem's ratio to the species' reference height (0.6 to 1.6), clusters held
+within four steps of a log and conifer discs within 3.4 blocks. Cube classification and the
+coarse preview canopy follow: `maximumTop` and `reach` bound every tree a species' limit allows at
+its largest scale (loading fails at a reach of 16), and a layer's distant leaf run stands at the
+crowns of its own band. Measured realised heights and densities (tree census, seed 2485331 at
+32 km, every forest within its bands): tropical rainforest emergents 24-29 at 10/ha over a 14-19
+canopy (239 stems/ha); temperate and cold rainforest conifer giants 22-28 over 13-19 and 14-18;
+subtropical 13-17 under emergents 19-23; montane 12-16; temperate woodland 10-15 with veteran oaks
+14-18 (153/ha); boreal forest dense spires 10-14 (196/ha); snow taiga 8-12; cloud forest stunted
+7-12 (217/ha); wooded highlands 9-13; warm woodland and highlands open at 6-10 (83 and 71/ha);
+boreal highlands 7-11 (94/ha, was 32), snow taiga highlands 6-10, misty highlands 5-9; wetlands
+10-15; mangrove 5-8; savanna 6-9. Crown spread now follows height (Pearson r 0.64-0.90 by species,
+was about 0). The temperate rainforest's emergents are conifer giants (cedar, spruce).
+`tools/checks/TreeCensus` and `tools/tree_census.py` measure all of this (docs/RUNTIME.md).
+
 **Ground cover** (prototype, ground-cover-v2, terrain-v99, `riven-ground-cover.json`,
 `GroundCover`): Riven places the plants and decals on the ground itself, on land and in and under
 water (shallows and underwater plants); no biome decorator runs in a Riven world. Vanilla cactus stands one to three high in deserts and badlands, at most one per

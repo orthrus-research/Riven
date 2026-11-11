@@ -112,16 +112,31 @@ final class TreeSites {
         }
     }
 
-    /** One layer of a stand: its chance per cell and its species. */
+    /**
+     * One layer of a stand: its chance per cell, its species, and optionally its band of visible
+     * tree heights (heightBlocks, the forest's signature), which each species draws as a band of
+     * stems inside its own limit.
+     */
     private static final class Part {
         final double chance, cover;
         final TreeShapes.Species[] species;
         final double[] weights;
+
+        /** Per species, the stems it draws here: its own band, or the stand's band as stems. */
+        final int[] low, high;
+
         final int crownBottom, crownTop;
         final IBlockState leaves;
 
         Part(JsonObject j, Map<String, TreeShapes.Species> all, int cell) {
             chance = Rules.number(j, "chance", 0, 1);
+            int[] band = null;
+            if (j.has("heightBlocks")) {
+                JsonArray a = j.getAsJsonArray("heightBlocks");
+                band = new int[] {a.get(0).getAsInt(), a.get(1).getAsInt()};
+                if (band[0] < 1 || band[1] < band[0] || band[1] > 48)
+                    throw new IllegalStateException("Range: stand heightBlocks " + j);
+            }
             List<TreeShapes.Species> list = new ArrayList<>();
             List<Double> w = new ArrayList<>();
             for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("species").entrySet()) {
@@ -132,14 +147,45 @@ final class TreeSites {
             }
             species = list.toArray(new TreeShapes.Species[0]);
             weights = new double[w.size()];
+            low = new int[species.length];
+            high = new int[species.length];
             double total = 0, area = 0, bottom = 0, top = 0, most = -1;
             IBlockState main = null;
             for (int i = 0; i < weights.length; i++) {
+                TreeShapes.Species sp = species[i];
+                if (band == null) {
+                    low[i] = sp.height[0];
+                    high[i] = sp.height[1];
+                } else {
+                    // Visible heights less the species' crown above its stem, inside its limit.
+                    low[i] = Math.max(sp.limit[0], band[0] - sp.offset);
+                    high[i] = Math.min(sp.limit[1], band[1] - sp.offset);
+                    if (low[i] > high[i])
+                        throw new IllegalStateException(
+                                "Species "
+                                        + sp.id
+                                        + " cannot reach the stand band "
+                                        + band[0]
+                                        + ".."
+                                        + band[1]
+                                        + " (stems "
+                                        + sp.limit[0]
+                                        + ".."
+                                        + sp.limit[1]
+                                        + ", crown +"
+                                        + sp.offset
+                                        + ")");
+                }
+                // The distant canopy stands at the crowns these stems carry.
+                TreeShapes.Crown crown =
+                        band == null
+                                ? new TreeShapes.Crown(sp.footprint, sp.crownBottom, sp.crownTop, 0)
+                                : sp.crown(low[i], high[i]);
                 weights[i] = w.get(i);
                 total += weights[i];
-                area += weights[i] * species[i].footprint;
-                bottom += weights[i] * species[i].crownBottom;
-                top += weights[i] * species[i].crownTop;
+                area += weights[i] * crown.footprint();
+                bottom += weights[i] * crown.bottom();
+                top += weights[i] * crown.top();
                 if (weights[i] > most) {
                     most = weights[i];
                     main = species[i].leaves;
@@ -228,6 +274,7 @@ final class TreeSites {
     private static final class Shapes {
         final long[] ids = new long[64];
         final TreeShapes.Species[] species = new TreeShapes.Species[64];
+        final int[] heights = new int[64];
         final TreeShapes.Shape[] shapes = new TreeShapes.Shape[64];
     }
 
@@ -249,6 +296,10 @@ final class TreeSites {
             // Other shapes clear every soil column at trunk Y=0. A wide palm does not.
             completeTrunks &= s.width == 1 || s.family != TreeShapes.Family.PALM;
         }
+        // Cube classification (RivenWorldType.cachedUpper) reads trees through these bounds and
+        // learns nothing once reach passes a cube's width; every species' limit stays inside it.
+        if (widest >= 16)
+            throw new IllegalStateException("Tree reach " + widest + " reaches a whole cube");
         reach = widest;
         maximumTop = highest;
         surfaceBandSupported = completeTrunks;
@@ -388,8 +439,9 @@ final class TreeSites {
         Part part = stand.parts[layer.index];
         if (part == null) return reject(out, "LAYER");
         if (TreeShapes.unit(id, 3) >= part.chance) return reject(out, "CHANCE");
-        TreeShapes.Species species =
-                part.species[Math.max(0, Rules.choose(part.weights, TreeShapes.unit(id, 4)))];
+        int pick = Math.max(0, Rules.choose(part.weights, TreeShapes.unit(id, 4)));
+        TreeShapes.Species species = part.species[pick];
+        int stem = TreeShapes.Species.height(id, part.low[pick], part.high[pick]);
         int w = species.width;
         // Each trunk column's ground, as the preview and native cubes see it, must be the
         // species' ground at one height, with open sky above.
@@ -426,7 +478,7 @@ final class TreeSites {
         // shape, drawn after them, are read.
         if (crowded(layer, x, z, w)) return reject(out, "UNDER");
         TreeShapes.Shape shape = s.shape;
-        TreeShapes.shape(species, id, shape);
+        TreeShapes.shape(species, id, stem, shape);
         int low = Math.min(-1, shape.minY);
         if (base + low < heights.minimumY || base + shape.maxY + 1 > heights.maximumYExclusive)
             return reject(out, "HEIGHT");
@@ -456,17 +508,7 @@ final class TreeSites {
                 roots &= ~(1 << TreeShapes.chain(p));
         }
         return new Site(
-                layer.index,
-                x,
-                z,
-                base,
-                species.height(id),
-                low,
-                shape.maxY + 1,
-                grass,
-                roots,
-                id,
-                species);
+                layer.index, x, z, base, stem, low, shape.maxY + 1, grass, roots, id, species);
     }
 
     /** Whether an earlier layer's trunk stands within this layer's spacing of a trunk here. */
@@ -506,10 +548,13 @@ final class TreeSites {
         Shapes c = shapes.get();
         int slot = (int) SeededNoise.mix(site.id) & 63;
         TreeShapes.Shape shape = c.shapes[slot];
-        if (shape != null && c.ids[slot] == site.id && c.species[slot] == site.species)
-            return shape;
+        if (shape != null
+                && c.ids[slot] == site.id
+                && c.species[slot] == site.species
+                && c.heights[slot] == site.height) return shape;
         if (shape == null) c.shapes[slot] = shape = new TreeShapes.Shape();
-        TreeShapes.shape(site.species, site.id, shape);
+        TreeShapes.shape(site.species, site.id, site.height, shape);
+        c.heights[slot] = site.height;
         c.ids[slot] = site.id;
         c.species[slot] = site.species;
         return shape;

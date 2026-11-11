@@ -1,0 +1,19 @@
+[
+  {"label": "tropical_rainforest", "x": -8705.5, "y": 109, "z": 11732.5, "yaw": 0.0, "pitch": 26, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000", "execute {player} -8706 77 11777 riven -8706 11777"]},
+  {"label": "tropical_rainforest-near", "x": -8705.5, "y": 81, "z": 11756.5, "yaw": 0.0, "pitch": 8, "commands": []},
+  {"label": "cold_rainforest", "x": -15873.5, "y": 124, "z": -11821.5, "yaw": 0.0, "pitch": 26, "commands": ["execute {player} -15874 92 -11777 riven -15874 -11777", "execute {player} -8706 77 11777 riven trees 48"]},
+  {"label": "cold_rainforest-near", "x": -15873.5, "y": 96, "z": -11797.5, "yaw": 0.0, "pitch": 8, "commands": []},
+  {"label": "temperate_woodland", "x": 9728.5, "y": 101, "z": 15822.5, "yaw": 0.0, "pitch": 26, "commands": ["execute {player} 9728 69 15867 riven 9728 15867", "execute {player} -15874 92 -11777 riven trees 48"]},
+  {"label": "temperate_woodland-near", "x": 9728.5, "y": 73, "z": 15846.5, "yaw": 0.0, "pitch": 8, "commands": []},
+  {"label": "boreal_forest", "x": -6661.5, "y": 119, "z": 6619.5, "yaw": 0.0, "pitch": 26, "commands": ["execute {player} -6662 87 6664 riven -6662 6664", "execute {player} 9728 69 15867 riven trees 48"]},
+  {"label": "boreal_forest-near", "x": -6661.5, "y": 91, "z": 6643.5, "yaw": 0.0, "pitch": 8, "commands": []},
+  {"label": "boreal_highlands", "x": 12791.5, "y": 181, "z": 5639.5, "yaw": 0.0, "pitch": 26, "commands": ["execute {player} 12791 149 5684 riven 12791 5684", "execute {player} -6662 87 6664 riven trees 48"]},
+  {"label": "boreal_highlands-near", "x": 12791.5, "y": 153, "z": 5663.5, "yaw": 0.0, "pitch": 8, "commands": []},
+  {"label": "warm_woodland", "x": 4612.5, "y": 132, "z": 8649.5, "yaw": 0.0, "pitch": 26, "commands": ["execute {player} 4612 100 8694 riven 4612 8694", "execute {player} 12791 149 5684 riven trees 48"]},
+  {"label": "warm_woodland-near", "x": 4612.5, "y": 104, "z": 8673.5, "yaw": 0.0, "pitch": 8, "commands": []},
+  {"label": "cloud_forest", "x": -6650.5, "y": 168, "z": -10800.5, "yaw": 0.0, "pitch": 26, "commands": ["execute {player} -6651 136 -10756 riven -6651 -10756", "execute {player} 4612 100 8694 riven trees 48"]},
+  {"label": "cloud_forest-near", "x": -6650.5, "y": 140, "z": -10776.5, "yaw": 0.0, "pitch": 8, "commands": []},
+  {"label": "temperate_rainforest", "x": -2562.5, "y": 119, "z": 7633.5, "yaw": 0.0, "pitch": 26, "commands": ["execute {player} -2563 87 7678 riven -2563 7678", "execute {player} -6651 136 -10756 riven trees 48"]},
+  {"label": "temperate_rainforest-near", "x": -2562.5, "y": 91, "z": 7657.5, "yaw": 0.0, "pitch": 8, "commands": []},
+  {"label": "parity-last", "x": -2562.5, "y": 127, "z": 7617.5, "yaw": 0.0, "pitch": 30, "commands": ["execute {player} -2563 87 7678 riven trees 48"]}
+]

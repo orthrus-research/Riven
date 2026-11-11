@@ -218,7 +218,7 @@ public final class TreeCensus {
         List<TreeSites.Site> found = new ArrayList<>();
         trees.sites(x0, z0, x0 + size, z0 + size, found::add);
         for (TreeSites.Site site : found) {
-            TreeShapes.shape(site.species, site.id, shape);
+            TreeShapes.shape(site.species, site.id, site.height, shape);
             int leaves = 0, logs = 0, roots = 0;
             for (int i = 0; i < shape.count; i++) {
                 int kind = TreeShapes.kind(shape.blocks[i]);

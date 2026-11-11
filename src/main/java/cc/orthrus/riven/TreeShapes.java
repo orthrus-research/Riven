@@ -70,7 +70,23 @@ final class TreeShapes {
         /** Trunk width (1, or 2 for a 2 x 2 trunk from the site's corner). */
         final int width;
 
+        /** The species' own band of stem heights, drawn where a stand gives none. */
         final int[] height;
+
+        /**
+         * The widest band of stem heights any stand may draw (limitBlocks, the own band by default),
+         * and the reference height at which crowns take their defined size.
+         */
+        final int[] limit;
+
+        final double reference;
+
+        /**
+         * Blocks from the stem height to the top of the drawn tree, measured on sample trees of the
+         * species' own band: a stand's band of visible heights less this is its band of stems.
+         */
+        final int offset;
+
         final double density;
         // Broadleaf: crown cluster at the trunk top, branches with a cluster each, hanging strands.
         private final double[] crownRadius, branchLength, branchCluster;
@@ -103,7 +119,8 @@ final class TreeShapes {
 
         /** Conservative exclusive relative top of every shape this species can draw. */
         int maximumTop() {
-            int h = height[1], highest;
+            int h = limit[1], highest;
+            double k = scale(h);
             switch (family) {
                 case BROADLEAF:
                     highest = h - 1 + (int) Math.ceil(crownDepth);
@@ -116,7 +133,8 @@ final class TreeShapes {
                                                         Math.ceil(
                                                                 start
                                                                         + Math.max(0, branchRise)
-                                                                                * branchLength[1])
+                                                                                * branchLength[1]
+                                                                                * k)
                                                 + (int) Math.ceil(crownDepth));
                     }
                     break;
@@ -128,7 +146,7 @@ final class TreeShapes {
                     break;
                 default:
                     highest =
-                            (int) Math.ceil(h - 1 + limbRise * limbLength[1])
+                            (int) Math.ceil(h - 1 + limbRise * limbLength[1] * k)
                                     + (int) Math.ceil(discDepth);
             }
             if (rootCount > 0) highest = Math.max(highest, rootHeight);
@@ -174,6 +192,10 @@ final class TreeShapes {
             onSnow = snow;
             width = j.has("width") ? (int) Rules.number(j, "width", 1, 2) : 1;
             height = integers(j, "heightBlocks", 1, 40);
+            limit = j.has("limitBlocks") ? integers(j, "limitBlocks", 1, 40) : height.clone();
+            if (limit[0] > height[0] || limit[1] < height[1])
+                throw new IllegalStateException("limitBlocks must hold heightBlocks: " + id);
+            reference = (height[0] + height[1]) / 2.0;
             density = j.has("density") ? Rules.number(j, "density", 0, 1) : 0.7;
             JsonObject none = new JsonObject();
             JsonObject crown = j.has("crown") ? j.getAsJsonObject("crown") : none;
@@ -220,6 +242,8 @@ final class TreeShapes {
                 if (branches != null) decayReach(branchCluster[1], crownDepth, id);
             }
             if (umbrella) decayReach(disc[1], discDepth, id);
+            // Crowns grow with the stem up to the limit, so bounds take the largest scale.
+            double k = scale(limit[1]);
             int bound;
             switch (family) {
                 case BROADLEAF:
@@ -227,31 +251,55 @@ final class TreeShapes {
                             (int)
                                     Math.ceil(
                                             Math.max(
-                                                    crownRadius[1],
+                                                    cap(crownRadius[1] * k, crownDepth),
                                                     branches == null
                                                             ? 0
-                                                            : branchLength[1]
-                                                                    + branchCluster[1]
+                                                            : branchLength[1] * k
+                                                                    + cap(
+                                                                            branchCluster[1] * k,
+                                                                            crownDepth)
                                                                     + 1));
                     break;
                 case CONIFER:
-                    bound = (int) Math.ceil(radius[1] + 0.5);
+                    bound = (int) Math.ceil(Math.min(RADIUS_CAP, radius[1] * k) + 0.5);
                     break;
                 case PALM:
-                    bound = (int) Math.ceil(lean[1]) + frondLength[1] + 1;
+                    bound =
+                            (int) Math.ceil(lean[1])
+                                    + (int) Math.round(frondLength[1] * Math.min(k, FROND_CAP))
+                                    + 1;
                     break;
                 default:
-                    bound = (int) Math.ceil(limbLength[1] + disc[1] + 1);
+                    bound = (int) Math.ceil(limbLength[1] * k + cap(disc[1] * k, discDepth) + 1);
             }
             reach = Math.max(bound, rootReach) + width;
             // Sample trees: check the reach bound and measure the crown for the distant canopy.
+            // Sample trees: check the bounds over every height a stand may draw, and measure the
+            // crown of the species' own band for the distant canopy.
             Shape s = new Shape();
-            double area = 0, bottom = 0, top = 0;
+            for (int i = 0; i < 32; i++)
+                for (int h : new int[] {limit[0], limit[1], (limit[0] + limit[1]) / 2}) {
+                    shape(this, SeededNoise.mix(0x7a3f1d5bL + i), h, s);
+                    if (-s.minX > reach || s.maxX > reach || -s.minZ > reach || s.maxZ > reach)
+                        throw new IllegalStateException("Tree shape beyond its reach: " + id);
+                    if (s.maxY + 1 > maximumTop())
+                        throw new IllegalStateException("Tree shape above its top bound: " + id);
+                }
+            Crown own = crown(height[0], height[1]);
+            footprint = own.footprint();
+            crownBottom = own.bottom();
+            crownTop = own.top();
+            offset = (int) Math.round(own.drawnTop() - reference);
+        }
+
+        /** Mean leaf footprint and crown of sample trees with stems in [low, high]. */
+        Crown crown(int low, int high) {
+            Shape s = new Shape();
+            double area = 0, bottom = 0, top = 0, drawn = 0;
             int samples = 32;
             for (int i = 0; i < samples; i++) {
-                shape(this, SeededNoise.mix(0x7a3f1d5bL + i), s);
-                if (-s.minX > reach || s.maxX > reach || -s.minZ > reach || s.maxZ > reach)
-                    throw new IllegalStateException("Tree shape beyond its reach: " + id);
+                long id = SeededNoise.mix(0x7a3f1d5bL + i);
+                shape(this, id, height(id, low, high), s);
                 int[] lowest = new int[(s.maxX - s.minX + 1) * (s.maxZ - s.minZ + 1)];
                 Arrays.fill(lowest, Integer.MAX_VALUE);
                 int highest = 0, columns = 0;
@@ -263,18 +311,31 @@ final class TreeShapes {
                     lowest[c] = Math.min(lowest[c], dy(p));
                     highest = Math.max(highest, dy(p) + 1);
                 }
-                for (int low : lowest)
-                    if (low != Integer.MAX_VALUE) {
+                for (int l : lowest)
+                    if (l != Integer.MAX_VALUE) {
                         columns++;
-                        sum += low;
+                        sum += l;
                     }
                 area += columns;
                 top += highest;
+                drawn += s.maxY + 1;
                 bottom += columns == 0 ? highest : (double) sum / columns;
             }
-            footprint = area / samples;
-            crownTop = (int) Math.round(top / samples);
-            crownBottom = Math.min(crownTop - 1, (int) Math.round(bottom / samples));
+            int t = (int) Math.round(top / samples);
+            return new Crown(
+                    area / samples,
+                    Math.min(t - 1, (int) Math.round(bottom / samples)),
+                    t,
+                    drawn / samples);
+        }
+
+        /**
+         * How much a stem of height h scales the crown: the square root of its ratio to the
+         * reference height, so taller trees carry wider crowns and longer limbs (growth forms will
+         * replace this rule).
+         */
+        double scale(int h) {
+            return Math.max(MIN_SCALE, Math.min(MAX_SCALE, Math.sqrt(h / reference)));
         }
 
         /** The log for an axis. */
@@ -283,8 +344,25 @@ final class TreeShapes {
         }
 
         int height(long id) {
-            return height[0] + (int) Math.floor(unit(id, 1) * (height[1] - height[0] + 1));
+            return height(id, height[0], height[1]);
         }
+
+        /** A stem height in [low, high], by the tree's id. */
+        static int height(long id, int low, int high) {
+            return low + (int) Math.floor(unit(id, 1) * (high - low + 1));
+        }
+    }
+
+    /** A sample crown: mean leaf footprint, crown bottom and top over the base, drawn top. */
+    record Crown(double footprint, int bottom, int top, double drawnTop) {}
+
+    /** Bounds on crown scaling, on scaled conifer disc radii and on palm fronds. */
+    private static final double MIN_SCALE = 0.6, MAX_SCALE = 1.6, RADIUS_CAP = 3.4, FROND_CAP = 1.3;
+
+    /** A cluster radius, scaled, kept within four steps of its log (2 rh^2 + rv^2 <= 25). */
+    private static double cap(double horizontal, double vertical) {
+        return Math.min(
+                horizontal, Math.min(RADIUS_CAP, Math.sqrt((25 - vertical * vertical) / 2)));
     }
 
     private static void decayReach(double horizontal, double vertical, String id) {
@@ -442,31 +520,41 @@ final class TreeShapes {
         }
     }
 
-    /** Draws a species' tree for an id into out (its previous contents are discarded). */
+    /** Draws a species' tree for an id at its own height (saplings, samples). */
     static void shape(Species s, long id, Shape out) {
+        shape(s, id, s.height(id), out);
+    }
+
+    /**
+     * Draws a species' tree for an id with a stem of height h into out (its previous contents are
+     * discarded); its crown scales with h (Species.scale).
+     */
+    static void shape(Species s, long id, int h, Shape out) {
         out.reset();
+        double g = s.scale(h);
         switch (s.family) {
             case BROADLEAF:
-                broadleaf(s, id, out);
+                broadleaf(s, id, h, g, out);
                 break;
             case CONIFER:
-                conifer(s, id, out);
+                conifer(s, id, h, g, out);
                 break;
             case PALM:
-                palm(s, id, out);
+                palm(s, id, h, g, out);
                 break;
             default:
-                umbrella(s, id, out);
+                umbrella(s, id, h, g, out);
         }
         if (s.rootCount > 0) roots(s, id, out);
         out.finish();
     }
 
-    private static void broadleaf(Species s, long id, Shape out) {
-        int h = s.height(id), w = s.width;
+    private static void broadleaf(Species s, long id, int h, double g, Shape out) {
+        int w = s.width;
         double c = (w - 1) / 2.0;
         trunk(out, w, h);
-        cluster(out, c, h - 1, c, draw(s.crownRadius, id, 2), s.crownDepth, s, id, 3);
+        double crown = cap(draw(s.crownRadius, id, 2) * g, s.crownDepth);
+        cluster(out, c, h - 1, c, crown, s.crownDepth, s, id, 3);
         if (s.branches != null) {
             int n = draw(s.branches, id, 4), turn = (int) (unit(id, 5) * 16);
             for (int k = 0; k < n; k++) {
@@ -483,22 +571,27 @@ final class TreeShapes {
                                                                 * (s.branchStart
                                                                         + (1 - s.branchStart)
                                                                                 * unit(b, 2)))));
-                double length = draw(s.branchLength, b, 3);
+                double length = draw(s.branchLength, b, 3) * g;
                 int sx = side(c, DIRECTION_X[dir]), sz = side(c, DIRECTION_Z[dir]);
                 int ex = (int) Math.round(c + DIRECTION_X[dir] * length);
                 int ez = (int) Math.round(c + DIRECTION_Z[dir] * length);
                 int ey = (int) Math.round(ys + s.branchRise * length);
                 line(out, sx, ys, sz, ex, ey, ez);
                 double rh =
-                        s.branchCluster[0] + unit(b, 4) * (s.branchCluster[1] - s.branchCluster[0]);
+                        cap(
+                                (s.branchCluster[0]
+                                                + unit(b, 4)
+                                                        * (s.branchCluster[1] - s.branchCluster[0]))
+                                        * g,
+                                s.crownDepth);
                 cluster(out, ex, ey, ez, rh, s.crownDepth, s, b, 5);
             }
         }
     }
 
-    private static void conifer(Species s, long id, Shape out) {
-        int h = s.height(id), w = s.width;
-        double c = (w - 1) / 2.0, r0 = draw(s.radius, id, 2);
+    private static void conifer(Species s, long id, int h, double g, Shape out) {
+        int w = s.width;
+        double c = (w - 1) / 2.0, r0 = Math.min(RADIUS_CAP, draw(s.radius, id, 2) * g);
         int bottom = Math.max(1, Math.min(h - 1, (int) Math.round(h * s.crownStart)));
         int top = h - 1 + s.topRows, span = Math.max(1, top - bottom);
         for (int y = bottom; y <= top; y++) {
@@ -524,8 +617,8 @@ final class TreeShapes {
         trunk(out, w, h);
     }
 
-    private static void palm(Species s, long id, Shape out) {
-        int h = s.height(id), dir = (int) (unit(id, 3) * 16);
+    private static void palm(Species s, long id, int h, double g, Shape out) {
+        int dir = (int) (unit(id, 3) * 16);
         double lean = draw(s.lean, id, 2);
         int px = 0, pz = 0;
         for (int y = 0; y < h; y++) {
@@ -539,7 +632,8 @@ final class TreeShapes {
             pz = oz;
         }
         out.leaf(px, h, pz);
-        int length = draw(s.frondLength, id, 4);
+        int length =
+                Math.max(1, (int) Math.round(draw(s.frondLength, id, 4) * Math.min(g, FROND_CAP)));
         for (int k = 0; k < 8; k++) {
             if (s.fronds == 4 && (k & 1) == 1) continue;
             long f = SeededNoise.mix(id + 0x5851f42d4c957f2dL * (k + 1));
@@ -556,21 +650,22 @@ final class TreeShapes {
         }
     }
 
-    private static void umbrella(Species s, long id, Shape out) {
-        int h = s.height(id), w = s.width;
+    private static void umbrella(Species s, long id, int h, double g, Shape out) {
+        int w = s.width;
         double c = (w - 1) / 2.0;
         trunk(out, w, h);
         int n = draw(s.limbs, id, 2), turn = (int) (unit(id, 3) * 16);
         for (int k = 0; k < n; k++) {
             long b = SeededNoise.mix(id + 0x9e3779b97f4a7c15L * (k + 1));
             int dir = (turn + k * 16 / n + (int) (unit(b, 1) * 3) - 1) & 15;
-            double length = draw(s.limbLength, b, 2);
+            double length = draw(s.limbLength, b, 2) * g;
             int sx = side(c, DIRECTION_X[dir]), sz = side(c, DIRECTION_Z[dir]);
             int ex = (int) Math.round(c + DIRECTION_X[dir] * length);
             int ez = (int) Math.round(c + DIRECTION_Z[dir] * length);
             int ey = (int) Math.round(h - 1 + s.limbRise * length);
             line(out, sx, h - 1, sz, ex, ey, ez);
-            cluster(out, ex, ey, ez, draw(s.disc, b, 3), s.discDepth, s, b, 4);
+            double rh = cap(draw(s.disc, b, 3) * g, s.discDepth);
+            cluster(out, ex, ey, ez, rh, s.discDepth, s, b, 4);
         }
     }
 
