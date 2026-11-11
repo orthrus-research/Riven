@@ -4,14 +4,14 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "2355f81c5a98fea05c48b73df1cf130e5b0f6406",
+  "commit": "c4177f7eb0fbf26644861758c1c97e12cde9cc8a",
   "checkout": "../Cubature",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
-  "sha256": "09e70d36341f7c76037b98fdc1fd5b1b117840c1916237f0921dde2fdb2d39ce",
+  "sha256": "78ef627f1e353118a8d7dd5e1f2c1e8e4f1f97a3d21a72a2f1b50c5339f01bd9",
   "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
-  "sourcesSha256": "c4742736e3f03850ffa7ca68be603a514f98108b12a59e41a97ca58675622ebb",
-  "javaSourceFilesMatchedToArtifactSources": 386,
+  "sourcesSha256": "0230f0915918c373c1afeaee2a315dec56efdf023f90f0ca3491d516f64a698f",
+  "javaSourceFilesMatchedToArtifactSources": 328,
   "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
   "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
   "compatibility": {
@@ -21,13 +21,13 @@
     "upstreamLogoUsed": false
   },
   "qualification": {
-    "status": "Built from this clean Cubature commit as Java 25 bytecode; all 386 Java sources in the sources artifact match the commit, and core (460) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM, on 8 GiB ZGC and on the shipping G1 profile (8 GiB, 4 MB regions, 50 ms pause target, concurrent explicit collections), which newly prepared lab instances now use.",
-    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting, with block ticks and player-map bookkeeping separated (the lab alone wraps vanilla call sites for network and tick-event phases), and client native-capture counters; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved; chunk-mesh builders that start with small layer buffers; a public random-tick listener API on the cubic pass; entity chunk-loading tickets that keep their entity's cube; no compatibility code for mods or platforms outside the runtime (Demonica and its Celeritas kept), no upstream code that nothing calls, and one build (cleanroom/). Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
+    "status": "Built from this clean Cubature commit as Java 25 bytecode with CleanroomGradle against Cleanroom 0.7.14-alpha; all 328 Java sources in the sources artifact match the commit, and core (461) and matching-artifact lab (96) tests pass on Java 26. Its Mixins apply offline in development names and in the shipped jar through its refmap, and no injector hook differs between the two (OrthLib mixinkit). On this pin a native timing capture and a creative flight lifecycle capture passed in BASELINE on the shipping G1 profile (8 GiB, 4 MB regions, 50 ms pause target, concurrent explicit collections), and a Demonica client drew the Celeritas tour with no error.",
+    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting, with block ticks and player-map bookkeeping separated (the lab alone wraps vanilla call sites for network and tick-event phases), and client native-capture counters; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved; chunk-mesh builders that start with small layer buffers; a public random-tick listener API on the cubic pass; entity chunk-loading tickets that keep their entity's cube; Mixin configurations registered through a CleanMix connector, with MixinExtras wraps and Expressions in place of redirects and constant modifiers; no compatibility code for mods or platforms outside the runtime (Demonica and its Celeritas kept), no support for clients without Cubature, no upstream code that nothing calls, of the vanilla generator fixes only those a player can still reach (sapling trees and the huge mushroom), and one build (cleanroom/). Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
       "Client rendering remains unqualified"
     ],
-    "knownExistingWarning": "Arrival, flight and save were last measured on the previous pin: arrival first observed 70-77 s after target-view capture start; startup ticks up to 546 ms; an explicit save/purge/flush tick of 1.861 s; on this pin the post-flight save/purge/flush tick measured 0.61 s. Refmap warnings and connection resets during controlled client shutdown remain. Client rendering and held maps remain unqualified."
+    "knownExistingWarning": "Arrival was last measured on an earlier pin: first observed 70-77 s after target-view capture start, with startup ticks up to 546 ms. On this pin the post-flight save/purge/flush tick measured 0.44 s. Distant Horizons' own refmap warning and connection resets during controlled client shutdown remain. Client rendering and held maps remain unqualified."
   },
   "licensing": {
     "default": "MIT with separately licensed components",

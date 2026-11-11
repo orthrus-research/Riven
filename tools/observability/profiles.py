@@ -156,7 +156,7 @@ def doctor(riven, cubature=None, observer=None, check_java=True):
         with zipfile.ZipFile(observer) as jar:
             for name in [
                 "LabThreadCosts",
-                "LabCorePlugin",
+                "LabMixinConnector",
                 "LabRenderDiagnostics",
                 "LabFullViewRenderReady",
             ]:
