@@ -25,7 +25,7 @@
   "mods": [
     {
       "file": "dev/pins/Cubature-cleanroom.jar",
-      "sha256": "a8709af51acbd5f1b8d8d17f2e22e2563906d3ded190c6e9eeab54f4846bab18",
+      "sha256": "5fb6817fc4ca4a2a8ea59ab4696a162ab5b82cfdcaf230970b186fe230e05d3e",
       "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
       "name": "Cubature",
       "sourcePin": "dev/cc.lock.json"
