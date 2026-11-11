@@ -316,7 +316,8 @@ it does not follow an individual cube across ticks. Construction excludes work o
 The `OTHER` phase closes the full server-tick envelope, so phases can be added without counting
 nested lighting or encoding twice. Besides cube installation, lighting, sending, encoding, DH feed,
 unload/save, arrivals and regional preparation, phases separate the cubic world's block ticks
-(`BLOCK_TICKS`: column weather and light checks, random ticks of tickable cubes), the player cube
+(`BLOCK_TICKS`: column weather and light checks, random ticks of tickable cubes; `TICK_LISTENERS` is
+the time random-tick listeners such as OrthLib's take inside it), the player cube
 map's own bookkeeping (`PLAYER_MAP`), queued packet handlers with the network tick (`NETWORK`) and
 Forge's server and world tick events (`TICK_EVENTS`, where the lab observer runs). Only the lab
 charges `NETWORK` and `TICK_EVENTS`, by wrapping those vanilla call sites; the mod adds no mixin
