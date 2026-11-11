@@ -102,15 +102,15 @@
     {
       "file": "dev/pins/orthlib-0.5.0-dev.jar",
       "version": "0.5.0-dev",
-      "sha256": "432c7fb329a2fc7c3848d7f73f116f89e11e68f075dabfabf720d6a58b6f63e2",
+      "sha256": "53d0bfd0a4ca054e7bef46da5aa49a3212e87daf2f5dee8acb44e87f431166bc",
       "source": "https://github.com/orthrus-research/OrthLib",
-      "sourceCommit": "94e973db5c9c1d73bbee97b8deb1bafe4ce9ae70",
+      "sourceCommit": "84a58e84e4dd2683ce8d0365a911f315771b7d21",
       "distribution": "built-from-source",
       "sides": [
         "server",
         "client"
       ],
-      "reason": "Orthrus Research's shared library: random-tick participation (its vanilla adapter Mixin) and services for Orthrus mods. The exact runtime artifact of OrthLib's T1 native qualification. Private, all rights reserved; local use only, never redistributed"
+      "reason": "Orthrus Research's shared library: random-tick participation (its vanilla adapter Mixin, registered through a CleanMix connector) and services for Orthrus mods. Built from the named commit; the adapter beside it is unchanged since OrthLib's T1 native qualification. Private, all rights reserved; local use only, never redistributed"
     },
     {
       "file": "dev/pins/orthlib-0.5.0-dev-cubature.jar",
