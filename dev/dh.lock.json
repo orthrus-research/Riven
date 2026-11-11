@@ -26,7 +26,7 @@
       "Previous fork qualification does not qualify this upstream runtime",
       "No new client rendering, performance or restart claim"
     ],
-    "runtime": "Java 26.0.2.1 / official Cleanroom 0.7.9-alpha",
+    "runtime": "Java 26.0.2.1 / official Cleanroom 0.7.14-alpha",
     "knownExistingWarning": "None from Cubature at startup; held-map behavior unqualified"
   },
   "profile": {
