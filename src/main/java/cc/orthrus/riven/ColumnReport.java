@@ -111,7 +111,7 @@ final class ColumnReport {
                 new TextComponentString(
                         String.format(
                                 Locale.ROOT,
-                                "Riven (%d, %d): %.1f C %s | moisture=%.3f %s | region=%s | biome=%s expected=%s | surface=%s | plate=%s | boundary=%.0f blocks %s",
+                                "Riven (%d, %d): %.1f C %s | moisture=%.3f %s | region=%s | biome=%s expected=%s variant=%s | surface=%s | plate=%s | boundary=%.0f blocks %s",
                                 x,
                                 z,
                                 climate.celsius,
@@ -121,6 +121,7 @@ final class ColumnReport {
                                 climate.region,
                                 world.getBiome(surface).getRegistryName(),
                                 provider.biome(terrain, x, z).getRegistryName(),
+                                variant(provider.variant(provider.biome(terrain, x, z), x, z)),
                                 world.getBlockState(surface).getBlock().getRegistryName(),
                                 Long.toUnsignedString(plate.plateId, 16),
                                 plate.boundaryDistance,
@@ -543,5 +544,12 @@ final class ColumnReport {
                                 shape.geometry.t.outletWidth(),
                                 shape.geometry.supportRadius,
                                 decision.probes)));
+    }
+
+    /** A variant's id as reports show it: none, or its id. */
+    private static String variant(int v) {
+        return v == cc.orthrus.riven.worldgen.Variants.NONE
+                ? "none"
+                : cc.orthrus.riven.worldgen.Variants.id(v);
     }
 }

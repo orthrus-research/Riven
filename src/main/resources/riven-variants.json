@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "about": "Biome variants (terrain-v134, DECISIONS 2026-11-11 Biome variants): named country inside parent riven: biomes that changes only what is decided after the biome. Seeded patches about patchBlocks across (jittered Voronoi points over coordinates warped by warp) each take one variant by weight from those whose when admits the patch point's intent (effective climate, province type id, landform), or none on a draw under plainShare. A column has its patch's variant where its own biome is a parent; within edgeBlocks / 2 of the bisector with the second-nearest patch it may take that patch's instead, with a chance falling from one half at the bisector. Readers keep their own data under variants (riven-trees.json stands, riven-ground-cover.json entries and palettes, riven-boulders.json owners); a reader that lists nothing for a variant uses the parent biome's. Ranges are [from, below).",
+  "variationSeed": "0x56415249414e5453",
+  "patchBlocks": 500,
+  "warp": {"wavelengthBlocks": 600, "amplitudeBlocks": 110},
+  "edgeBlocks": 32,
+  "plainShare": 0.4,
+  "variants": {
+    "lichen_woodland": {
+      "name": "Lichen Woodland",
+      "parents": ["riven:boreal_forest", "riven:snow_taiga"],
+      "weight": 1,
+      "when": {
+        "celsius": [-6, 3],
+        "moisture": [0.4, 0.62],
+        "provinces": ["plain", "basin", "upland"],
+        "landforms": ["PLAIN", "BASIN", "HILLS", "PLATEAU"]
+      }
+    },
+    "tallgrass_prairie": {
+      "name": "Tallgrass Prairie",
+      "parents": ["riven:grassland"],
+      "weight": 1,
+      "when": {
+        "celsius": [5, 15],
+        "moisture": [0.27, 0.42],
+        "provinces": ["plain", "basin", "foreland", "upland"],
+        "landforms": ["PLAIN", "BASIN", "FOOTHILLS", "HILLS"]
+      }
+    },
+    "pine_barrens": {
+      "name": "Pine Barrens",
+      "parents": ["riven:temperate_woodland", "riven:warm_woodland"],
+      "weight": 1,
+      "when": {
+        "celsius": [8, 22],
+        "moisture": [0.35, 0.5],
+        "provinces": ["plain", "basin", "foreland"],
+        "landforms": ["PLAIN", "BASIN", "FOOTHILLS"]
+      }
+    }
+  }
+}

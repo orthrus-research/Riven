@@ -65,7 +65,7 @@ Outputs live under `.local/terrain-atlas/{renders,compare,seeds,sweeps,sections}
 | `features.png` | Per land column, the stage that changed height most, colored by stage and family |
 | `sites.png` | Every raw `Sites` anchor: vetoed, marine, built or rejected (with the stage reason at the anchor) |
 | `stages/<stage>.png`, `stages/<stage>_reasons.png` | Signed height change and recorded reasons per stage |
-| `elevation.png`, `biomes.png`, `climate.png`, `water.png`, `cost.png` | Context layers; `cost.png` is the per-column wall time |
+| `elevation.png`, `biomes.png`, `variants.png`, `climate.png`, `water.png`, `cost.png` | Context layers; `variants.png` colours biome variants over faded biomes (raster `variant.u8`, 0 = none, names in the metadata's `variants`); `cost.png` is the per-column wall time |
 | `summary.json`, `raw/` | Coverage, activity, reasons, sites, fingerprints, digest; little-endian layers plus `atlas.json` |
 
 To browse renders in a browser, serve the folder locally:

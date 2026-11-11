@@ -726,6 +726,35 @@ tour instances with `--capture-ticks 900`, since populated chunks take longer to
 
 **Riven biomes** (prototype, terrain-v84, `riven-biome-registry.json`, `RivenBiomeTable`, `RivenBiomes`, `RivenBiomeTypes`): every column reports one of 61 `riven:` biomes, chosen from its habitat key: 30 inland by climate region and calm elevation (lowland for LOW and MID, highland for HIGH), 10 rugged by temperature band (hills, peaks), 13 coast and water biomes and 8 river mouths. Each extends the vanilla class of its kind (snow, taiga, plains, forest, savanna, jungle, desert, hills, mesa, beach, stone beach, swamp, ocean, river), which Demonica reads as its shader category and other mods test with `instanceof`; names avoid substrings shader packs misread ("end", "ice", "nether"); temperature, rainfall and precipitation drive vanilla weather; grass and foliage colors follow the vanilla color maps unless the world's mappings override them. They empty their decorators and surface hooks: Riven places every block itself. Every surface biome names a spawn table (`spawns`); a kind of mob its table lists (creature, monster, ambient) replaces its parent class's list, and the surface tables list creatures, starting as vanilla's lists for each parent class (savannas without llamas, as Riven's biomes keep vanilla's base height), which Population and natural spawning both read. Spawn search uses the 40 inland biomes. Underground, cubes report the 12 realm and depth biomes below (73 `riven:` biomes in all). A Riven world uses 135 of 256 biome IDs (62 vanilla, 73 Riven). `/riven biomes` lists them with IDs, parents and categories; `tools/checks/BiomeTableCheck.java` proves all 163 habitat keys select a biome.
 
+**Biome variants** (prototype, variants-v1, terrain-v134, `riven-variants.json`, `Variants`): named
+country inside parent `riven:` biomes that changes only what is decided after the biome. One
+world-level field of patches (a Voronoi diagram of points jittered inside 500-block cells, over
+coordinates warped by two octaves of smooth noise at 600 and 300 blocks, 110 blocks deep) gives
+each patch one variant: a draw under `plainShare` (0.4) gives none, otherwise one of the variants
+whose conditions the patch point's intent meets (effective climate ranges, province type, landform
+class; a marine point meets none), by weight. Patch choices sit in a bounded memo of pure values. A
+column has its patch's variant where its own biome is one of the variant's parents; within 16 blocks
+of the bisector with the second-nearest patch it takes that patch's instead with a chance falling
+from one half at the bisector, so edges dither. Tree sites try a variant's stands before the parent
+biome's, ground cover uses a variant's entries in place of the parent's (their draws keyed by the
+variant), and boulders a variant's owner where `riven-boulders.json` lists one; native cubes and the
+preview call the same functions. The client never learns the variant, so it cannot change grass
+colour, weather or spawns. Three variants: **Lichen Woodland** (boreal forest and snow taiga, -6 to
+3 C, moisture 0.40-0.62, plain, basin and upland provinces): spruce and pine at under a fifth of
+the boreal canopy over a reindeer-lichen carpet in drifts; **Tallgrass Prairie** (grassland, 5-15 C,
+moisture 0.27-0.42, plains, basins, forelands and uplands on plain, basin, foothill and hill
+landforms): tall meadow grass, prairie fescue and bottlebrush grass under sweeps of goldenrod,
+aster and lupine, an oak in every few hundred cells (a prairie patch over dryland dunes or
+pavement leaves that ground bare, as the parent does: no grass Riven has grows on inland sand);
+**Pine Barrens** (temperate and warm
+woodland, 8-22 C, moisture 0.35-0.50, plains, basins and forelands on plain, basin and foothill
+landforms): open pine (an eighth of a cell's chance) with juniper over the heath palette, bracken and pine duff. On seed 2485331
+at 32 km they cover 0.61, 0.25 and 0.19% of the world. `tools/checks/VariantCoverageCheck.java`
+(ci job `variant-coverage`) requires every variant to have at least 3 patches in a parent biome's
+climate in each of 8 worlds at 32 km (fewest now: 10, 4 and 10). The column report (`/riven`)
+names the variant; `/riven find variant:<id>` finds one; the atlas writes `variant.u8` and
+`variants.png`.
+
 **Resource mappings** (prototype, mappings-v1, `riven-mappings.json`, `Mappings`, `RivenNetwork`): roles name materials (`wood.oak.log`), each an ordered list of block states whose first loaded entry wins; layers add or replace roles and riven: biome colors: Riven's defaults (Riven's own and vanilla blocks; every wood's log and leaves), integration layers for loaded mods, then pack layers in `config/riven/mappings/*.json` by file name. A world resolves them once, when it is created, into `data/riven/definitions.json` with a SHA-256 fingerprint, and loads that snapshot for life; each joining client receives its fingerprint and biome colors in one packet. `/riven mappings` compares the world's snapshot with the current layers.
 
 **Boulders** (prototype, boulders-v1, terrain-v92, `riven-boulders.json`, `Boulders`): rock lying on

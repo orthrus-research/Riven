@@ -51,6 +51,15 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   falls of any size, and granite slabs, whalebacks and kopjes. Seasons and the Moon are out of
   scope. Ore hosts may grow past one ore block's 16 states as far as the geology needs. The
   research catalogue behind this lives under `.local/research/worldgen-diversity`.
+- **Biome variants.** A variant is a named country inside one or more parent `riven:` biomes
+  that changes only what is decided after the biome: tree stands, ground cover, boulders and
+  surface soil, each falling back to the parent's. Variants form one world-level field of seeded
+  patches about 500 blocks across; each patch takes one variant by weight from those its centre's
+  facts admit (temperature, moisture, province, landform, rock, water), or none, and the variant
+  holds wherever the patch covers a parent biome. Edges dither across a band set in the
+  definition, as ecotones do. A variant never shapes terrain, and the client never knows it: a
+  country whose grass colour, weather, fog or spawns must differ is registered as a biome
+  instead. Definitions live in `riven-variants.json`.
 
 ## Adopted 2026-11-09
 

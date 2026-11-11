@@ -3,6 +3,7 @@ package cc.orthrus.riven;
 import cc.orthrus.riven.worldgen.RealmMap;
 import cc.orthrus.riven.worldgen.TerrainHeightReference;
 import cc.orthrus.riven.worldgen.TerrainMap;
+import cc.orthrus.riven.worldgen.Variants;
 
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
@@ -25,7 +26,7 @@ final class RivenCommand extends CommandBase {
 
     @Override
     public String getUsage(ICommandSender sender) {
-        return "/riven [x z] | /riven find <biome> [radius] | /riven trees [radius] | /riven cover [radius] | /riven boulders [radius] | /riven digest [radius [x z]] | /riven animals [radius] | /riven biomes | /riven mappings | /riven shaderprops [player] | /riven effects [reload]";
+        return "/riven [x z] | /riven find <biome|variant:id> [radius] | /riven trees [radius] | /riven cover [radius] | /riven boulders [radius] | /riven digest [radius [x z]] | /riven animals [radius] | /riven biomes | /riven mappings | /riven shaderprops [player] | /riven effects [reload]";
     }
 
     /**
@@ -131,8 +132,14 @@ final class RivenCommand extends CommandBase {
                         continue;
                     }
                     net.minecraft.world.biome.Biome biome = provider.biome(sample, x, z);
-                    if (biome.getRegistryName() != null
-                            && biome.getRegistryName().toString().equals(name)) {
+                    int variant = provider.variant(biome, x, z);
+                    boolean found =
+                            name.startsWith("variant:")
+                                    ? variant != Variants.NONE
+                                            && name.equals("variant:" + Variants.id(variant))
+                                    : biome.getRegistryName() != null
+                                            && biome.getRegistryName().toString().equals(name);
+                    if (found) {
                         sender.sendMessage(
                                 new TextComponentString(
                                         String.format(

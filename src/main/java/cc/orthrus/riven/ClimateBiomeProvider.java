@@ -5,6 +5,7 @@ import cc.orthrus.riven.worldgen.Habitats;
 import cc.orthrus.riven.worldgen.NativeColumns;
 import cc.orthrus.riven.worldgen.RegionalStore;
 import cc.orthrus.riven.worldgen.TerrainMap;
+import cc.orthrus.riven.worldgen.Variants;
 import cc.orthrus.riven.worldgen.WorldGenerationContext;
 import cc.orthrus.riven.worldgen.WorldScale;
 
@@ -44,6 +45,12 @@ final class ClimateBiomeProvider extends BiomeProvider {
     /** The riven: biome one column of a resolved chunk column reports. */
     Biome biome(NativeColumns.Column column, int index, int x, int z) {
         return RivenBiomes.select(column.key(index));
+    }
+
+    /** The variant (Variants) column (x, z) has inside the riven: biome it reports, or NONE. */
+    int variant(Biome biome, int x, int z) {
+        if (!(biome instanceof RivenBiomeTypes.RivenBiome)) return Variants.NONE;
+        return maps.variants.at(x, z, ((RivenBiomeTypes.RivenBiome) biome).definition().index);
     }
 
     static boolean inWorld(long x, long z) {

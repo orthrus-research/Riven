@@ -226,6 +226,7 @@ public final class TerrainAtlas {
         final int width, height, footprint;
         final short[] surface, water, plate, province, waterBody;
         final byte[] habitat,
+                variant,
                 region,
                 level,
                 character,
@@ -259,6 +260,7 @@ public final class TerrainAtlas {
             mouth = new byte[n];
             channelBeyond = new byte[n];
             habitat = new byte[n];
+            variant = new byte[n];
             region = new byte[n];
             level = new byte[n];
             character = new byte[n];
@@ -428,6 +430,10 @@ public final class TerrainAtlas {
         j.addProperty("waterTopY", TerrainHeightReference.DEFAULT.waterTopY);
         j.addProperty("seaLevel", TerrainHeightReference.DEFAULT.seaLevel);
         j.add("habitats", array(habitats));
+        JsonArray variants = new JsonArray();
+        variants.add("");
+        for (int v = 0; v < Variants.count(); v++) variants.add(Variants.id(v));
+        j.add("variants", variants);
         j.add("regions", array(ClimateRegion.values()));
         j.add("levels", array(Terrain.Level.values()));
         j.add("characters", array(Terrain.Character.values()));
@@ -511,6 +517,9 @@ public final class TerrainAtlas {
         r.surface[i] = (short) s.blockY();
         r.water[i] = s.waterY() == Integer.MIN_VALUE ? Short.MIN_VALUE : (short) s.waterY();
         r.habitat[i] = (byte) habitats.indexOf(Habitats.at(s));
+        // 0 is none; variant k is k + 1, as the metadata's variants list names them.
+        r.variant[i] =
+                (byte) (maps.variants.at(x, z, RivenBiomeTable.select(Habitats.key(s)).index) + 1);
         r.region[i] = (byte) (s.climate.region == null ? -1 : s.climate.region.ordinal());
         r.level[i] = (byte) s.land.level.ordinal();
         r.character[i] = (byte) s.land.character.ordinal();
@@ -716,6 +725,7 @@ public final class TerrainAtlas {
         shorts(out, "surface.i16", r.surface, digest);
         shorts(out, "water.i16", r.water, digest);
         bytes(out, "habitat.u8", r.habitat, digest);
+        bytes(out, "variant.u8", r.variant, digest);
         bytes(out, "region.u8", r.region, digest);
         bytes(out, "level.u8", r.level, digest);
         bytes(out, "character.u8", r.character, digest);

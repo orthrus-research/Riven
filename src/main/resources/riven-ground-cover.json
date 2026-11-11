@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 5,
+  "revision": 6,
   "variationSeed": "0x47524f554e44434f",
   "about": "Ground cover (ground-cover-v1): the plants and decals on a column's ground, as pure functions of seed, definitions, the column's riven: biome and the block it stands on. A biome lists palettes (by name, or {palette, scale} at a scaled density) and entries in order; the first entry whose ground fits (a Riven decoration's own grounds, or ground for other blocks) and whose draw falls under its density decides the column. patch (blocks) gathers an entry into drifts covering share of the land (default 0.35) at the same mean density. A plant stands on the column's surface (the top of its highest non-air run) where terrain, boulders and trees leave air, and never on a boulder; a two-block plant needs both blocks clear, its form by position; a cane (height {min, max}, by position) needs all its blocks clear and water beside its ground in a neighbouring column's native blocks, and a preview cell over two blocks wide draws none. Each cube writes the blocks inside itself after its trees; the preview draws the same blocks, so distant ground takes their colour as Distant Horizons tints it. Water, the realms and biomes without an entry stay bare. A column under still water (its ground the water) is decided too: an entry's depth {min, max} names the blocks of water over the bed it takes (any by default), and only floating plants, or blocks with ground water, fit it (terrain-v117). A submerged plant is decided by the bed it stands on, under at least two blocks of water, and stands from the bed up in place of water; an entry with top stacks its block under that top piece, height {min, max} blocks but no higher than the block below the surface (terrain-v119). An entry may stack any block (height, as a cactus stands), and cell gives one candidate column per cell of that many blocks, inside its inner square, so two never stand side by side (terrain-v121).",
   "palettes": {
@@ -604,5 +604,33 @@
     "riven:ocean": ["kelp_bed"],
     "riven:deep_ocean": ["kelp_bed"],
     "riven:warm_shallows": ["reef"]
+  },
+  "variants": {
+    "lichen_woodland": [
+      {"palette": "shallows", "scale": 0.5},
+      {"block": "riven:decal_reindeer_lichen", "density": 0.5, "patch": 24, "share": 0.75},
+      {"block": "riven:decal_crowberry", "density": 0.02, "patch": 16},
+      {"palette": "conifer_floor", "scale": 0.4}
+    ],
+    "tallgrass_prairie": [
+      "reed_margin",
+      "shallows",
+      "waterweeds",
+      {"block": "riven:plant_goldenrod", "density": 0.05, "patch": 40, "share": 0.3},
+      {"block": "riven:plant_aster", "density": 0.04, "patch": 36, "share": 0.3},
+      {"block": "riven:plant_lupine", "density": 0.03, "patch": 36, "share": 0.25},
+      {"block": "riven:tall_meadow_grass", "density": 0.3, "patch": 24, "share": 0.7},
+      {"block": "riven:plant_bottlebrush_grass", "density": 0.08},
+      {"block": "riven:plant_prairie_fescue", "density": 0.1},
+      {"palette": "grassland", "scale": 0.5}
+    ],
+    "pine_barrens": [
+      "reed_margin",
+      "shallows",
+      "waterweeds",
+      "heath",
+      {"block": "riven:plant_bracken", "density": 0.05, "patch": 22},
+      {"block": "riven:decal_pine_duff", "density": 0.08, "patch": 14, "share": 0.5}
+    ]
   }
 }

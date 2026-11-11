@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 4,
+  "revision": 5,
   "variationSeed": "0x5452454553495445",
   "about": "Tree sites (trees-v3): Riven decides where trees stand, which species, and their blocks, as pure functions of seed, definitions and coordinates. Layers are grids of candidate cells, visited in this order: each cell holds at most one candidate, which stands down within trunkSpacingBlocks of a higher-priority candidate of its layer or of a valid site of an earlier layer. A riven: biome lists stands, the first whose climate (when: celsius and moisture, [min, max)) holds at the candidate deciding; a stand gives each layer a chance and species weights. A site is valid on its species ground (grass and dirt, any ground material such as mud, unless ground adds sand or snow; every trunk column of a 2 x 2 trunk at one height) with every column its tree reaches open sky from its lowest block up. Species name a wood (roles wood.<wood>.log and wood.<wood>.leaves), heightBlocks [min, max] and a family: broadleaf (a crown cluster at the trunk top, branches from start of the height ending in clusters, optional droop strands and roots), conifer (discs from crown start to top rows above the trunk; cone, round or column profile; every whorl-th row full), palm (a trunk leaning up to lean blocks, fronds in 4 or 8 directions drooping over their last rows) or umbrella (limbs rising from the trunk top under flat discs). Clusters are ellipsoids of radius and depth whose edge blocks stand by the tree hash with the species density; every leaf lies within four steps of a log. Roots (buttress up the trunk sides, prop arching to the corners) stand only where their foot is on the trunk ground. Each cube writes the tree blocks inside itself; the distant preview draws the same blocks over fine cells and, over cells at least coarseFootprintBlocks wide, the most covering layer of the stand as a leaf run where its combined cover reaches coverThreshold.",
   "coarseFootprintBlocks": 4,
@@ -443,5 +443,16 @@
       {"canopy": {"chance": 0.3, "species": {"cypress": 3, "willow": 2, "alder": 1}}}
     ],
     "riven:mangrove_coast": {"canopy": {"chance": 0.6, "species": {"mangrove": 1}}}
+  },
+  "variants": {
+    "lichen_woodland": {
+      "canopy": {"chance": 0.14, "species": {"spruce": 4, "pine": 3}},
+      "understory": {"chance": 0.05, "species": {"spruce_dwarf": 2, "juniper": 1}}
+    },
+    "tallgrass_prairie": {"canopy": {"chance": 0.004, "species": {"oak": 3, "oak_old": 1}}},
+    "pine_barrens": {
+      "canopy": {"chance": 0.12, "species": {"pine": 6, "oak": 1}},
+      "understory": {"chance": 0.06, "species": {"juniper": 2}}
+    }
   }
 }

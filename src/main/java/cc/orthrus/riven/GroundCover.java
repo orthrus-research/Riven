@@ -6,6 +6,7 @@ import cc.orthrus.riven.worldgen.Boulders;
 import cc.orthrus.riven.worldgen.NativeColumns;
 import cc.orthrus.riven.worldgen.Rules;
 import cc.orthrus.riven.worldgen.SeededNoise;
+import cc.orthrus.riven.worldgen.Variants;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -141,6 +142,10 @@ final class GroundCover {
 
     private final long seed;
     private final Map<Biome, Entry[]> biomes = new IdentityHashMap<>();
+
+    /** Entries by variant index (riven-ground-cover.json variants), replacing the biome's. */
+    private final Entry[][] variants = new Entry[Variants.count()][];
+
     private final Set<Block> blocks = new HashSet<>();
 
     /** How far above its surface any entry's plant reaches: its tallest stack less one. */
@@ -158,42 +163,51 @@ final class GroundCover {
         for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("biomes").entrySet()) {
             Biome biome = ForgeRegistries.BIOMES.getValue(new ResourceLocation(e.getKey()));
             if (biome == null) throw new IllegalStateException("Unknown biome " + e.getKey());
-            // A biome lists entries and palettes, a palette optionally at a scaled density.
-            List<JsonObject> list = new ArrayList<>();
-            List<Double> scales = new ArrayList<>();
-            for (JsonElement item : e.getValue().getAsJsonArray()) {
-                JsonObject o = item.isJsonObject() ? item.getAsJsonObject() : null;
-                if (o != null && o.has("block")) {
-                    list.add(o);
-                    scales.add(1.0);
-                    continue;
-                }
-                String name = o != null ? o.get("palette").getAsString() : item.getAsString();
-                double scale = o != null && o.has("scale") ? Rules.number(o, "scale", 0, 4) : 1;
-                JsonArray palette = palettes.getAsJsonArray(name);
-                if (palette == null) throw new IllegalStateException("Unknown palette " + name);
-                for (JsonElement p : palette) {
-                    list.add(p.getAsJsonObject());
-                    scales.add(scale);
-                }
-            }
-            Entry[] entries = new Entry[list.size()];
-            for (int i = 0; i < entries.length; i++) {
-                // Each entry's draws and drifts are its own, by biome and position in the list.
-                long entrySeed =
-                        SeededNoise.mix(seed ^ e.getKey().hashCode() * 0x9e3779b97f4a7c15L + i);
-                entries[i] = new Entry(list.get(i), scales.get(i), entrySeed);
-                if (entries[i].density > 1)
-                    throw new IllegalStateException("Range: scaled density in " + e.getKey());
-                blocks.add(entries[i].state.getBlock());
-                reach = Math.max(reach, entries[i].tallest - 1);
-                maximumHeight = Math.max(maximumHeight, entries[i].tallest);
-                if (entries[i].submerged) maximumDepth = Math.max(maximumDepth, entries[i].deepest);
-            }
-            biomes.put(biome, entries);
+            biomes.put(biome, entries(e.getKey(), e.getValue().getAsJsonArray(), palettes));
         }
+        if (j.has("variants"))
+            for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("variants").entrySet())
+                variants[Variants.index(e.getKey())] =
+                        entries("variant:" + e.getKey(), e.getValue().getAsJsonArray(), palettes);
         this.provider = provider;
         this.trees = trees;
+    }
+
+    /**
+     * A biome's or a variant's entries: entries and palettes, a palette optionally at a scaled
+     * density. Each entry's draws and drifts are its own, by owner key and position in the list.
+     */
+    private Entry[] entries(String key, JsonArray items, JsonObject palettes) {
+        List<JsonObject> list = new ArrayList<>();
+        List<Double> scales = new ArrayList<>();
+        for (JsonElement item : items) {
+            JsonObject o = item.isJsonObject() ? item.getAsJsonObject() : null;
+            if (o != null && o.has("block")) {
+                list.add(o);
+                scales.add(1.0);
+                continue;
+            }
+            String name = o != null ? o.get("palette").getAsString() : item.getAsString();
+            double scale = o != null && o.has("scale") ? Rules.number(o, "scale", 0, 4) : 1;
+            JsonArray palette = palettes.getAsJsonArray(name);
+            if (palette == null) throw new IllegalStateException("Unknown palette " + name);
+            for (JsonElement p : palette) {
+                list.add(p.getAsJsonObject());
+                scales.add(scale);
+            }
+        }
+        Entry[] entries = new Entry[list.size()];
+        for (int i = 0; i < entries.length; i++) {
+            long entrySeed = SeededNoise.mix(seed ^ key.hashCode() * 0x9e3779b97f4a7c15L + i);
+            entries[i] = new Entry(list.get(i), scales.get(i), entrySeed);
+            if (entries[i].density > 1)
+                throw new IllegalStateException("Range: scaled density in " + key);
+            blocks.add(entries[i].state.getBlock());
+            reach = Math.max(reach, entries[i].tallest - 1);
+            maximumHeight = Math.max(maximumHeight, entries[i].tallest);
+            if (entries[i].submerged) maximumDepth = Math.max(maximumDepth, entries[i].deepest);
+        }
+        return entries;
     }
 
     /** Whether a block is one ground cover places (parity checks). */
@@ -225,7 +239,11 @@ final class GroundCover {
             int s,
             int z,
             boolean canes) {
-        Entry[] entries = biomes.get(biome);
+        int variant = provider.variant(biome, x, z);
+        Entry[] entries =
+                variant != Variants.NONE && variants[variant] != null
+                        ? variants[variant]
+                        : biomes.get(biome);
         if (entries == null || ground.getMaterial() == Material.AIR) return null;
         for (Entry e : entries) {
             if (depth < e.shallowest || depth > e.deepest) continue;

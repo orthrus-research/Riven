@@ -118,12 +118,17 @@ public final class Boulders {
     private final int cell, spacing, reach, slope;
     private final int maximumRise;
     private final Map<String, Owner> owners = new HashMap<>();
+
+    /** Owners by variant index (riven-boulders.json variants); null keeps the parent's. */
+    private final Owner[] variantOwners = new Owner[Variants.count()];
+
     private final TerrainMap terrain;
+    private final Variants variants;
     private final CellMemo<Site> sites = new CellMemo<>(1 << 13);
     private final ThreadLocal<TerrainMap.Sample> scratch =
             ThreadLocal.withInitial(TerrainMap.Sample::new);
 
-    public Boulders(long worldSeed, TerrainMap terrain) {
+    public Boulders(long worldSeed, TerrainMap terrain, Variants variants) {
         JsonObject j = RULES.json;
         seed = SeededNoise.mix(worldSeed ^ Rules.seed(j, "variationSeed"));
         cell = (int) Rules.number(j, "cellBlocks", 8, 128);
@@ -144,24 +149,28 @@ public final class Boulders {
             highest = Math.max(highest, rise);
         }
         maximumRise = highest;
-        for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("biomes").entrySet()) {
-            JsonObject b = e.getValue().getAsJsonObject();
-            List<Kind> list = new ArrayList<>();
-            List<Double> weights = new ArrayList<>();
-            for (Map.Entry<String, JsonElement> w : b.getAsJsonObject("kinds").entrySet()) {
-                Kind k = kinds.get(w.getKey());
-                if (k == null)
-                    throw new IllegalStateException("Unknown boulder kind " + w.getKey());
-                list.add(k);
-                weights.add(w.getValue().getAsDouble());
-            }
-            double[] array = new double[weights.size()];
-            for (int i = 0; i < array.length; i++) array[i] = weights.get(i);
-            owners.put(
-                    e.getKey(),
-                    new Owner(Rules.number(b, "chance", 0, 1), list.toArray(new Kind[0]), array));
-        }
+        for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("biomes").entrySet())
+            owners.put(e.getKey(), owner(e.getValue().getAsJsonObject(), kinds));
+        if (j.has("variants"))
+            for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("variants").entrySet())
+                variantOwners[Variants.index(e.getKey())] =
+                        owner(e.getValue().getAsJsonObject(), kinds);
         this.terrain = terrain;
+        this.variants = variants;
+    }
+
+    private static Owner owner(JsonObject b, Map<String, Kind> kinds) {
+        List<Kind> list = new ArrayList<>();
+        List<Double> weights = new ArrayList<>();
+        for (Map.Entry<String, JsonElement> w : b.getAsJsonObject("kinds").entrySet()) {
+            Kind k = kinds.get(w.getKey());
+            if (k == null) throw new IllegalStateException("Unknown boulder kind " + w.getKey());
+            list.add(k);
+            weights.add(w.getValue().getAsDouble());
+        }
+        double[] array = new double[weights.size()];
+        for (int i = 0; i < array.length; i++) array[i] = weights.get(i);
+        return new Owner(Rules.number(b, "chance", 0, 1), list.toArray(new Kind[0]), array);
     }
 
     /** The widest footprint radius: a column's site lies within this many blocks of it. */
@@ -237,7 +246,12 @@ public final class Boulders {
         TerrainMap.Sample s = scratch.get();
         terrain.sample(x, z, s);
         if (dry(s) == Integer.MIN_VALUE) return reject(out, "WET");
-        Owner owner = owners.get(RivenBiomeTable.select(Habitats.key(s)).id);
+        RivenBiomeTable.Definition biome = RivenBiomeTable.select(Habitats.key(s));
+        int variant = variants.at(x, z, biome.index);
+        Owner owner =
+                variant != Variants.NONE && variantOwners[variant] != null
+                        ? variantOwners[variant]
+                        : owners.get(biome.id);
         if (owner == null) return reject(out, "BIOME");
         if (unit(id, 3) >= owner.chance) return reject(out, "CHANCE");
         Kind kind = owner.kinds[Math.max(0, Rules.choose(owner.weights, unit(id, 4)))];

@@ -739,7 +739,8 @@ public final class RegionalCacheProbe {
             terrain = keptTerrain;
             SurfaceRules surfaces = step("SurfaceRules", () -> new SurfaceRules(heights));
             columns = step("NativeColumns", () -> new NativeColumns(terrain, surfaces, heights));
-            step("Boulders", () -> new Boulders(seed, terrain));
+            Variants variants = step("Variants", () -> new Variants(seed, terrain));
+            step("Boulders", () -> new Boulders(seed, terrain, variants));
             seconds = (System.nanoTime() - started) / 1e9;
         }
 

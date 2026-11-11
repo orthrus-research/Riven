@@ -239,6 +239,31 @@ class Painter:
             if (habitat == i).any()
         ]
 
+    def variants(self, path):
+        """Biome variants over the final biomes, which show faded where no variant holds."""
+        names = self.atlas.meta.get("variants", [""])
+        variant = self.atlas.layer("variant.u8", np.uint8) if len(names) > 1 else None
+        habitat = self.atlas.layer("habitat.u8", np.uint8)
+        biomes = np.array(
+            [BIOME_COLORS.get(n, hashed_color(n)) for n in self.atlas.meta["habitats"]], np.float32
+        )
+        faded = biomes[habitat] * 0.35 + 150
+        if variant is None:
+            save(faded * (0.6 + 0.5 * self.shade), path)
+            return []
+        palette = np.array([(0, 0, 0)] + [hashed_color(n) for n in names[1:]], np.float32)
+        tint = np.where((variant > 0)[..., None], palette[variant], faded)
+        save(tint * (0.6 + 0.5 * self.shade), path)
+        return [
+            {
+                "label": n,
+                "color": tuple(int(v) for v in palette[i]),
+                "pct": self.coverage(variant == i),
+            }
+            for i, n in enumerate(names)
+            if i > 0 and (variant == i).any()
+        ]
+
     def climate(self, path):
         region = self.atlas.layer("region.u8", np.uint8)
         colors = [region_color(n) for n in self.atlas.meta["regions"]]
@@ -415,6 +440,7 @@ def paint(atlas: Atlas, out: Path, threshold: float):
         "features": p.features(out / "features.png"),
         "elevation": p.elevation(out / "elevation.png"),
         "biomes": p.biomes(out / "biomes.png"),
+        "variants": p.variants(out / "variants.png"),
         "climate": p.climate(out / "climate.png"),
         "water": p.water_bodies(out / "water.png"),
     }
@@ -504,6 +530,7 @@ def write_index(out: Path, summary):
         ("features", "Selected features (largest stage change per column)"),
         ("elevation", "Elevation"),
         ("biomes", "Final biomes"),
+        ("variants", "Biome variants (faded: none)"),
         ("climate", "Climate regions"),
         ("water", "Water bodies and marine supply"),
     ]:

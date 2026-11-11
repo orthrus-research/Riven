@@ -1,0 +1,8 @@
+[
+  {"label": "lichen_woodland", "x": -14367.5, "y": 117, "z": -13197.5, "yaw": 0.0, "pitch": 28, "commands": ["time set 6000", "gamerule doDaylightCycle false", "weather clear 100000", "execute {player} -14368 87 -13152 riven -14368 -13152"]},
+  {"label": "lichen_woodland-near", "x": -14367.5, "y": 95, "z": -13171.5, "yaw": 0.0, "pitch": 18, "commands": ["execute {player} -14368 87 -13152 riven trees 48", "execute {player} -14368 87 -13152 riven cover 32"]},
+  {"label": "tallgrass_prairie", "x": -8607.5, "y": 141, "z": 7219.5, "yaw": 0.0, "pitch": 28, "commands": ["execute {player} -8608 111 7264 riven -8608 7264"]},
+  {"label": "tallgrass_prairie-near", "x": -8607.5, "y": 119, "z": 7245.5, "yaw": 0.0, "pitch": 18, "commands": ["execute {player} -8608 111 7264 riven trees 48", "execute {player} -8608 111 7264 riven cover 32"]},
+  {"label": "pine_barrens", "x": 5152.5, "y": 126, "z": 9139.5, "yaw": 0.0, "pitch": 28, "commands": ["execute {player} 5152 96 9184 riven 5152 9184"]},
+  {"label": "pine_barrens-near", "x": 5152.5, "y": 104, "z": 9165.5, "yaw": 0.0, "pitch": 18, "commands": ["execute {player} 5152 96 9184 riven trees 48", "execute {player} 5152 96 9184 riven cover 32"]}
+]

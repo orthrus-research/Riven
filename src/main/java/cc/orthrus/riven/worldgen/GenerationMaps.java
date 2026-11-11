@@ -21,6 +21,7 @@ public final class GenerationMaps {
     public final TerrainMap terrain;
     public final SurfaceRules surfaces;
     public final NativeColumns columns;
+    public final Variants variants;
     public final Boulders boulders;
 
     /** The kept climate draw, how many were drawn and its rarest climate's patches. */
@@ -131,7 +132,8 @@ public final class GenerationMaps {
         if (store != null) terrain.hydro.drainage.useStore(store);
         surfaces = new SurfaceRules(heights);
         columns = new NativeColumns(terrain, surfaces, heights);
-        boulders = new Boulders(seed, terrain);
+        variants = new Variants(seed, terrain);
+        boulders = new Boulders(seed, terrain, variants);
         if (store != null && stored == null)
             store.put(
                     WorldSelection.KIND,

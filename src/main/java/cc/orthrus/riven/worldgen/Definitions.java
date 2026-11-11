@@ -58,6 +58,7 @@ public final class Definitions {
                             "riven-terrain-regions.json",
                             "riven-terrain.json",
                             "riven-trees.json",
+                            "riven-variants.json",
                             "riven-volcanic.json",
                             "riven-zones.json"));
 

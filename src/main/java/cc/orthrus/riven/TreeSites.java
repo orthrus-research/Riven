@@ -5,6 +5,7 @@ import cc.orthrus.riven.worldgen.Rules;
 import cc.orthrus.riven.worldgen.SeededNoise;
 import cc.orthrus.riven.worldgen.TerrainHeightReference;
 import cc.orthrus.riven.worldgen.TerrainMap;
+import cc.orthrus.riven.worldgen.Variants;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -207,6 +208,10 @@ final class TreeSites {
     private final Map<String, TreeShapes.Species> species;
     private final List<Layer> layers = new ArrayList<>();
     private final Map<Biome, Stand[]> stands = new IdentityHashMap<>();
+
+    /** Stands by variant index (riven-trees.json variants), tried before the parent biome's. */
+    private final Stand[][] variantStands = new Stand[Variants.count()][];
+
     private final ClimateBiomeProvider biomes;
     private final TerrainHeightReference heights;
     private final ThreadLocal<Scratch> scratch = ThreadLocal.withInitial(Scratch::new);
@@ -257,16 +262,23 @@ final class TreeSites {
         for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("biomes").entrySet()) {
             Biome biome = ForgeRegistries.BIOMES.getValue(new ResourceLocation(e.getKey()));
             if (biome == null) throw new IllegalStateException("Unknown biome " + e.getKey());
-            JsonArray list =
-                    e.getValue().isJsonArray() ? e.getValue().getAsJsonArray() : new JsonArray();
-            if (!e.getValue().isJsonArray()) list.add(e.getValue());
-            Stand[] array = new Stand[list.size()];
-            for (int i = 0; i < array.length; i++)
-                array[i] = new Stand(list.get(i).getAsJsonObject(), layers, species);
-            stands.put(biome, array);
+            stands.put(biome, stands(e.getValue()));
         }
+        if (j.has("variants"))
+            for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("variants").entrySet())
+                variantStands[Variants.index(e.getKey())] = stands(e.getValue());
         this.biomes = biomes;
         this.heights = heights;
+    }
+
+    /** A biome's or a variant's stands: one object or a list, tried in order. */
+    private Stand[] stands(JsonElement value) {
+        JsonArray list = value.isJsonArray() ? value.getAsJsonArray() : new JsonArray();
+        if (!value.isJsonArray()) list.add(value);
+        Stand[] array = new Stand[list.size()];
+        for (int i = 0; i < array.length; i++)
+            array[i] = new Stand(list.get(i).getAsJsonObject(), layers, species);
+        return array;
     }
 
     /** Every species, by id, as this world resolves them. */
@@ -298,9 +310,16 @@ final class TreeSites {
         return d;
     }
 
-    /** The first stand of a riven: biome whose climate holds at a sample, or null. */
-    private Stand stand(Biome biome, TerrainMap.Sample sample) {
-        Stand[] list = biome == null ? null : stands.get(biome);
+    /**
+     * The first stand whose climate holds at column (x, z): its variant's stands first, then its
+     * riven: biome's; or null.
+     */
+    private Stand stand(Biome biome, int x, int z, TerrainMap.Sample sample) {
+        if (biome == null) return null;
+        int variant = biomes.variant(biome, x, z);
+        if (variant != Variants.NONE && variantStands[variant] != null)
+            for (Stand s : variantStands[variant]) if (s.holds(sample)) return s;
+        Stand[] list = stands.get(biome);
         if (list == null) return null;
         for (Stand s : list) if (s.holds(sample)) return s;
         return null;
@@ -364,7 +383,7 @@ final class TreeSites {
             return reject(out, "WORLD");
         Scratch s = scratch.get();
         biomes.maps.terrain.sample(x, z, s.sample);
-        Stand stand = stand(biomes.biome(s.sample, x, z), s.sample);
+        Stand stand = stand(biomes.biome(s.sample, x, z), x, z, s.sample);
         if (stand == null) return reject(out, "BIOME");
         Part part = stand.parts[layer.index];
         if (part == null) return reject(out, "LAYER");
@@ -647,7 +666,7 @@ final class TreeSites {
             Canopy out) {
         out.clear();
         if (footprint >= coarse) {
-            Stand stand = stand(reported, sample);
+            Stand stand = stand(reported, x, z, sample);
             if (stand == null || stand.dominant < 0 || stand.cover < coverThreshold) return;
             Part part = stand.parts[stand.dominant];
             boolean ground0 = false;

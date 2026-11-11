@@ -126,7 +126,7 @@ class QuickRuleTests(unittest.TestCase):
         return [job for job in self.ci if job in found]
 
     def test_riven_paths(self):
-        atlas = ["quality", "atlas-golden", "definitions", "sample-history"]
+        atlas = ["quality", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
         store = ["quality", "regional-store"]
         cases = {
             "docs/ART-REQUISITIONS.md": [],

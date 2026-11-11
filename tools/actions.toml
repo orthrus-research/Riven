@@ -9,10 +9,10 @@ atlas_python = ".local/atlas-venv/Scripts/python.exe"
 observability_python = ".local/observability-venv/Scripts/python.exe"
 
 [workflows]
-check = ["quality", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history"]
+check = ["quality", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
 build = ["riven-build", "cubature-build"]
-ci = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history"]
-full = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "smoke"]
+ci = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
+full = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage", "smoke"]
 
 [jobs.quality]
 description = "Formatting, lint, types, both-loader compile, content assets and the Riven and Cubature tool tests"
@@ -102,6 +102,12 @@ steps = [
   { name = "sample history", run = ["{atlas_python}", "tools/run_check.py", "SampleHistoryCheck", "8675309", "101", "-991", "7", "42", "1"] },
 ]
 
+[jobs.variant-coverage]
+description = "Every biome variant forms patches in a parent biome's climate in every 32 km world (tools/checks/VariantCoverageCheck)"
+steps = [
+  { name = "variant coverage", run = ["{atlas_python}", "tools/run_check.py", "VariantCoverageCheck", "8", "4"] },
+]
+
 [jobs.smoke]
 description = "Native client/server timing capture of this run's frozen Riven and observer"
 needs = ["riven-build", "cubature-build"]
@@ -134,7 +140,7 @@ riven = [
       "tools/checks/CubePrimerFixture.java",
       "tools/checks/CubeClassificationCheck.java",
     ], jobs = ["quality", "riven-build"] },
-  { paths = ["tools/atlas/**", "tools/atlas_golden.py", "tools/terrain_atlas.py", "tools/run_check.py", "tools/checks/**", "tools/atlas-golden.json"], jobs = ["quality", "atlas-golden", "definitions", "sample-history"] },
+  { paths = ["tools/atlas/**", "tools/atlas_golden.py", "tools/terrain_atlas.py", "tools/run_check.py", "tools/checks/**", "tools/atlas-golden.json"], jobs = ["quality", "atlas-golden", "definitions", "sample-history", "variant-coverage"] },
   { paths = ["tools/build_riven.py"], jobs = ["quality", "riven-build"] },
   { paths = ["tools/**/*.py", "tools/content/**", "pyproject.toml"], jobs = ["quality"] },
 ]
