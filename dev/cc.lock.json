@@ -4,13 +4,13 @@
   "nameStatus": "Final fork name; GitHub repository orthrus-research/Cubature, a fork of OpenCubicChunks/CubicChunks",
   "repository": "https://github.com/orthrus-research/Cubature.git",
   "upstream": "https://github.com/OpenCubicChunks/CubicChunks",
-  "commit": "a923cede68c66301852b1f98aa1ee480ad8fedab",
+  "commit": "60b0a50f5ead96e46e08db7c4940e3911419de86",
   "checkout": "../Cubature",
   "workingBranch": "main",
   "artifact": "dev/pins/Cubature-cleanroom.jar",
-  "sha256": "d8e96ba590dd06d2704310fb8ffb9ab9180dd5f9a3bfe35c45f7e98dc344e18a",
+  "sha256": "8aeb630f228c536ac16b6ff0e443d8315130ce1f230c46cd44bc84773984f275",
   "sourcesArtifact": "dev/pins/Cubature-cleanroom-sources.jar",
-  "sourcesSha256": "20e1c70aef440006f5dbc58a94d7f3480424eb44d13f4c8326a78477686cdef7",
+  "sourcesSha256": "35260c97973ef69e676c3a14857c61a9ca22d6cf5fefd14837a511972a8b4b07",
   "javaSourceFilesMatchedToArtifactSources": 414,
   "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
   "scope": "Exact Cubature commit; compatibility IDs, APIs, packets and world formats retained.",
@@ -22,7 +22,7 @@
   },
   "qualification": {
     "status": "Built from this clean Cubature commit as Java 25 bytecode; all 414 Java sources in the sources artifact match the commit, and core (454) and matching-artifact lab (100) tests pass on Java 26. Native lifecycle and flight captures passed in BASELINE with four DH workers per JVM, on 8 GiB ZGC and on the shipping G1 profile (8 GiB, 4 MB regions, 50 ms pause target, concurrent explicit collections), which newly prepared lab instances now use.",
-    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting, with random ticks and player-map bookkeeping separated (the lab alone wraps vanilla call sites for network and tick-event phases), and client native-capture counters; a random-tick scan skipped while only spectators are present; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved; chunk-mesh builders that start with small layer buffers; no compatibility code for mods or platforms outside the runtime (Demonica and its Celeritas kept). Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
+    "contents": "Bounded native generation, regional preparation, previews, storage and DH delivery; host-owned build pools available before biome-provider construction and preserved after adoption; save-level derived-data directory requests; cached cube classification and surface bands, used to install EMPTY cubes without generation and to order delivery visible-first; early initial light and surface tracking for empty sky cubes; retained-column preparation and urgent held teleports; exclusive server-thread phase accounting, with block ticks and player-map bookkeeping separated (the lab alone wraps vanilla call sites for network and tick-event phases), and client native-capture counters; a random-tick scan skipped while only spectators are present; regional preparation around spawn while no player is present; flushes that write each region's backlog in one batch, storage compression on reused deflaters and bounded workers, and regenerable empty cubes left unsaved; chunk-mesh builders that start with small layer buffers; no compatibility code for mods or platforms outside the runtime (Demonica and its Celeritas kept). Compatibility IDs, packets, save formats and the upstream DH binary are preserved.",
     "limits": [
       "Respawn, portal and join arrivals still load their column synchronously",
       "Client rendering remains unqualified"

@@ -315,12 +315,13 @@ cost divides aggregate work by unique generated-or-loaded cube registrations in 
 it does not follow an individual cube across ticks. Construction excludes work on I/O workers.
 The `OTHER` phase closes the full server-tick envelope, so phases can be added without counting
 nested lighting or encoding twice. Besides cube installation, lighting, sending, encoding, DH feed,
-unload/save, arrivals and regional preparation, phases separate random ticks (`RANDOM_TICK`), the
-player cube map's own bookkeeping (`PLAYER_MAP`), queued packet handlers with the network tick
-(`NETWORK`) and Forge's server and world tick events (`TICK_EVENTS`, where the lab observer runs).
-Only the lab charges `NETWORK` and `TICK_EVENTS`, by wrapping those vanilla call sites; the mod adds
-no mixin there, because other mods may overwrite or move them. In the creative flight `OTHER`
-is 11% of tick time and in the full view 3%. `riven_observe.py capture --jfr`
+unload/save, arrivals and regional preparation, phases separate the cubic world's block ticks
+(`BLOCK_TICKS`: column weather and light checks, random ticks of tickable cubes), the player cube
+map's own bookkeeping (`PLAYER_MAP`), queued packet handlers with the network tick (`NETWORK`) and
+Forge's server and world tick events (`TICK_EVENTS`, where the lab observer runs). Only the lab
+charges `NETWORK` and `TICK_EVENTS`, by wrapping those vanilla call sites; the mod adds no mixin
+there, because other mods may overwrite or move them. `OTHER` is about 2% of creative-flight tick
+time. `riven_observe.py capture --jfr`
 records both JVMs with JFR's profile settings for attributing a phase further.
 
 - `tools/build_riven.py [--diagnostics] [--freeze LABEL]` builds Riven for Cleanroom and
@@ -470,10 +471,11 @@ these captures. Newly prepared lab instances use the shipping G1 profile (8 GiB,
 server young pauses from 43/63/76 ms (median/p95/max) to 29/44/48 ms and removed the 180-220 ms full
 collections; a 12 GiB heap with the same flags measured no better. The figures above flew a spectator,
 which exempts the server from random ticks and spawning; its flight tick p95 stayed near 35 ms under
-every collector setting tried, and 33.1-33.5 ms once the random-tick iterator skipped its watcher scan
-while only spectators are present. The flight workload (v3) now flies a creative player. Its first
-capture measured flight tick p95 37.4 ms and mean 14.3 ms, with the random-tick scan back at 23% of
-flight tick time (3.3 ms per tick), uninstrumented work at 11% and settle p95 9.7 ms. Install bursts
+every collector setting tried. The flight workload (v3) now flies a creative player. A quarter of its
+tick time was the provider's per-cube tick, which walked every tickable cube watcher to drain a
+tile-entity queue nothing fills; with this pin it is gone, and two captures measured flight tick mean
+12.1 and 11.6 ms (from 14.1 ms), p95 35.7 and 35.0 ms (from 37.1 ms) and settle p95 8.1 and 8.2 ms
+(from 10.0 ms). The block ticks themselves (`BLOCK_TICKS`) take 15-16% of flight tick time. Install bursts
 still set the flight p95: once a second the player crosses a cube boundary, and the first two burst
 ticks spend the 20 ms concurrent install budget and then 6-9 ms of light queue. Native memory tracking showed 2.26 GB of the client's memory outside the heap
 in vanilla's chunk-mesh builders, which reserve 10 MiB of direct memory each, about ten per
