@@ -221,6 +221,13 @@ writes the sanitized dataset the website's harness charts read: one record per s
 dates, an anonymous run number, workload and scenario names and numbers only. The ledger itself
 names instances and artifacts and stays local.
 
+`telemetry tables --output <directory>` writes four flat JSON row tables for the run ledger
+dashboard: `runs.json` (one row per ledger record), `scenarios.json` (one per scenario: tick and
+frame percentiles, cubes, saves, LOD coverage), `ci-runs.json` (one per `tools/actions.py` run, read
+from its `summary.json`) and `ci-jobs.json` (one per job of those runs). Unlike the export these rows
+are private: they name instances, builds, commits and failure messages. Times are UTC; CI run ids
+are local time and are converted.
+
 ## DH LOD stage trace
 
 The lab's `LabLodTrace` records each DH section's path through generation, delivery and

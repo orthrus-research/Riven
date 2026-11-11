@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from observability import telemetry
+from observability import tables, telemetry
 from observability.profiles import ROOT
 
 
@@ -169,6 +169,57 @@ class Ledger(unittest.TestCase):
             [r["passed"] for r in records], [False, False], "a failed run fails its scenarios"
         )
         self.assertEqual(records[0]["tick"]["p99"], 50.0)
+
+    def test_tables_flatten_runs_scenarios_and_ci_summaries(self):
+        telemetry.collect(
+            self.instance("riven-table-001", "2026-11-01T04:57:58Z", passed=False), commits=False
+        )
+        actions = self.ledger.parent / "actions"
+        (actions / "20261101-120000").mkdir(parents=True)
+        summary = {
+            "runId": "20261101-120000",
+            "targets": ["full"],
+            "trees": {"riven": "a" * 40, "cubature": "b" * 40},
+            "treesChanged": False,
+            "seconds": 12.34,
+            "jobs": {
+                "quality": {
+                    "status": "passed",
+                    "steps": [{"name": "q", "exitCode": 0, "seconds": 2}],
+                },
+                "smoke": {
+                    "status": "failed",
+                    "steps": [
+                        {"name": "capture", "exitCode": 0, "seconds": 3},
+                        {"name": "inspect", "exitCode": 1, "seconds": 1.5},
+                    ],
+                },
+                "atlas-golden": {"status": "skipped", "reason": "needs smoke"},
+            },
+        }
+        (actions / "20261101-120000/summary.json").write_text(json.dumps(summary), "utf-8")
+        target = self.ledger / "tables"
+        with mock.patch.object(tables, "ACTIONS", actions):
+            counts = tables.write(target)
+        self.assertEqual(counts, {"runs": 1, "scenarios": 2, "ci-runs": 1, "ci-jobs": 3})
+        (run,) = json.loads((target / "runs.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            (run["run"], run["instance"], run["passed"]), (1, "riven-table-001", False)
+        )
+        scenarios = json.loads((target / "scenarios.json").read_text(encoding="utf-8"))
+        self.assertEqual([s["key"] for s in scenarios], ["1:full-view", "1:idle"])
+        self.assertEqual(scenarios[0]["tickP99"], 50.0)
+        (ci,) = json.loads((target / "ci-runs.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            (ci["verdict"], ci["passed"], ci["failedJobs"], ci["jobsSkipped"], ci["rivenTree"]),
+            ("failed", False, "smoke", 1, "aaaaaaaa"),
+        )
+        self.assertTrue(ci["startedUtc"].endswith("Z"))
+        jobs = {j["job"]: j for j in json.loads((target / "ci-jobs.json").read_text("utf-8"))}
+        self.assertEqual((jobs["smoke"]["seconds"], jobs["smoke"]["failedStep"]), (4.5, "inspect"))
+        self.assertEqual(
+            (jobs["atlas-golden"]["seconds"], jobs["atlas-golden"]["reason"]), (None, "needs smoke")
+        )
 
 
 if __name__ == "__main__":

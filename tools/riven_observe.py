@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from observability.profiles import ROOT, doctor
 
@@ -156,16 +157,22 @@ def main(argv=None):
     )
     telemetry.add_argument(
         "action",
-        choices=["record", "backfill", "index", "export"],
+        choices=["record", "backfill", "index", "export", "tables"],
         help="record one instance's runs (captures do this themselves), backfill every instance, "
-        "rebuild the ordered index, or export the sanitized website dataset",
+        "rebuild the ordered index, export the sanitized website dataset, or write the private "
+        "row tables of every native and CI run for the run ledger dashboard",
     )
     telemetry.add_argument("--name", help="record: the instance under .local/cubic-standalone")
-    telemetry.add_argument("--output", type=Path, help="export: the website dataset to write")
+    telemetry.add_argument(
+        "--output",
+        type=Path,
+        help="export: the website dataset to write; tables: the directory for the four tables",
+    )
     args = parser.parse_args(argv)
     if args.command == "telemetry":
         from observability import telemetry as ledger
 
+        result: dict[str, Any]
         if args.action == "record":
             if not args.name:
                 raise ValueError("telemetry record needs --name")
@@ -177,9 +184,13 @@ def main(argv=None):
             result = {key: index[key] for key in ["byKind", "first", "last"]} | {
                 "runs": len(index["runs"])
             }
+        elif not args.output:
+            raise ValueError(f"telemetry {args.action} needs --output")
+        elif args.action == "tables":
+            from observability import tables
+
+            result = tables.write(args.output)
         else:
-            if not args.output:
-                raise ValueError("telemetry export needs --output")
             result = ledger.export(args.output)
         print(json.dumps(result, indent=2))
         return 0
