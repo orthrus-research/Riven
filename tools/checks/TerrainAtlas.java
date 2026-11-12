@@ -470,12 +470,12 @@ public final class TerrainAtlas {
         double siteSeconds = 0;
         if (a.containsKey("sites")) {
             long sitesStarted = System.nanoTime();
-            // Site decisions are sequential and deterministic; they join the digest.
+            // Site decisions are deterministic and listed in cell order; they join the digest.
             String sites =
                     new GsonBuilder()
                             .setPrettyPrinting()
                             .create()
-                            .toJson(sites(maps, minX, minZ, width, height, step));
+                            .toJson(sites(maps, minX, minZ, width, height, step, threads, reverse));
             byte[] bytes = sites.getBytes(StandardCharsets.UTF_8);
             bytes(out, "sites.json", bytes, digest);
             siteSeconds = (System.nanoTime() - sitesStarted) / 1e9;
@@ -715,8 +715,20 @@ public final class TerrainAtlas {
     }
 
     /** Every raw site anchor near the window with its lane, admission and outcome at the anchor. */
+    /**
+     * Every site whose disc reaches the window, by lane, row and column. Each decision is a pure
+     * function of its cell, so they run on {@code threads} threads (in reverse with the raster)
+     * and join the list in order.
+     */
     private static JsonArray sites(
-            GenerationMaps maps, int minX, int minZ, int width, int height, int step)
+            GenerationMaps maps,
+            int minX,
+            int minZ,
+            int width,
+            int height,
+            int step,
+            int threads,
+            boolean reverse)
             throws Exception {
         Sites sites = maps.terrain.types.sites;
         double margin = 0;
@@ -726,42 +738,93 @@ public final class TerrainAtlas {
         int c1 = (int) Math.floor((minX + width * step + margin) / sites.spacing) + 1;
         int r0 = (int) Math.floor((minZ - margin) / sites.spacing) - 1;
         int r1 = (int) Math.floor((minZ + height * step + margin) / sites.spacing) + 1;
-        JsonArray list = new JsonArray();
-        TerrainMap.Sample s = new TerrainMap.Sample();
+        List<Sites.Lane> lanes = new ArrayList<>();
+        List<int[]> cells = new ArrayList<>();
         for (Sites.Lane lane : Sites.Lane.values())
             for (int cz = r0; cz <= r1; cz++)
                 for (int cx = c0; cx <= c1; cx++) {
-                    long key = sites.key(lane, cx, cz);
-                    if (!sites.inLane(key, lane)) continue;
-                    double ax = sites.x(cx, key), az = sites.z(cz, key);
-                    double radius = sites.maximumRadius(lane);
-                    if (ax + radius < minX
-                            || ax - radius >= minX + width * step
-                            || az + radius < minZ
-                            || az - radius >= minZ + height * step) continue;
-                    JsonObject site = new JsonObject();
-                    site.addProperty("cellX", cx);
-                    site.addProperty("cellZ", cz);
-                    site.addProperty("lane", lane.name());
-                    site.addProperty("x", round(ax));
-                    site.addProperty("z", round(az));
-                    site.addProperty("radius", round(radius));
-                    boolean admitted = sites.admits(cx, cz, key, lane);
-                    site.addProperty("admitted", admitted);
-                    if (admitted) {
-                        maps.terrain.sample(Math.floor(ax), Math.floor(az), s);
-                        int stage = stageOf(lane);
-                        site.addProperty("marine", s.ocean.marine);
-                        site.addProperty("stage", STAGE_NAMES[stage]);
-                        String why = reason(s, stage);
-                        if (why != null) site.addProperty("reasonAtAnchor", why);
-                        Enum<?> f = family(s, stage);
-                        if (f != null) site.addProperty("familyAtAnchor", f.name());
-                        site.addProperty("deltaAtAnchor", round(delta(s, stage)));
-                    }
-                    list.add(site);
+                    lanes.add(lane);
+                    cells.add(new int[] {cx, cz});
                 }
+        JsonObject[] decided = new JsonObject[cells.size()];
+        AtomicInteger next = new AtomicInteger();
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        List<Future<?>> work = new ArrayList<>();
+        for (int t = 0; t < threads; t++)
+            work.add(
+                    pool.submit(
+                            () -> {
+                                TerrainMap.Sample s = new TerrainMap.Sample();
+                                for (int k; (k = next.getAndIncrement()) < decided.length; ) {
+                                    int n = reverse ? decided.length - 1 - k : k;
+                                    decided[n] =
+                                            site(
+                                                    maps,
+                                                    sites,
+                                                    lanes.get(n),
+                                                    cells.get(n)[0],
+                                                    cells.get(n)[1],
+                                                    minX,
+                                                    minZ,
+                                                    width,
+                                                    height,
+                                                    step,
+                                                    s);
+                                }
+                                return null;
+                            }));
+        try {
+            for (Future<?> f : work) f.get();
+        } finally {
+            pool.shutdown();
+        }
+        JsonArray list = new JsonArray();
+        for (JsonObject site : decided) if (site != null) list.add(site);
         return list;
+    }
+
+    /** One site's decision, or null when its cell has no site in the lane or misses the window. */
+    private static JsonObject site(
+            GenerationMaps maps,
+            Sites sites,
+            Sites.Lane lane,
+            int cx,
+            int cz,
+            int minX,
+            int minZ,
+            int width,
+            int height,
+            int step,
+            TerrainMap.Sample s) {
+        long key = sites.key(lane, cx, cz);
+        if (!sites.inLane(key, lane)) return null;
+        double ax = sites.x(cx, key), az = sites.z(cz, key);
+        double radius = sites.maximumRadius(lane);
+        if (ax + radius < minX
+                || ax - radius >= minX + width * step
+                || az + radius < minZ
+                || az - radius >= minZ + height * step) return null;
+        JsonObject site = new JsonObject();
+        site.addProperty("cellX", cx);
+        site.addProperty("cellZ", cz);
+        site.addProperty("lane", lane.name());
+        site.addProperty("x", round(ax));
+        site.addProperty("z", round(az));
+        site.addProperty("radius", round(radius));
+        boolean admitted = sites.admits(cx, cz, key, lane);
+        site.addProperty("admitted", admitted);
+        if (admitted) {
+            maps.terrain.sample(Math.floor(ax), Math.floor(az), s);
+            int stage = stageOf(lane);
+            site.addProperty("marine", s.ocean.marine);
+            site.addProperty("stage", STAGE_NAMES[stage]);
+            String why = reason(s, stage);
+            if (why != null) site.addProperty("reasonAtAnchor", why);
+            Enum<?> f = family(s, stage);
+            if (f != null) site.addProperty("familyAtAnchor", f.name());
+            site.addProperty("deltaAtAnchor", round(delta(s, stage)));
+        }
+        return site;
     }
 
     /**
