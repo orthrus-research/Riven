@@ -247,6 +247,24 @@ final class TreeSites {
         return new double[] {lo, hi};
     }
 
+    /**
+     * Stand structure (riven-trees.json structure): a field over two scales gathers canopy trees
+     * into groves and opens clearings, with the understory denser where the canopy is open; a
+     * candidate looks its stand up at a point jittered up to the ecotone width, so neighbouring
+     * stands feather into each other; trees thin and shorten over the last blocks below the
+     * treeline.
+     */
+    private final double groveScale,
+            clumpScale,
+            contrast,
+            gaps,
+            ecotone,
+            treelineFade,
+            treelineHeight,
+            treelineMinimum;
+
+    private final long structureSeed;
+
     private final int coarse, reach;
     private final int maximumTop;
     private final boolean surfaceBandSupported;
@@ -287,6 +305,16 @@ final class TreeSites {
         long seed = SeededNoise.mix(worldSeed ^ Rules.seed(j, "variationSeed"));
         coarse = (int) Rules.number(j, "coarseFootprintBlocks", 2, 4096);
         coverThreshold = Rules.number(j, "coverThreshold", 0, 1);
+        JsonObject structure = j.getAsJsonObject("structure");
+        groveScale = Rules.number(structure, "groveBlocks", 8, 1024);
+        clumpScale = Rules.number(structure, "clumpBlocks", 4, 256);
+        contrast = Rules.number(structure, "contrast", 0, 1);
+        gaps = Rules.number(structure, "gaps", 0, 0.5);
+        ecotone = Rules.number(structure, "ecotoneBlocks", 0, 128);
+        treelineFade = Rules.number(structure, "treelineFadeBlocks", 1, 256);
+        treelineHeight = Rules.number(structure, "treelineHeight", 0.2, 1);
+        treelineMinimum = Rules.number(structure, "treelineDensity", 0, 1);
+        structureSeed = SeededNoise.mix(seed ^ 0x5354525543545552L);
         species = TreeShapes.species(j, snapshot);
         int widest = 0, highest = 0;
         boolean completeTrunks = true;
@@ -350,6 +378,40 @@ final class TreeSites {
     /** Whether shape clearance also proves the soil columns' lower surface bound. */
     boolean surfaceBandSupported() {
         return surfaceBandSupported;
+    }
+
+    /**
+     * The stand structure's density at a column for a layer, about 1 on average: 0 in clearings,
+     * up to 1 + contrast in groves; the understory takes the opposite, thickest where the canopy
+     * opens. Emergents stand regardless.
+     */
+    double structure(int layer, int x, int z) {
+        if (layer == 0) return 1;
+        double grove = noise(structureSeed, x / groveScale, z / groveScale);
+        double clump = noise(SeededNoise.mix(structureSeed + 1), x / clumpScale, z / clumpScale);
+        double g = 0.65 * grove + 0.35 * clump;
+        double canopy = g < gaps ? 0 : 1 + contrast * (2 * g - 1);
+        return layer == 1 ? Math.max(0, canopy) : Math.min(1 + contrast, Math.max(0, 2 - canopy));
+    }
+
+    /** Toward the treeline: 1 well below it, 0 at it, over the fade's blocks. */
+    double treeline(TerrainMap.Sample sample) {
+        int line =
+                biomes.maps.surfaces.treeline(sample.climate.celsius + sample.climate.lapseCelsius);
+        return Math.max(0, Math.min(1, (line - sample.blockY()) / treelineFade));
+    }
+
+    private static double noise(long seed, double x, double z) {
+        int ix = (int) Math.floor(x), iz = (int) Math.floor(z);
+        double fx = x - ix, fz = z - iz;
+        double sx = fx * fx * (3 - 2 * fx), sz = fz * fz * (3 - 2 * fz);
+        double a = corner(seed, ix, iz), b = corner(seed, ix + 1, iz);
+        double c = corner(seed, ix, iz + 1), d = corner(seed, ix + 1, iz + 1);
+        return (a + (b - a) * sx) + ((c + (d - c) * sx) - (a + (b - a) * sx)) * sz;
+    }
+
+    private static double corner(long seed, int x, int z) {
+        return SeededNoise.unit(SeededNoise.cell(seed, x, z));
     }
 
     private static volatile Map<String, TreeShapes.Species> defaults;
@@ -433,15 +495,53 @@ final class TreeSites {
                 || !ClimateBiomeProvider.inWorld(x + reach + 16L, z + reach + 16L))
             return reject(out, "WORLD");
         Scratch s = scratch.get();
-        biomes.maps.terrain.sample(x, z, s.sample);
-        Stand stand = stand(biomes.biome(s.sample, x, z), x, z, s.sample);
+        // The stand comes from a point near the candidate, so stands feather across their edges.
+        int jx =
+                x
+                        + (int)
+                                Math.round(
+                                        (TreeShapes.unit(id, 7) + TreeShapes.unit(id, 8) - 1)
+                                                * ecotone);
+        int jz =
+                z
+                        + (int)
+                                Math.round(
+                                        (TreeShapes.unit(id, 9) + TreeShapes.unit(id, 10) - 1)
+                                                * ecotone);
+        biomes.maps.terrain.sample(jx, jz, s.sample);
+        // Water has no stand: a forest is not thinned by the river or lake beside it.
+        if (s.sample.ocean.marine || s.sample.waterOverSurface()) {
+            jx = x;
+            jz = z;
+            biomes.maps.terrain.sample(x, z, s.sample);
+        }
+        Stand stand = stand(biomes.biome(s.sample, jx, jz), jx, jz, s.sample);
         if (stand == null) return reject(out, "BIOME");
         Part part = stand.parts[layer.index];
         if (part == null) return reject(out, "LAYER");
-        if (TreeShapes.unit(id, 3) >= part.chance) return reject(out, "CHANCE");
+        biomes.maps.terrain.sample(x, z, s.sample);
+        double toTreeline = treeline(s.sample);
+        double chance =
+                part.chance
+                        * structure(layer.index, x, z)
+                        * (treelineMinimum + (1 - treelineMinimum) * toTreeline);
+        if (TreeShapes.unit(id, 3) >= chance) return reject(out, "CHANCE");
         int pick = Math.max(0, Rules.choose(part.weights, TreeShapes.unit(id, 4)));
         TreeShapes.Species species = part.species[pick];
-        int stem = TreeShapes.Species.height(id, part.low[pick], part.high[pick]);
+        // The stem draws from its own hash: unit(id, 1) also places the candidate in its cell.
+        int stem =
+                TreeShapes.Species.height(
+                        SeededNoise.mix(id ^ 0x48454947485453L), part.low[pick], part.high[pick]);
+        // Trees shorten toward the treeline, never below their species' limit.
+        if (toTreeline < 1 && treelineMinimum < 1)
+            stem =
+                    Math.max(
+                            species.limit[0],
+                            (int)
+                                    Math.round(
+                                            stem
+                                                    * (treelineHeight
+                                                            + (1 - treelineHeight) * toTreeline)));
         int w = species.width;
         // Each trunk column's ground, as the preview and native cubes see it, must be the
         // species' ground at one height, with open sky above.

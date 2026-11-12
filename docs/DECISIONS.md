@@ -39,7 +39,8 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   tunes in `riven-trees.json`; a form's proportions of the tree's height set crown width and base,
   replacing any general crown-scaling rule. Fuller crowns are held to a budget: no forest's leaves
   per hectare may pass double their terrain-v135 census figure, measured by the tree census before
-  a change lands.
+  a change lands. Open biomes (hills, steppe, scrub) are outside the budget: forest trees that
+  feather into them across an ecotone may raise their small totals past it (2026-11-11).
 
 - **Pack-neutral capabilities.** Riven implements nothing for one modpack. When a pack such as
   Supersymmetry has a requirement, Riven meets it with a generic, definition-driven capability

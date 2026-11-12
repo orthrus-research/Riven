@@ -846,6 +846,24 @@ leaves per hectare at most 1.95 times v135 in any forest (temperate rainforest; 
 inside the approved cap of double; every forest signature still holds. `tools/checks/TreeGallery`
 renders every species' side elevation across its band (docs/RUNTIME.md).
 
+**Stand structure** (trees revision 8, terrain-v137, `riven-trees.json` structure): three pure
+fields shape where trees stand within their stands. Groves and clearings: two octaves of smooth
+noise (72 and 18 blocks) multiply the canopy layer's chance by up to 1.8 in groves and to nothing
+where they fall under 0.3, and the understory takes the opposite, thickest where the canopy
+opens, as saplings fill a gap; emergents stand regardless. Ecotones: a candidate takes its stand
+from a point jittered up to 20 blocks (a triangular draw per axis), so neighbouring stands feather
+into each other across their edges, except that water lends no stand and the column's own is
+used. Treeline: over the last 16 blocks below the treeline (`SurfaceRules.treeline`), chance falls
+to 35% and stems to 60% of their draw, never below the species' limit. A tree's stem draws from
+its own hash, no longer the one that places it in its cell. Census, seed 2485331 at 32 km: quadrat
+dispersion of canopy stems rose (temperate woodland 1.18 to 2.30, tropical rainforest 2.11 to
+3.51, boreal forest 4.37 to 6.43) and Clark-Evans R eased toward random (1.18-1.45 to 1.13-1.33);
+every forest signature holds its density within 15% except boreal highlands (71 of 100 stems/ha at
+chance 1, held by its ground and the treeline; 32 at v134) and savanna, whose 90th-percentile
+height includes its neighbours' trees within the ecotone. Leaves per hectare stay under double
+v135 in every forest (temperate rainforest 1.73x); two open hill biomes pass it as forest trees
+feather in (rugged hills 1,961 to 5,708, cold hills 1,307 to 3,128).
+
 **Ground cover** (prototype, ground-cover-v2, terrain-v99, `riven-ground-cover.json`,
 `GroundCover`): Riven places the plants and decals on the ground itself, on land and in and under
 water (shallows and underwater plants); no biome decorator runs in a Riven world. Vanilla cactus stands one to three high in deserts and badlands, at most one per
