@@ -163,6 +163,7 @@ def prepare(
     preview_threads=None,
     arrival_plan=True,
     dh_lod_only=False,
+    keep_fine_columns=True,
 ):
     if lod_observer is not None:
         lod_observer = Path(lod_observer).resolve()
@@ -278,6 +279,7 @@ def prepare(
                     else ""
                 )
                 + ("" if arrival_plan else "\n    B:distantHorizonsArrivalPlan=false")
+                + ("" if keep_fine_columns else "\n    B:distantHorizonsKeepFineColumns=false")
                 + (
                     "\n    B:complementaryCaveFog=true"
                     if complementary_cave_fog and side == "client"
@@ -410,6 +412,7 @@ def prepare(
             **({"cubatureNativeFeed": "EDITS"} if dh_native_feed == "edits" else {}),
             **({"cubaturePreviewThreads": preview_threads} if preview_threads is not None else {}),
             **({} if arrival_plan else {"cubatureArrivalPlan": False}),
+            **({} if keep_fine_columns else {"cubatureKeepFineColumns": False}),
             **({"lodOnlyMode": True} if dh_lod_only else {}),
             "qualification": "Explicit candidate CC; see native receipt"
             if cubic_artifact
@@ -893,6 +896,12 @@ def main():
         help="Cubature: keep DH's nearest-first request order (distantHorizonsArrivalPlan=false)",
     )
     p.add_argument(
+        "--no-keep-fine-columns",
+        action="store_true",
+        help="Cubature: DH's merge rule, where coarse answers replace fine-built columns "
+        "(distantHorizonsKeepFineColumns=false)",
+    )
+    p.add_argument(
         "--dh-lod-only",
         action="store_true",
         help="Fresh instance whose client draws only DH LODs (DH lodOnlyMode; rendering diagnostic)",
@@ -946,6 +955,7 @@ def main():
             preview_threads=a.preview_threads,
             arrival_plan=not a.no_arrival_plan,
             dh_lod_only=a.dh_lod_only,
+            keep_fine_columns=not a.no_keep_fine_columns,
         )
     elif a.command == "play":
         if a.shader_pack and len(a.shader_pack) != 1:

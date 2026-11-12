@@ -86,6 +86,12 @@ def main(argv=None):
         help="Cubature: keep DH's nearest-first request order (distantHorizonsArrivalPlan=false)",
     )
     capture.add_argument(
+        "--no-keep-fine-columns",
+        action="store_true",
+        help="Cubature: DH's merge rule, where coarse answers replace fine-built columns "
+        "(distantHorizonsKeepFineColumns=false)",
+    )
+    capture.add_argument(
         "--dh-ignore-server-health",
         action="store_true",
         help="Turn off DH's limitIfServerUnhealthy world-generation pause",
@@ -227,6 +233,8 @@ def main(argv=None):
             options += ["--preview-threads", str(args.preview_threads)]
         if args.no_arrival_plan:
             options.append("--no-arrival-plan")
+        if args.no_keep_fine_columns:
+            options.append("--no-keep-fine-columns")
         if args.world_from:
             options += ["--world-from", args.world_from]
         if args.dh_ignore_server_health:

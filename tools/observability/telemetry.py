@@ -376,6 +376,7 @@ def capture_record(instance, commits=None):
                 "workers": dh.get("workers"),
                 "lodRadiusChunks": dh.get("lodRadiusChunks"),
                 "arrivalPlan": dh.get("cubatureArrivalPlan", True) if dh else None,
+                "keepFineColumns": dh.get("cubatureKeepFineColumns", True) if dh else None,
                 "nativeFeed": dh.get("cubatureNativeFeed", "ALL") if dh else None,
                 "previewThreads": dh.get("cubaturePreviewThreads"),
                 "lodOnly": bool(dh.get("lodOnlyMode")),

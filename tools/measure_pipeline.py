@@ -190,6 +190,11 @@ def main(argv=None):
         help="Cubature: keep DH's nearest-first request order",
     )
     parser.add_argument(
+        "--no-keep-fine-columns",
+        action="store_true",
+        help="Cubature: DH's merge rule, where coarse answers replace fine-built columns",
+    )
+    parser.add_argument(
         "--dh-visited-only",
         action="store_true",
         help="DH on the client only, fed by native cubes; no distant generation (native floor)",
@@ -241,6 +246,7 @@ def main(argv=None):
             preview_threads=args.preview_threads,
             arrival_plan=not args.no_arrival_plan,
             dh_lod_only=args.dh_lod_only,
+            keep_fine_columns=not args.no_keep_fine_columns,
             # The config file selects the delivery mode; Cubature reads it as the server starts.
             cubature_delivery=args.delivery_experiment,
         )
