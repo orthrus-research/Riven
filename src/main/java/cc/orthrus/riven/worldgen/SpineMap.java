@@ -94,7 +94,7 @@ public final class SpineMap {
         for (int j = j0; j <= j1; j++)
             for (int i = i0; i <= i1; i++) {
                 double[] n = node(i, j, spacing);
-                if (n.length == 0 || Math.hypot(n[0] - x, n[1] - z) > radius) continue;
+                if (n.length == 0 || StrictMath.hypot(n[0] - x, n[1] - z) > radius) continue;
                 if (6 * (count + 1) > out.length) return count;
                 out[6 * count] = i;
                 out[6 * count + 1] = j;
@@ -203,7 +203,7 @@ public final class SpineMap {
                 if (!land[k] || smooth[k] <= halfFrom) continue;
                 double sx = (smooth[k + 1] - smooth[k - 1]) / (2 * cell);
                 double sz = (smooth[k + n] - smooth[k - n]) / (2 * cell);
-                spine[k] = Math.hypot(sx, sz) < flatSlope;
+                spine[k] = StrictMath.hypot(sx, sz) < flatSlope;
             }
         // Distance to the spine, carrying the half width of the nearest spine cell.
         double[] t = new double[n * n];

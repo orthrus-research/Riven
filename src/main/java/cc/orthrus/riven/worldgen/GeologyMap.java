@@ -889,7 +889,7 @@ public final class GeologyMap {
             for (int cx = kx - 1; cx <= kx + 1; cx++) {
                 double[] k = kimberlite(cx, cz);
                 if (k == null) continue;
-                double d = Math.hypot(x - k[0], z - k[1]);
+                double d = StrictMath.hypot(x - k[0], z - k[1]);
                 if (d >= k[2]) continue;
                 // The radius grows from root to top as a power: the Y where it reaches d.
                 double share =

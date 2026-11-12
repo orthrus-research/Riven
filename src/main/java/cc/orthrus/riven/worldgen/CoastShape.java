@@ -157,7 +157,7 @@ public final class CoastShape {
                 || host.waterY != heights.waterTopY) return reject(family, "SUPPLY", 0, 0);
         TerrainMap.BaseSample base = new TerrainMap.BaseSample();
         intent.sample(host.x, host.z, base);
-        double nx = base.shore.normalX, nz = base.shore.normalZ, norm = Math.hypot(nx, nz);
+        double nx = base.shore.normalX, nz = base.shore.normalZ, norm = StrictMath.hypot(nx, nz);
         if (norm < .99 || !Double.isFinite(norm)) return reject(family, "SHORE_FRAME", 0, 0);
         nx /= norm;
         nz /= norm;
@@ -221,12 +221,12 @@ public final class CoastShape {
             if (other != host) {
                 double support = other.support();
                 if (other.kind == Hydro.Kind.LAGOON)
-                    support = Math.hypot(support, other.skirt * .25);
-                if (Math.hypot(x - other.x, z - other.z) <= radius + support + 2)
+                    support = StrictMath.hypot(support, other.skirt * .25);
+                if (StrictMath.hypot(x - other.x, z - other.z) <= radius + support + 2)
                     return reject(family, "BASIN_CONFLICT", 0, 0);
             }
         if (network.present()
-                && Math.hypot(x - network.lakeX, z - network.lakeZ)
+                && StrictMath.hypot(x - network.lakeX, z - network.lakeZ)
                         <= radius
                                 + network.radius
                                 + heights.feature("river_bed").width.targetAverage * bankScale
@@ -366,7 +366,7 @@ public final class CoastShape {
     }
 
     public void apply(double x, double z, Hydro.Sample out, Decision decision) {
-        if (Math.hypot(x - geometry.x, z - geometry.z) > geometry.supportRadius) return;
+        if (StrictMath.hypot(x - geometry.x, z - geometry.z) > geometry.supportRadius) return;
         out.coastShape = decision;
         Column scratch = out.coastGeometry;
         if (out.wet)

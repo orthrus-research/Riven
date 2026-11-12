@@ -112,7 +112,7 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
             h |= Settings.bit(Settings.CLIMATE_SAND);
         if (snowline || region != null && region.surface == ClimateRegion.Surface.SNOW)
             h |= Settings.bit(Settings.SNOW);
-        double slope = Math.hypot(s.broadDx, s.broadDz);
+        double slope = StrictMath.hypot(s.broadDx, s.broadDz);
         if (slope > steep) h |= Settings.bit(Settings.STEEP);
         if (slope > rough) h |= Settings.bit(Settings.ROUGH);
         if (!s.ocean.marine && s.waterY() <= floor) h |= soils(s, floor, slope, h);

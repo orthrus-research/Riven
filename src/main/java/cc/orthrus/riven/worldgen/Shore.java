@@ -393,7 +393,7 @@ public final class Shore {
             for (int dj = -2; dj <= 2; dj++) {
                 Segment s = segment(ci + di, cj + dj);
                 if (s.type == null) continue;
-                double d = Math.hypot(x - s.x, z - s.z);
+                double d = StrictMath.hypot(x - s.x, z - s.z);
                 if (d < d1) {
                     d2 = d1;
                     b = a;

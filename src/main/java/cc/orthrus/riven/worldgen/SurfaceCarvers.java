@@ -122,7 +122,7 @@ public final class SurfaceCarvers {
                         (ex, ez, k) -> eligible(ex, ez, k, intent))) continue;
                 intent.sample(ax, az, out.base);
                 if (out.base.ocean.marine) continue;
-                double slope = Math.hypot(out.base.baseDx, out.base.baseDz);
+                double slope = StrictMath.hypot(out.base.baseDx, out.base.baseDz);
                 PlateMap.Sample plate = weigh(out.base, ax, az, out.weights);
                 int choice = Rules.choose(out.weights, random(cell, 104));
                 Profile chosen = choice < 0 ? null : profiles[choice];
@@ -246,7 +246,7 @@ public final class SurfaceCarvers {
             case SADDLE_PASS:
                 return gaussian(u, 4) * gaussian(v / .50, 4) * (.8 + .2 * Math.cos(v * 2));
             case HEADWALL_BOWL:
-                double r = Math.hypot(u, v);
+                double r = StrictMath.hypot(u, v);
                 return Math.max(
                         (1 - smooth((r - .35) / .65)) * smooth((v + .75) / .25),
                         .55 * gaussian(u / .6, 2) * smooth((-.1 - v) / .6));
@@ -256,10 +256,10 @@ public final class SurfaceCarvers {
                         * (.7 + .3 * smooth((v + 1) / 2));
             case BREACHED_HOLLOW:
                 return Math.max(
-                        gaussian(Math.hypot(u + .2, v - .15) / .7, 2),
+                        gaussian(StrictMath.hypot(u + .2, v - .15) / .7, 2),
                         .65 * capsule(u, v, -.12, .1, .45, -1., .18, 2));
             case CIRQUE:
-                double ellipse = Math.hypot(u / 1.05, (v - .05) / .8);
+                double ellipse = StrictMath.hypot(u / 1.05, (v - .05) / .8);
                 return (1 - smooth((ellipse - .45) / .45))
                         * smooth((v + .80) / .22)
                         * (.8 + .2 * smooth((v + .2) / .6));
@@ -276,7 +276,8 @@ public final class SurfaceCarvers {
                             Math.max(
                                     chain,
                                     (.7 + .25 * random(id, 30 + j))
-                                            * gaussian(Math.hypot(u / .75, (v - zv) / .27), 2));
+                                            * gaussian(
+                                                    StrictMath.hypot(u / .75, (v - zv) / .27), 2));
                 }
                 return chain;
             case SNOW_PATCH_HOLLOWS:
@@ -288,7 +289,9 @@ public final class SurfaceCarvers {
                                     pockets,
                                     (.5 + .45 * random(id, 20 + j))
                                             * gaussian(
-                                                    Math.hypot((u - px) / .20, (v - pz) / .14), 4));
+                                                    StrictMath.hypot(
+                                                            (u - px) / .20, (v - pz) / .14),
+                                                    4));
                 }
                 return pockets;
             case SLOT_CANYON:
@@ -318,7 +321,7 @@ public final class SurfaceCarvers {
                         * smooth((v + .90) / .10)
                         * (1 - smooth((v - .72) / .18));
             case DEFLATION_HOLLOW:
-                return (1 - smooth((Math.hypot(u + .15 * v * v, v / .75) - .20) / .75))
+                return (1 - smooth((StrictMath.hypot(u + .15 * v * v, v / .75) - .20) / .75))
                         * (.6 + .4 * smooth((v + 1) / 2));
             case INTERDUNE_SWALES:
                 double swales = 0;
@@ -345,7 +348,7 @@ public final class SurfaceCarvers {
                     scallops =
                             Math.max(
                                     scallops,
-                                    gaussian(Math.hypot((u - px) / .22, (v - pz) / .35), 4)
+                                    gaussian(StrictMath.hypot((u - px) / .22, (v - pz) / .35), 4)
                                             * smooth((v + .3) / .3));
                 }
                 return scallops;
@@ -440,7 +443,7 @@ public final class SurfaceCarvers {
         double dx = bx - ax,
                 dz = bz - az,
                 t = Math.max(0, Math.min(1, ((u - ax) * dx + (v - az) * dz) / (dx * dx + dz * dz)));
-        return gaussian(Math.hypot(u - ax - t * dx, v - az - t * dz) / width, power);
+        return gaussian(StrictMath.hypot(u - ax - t * dx, v - az - t * dz) / width, power);
     }
 
     private static double gaussian(double t, int power) {

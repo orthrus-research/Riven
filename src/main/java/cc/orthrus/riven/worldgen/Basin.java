@@ -109,7 +109,9 @@ public final class Basin {
         return coastShape != null && coastShape.shape != null
                 ? Math.max(
                         plain,
-                        Math.hypot(x - coastShape.shape.geometry.x, z - coastShape.shape.geometry.z)
+                        StrictMath.hypot(
+                                        x - coastShape.shape.geometry.x,
+                                        z - coastShape.shape.geometry.z)
                                 + coastShape.shape.geometry.supportRadius)
                 : plain;
     }

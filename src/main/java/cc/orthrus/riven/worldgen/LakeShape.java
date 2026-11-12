@@ -38,7 +38,8 @@ public final class LakeShape {
             throw new IllegalArgumentException("Lake shape revision/certificate bound");
         // The adapter's second shore feather must end before the source's closed support box.
         // Other families fit 1.10 long-axis radii at their full allowed detail/skirt ranges.
-        double sweptFeather = Math.hypot(.64, (.19 + .625 * DETAIL) / ASPECT) + .215 + 2 * SKIRT;
+        double sweptFeather =
+                StrictMath.hypot(.64, (.19 + .625 * DETAIL) / ASPECT) + .215 + 2 * SKIRT;
         if (sweptFeather > 1.10)
             throw new IllegalArgumentException("Swept lake bank feather exceeds kernel support");
     }
@@ -94,7 +95,7 @@ public final class LakeShape {
             this.endHead = endHead;
             this.minimumDepth = minimumDepth;
             halfWidth = Math.min(startWidth, endWidth);
-            length = Math.hypot(endX - x, endZ - z);
+            length = StrictMath.hypot(endX - x, endZ - z);
             angle = Math.atan2(endZ - z, endX - x);
         }
 
@@ -117,7 +118,8 @@ public final class LakeShape {
                     ((layout.outletX - x) * vx + (layout.outletZ - z) * vz) / (length * length);
             if (along < 0 || along > 1) return false;
             double distance =
-                    Math.hypot(layout.outletX - x - along * vx, layout.outletZ - z - along * vz);
+                    StrictMath.hypot(
+                            layout.outletX - x - along * vx, layout.outletZ - z - along * vz);
             // The complete terminal disk fits in a supplied, same-head wet capsule.
             return distance + layout.terminalRadius <= halfWidth;
         }
@@ -469,14 +471,14 @@ public final class LakeShape {
     public boolean allowsRiver(double x, double z) {
         double dx = x - geometry.anchorX, dz = z - geometry.anchorZ;
         return outletEnd == 0
-                || Math.hypot(dx, dz) >= outerRadius
+                || StrictMath.hypot(dx, dz) >= outerRadius
                 || dx * cos + dz * sin >= outletEnd;
     }
 
     public void apply(double x, double z, Hydro.Kind kind, long id, Hydro.Sample out) {
         if (out.wet) return;
         double dx = x - geometry.anchorX, dz = z - geometry.anchorZ;
-        if (Math.hypot(dx, dz) >= outerRadius) return;
+        if (StrictMath.hypot(dx, dz) >= outerRadius) return;
         geometry.sample(x, z, foundation, out.lakeGeometry);
         Lakes.Sample sample = out.lakeGeometry;
         if (sample.wet) {
@@ -494,7 +496,7 @@ public final class LakeShape {
             double weight = 1 - Rules.smooth((sample.shoreDistance - skirt) / skirt);
             if (outletEnd > 0) {
                 double along = dx * cos + dz * sin, at = Math.max(0, Math.min(outletEnd, along));
-                double distance = Math.hypot(along - at, -dx * sin + dz * cos);
+                double distance = StrictMath.hypot(along - at, -dx * sin + dz * cos);
                 // Pin the source channel bank, then feather its foundation outside that skirt.
                 weight =
                         Math.max(

@@ -208,11 +208,11 @@ public final class Terrain {
                 out.low >= out.middle && out.low >= out.high
                         ? Level.LOW
                         : out.high > out.middle ? Level.HIGH : Level.MIDDLE;
-        double broadSlope = Math.hypot(base.broadDx, base.broadDz);
+        double broadSlope = StrictMath.hypot(base.broadDx, base.broadDz);
         out.rugged = Rules.smooth((broadSlope - slopeStart) / (slopeEnd - slopeStart));
         // Analytic broad-intent gradient estimates a transition opportunity, not a measured
         // cliff/drop.
-        double reach = Math.hypot(base.intentDx, base.intentDz) * edgeSpan;
+        double reach = StrictMath.hypot(base.intentDx, base.intentDz) * edgeSpan;
         out.edge =
                 Rules.smooth(reach)
                         * (1 - out.low)

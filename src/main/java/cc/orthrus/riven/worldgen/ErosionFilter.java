@@ -55,7 +55,7 @@ public final class ErosionFilter {
         out.kernelVisits = 0;
         if (octaves < 0 || octaves > OCTAVES)
             throw new IllegalArgumentException("Erosion octave count");
-        double slope = Math.hypot(gradientX, gradientZ);
+        double slope = StrictMath.hypot(gradientX, gradientZ);
         double admission = smooth((slope - 0.025) / 0.30);
         if (admission == 0 || octaves == 0 || headroom <= 0) return;
         double requested = firstAmplitude * (2 - Math.scalb(1.0, 1 - octaves));
@@ -65,7 +65,7 @@ public final class ErosionFilter {
         double mask = easeOut(slope * 2), ridgeMask = mask, ridgeFade = fadeTarget;
         double wave = wavelength;
         for (int octave = 0; octave < octaves; octave++) {
-            double length = Math.hypot(gx, gz),
+            double length = StrictMath.hypot(gx, gz),
                     sideX = -gz / length * TAU / wave,
                     sideZ = gx / length * TAU / wave;
             phacelle(x, z, sideX, sideZ, wave, octave, out);
@@ -110,7 +110,7 @@ public final class ErosionFilter {
             }
         cosine /= total;
         sine /= total;
-        double magnitude = Math.max(0.5, Math.hypot(cosine, sine));
+        double magnitude = Math.max(0.5, StrictMath.hypot(cosine, sine));
         out.cosine = cosine / magnitude;
         out.sine = sine / magnitude;
     }

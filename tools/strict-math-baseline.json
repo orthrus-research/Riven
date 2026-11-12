@@ -1,0 +1,102 @@
+{
+  "comment": "Inexact java.lang.Math calls that predate tools/strict_math.py, by file. Converting one to StrictMath can change generated terrain; shrink with --update.",
+  "files": {
+    "src/main/java/cc/orthrus/riven/TreeShapes.java": {
+      "cos": 1,
+      "sin": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/BaseTerrainMap.java": {
+      "cos": 3,
+      "sin": 3,
+      "tanh": 3
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/Basin.java": {
+      "cos": 1,
+      "sin": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/Boulders.java": {
+      "cos": 1,
+      "pow": 2,
+      "sin": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/CoastForms.java": {
+      "atan2": 1,
+      "cos": 2,
+      "pow": 1,
+      "sin": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/CoastSediment.java": {
+      "atan2": 2,
+      "cos": 4,
+      "sin": 3
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/ColdTerrain.java": {
+      "atan2": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/Drainage.java": {
+      "sin": 3
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/ErosionFilter.java": {
+      "cos": 1,
+      "exp": 2,
+      "pow": 1,
+      "sin": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/Hydro.java": {
+      "atan2": 3,
+      "cos": 5,
+      "sin": 6
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/LakeShape.java": {
+      "atan2": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/MountainTerrain.java": {
+      "exp": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/OreMap.java": {
+      "cbrt": 2
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/PlateMap.java": {
+      "cos": 1,
+      "sin": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/ProvinceMap.java": {
+      "cos": 1,
+      "sin": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/RegionalLandmarks.java": {
+      "atan2": 2,
+      "cos": 6,
+      "exp": 12,
+      "pow": 2,
+      "sin": 9,
+      "tanh": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/RegionalTerrainPasses.java": {
+      "cos": 1,
+      "sin": 1,
+      "tanh": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/SeededNoise.java": {
+      "cos": 1,
+      "sin": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/SpineMap.java": {
+      "atan2": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/SubsurfaceClimate.java": {
+      "exp": 12
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/SurfaceCarvers.java": {
+      "atan2": 2,
+      "cos": 3,
+      "exp": 1,
+      "pow": 3,
+      "sin": 13,
+      "tanh": 1
+    },
+    "src/main/java/cc/orthrus/riven/worldgen/TemperatureMap.java": {
+      "pow": 1
+    }
+  }
+}

@@ -131,6 +131,7 @@ def quality(action: Literal["format", "check"]) -> None:
     run([python, "-m", "ruff", "check", *PYTHON_PATHS])
     run([python, "-m", "ruff", "format", "--check", *PYTHON_PATHS])
     run([python, "-m", "mypy", "--config-file", "pyproject.toml"])
+    run([python, "tools/strict_math.py"])
     check_java(local)
     print("Code-quality checks passed; no tests or game launches were run.", flush=True)
 

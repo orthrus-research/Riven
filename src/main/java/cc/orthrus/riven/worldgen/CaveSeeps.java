@@ -133,7 +133,7 @@ final class CaveSeeps {
                     boolean any = false;
                     for (int dz = -reach + 1; dz < reach; dz++)
                         for (int dx = -reach + 1; dx < reach; dx++) {
-                            double d = Math.hypot(dx, dz);
+                            double d = StrictMath.hypot(dx, dz);
                             if (d >= RADIUS) continue;
                             // The band fades out over its outer half, and its upper and lower
                             // rows are patchy, so a seep has ragged edges.

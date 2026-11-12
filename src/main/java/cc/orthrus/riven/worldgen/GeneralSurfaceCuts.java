@@ -469,7 +469,7 @@ public final class GeneralSurfaceCuts {
                 long owner = sites.key(Sites.Lane.CUTS, cx, cz);
                 double ax = sites.x(cx, owner),
                         az = sites.z(cz, owner),
-                        distance = Math.hypot(x - ax, z - az);
+                        distance = StrictMath.hypot(x - ax, z - az);
                 if (distance >= radius || !sites.admits(cx, cz, owner, Sites.Lane.CUTS)) continue;
                 Decision d = plan(cx, cz);
                 out.candidates++;

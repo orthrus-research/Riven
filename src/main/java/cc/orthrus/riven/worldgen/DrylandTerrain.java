@@ -190,7 +190,7 @@ public final class DrylandTerrain {
             out.reason = "HUMID";
             return;
         }
-        double slope = Math.hypot(base.broadDx, base.broadDz);
+        double slope = StrictMath.hypot(base.broadDx, base.broadDz);
         if (slope >= .55) {
             out.reason = "PARENT";
             return;

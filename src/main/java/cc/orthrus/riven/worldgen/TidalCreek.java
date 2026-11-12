@@ -81,7 +81,7 @@ final class TidalCreek {
                                 : Math.max(
                                         0,
                                         Math.min(1, ((px - ax) * dx + (pz - az) * dz) / length2));
-                double d = Math.hypot(px - ax - dx * t, pz - az - dz * t);
+                double d = StrictMath.hypot(px - ax - dx * t, pz - az - dz * t);
                 double r = halfWidth[k] + (halfWidth[k + 1] - halfWidth[k]) * t;
                 beyond = Math.min(beyond, d - r);
                 if (d >= r) continue;

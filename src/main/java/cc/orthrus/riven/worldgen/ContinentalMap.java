@@ -202,7 +202,7 @@ public final class ContinentalMap {
             outline.sampleScore(x, high, out.probe, out.work);
             gz = (out.probe.score - a) / (high - low);
         }
-        double length = Math.hypot(gx, gz);
+        double length = StrictMath.hypot(gx, gz);
         // Coast distance is the score itself: it changes about one block per block (more only
         // where coast detail steepens it) and is continuous everywhere. Dividing by its gradient
         // jumped across creases, where two lobes or continents meet in the union max: the central

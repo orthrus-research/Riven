@@ -87,7 +87,7 @@ final class FloodMap {
         // steepest slope (3.75 per wavelength for SeededNoise); a dam must be wider than that, or
         // water could step across it. The floor may change at most one block per block of travel.
         double k = WARP * 3.75 / WARP_WAVELENGTH;
-        if (Math.hypot(1 + k, k) >= 2 * DAM_HALF)
+        if (StrictMath.hypot(1 + k, k) >= 2 * DAM_HALF)
             throw new IllegalStateException("fill: edge warp too steep for damHalfWidthBlocks");
         if (FLOOR_WOBBLE * 3.75 / FLOOR_WAVELENGTH >= 0.5)
             throw new IllegalStateException("fill: floor wobble too steep for the seal");
@@ -188,7 +188,7 @@ final class FloodMap {
         // the higher level, so two bodies never meet and none meets a dry cave.
         for (Cell c : near) {
             if (c == owner || !(owner.flooded || c.flooded)) continue;
-            double dx = c.x - owner.x, dz = c.z - owner.z, length = Math.hypot(dx, dz);
+            double dx = c.x - owner.x, dz = c.z - owner.z, length = StrictMath.hypot(dx, dz);
             double distance = length / 2 - ((px - owner.x) * dx + (pz - owner.z) * dz) / length;
             if (distance >= DAM_MAXIMUM || out.dams == MAXIMUM_DAMS) continue;
             int lo = Integer.MAX_VALUE, hi = Integer.MIN_VALUE;

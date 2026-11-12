@@ -719,7 +719,7 @@ public final class ProvinceMap {
                 else beside = tectonicAt(i, j) == def.beside;
                 if (!beside) continue;
                 double[] q = seedPoint(i, j);
-                best = Math.min(best, Math.hypot(f.x - q[0], f.z - q[1]));
+                best = Math.min(best, StrictMath.hypot(f.x - q[0], f.z - q[1]));
             }
         return best;
     }
@@ -869,7 +869,7 @@ public final class ProvinceMap {
         for (int di = -2; di <= 2; di++)
             for (int dj = -2; dj <= 2; dj++) {
                 double[] p = seedPoint(ci + di, cj + dj);
-                double d = Math.hypot(warped[0] - p[0], warped[1] - p[1]);
+                double d = StrictMath.hypot(warped[0] - p[0], warped[1] - p[1]);
                 if (d < bestD) {
                     bestD = d;
                     best = key(ci + di, cj + dj);
@@ -898,7 +898,7 @@ public final class ProvinceMap {
         int first = -1, second = -1;
         for (int k = 0; k < 25; k++) {
             double[] p = seedPoint(ci + k / 5 - 2, cj + k % 5 - 2);
-            d[k] = Math.hypot(wx - p[0], wz - p[1]);
+            d[k] = StrictMath.hypot(wx - p[0], wz - p[1]);
             if (first < 0 || d[k] < d[first]) {
                 second = first;
                 first = k;
@@ -953,7 +953,7 @@ public final class ProvinceMap {
         int first = 0;
         for (int k = 0; k < 25; k++) {
             double[] p = seedPoint(ci + k / 5 - 2, cj + k % 5 - 2);
-            d[k] = Math.hypot(wx - p[0], wz - p[1]);
+            d[k] = StrictMath.hypot(wx - p[0], wz - p[1]);
             if (d[k] < d[first]) first = k;
         }
         double weights = 0;
@@ -982,7 +982,7 @@ public final class ProvinceMap {
         int first = 0;
         for (int k = 0; k < 25; k++) {
             double[] p = seedPoint(ci + k / 5 - 2, cj + k % 5 - 2);
-            d[k] = Math.hypot(wx - p[0], wz - p[1]);
+            d[k] = StrictMath.hypot(wx - p[0], wz - p[1]);
             if (d[k] < d[first]) first = k;
         }
         double ground = 0, relief = 0, ridged = 0, plateau = 0, weights = 0;

@@ -291,7 +291,7 @@ public final class VolcanicTerrain {
                                         step(middle[i], middle[i - 1]),
                                         step(middle[i + 1], middle[i])),
                         sz = Math.max(step(middle[i], previous[i]), step(row[i], middle[i]));
-                double slope = Math.hypot(sx, sz) / step;
+                double slope = StrictMath.hypot(sx, sz) / step;
                 if (!Double.isFinite(slope)) return reject("UNKNOWN_STENCIL", bounds);
                 bounds.slope = Math.max(bounds.slope, slope);
                 bounds.stencils++;

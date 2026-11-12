@@ -128,7 +128,7 @@ final class CavePools {
         for (int pass = 0; pass < 2; pass++)
             for (int dz = -reach; dz <= reach; dz++)
                 for (int dx = -reach; dx <= reach; dx++) {
-                    double d = Math.hypot(dx, dz);
+                    double d = StrictMath.hypot(dx, dz);
                     if (d >= radius + RING || (pass == 0) == (d < radius)) continue;
                     carver.sample(cx + dx, cz + dz, s);
                     CaveMap.Voids v = s.caves;
@@ -164,7 +164,7 @@ final class CavePools {
         for (int dj = -1; dj <= 1; dj++)
             for (int di = -1; di <= 1; di++)
                 for (Pool p : cell(ci + di, cj + dj)) {
-                    double d = Math.hypot(x - p.x, z - p.z);
+                    double d = StrictMath.hypot(x - p.x, z - p.z);
                     if (d >= p.radius + RING) continue;
                     for (int k = 0; k < v.count(); k++) {
                         if (v.lo[k] > p.level || v.hi[k] <= p.level) continue;

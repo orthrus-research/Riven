@@ -150,7 +150,7 @@ riven = [
     ], jobs = ["quality", "riven-build"] },
   { paths = ["tools/atlas/**", "tools/atlas_golden.py", "tools/terrain_atlas.py", "tools/run_check.py", "tools/checks/**", "tools/atlas-golden.json"], jobs = ["quality", "atlas-golden", "definitions", "sample-history", "variant-coverage"] },
   { paths = ["tools/build_riven.py"], jobs = ["quality", "riven-build"] },
-  { paths = ["tools/**/*.py", "tools/content/**", "pyproject.toml"], jobs = ["quality"] },
+  { paths = ["tools/**/*.py", "tools/content/**", "tools/strict-math-baseline.json", "pyproject.toml"], jobs = ["quality"] },
 ]
 # Riven builds against the pinned Cubature JARs, so a Cubature change reaches only its own build
 # and the tool tests and types in quality.

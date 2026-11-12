@@ -153,7 +153,8 @@ public final class SubsurfaceClimate {
                             ? Math.max(0, Math.max(y - g.chamberTop, g.chamberBottom - y))
                             : Math.abs(y - g.chamberCentreY);
             celsius +=
-                    CHAMBER_CELSIUS * Math.exp(-Math.hypot(g.chamberGap, vertical) / CHAMBER_REACH);
+                    CHAMBER_CELSIUS
+                            * Math.exp(-StrictMath.hypot(g.chamberGap, vertical) / CHAMBER_REACH);
         }
 
         // Water peaks at the water table. Below it, rock is saturated just under the table and

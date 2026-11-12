@@ -1343,7 +1343,7 @@ public final class CaveMap {
             edge[0] = Double.POSITIVE_INFINITY;
             for (JointDomain d : near) {
                 if (d == owner) continue;
-                double dx = d.x - owner.x, dz = d.z - owner.z, length = Math.hypot(dx, dz);
+                double dx = d.x - owner.x, dz = d.z - owner.z, length = StrictMath.hypot(dx, dz);
                 edge[0] =
                         Math.min(
                                 edge[0],

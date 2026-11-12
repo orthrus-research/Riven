@@ -93,7 +93,7 @@ public final class RegionalLandmarks {
                 intent.sample(ax, az, out.anchorBase);
                 if (out.anchorBase.ocean.marine) continue;
                 TerrainMap.BaseSample base = out.anchorBase;
-                double slope = Math.hypot(base.baseDx, base.baseDz);
+                double slope = StrictMath.hypot(base.baseDx, base.baseDz);
                 double[] regional =
                         DEFINITION.regionWeights[out.anchorBase.climate.region.ordinal()];
                 for (Family family : FAMILIES) {
