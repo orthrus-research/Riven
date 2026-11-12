@@ -526,7 +526,18 @@ final class TreeSites {
                         * structure(layer.index, x, z)
                         * (treelineMinimum + (1 - treelineMinimum) * toTreeline);
         if (TreeShapes.unit(id, 3) >= chance) return reject(out, "CHANCE");
-        int pick = Math.max(0, Rules.choose(part.weights, TreeShapes.unit(id, 4)));
+        // A species' weight here is its stand weight times how well the column suits it.
+        double[] weights = new double[part.weights.length];
+        double total = 0;
+        for (int i = 0; i < weights.length; i++) {
+            weights[i] =
+                    part.weights[i]
+                            * part.species[i].suitability(
+                                    s.sample.climate.celsius, s.sample.climate.moisture);
+            total += weights[i];
+        }
+        if (total <= 0) return reject(out, "NICHE");
+        int pick = Math.max(0, Rules.choose(weights, TreeShapes.unit(id, 4)));
         TreeShapes.Species species = part.species[pick];
         // The stem draws from its own hash: unit(id, 1) also places the candidate in its cell.
         int stem =

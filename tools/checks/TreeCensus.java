@@ -174,7 +174,7 @@ public final class TreeCensus {
                     StandardCharsets.UTF_8);
             Files.writeString(
                     out.resolve("sites.csv"),
-                    "window,x,z,layer,species,family,width,base,trunk,height,spreadX,spreadZ,leaves,logs,roots,key\n"
+                    "window,x,z,layer,species,family,width,base,trunk,height,spreadX,spreadZ,leaves,logs,roots,key,celsius,moisture\n"
                             + String.join("", sites),
                     StandardCharsets.UTF_8);
         }
@@ -258,6 +258,10 @@ public final class TreeCensus {
                     .append(roots)
                     .append(',')
                     .append(key(p, s, site.x, site.z))
+                    .append(',')
+                    .append(String.format(Locale.ROOT, "%.2f", s.climate.celsius))
+                    .append(',')
+                    .append(String.format(Locale.ROOT, "%.3f", s.climate.moisture))
                     .append('\n');
         }
         return b.toString();

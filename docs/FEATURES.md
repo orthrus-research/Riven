@@ -784,9 +784,9 @@ Three layers of candidate cells are visited in order: emergent (16-block cells, 
 canopy (6, 4) and understory (5, 3). A candidate stands down within its layer's spacing of a
 higher-priority candidate of its layer or of a valid site of an earlier layer, so understory trees
 stand under canopy and emergent crowns but never against their trunks. Each riven: biome lists
-stands, the first whose climate holds at the candidate deciding (cool woodland edges lean to birch
-and maple, warm beaches and deltas get palms and mangroves); a stand gives each layer a chance and
-species weights. A site is valid on its species' ground (grass and dirt, mud included; palms and
+stands, the first whose climate holds at the candidate deciding; a stand gives each layer a chance
+and species weights, which each species' niche scales by the column's climate (Species niches,
+below). A site is valid on its species' ground (grass and dirt, mud included; palms and
 mangroves also sand; cold conifers and birch also snow), every trunk column of a 2 x 2 trunk at one height, and with every column its tree reaches
 open sky from the tree's lowest block there up (`NativeColumns.surface`, one column's query), so no tree grows into a
 cliff, an overhang or water. 34 species over the 28 woods draw from four families: broadleaf (a
@@ -863,6 +863,20 @@ chance 1, held by its ground and the treeline; 32 at v134) and savanna, whose 90
 height includes its neighbours' trees within the ecotone. Leaves per hectare stay under double
 v135 in every forest (temperate rainforest 1.73x); two open hill biomes pass it as forest trees
 feather in (rugged hills 1,961 to 5,708, cold hills 1,307 to 3,128).
+
+**Species niches** (trees revision 9, terrain-v138): every species gives the climate it grows in
+(`niche`: `celsius` and `moisture`, each a trapezoid a, b, c, d: nothing below a, full from b to c,
+nothing above d), and a candidate chooses its species by stand weight times how well its column's
+effective climate suits each one; where none suits, no tree stands (`NICHE`). Species therefore
+turn over along climate gradients inside one stand, and the stands that switched at hard
+temperatures (boreal forest, temperate woodland, beach, delta wetland) are single stands again,
+their palms and mangroves held to warm columns by niche. Tree ferns are montane (full 11-21 C on
+wet ground) and lowland rainforest understory weights them half as before; oaks reach dry ground
+(full from moisture 0.32), as in oak savanna. Census, seed 2485331 at 32 km: tree fern falls from the
+most common species (11.0% of all stems) out of the first six; beech gains toward the warm end of
+temperate woodland; the cloud forest, 3-15 C by its climate, holds alder, maple and oak and no
+strangler fig; forest signatures hold as at v137; open biomes thin at their dry and cold margins
+(grassland 10.8 to 7.4 stems/ha, cold uplands 9.7 to 7.4).
 
 **Ground cover** (prototype, ground-cover-v2, terrain-v99, `riven-ground-cover.json`,
 `GroundCover`): Riven places the plants and decals on the ground itself, on land and in and under

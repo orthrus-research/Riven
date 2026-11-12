@@ -104,6 +104,13 @@ final class TreeShapes {
         final int offset;
 
         final double density;
+
+        /**
+         * The climate a species grows in (niche: celsius and moisture, each four values a, b, c, d):
+         * none below a, rising to full at b, full to c, none above d; null grows anywhere.
+         */
+        private final double[] nicheCelsius, nicheMoisture;
+
         // Broadleaf: a growth form's skeleton, leaf clusters of crown radius and depth on its
         // twigs over an envelope of width and base (fractions of the tree's height), and hanging
         // strands.
@@ -204,6 +211,9 @@ final class TreeShapes {
                 throw new IllegalStateException("limitBlocks must hold heightBlocks: " + id);
             reference = (height[0] + height[1]) / 2.0;
             density = j.has("density") ? Rules.number(j, "density", 0, 1) : 0.7;
+            JsonObject niche = j.has("niche") ? j.getAsJsonObject("niche") : null;
+            nicheCelsius = niche != null ? trapezoid(niche, "celsius", -60, 60, id) : null;
+            nicheMoisture = niche != null ? trapezoid(niche, "moisture", -1, 2, id) : null;
             JsonObject none = new JsonObject();
             JsonObject crown = j.has("crown") ? j.getAsJsonObject("crown") : none;
             JsonObject root = j.has("roots") ? j.getAsJsonObject("roots") : none;
@@ -361,6 +371,31 @@ final class TreeShapes {
 
         int height(long id) {
             return height(id, height[0], height[1]);
+        }
+
+        /** How well a column's effective climate suits the species, 0 to 1. */
+        double suitability(double celsius, double moisture) {
+            if (nicheCelsius == null) return 1;
+            return ramp(nicheCelsius, celsius) * ramp(nicheMoisture, moisture);
+        }
+
+        private static double ramp(double[] t, double v) {
+            if (v <= t[0] || v >= t[3]) return 0;
+            if (v < t[1]) return (v - t[0]) / (t[1] - t[0]);
+            if (v > t[2]) return (t[3] - v) / (t[3] - t[2]);
+            return 1;
+        }
+
+        private static double[] trapezoid(
+                JsonObject j, String key, double min, double max, String id) {
+            JsonArray a = j.getAsJsonArray(key);
+            if (a == null || a.size() != 4)
+                throw new IllegalStateException("Niche " + key + ": " + id);
+            double[] t = new double[4];
+            for (int i = 0; i < 4; i++) t[i] = a.get(i).getAsDouble();
+            if (!(t[0] >= min && t[0] < t[1] && t[1] <= t[2] && t[2] < t[3] && t[3] <= max))
+                throw new IllegalStateException("Niche " + key + " out of order: " + id);
+            return t;
         }
 
         /** A stem height in [low, high], by the tree's id. */

@@ -351,8 +351,8 @@ records both JVMs with JFR's profile settings for attributing a phase further.
 - `cc.orthrus.riven.TreeCensus` takes `<new output dir> [seed [layout [windows per key [window
   blocks]]]]` (defaults 2485331, 4, 5, 256) through `runDiagnostics` with the mapped game option.
   It samples biomes and variants on a 1024-block grid, takes windows per biome or variant by hash,
-  and records every production tree site there with its drawn shape, plus each key's dry-land
-  area. `tools/tree_census.py <dir>` writes `report.md`: stems per hectare by layer, height spread,
+  and records every production tree site there with its drawn shape and its column's effective climate, plus
+  each key's dry-land area. `tools/tree_census.py <dir>` writes `report.md`: stems per hectare by layer, height spread,
   species shares, crown spread and leaf volume against height, and the Clark-Evans ratio and
   quadrat dispersion of the upper layers. The canonical census takes about 70 s.
 - `cc.orthrus.riven.TreeGallery` takes `<out.png> [trees per species]` through `runDiagnostics`
