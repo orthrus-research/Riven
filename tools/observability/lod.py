@@ -589,7 +589,55 @@ def reversion(rows, client_rows):
         if r[OP] == "merge-same" and r[A]:
             lost[r[POS] & 0x7F] += r[A]
     out["fineColumnsLostByDetail"] = {str(d): lost[d] for d in sorted(lost)}
+    out["shown"] = shown_coarse(rows, client_rows)
     return out
+
+
+COPIED_SHARE = 0.5
+FULL_SHARE = 0.1
+
+
+def shown_coarse(rows, client_rows):
+    """What render builds read (LabLodMerge render-data), by phase and detail.
+
+    A build is coarse when more than half of its columns with data were copied down from a coarser
+    level; a regression is a coarse build of a section whose previous build was full (under a tenth
+    copied), and a recovery is the reverse. Phases follow the timeline's carried-forward speed by
+    the client's second, so this assumes the client's clock is the timeline's base.
+    """
+    speeds = {}
+    speed = None
+    for row in rows:
+        speed = row.get("speedBlocksPerSecond", speed)
+        speeds[int(row["second"])] = speed
+
+    def phase(t):
+        v = speeds.get(int(t // 1e9))
+        return "unknown" if v is None else "moving" if v >= MOVING_BLOCKS_PER_SECOND else "resting"
+
+    last: dict[int, float] = {}
+    out: dict[str, dict[str, Counter[str]]] = defaultdict(lambda: defaultdict(Counter))
+    for r in client_rows:
+        if r[OP] != "render-data":
+            continue
+        data = r[A] + r[B]
+        if not data:
+            continue
+        share = r[A] / data
+        c = out[phase(r[T])][str(r[POS] & 0x7F)]
+        c["builds"] += 1
+        if share > COPIED_SHARE:
+            c["coarse"] += 1
+        before = last.get(r[POS])
+        if before is not None and before < FULL_SHARE and share > COPIED_SHARE:
+            c["regressions"] += 1
+        if before is not None and before > COPIED_SHARE and share < FULL_SHARE:
+            c["recoveries"] += 1
+        last[r[POS]] = share
+    return {
+        p: {d: dict(v) for d, v in sorted(ds.items(), key=lambda i: int(i[0]))}
+        for p, ds in out.items()
+    }
 
 
 def lod_report(directory, output, mode="auto", charts=True):
@@ -724,7 +772,7 @@ def lod_report(directory, output, mode="auto", charts=True):
     if any(
         op in info["operations"]
         for info in report["sides"].values()
-        for op in ("merge-same", "merge-stamp", "fallback")
+        for op in ("merge-same", "merge-stamp", "fallback", "render-data")
     ):
         report["reversion"] = reversion(report["timeline"], windowed.get("client", []))
     report["warnings"] = warnings
@@ -877,6 +925,15 @@ def render_text(report):
                 f"hidden children mean "
                 f"{v['meanHiddenChildren']} under {v['meanParentsHiding']} parents, "
                 f"{v['fallbackStartsHiding']} fallbacks began hiding"
+            )
+        for phase, details in rv.get("shown", {}).items():
+            parts = [
+                f"{2 ** (int(d) - SECTION_MIN_DETAIL)}-block {v.get('coarse', 0)}/{v['builds']}"
+                f" (-{v.get('regressions', 0)} +{v.get('recoveries', 0)})"
+                for d, v in details.items()
+            ]
+            lines.append(
+                f"  {phase} builds coarse/all (regressions, recoveries): " + ", ".join(parts)
             )
         if rv["fineColumnsLostByDetail"]:
             lines.append(

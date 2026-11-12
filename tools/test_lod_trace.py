@@ -223,6 +223,9 @@ class ReversionTest(unittest.TestCase):
             (int(5.5 * second), "merge-same", coarse, 0, 0, 30, 5),
             (int(5.6 * second), "merge-restore", coarse, 800),
             (int(5.7 * second), "fallback", 0, 1, 0, 0),
+            (int(0.5 * second), "render-data", fine, 0, 4096, 0),
+            (int(2.2 * second), "render-data", fine, 3000, 1000, 96),
+            (int(5.2 * second), "render-data", fine, 0, 4096, 0),
         ]
         server = [(int(1.2 * second), "merge-same", coarse, 7, 0, 0, 5)]
         with tempfile.TemporaryDirectory() as tmp:
@@ -242,6 +245,10 @@ class ReversionTest(unittest.TestCase):
         self.assertEqual(rv["resting"]["fineColumnsRestored"], 800)
         self.assertEqual(rv["resting"]["meanHiddenChildren"], 0)
         self.assertEqual(rv["fineColumnsLostByDetail"], {"7": 100, "10": 900})
+        shown = rv["shown"]
+        self.assertEqual(shown["moving"]["7"], {"builds": 1, "coarse": 1, "regressions": 1})
+        self.assertEqual(shown["resting"]["7"], {"builds": 1, "recoveries": 1})
+        self.assertEqual(shown["unknown"]["7"], {"builds": 1})
         self.assertIn("LOD reversion", lod_report_text(report))
 
 
