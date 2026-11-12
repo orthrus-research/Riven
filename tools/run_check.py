@@ -8,9 +8,11 @@ with the atlas venv interpreter; the exit status is the check's.
 """
 
 import argparse
+import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -26,8 +28,10 @@ def main() -> None:
     source = build.ROOT / "tools/checks" / f"{args.check}.java"
     if not source.is_file():
         sys.exit(f"no check {source}")
+    started = time.monotonic()
     tree = build.source_tree(None)
     classes = build.compile_sampler(tree, source)
+    compiled = time.monotonic()
     command = [
         str(build.java()),
         "-cp",
@@ -35,7 +39,14 @@ def main() -> None:
         f"{build.PACKAGE}.worldgen.{args.check}",
         *args.arguments,
     ]
-    sys.exit(subprocess.run(command).returncode)
+    code = subprocess.run(command).returncode
+    # tools/actions.py keeps "timing " lines in the run summary for tools/ci_timing.py.
+    seconds = {
+        "compile": round(compiled - started, 1),
+        "run": round(time.monotonic() - compiled, 1),
+    }
+    print("timing " + json.dumps({"check": args.check} | seconds), flush=True)
+    sys.exit(code)
 
 
 if __name__ == "__main__":

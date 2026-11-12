@@ -162,30 +162,64 @@ def prepare(source: Source):
     return tree, compile_sampler(tree)
 
 
-def run_sampler(source: Source, out: Path, options: dict, overrides_dir: Path):
-    """Run TerrainAtlas with key=value options; overrides precede packaged definitions."""
-    tree, classes = prepare(source)
-    overrides = write_overrides(tree, source.sets, overrides_dir)
-    classpath = [str(p) for p in (overrides, classes, gson()) if p is not None]
-    # The raster holds about 140 bytes per pixel and ZGC wants half again as headroom; large map
-    # windows need more than the 8 GB floor (an 8 km window at one block per pixel takes 18 GB).
+def heap_gib(options: dict) -> int:
+    """Heap for one raster: about 140 bytes per pixel and ZGC wants half again as headroom; large
+    map windows need more than the 8 GB floor (an 8 km window at one block per pixel takes 18 GB)."""
     pixels = int(options.get("width") or 512) * int(options.get("height") or 512)
-    heap = max(8, -(-pixels * 210 // 2**30) + 4)
-    command = [
+    return max(8, -(-pixels * 210 // 2**30) + 4)
+
+
+def sampler_command(classpath: list[str], heap: int, arguments: list[str]) -> list[str]:
+    return [
         str(java()),
         f"-Xmx{heap}G",
         "-XX:+UseZGC",
         "-cp",
         os.pathsep.join(classpath),
         PACKAGE + ".worldgen.TerrainAtlas",
-        f"out={out}",
-    ] + [f"{k}={v}" for k, v in options.items() if v is not None]
-    out.mkdir(parents=True, exist_ok=True)
+        *arguments,
+    ]
+
+
+def run_logged(command: list[str], log: Path) -> float:
+    """Run the sampler, keep its output in log and echo it without progress lines; seconds."""
     started = time.monotonic()
     result = subprocess.run(command, capture_output=True, text=True)
-    (out / "sampler.log").write_text(result.stdout + result.stderr, encoding="utf-8")
+    log.write_text(result.stdout + result.stderr, encoding="utf-8")
     if result.returncode != 0:
-        sys.exit(f"sampler failed; see {out / 'sampler.log'}\n" + result.stderr[-2000:])
+        sys.exit(f"sampler failed; see {log}\n" + result.stderr[-2000:])
     lines = [line for line in result.stdout.splitlines() if not line.startswith("rows ")]
     print("\n".join(lines))
     return time.monotonic() - started
+
+
+def run_sampler(source: Source, out: Path, options: dict, overrides_dir: Path):
+    """Run TerrainAtlas with key=value options; overrides precede packaged definitions."""
+    tree, classes = prepare(source)
+    overrides = write_overrides(tree, source.sets, overrides_dir)
+    classpath = [str(p) for p in (overrides, classes, gson()) if p is not None]
+    arguments = [f"out={out}"] + [f"{k}={v}" for k, v in options.items() if v is not None]
+    out.mkdir(parents=True, exist_ok=True)
+    return run_logged(sampler_command(classpath, heap_gib(options), arguments), out / "sampler.log")
+
+
+def run_batch(classes: Path, windows: list[tuple[Path, dict]], parallel: int, log: Path) -> float:
+    """Sample several working-tree windows in one TerrainAtlas JVM, in the listed order and
+    `parallel` at a time; windows of one seed and scale share their regional plans. Seconds."""
+    spec = {
+        "parallel": parallel,
+        "windows": [
+            {"out": str(out)} | {k: str(v) for k, v in options.items() if v is not None}
+            for out, options in windows
+        ],
+    }
+    for out, _ in windows:
+        out.mkdir(parents=True, exist_ok=True)
+    log.parent.mkdir(parents=True, exist_ok=True)
+    batch = log.with_suffix(".json")
+    batch.write_text(json.dumps(spec, indent=2), encoding="utf-8")
+    # The rasters at once in the heap; the plans they share are counted once per window as before.
+    heaps = sorted((heap_gib(options) for _, options in windows), reverse=True)
+    heap = sum(heaps[: max(1, parallel)])
+    command = sampler_command([str(classes), str(gson())], heap, [f"batch={batch}"])
+    return run_logged(command, log)

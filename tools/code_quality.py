@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import urllib.request
 from pathlib import Path
 from typing import Literal
@@ -25,7 +26,12 @@ def run(arguments: list[str], environment: dict[str, str] | None = None) -> None
         else arguments[:10] + [f"... ({len(arguments) - 10} more arguments)"]
     )
     print("Running: " + " ".join(display), flush=True)
+    started = time.monotonic()
     subprocess.run(arguments, cwd=ROOT, env=environment, check=True)
+    # tools/actions.py keeps "timing " lines in the run summary for tools/ci_timing.py.
+    name = " ".join(Path(a).name if i == 0 else a for i, a in enumerate(arguments[:4]))
+    timing = {"command": name, "seconds": round(time.monotonic() - started, 1)}
+    print("timing " + json.dumps(timing), flush=True)
 
 
 def settings() -> dict[str, str]:

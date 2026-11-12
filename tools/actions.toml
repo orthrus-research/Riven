@@ -13,6 +13,8 @@ check = ["quality", "regional-store", "drainage-prune", "regional-bake", "atlas-
 build = ["riven-build", "cubature-build"]
 ci = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
 full = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage", "smoke"]
+# ci with the golden windows resampled and timed; tools/ci_timing.py reports the run (riven.ps1 profile).
+profile = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden-profile", "definitions", "sample-history", "variant-coverage"]
 
 [jobs.quality]
 description = "Formatting, lint, types, both-loader compile, content assets and the Riven and Cubature tool tests"
@@ -39,6 +41,12 @@ steps = [
 description = "Generated terrain matches the golden atlas digests, with determinism verified"
 steps = [
   { name = "golden digests", run = ["{atlas_python}", "tools/atlas_golden.py", "check", "--verify"] },
+]
+
+[jobs.atlas-golden-profile]
+description = "atlas-golden with every window resampled and a timed second pass over its built plans"
+steps = [
+  { name = "golden digests", run = ["{atlas_python}", "tools/atlas_golden.py", "check", "--verify", "--profile"] },
 ]
 
 [jobs.definitions]

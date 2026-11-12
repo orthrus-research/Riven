@@ -1,6 +1,6 @@
 [CmdletBinding(PositionalBinding=$false)]
 param(
-    [Parameter(Position=0)][ValidateSet('setup','build','prepare','play','command','check','quick','ci','full','actions')][string]$Action='play',
+    [Parameter(Position=0)][ValidateSet('setup','build','prepare','play','command','check','quick','ci','full','profile','actions')][string]$Action='play',
     [string]$Name,
     [int]$Port=25870,
     [string]$Text,
@@ -14,6 +14,11 @@ try {
     } elseif ($Action -in 'check','quick','ci','full') {
         # Local actions: tools/actions.toml defines the workflows.
         & python "$PSScriptRoot/tools/actions.py" $Action @Rest
+    } elseif ($Action -eq 'profile') {
+        # ci with timed golden windows, then a Markdown timing report beside the run's summary.
+        & python "$PSScriptRoot/tools/actions.py" profile @Rest
+        if ($LASTEXITCODE -ne 0) { Write-Warning "profile run failed ($LASTEXITCODE); reporting what ran" }
+        & python "$PSScriptRoot/tools/ci_timing.py"
     } elseif ($Action -eq 'actions') {
         & python "$PSScriptRoot/tools/actions.py" @Rest
     } else {

@@ -8,7 +8,9 @@ import cc.orthrus.riven.contrib.volcanic.VolcanicKernels;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,6 +46,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  * pixel for maxima), {@code sites=true}. {@code section=x1,z1,x2,z2} with {@code spacing} writes a
  * cross-section instead. Raw layers are little-endian; {@code atlas.json} carries legends and a
  * SHA-256 digest of every deterministic layer, independent of threads and sampling order.
+ * {@code repeat=true} times a second sampling pass over the built plans (output discarded).
+ *
+ * <p>{@code batch=file.json} samples several rasters in one JVM instead: {@code {"parallel": n,
+ * "windows": [{key: value, ...}, ...]}}, each window taking the raster arguments above. Windows
+ * start in the listed order, {@code parallel} at a time, and windows of one seed and scale share
+ * one {@link GenerationMaps}, so its plans are built once. A window's digest must not depend on
+ * which windows ran before it; the golden check proves that by sampling the list again reversed.
  */
 public final class TerrainAtlas {
     private static final String[] STAGE_NAMES = {
@@ -284,24 +294,102 @@ public final class TerrainAtlas {
     }
 
     public static void main(String[] args) throws Exception {
+        // JVM launch to main: class loading and startup, which every separate JVM pays again.
+        double startup =
+                (System.currentTimeMillis()
+                                - java.lang.management.ManagementFactory.getRuntimeMXBean()
+                                        .getStartTime())
+                        / 1e3;
         Map<String, String> a = new HashMap<>();
         for (String arg : args) {
             int eq = arg.indexOf('=');
             if (eq < 1) throw new IllegalArgumentException("Expected key=value: " + arg);
             a.put(arg.substring(0, eq), arg.substring(eq + 1));
         }
+        if (a.containsKey("batch")) {
+            batch(Paths.get(a.get("batch")), startup);
+            return;
+        }
         Path out = Paths.get(required(a, "out"));
         long seed = Long.parseLong(required(a, "seed"));
         Files.createDirectories(out);
         long started = System.nanoTime();
-        GenerationMaps maps =
-                new GenerationMaps(
-                        seed,
-                        new WorldScale(
-                                a.containsKey("scale") ? Double.parseDouble(a.get("scale")) : 1));
+        GenerationMaps maps = new GenerationMaps(seed, scale(a));
         double mapSeconds = (System.nanoTime() - started) / 1e9;
         if (a.containsKey("section")) section(maps, seed, out, a);
-        else raster(maps, seed, out, a, mapSeconds);
+        else {
+            JsonObject timing = new JsonObject();
+            timing.addProperty("startup", round(startup));
+            timing.addProperty("maps", round(mapSeconds));
+            raster(maps, seed, out, a, timing);
+        }
+    }
+
+    private static WorldScale scale(Map<String, String> a) {
+        return new WorldScale(a.containsKey("scale") ? Double.parseDouble(a.get("scale")) : 1);
+    }
+
+    /** Several rasters in this JVM; windows of one seed and scale share their maps. */
+    private static void batch(Path file, double startup) throws Exception {
+        JsonObject spec = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+        int parallel = spec.has("parallel") ? spec.get("parallel").getAsInt() : 1;
+        List<Map<String, String>> windows = new ArrayList<>();
+        for (JsonElement e : spec.getAsJsonArray("windows")) {
+            Map<String, String> a = new HashMap<>();
+            for (Map.Entry<String, JsonElement> kv : e.getAsJsonObject().entrySet())
+                a.put(kv.getKey(), kv.getValue().getAsString());
+            windows.add(a);
+        }
+        Map<String, CompletableFuture<GenerationMaps>> built = new ConcurrentHashMap<>();
+        java.lang.management.RuntimeMXBean runtime =
+                java.lang.management.ManagementFactory.getRuntimeMXBean();
+        ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, parallel));
+        List<Future<?>> work = new ArrayList<>();
+        for (Map<String, String> a : windows)
+            work.add(
+                    pool.submit(
+                            () -> {
+                                double begun = runtime.getUptime() / 1e3;
+                                long seed = Long.parseLong(required(a, "seed"));
+                                WorldScale world = scale(a);
+                                String key = seed + "@" + world.layout;
+                                CompletableFuture<GenerationMaps> mine = new CompletableFuture<>();
+                                CompletableFuture<GenerationMaps> other =
+                                        built.putIfAbsent(key, mine);
+                                long started = System.nanoTime();
+                                GenerationMaps maps;
+                                if (other == null) {
+                                    try {
+                                        maps = new GenerationMaps(seed, world);
+                                    } catch (Throwable t) {
+                                        mine.completeExceptionally(t);
+                                        throw t;
+                                    }
+                                    mine.complete(maps);
+                                } else maps = other.get();
+                                JsonObject timing = new JsonObject();
+                                timing.addProperty("startup", round(startup));
+                                // Building the maps, or waiting for the window that builds them.
+                                timing.addProperty(
+                                        "maps", round((System.nanoTime() - started) / 1e9));
+                                timing.addProperty("mapsShared", other != null);
+                                timing.addProperty("begun", round(begun));
+                                Path out = Paths.get(required(a, "out"));
+                                Files.createDirectories(out);
+                                raster(maps, seed, out, a, timing);
+                                return null;
+                            }));
+        try {
+            for (Future<?> f : work) f.get();
+        } finally {
+            pool.shutdown();
+        }
+        System.out.printf(
+                Locale.ROOT,
+                "batch: %d windows, %d map sets, %.1fs in this JVM%n",
+                windows.size(),
+                built.size(),
+                runtime.getUptime() / 1e3);
     }
 
     private static String required(Map<String, String> a, String key) {
@@ -315,7 +403,7 @@ public final class TerrainAtlas {
     }
 
     private static void raster(
-            GenerationMaps maps, long seed, Path out, Map<String, String> a, double mapSeconds)
+            GenerationMaps maps, long seed, Path out, Map<String, String> a, JsonObject timing)
             throws Exception {
         int width = integer(a, "width", 512), height = integer(a, "height", width);
         int step = integer(a, "step", 16), footprint = integer(a, "footprint", 1);
@@ -335,53 +423,28 @@ public final class TerrainAtlas {
                         java.lang.management.ManagementFactory.getOperatingSystemMXBean();
         long cpuStarted = os.getProcessCpuTime();
         long started = System.nanoTime();
-        ExecutorService pool = Executors.newFixedThreadPool(threads);
-        // Work goes out in tiles about one hydrology cell wide, spread across the window, so
-        // concurrent threads build different regional plans instead of queueing on one (rows put
-        // every thread on the same cell at once). Pixels are independent: order changes timing,
-        // never a sample.
-        int tile = Math.max(1, (int) Math.ceil(maps.terrain.hydro.cellBlocks / (double) step));
-        int tilesX = (width + tile - 1) / tile, tilesZ = (height + tile - 1) / tile;
-        int[] order = spread(tilesX * tilesZ);
-        AtomicInteger next = new AtomicInteger(), done = new AtomicInteger();
-        List<Future<?>> work = new ArrayList<>();
-        for (int t = 0; t < threads; t++)
-            work.add(
-                    pool.submit(
-                            () -> {
-                                TerrainMap.Sample s = new TerrainMap.Sample();
-                                TerrainMap.Sample sub = new TerrainMap.Sample();
-                                for (int n; (n = next.getAndIncrement()) < order.length; ) {
-                                    int k = order[reverse ? order.length - 1 - n : n];
-                                    int row0 = k / tilesX * tile, col0 = k % tilesX * tile;
-                                    int rows = Math.min(tile, height - row0);
-                                    int cols = Math.min(tile, width - col0);
-                                    for (int i = 0; i < rows * cols; i++) {
-                                        int j = reverse ? rows * cols - 1 - i : i;
-                                        fill(
-                                                maps,
-                                                habitats,
-                                                r,
-                                                row0 + j / cols,
-                                                col0 + j % cols,
-                                                minX,
-                                                minZ,
-                                                step,
-                                                s,
-                                                sub);
-                                    }
-                                    int d = done.incrementAndGet();
-                                    if (d % Math.max(1, order.length / 10) == 0)
-                                        System.out.printf("tiles %d/%d%n", d, order.length);
-                                }
-                                return null;
-                            }));
-        for (Future<?> f : work) f.get();
-        pool.shutdown();
+        sample(maps, habitats, r, minX, minZ, step, threads, reverse);
         double sampleSeconds = (System.nanoTime() - started) / 1e9;
         // Cores busy while sampling: process CPU over wall time (the log only, never the digest).
+        // Other windows in a batch share the process, so there it counts their work too.
         double busyCores = (os.getProcessCpuTime() - cpuStarted) / 1e9 / sampleSeconds;
+        if ("true".equals(a.get("repeat"))) {
+            // The same window again over plans the first pass built: the gap between the two
+            // passes estimates plan building. Its raster is discarded.
+            long again = System.nanoTime();
+            sample(
+                    maps,
+                    habitats,
+                    new Raster(width, height, footprint),
+                    minX,
+                    minZ,
+                    step,
+                    threads,
+                    reverse);
+            timing.addProperty("resampling", round((System.nanoTime() - again) / 1e9));
+        }
 
+        long finishing = System.nanoTime();
         List<List<String>> reasonNames = new ArrayList<>();
         for (int k = 0; k < STAGE_NAMES.length; k++) {
             List<String> names = new ArrayList<>();
@@ -404,7 +467,9 @@ public final class TerrainAtlas {
         }
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         write(out, r, digest);
+        double siteSeconds = 0;
         if (a.containsKey("sites")) {
+            long sitesStarted = System.nanoTime();
             // Site decisions are sequential and deterministic; they join the digest.
             String sites =
                     new GsonBuilder()
@@ -413,6 +478,7 @@ public final class TerrainAtlas {
                             .toJson(sites(maps, minX, minZ, width, height, step));
             byte[] bytes = sites.getBytes(StandardCharsets.UTF_8);
             bytes(out, "sites.json", bytes, digest);
+            siteSeconds = (System.nanoTime() - sitesStarted) / 1e9;
         }
 
         JsonObject j = new JsonObject();
@@ -427,9 +493,13 @@ public final class TerrainAtlas {
         j.addProperty("threads", threads);
         j.addProperty("order", reverse ? "reverse" : "forward");
         j.addProperty("digest", hex(digest.digest()));
-        JsonObject seconds = new JsonObject();
-        seconds.addProperty("maps", round(mapSeconds));
+        // Timing depends on threads, cache state and the host; atlas.json is not in the digest.
+        JsonObject seconds = timing.deepCopy();
         seconds.addProperty("sampling", round(sampleSeconds));
+        seconds.addProperty("busyCores", round(busyCores));
+        // Site decisions, then renumbering codes and writing layers (the rest of finishing).
+        seconds.addProperty("sites", round(siteSeconds));
+        seconds.addProperty("finish", round((System.nanoTime() - finishing) / 1e9 - siteSeconds));
         j.add("seconds", seconds);
         j.addProperty("waterTopY", TerrainHeightReference.DEFAULT.waterTopY);
         j.addProperty("seaLevel", TerrainHeightReference.DEFAULT.seaLevel);
@@ -500,6 +570,63 @@ public final class TerrainAtlas {
                 reverse ? "reverse" : "forward",
                 busyCores,
                 j.get("digest").getAsString());
+    }
+
+    /** Fills every pixel of the raster, tiles spread across {@code threads} threads. */
+    private static void sample(
+            GenerationMaps maps,
+            List<String> habitats,
+            Raster r,
+            int minX,
+            int minZ,
+            int step,
+            int threads,
+            boolean reverse)
+            throws Exception {
+        int width = r.width, height = r.height;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        // Work goes out in tiles about one hydrology cell wide, spread across the window, so
+        // concurrent threads build different regional plans instead of queueing on one (rows put
+        // every thread on the same cell at once). Pixels are independent: order changes timing,
+        // never a sample.
+        int tile = Math.max(1, (int) Math.ceil(maps.terrain.hydro.cellBlocks / (double) step));
+        int tilesX = (width + tile - 1) / tile, tilesZ = (height + tile - 1) / tile;
+        int[] order = spread(tilesX * tilesZ);
+        AtomicInteger next = new AtomicInteger(), done = new AtomicInteger();
+        List<Future<?>> work = new ArrayList<>();
+        for (int t = 0; t < threads; t++)
+            work.add(
+                    pool.submit(
+                            () -> {
+                                TerrainMap.Sample s = new TerrainMap.Sample();
+                                TerrainMap.Sample sub = new TerrainMap.Sample();
+                                for (int n; (n = next.getAndIncrement()) < order.length; ) {
+                                    int k = order[reverse ? order.length - 1 - n : n];
+                                    int row0 = k / tilesX * tile, col0 = k % tilesX * tile;
+                                    int rows = Math.min(tile, height - row0);
+                                    int cols = Math.min(tile, width - col0);
+                                    for (int i = 0; i < rows * cols; i++) {
+                                        int j = reverse ? rows * cols - 1 - i : i;
+                                        fill(
+                                                maps,
+                                                habitats,
+                                                r,
+                                                row0 + j / cols,
+                                                col0 + j % cols,
+                                                minX,
+                                                minZ,
+                                                step,
+                                                s,
+                                                sub);
+                                    }
+                                    int d = done.incrementAndGet();
+                                    if (d % Math.max(1, order.length / 10) == 0)
+                                        System.out.printf("tiles %d/%d%n", d, order.length);
+                                }
+                                return null;
+                            }));
+        for (Future<?> f : work) f.get();
+        pool.shutdown();
     }
 
     private static void fill(

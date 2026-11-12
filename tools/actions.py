@@ -94,8 +94,14 @@ def missing_interpreter(command):
     return first.is_absolute() and not first.is_file()
 
 
+TIMING = "timing "
+
+
 def run_step(command, log, verbose):
+    """(exit code, seconds, timing records): a step may print `timing {json}` lines, which
+    tools/ci_timing.py reads from the run summary."""
     started = time.monotonic()
+    timings = []
     with log.open("w", encoding="utf-8", errors="replace") as stream:
         stream.write("$ " + " ".join(command) + "\n\n")
         stream.flush()
@@ -112,10 +118,15 @@ def run_step(command, log, verbose):
         assert process.stdout is not None
         for line in process.stdout:
             stream.write(line)
+            if line.startswith(TIMING):
+                try:
+                    timings.append(json.loads(line[len(TIMING) :]))
+                except ValueError:
+                    pass
             if verbose:
                 print("    " + line, end="", flush=True)
         code = process.wait()
-    return code, time.monotonic() - started
+    return code, time.monotonic() - started, timings
 
 
 def tail(log, lines=15):
@@ -305,9 +316,9 @@ def main():
                 log.parent.mkdir(parents=True, exist_ok=True)
                 if missing_interpreter(command):
                     log.write_text(f"Missing interpreter: {command[0]}\n", encoding="utf-8")
-                    code, seconds = 127, 0.0
+                    code, seconds, timings = 127, 0.0, []
                 else:
-                    code, seconds = run_step(command, log, args.verbose)
+                    code, seconds, timings = run_step(command, log, args.verbose)
                 ok = code == 0
                 steps.append(
                     {
@@ -316,6 +327,7 @@ def main():
                         "seconds": round(seconds, 1),
                         "log": str(log),
                     }
+                    | ({"timing": timings} if timings else {})
                 )
                 print(
                     f"  {'ok  ' if ok else 'FAIL'} {step['name']:<18} {seconds:7.1f} s", flush=True
