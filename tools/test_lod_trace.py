@@ -206,3 +206,44 @@ class LodTraceTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReversionTest(unittest.TestCase):
+    def test_lost_columns_and_hidden_children_split_by_movement(self):
+        coarse, fine = _encode(10, 1, 1), _encode(7, 3, 3)
+        second = 1_000 * MS
+        # Player flies 20 blocks/s for 3 s, then rests 3 s.
+        player = [(t * second, "player", 0, 20 * min(t, 3), 100, 0) for t in range(7)]
+        client = player + [
+            (int(1.5 * second), "merge-same", coarse, 900, 40, 12, 5),
+            (int(2.5 * second), "merge-same", fine, 100, 0, 0, 5),
+            (int(2.5 * second), "merge-stamp", fine, 64),
+            (int(2.6 * second), "fallback-start", fine, 3, 4),
+            (int(2.7 * second), "fallback", 0, 6, 2, 5),
+            (int(5.5 * second), "merge-same", coarse, 0, 0, 30, 5),
+            (int(5.7 * second), "fallback", 0, 1, 0, 0),
+        ]
+        server = [(int(1.2 * second), "merge-same", coarse, 7, 0, 0, 5)]
+        with tempfile.TemporaryDirectory() as tmp:
+            trace = Path(tmp) / "trace"
+            trace.mkdir()
+            write(trace, "client", client, 1_000_000)
+            write(trace, "server", server, 1_000_000)
+            report = lod_report(trace, Path(tmp) / "out", charts=False)["report"]
+        rv = report["reversion"]
+        self.assertEqual(rv["moving"]["fineColumnsLost"], 1000)
+        self.assertEqual(rv["moving"]["columnsStamped"], 64)
+        self.assertEqual(rv["moving"]["serverFineColumnsLost"], 7)
+        self.assertEqual(rv["moving"]["fallbackStartsHiding"], 1)
+        self.assertEqual(rv["moving"]["meanHiddenChildren"], 5)
+        self.assertEqual(rv["resting"]["fineColumnsLost"], 0)
+        self.assertEqual(rv["resting"]["columnsFilled"], 30)
+        self.assertEqual(rv["resting"]["meanHiddenChildren"], 0)
+        self.assertEqual(rv["fineColumnsLostByDetail"], {"7": 100, "10": 900})
+        self.assertIn("LOD reversion", lod_report_text(report))
+
+
+def lod_report_text(report):
+    from observability.lod import render_text
+
+    return render_text(report)

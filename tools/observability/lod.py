@@ -244,6 +244,7 @@ def timeline(side_rows, origin, bin_seconds=1.0):
     bins: defaultdict[int, Counter[str]] = defaultdict(Counter)
     depths = {}
     track = {}
+    fallback = {}
     for side, rows in side_rows.items():
         for r in rows:
             b = (r[T] + origin[side] - origin["base"]) // width
@@ -267,13 +268,30 @@ def timeline(side_rows, origin, bin_seconds=1.0):
                 }
             elif op == "player":
                 track[b] = (r[A], r[B], r[C])
+            elif op == "merge-same":
+                prefix = "" if side == "client" else "server"
+                bins[b][_key(prefix, "fineColumnsLost")] += r[A]
+                bins[b][_key(prefix, "columnsReplaced")] += r[B]
+                bins[b][_key(prefix, "columnsFilled")] += r[C]
+            elif op == "merge-stamp":
+                bins[b][_key("" if side == "client" else "server", "columnsStamped")] += r[A]
+            elif op == "fallback":
+                fallback[b] = {
+                    "fallbackParents": r[A],
+                    "fallbackHiding": r[B],
+                    "hiddenChildren": r[C],
+                }
+            elif op == "fallback-start" and r[A] > 0:
+                bins[b]["fallbackStartsHiding"] += 1
     out = []
     previous = None
-    occupied = bins.keys() | depths.keys() | track.keys()
+    occupied = bins.keys() | depths.keys() | track.keys() | fallback.keys()
     for b in range(min(occupied, default=0), max(occupied, default=-1) + 1):
         row = {"second": round(b * bin_seconds, 1), **bins.get(b, {})}
         if b in depths:
             row.update(depths[b])
+        if b in fallback:
+            row.update(fallback[b])
         if b in track:
             row["player"] = list(track[b])
             if previous is not None:
@@ -509,6 +527,67 @@ def tile_use(rows, view_cubes):
     }
 
 
+def _key(prefix, name):
+    return prefix + name[0].upper() + name[1:] if prefix else name
+
+
+MOVING_BLOCKS_PER_SECOND = 2.0
+REVERSION_SUMS = [
+    "fineColumnsLost",
+    "columnsReplaced",
+    "columnsFilled",
+    "columnsStamped",
+    "serverFineColumnsLost",
+    "serverColumnsReplaced",
+    "serverColumnsFilled",
+    "serverColumnsStamped",
+    "fallbackStartsHiding",
+]
+
+
+def reversion(rows, client_rows):
+    """The in-flight reversion counters (LabLodMerge, LabLodFallback), split moving against resting.
+
+    A second is moving when the player's speed, carried forward from the last second that has one,
+    is at least 2 blocks/s (the arrival plan's own threshold). Lost columns are fine-built columns a
+    same-detail answer replaced; hidden children are renderable sections DH hid behind a parent.
+    """
+    phases: dict[str, Counter[str]] = {p: Counter() for p in ("moving", "resting", "unknown")}
+    speed = None
+    for row in rows:
+        speed = row.get("speedBlocksPerSecond", speed)
+        if speed is None:
+            phase = "unknown"
+        else:
+            phase = "moving" if speed >= MOVING_BLOCKS_PER_SECOND else "resting"
+        c = phases[phase]
+        c["seconds"] += 1
+        for k in REVERSION_SUMS:
+            c[k] += row.get(k, 0)
+        if "hiddenChildren" in row:
+            c["fallbackSamples"] += 1
+            c["hiddenChildrenSum"] += row["hiddenChildren"]
+            c["fallbackHidingSum"] += row["fallbackHiding"]
+    out = {}
+    for phase, c in phases.items():
+        if not c["seconds"]:
+            continue
+        n = c["fallbackSamples"]
+        out[phase] = {
+            "seconds": c["seconds"],
+            **{k: c[k] for k in REVERSION_SUMS},
+            "fineColumnsLostPerSecond": round(c["fineColumnsLost"] / c["seconds"], 1),
+            "meanHiddenChildren": round(c["hiddenChildrenSum"] / n, 1) if n else None,
+            "meanParentsHiding": round(c["fallbackHidingSum"] / n, 1) if n else None,
+        }
+    lost: Counter[int] = Counter()
+    for r in client_rows:
+        if r[OP] == "merge-same" and r[A]:
+            lost[r[POS] & 0x7F] += r[A]
+    out["fineColumnsLostByDetail"] = {str(d): lost[d] for d in sorted(lost)}
+    return out
+
+
 def lod_report(directory, output, mode="auto", charts=True):
     directory = Path(directory)
     if not directory.is_dir():
@@ -638,6 +717,12 @@ def lod_report(directory, output, mode="auto", charts=True):
         if len(windowed) == 2:
             warnings.append("No wall-clock origins; cross-side stages skipped")
     report["timeline"] = timeline(windowed, origin)
+    if any(
+        op in info["operations"]
+        for info in report["sides"].values()
+        for op in ("merge-same", "merge-stamp", "fallback")
+    ):
+        report["reversion"] = reversion(report["timeline"], windowed.get("client", []))
     report["warnings"] = warnings
     output = Path(output)
     output.mkdir(parents=True)
@@ -768,6 +853,32 @@ def render_text(report):
         for detail, v in sec["createdToFirstGeometry"]["byDetail"].items():
             lines.append(
                 f"  detail {detail} ({2 ** (int(detail) - SECTION_MIN_DETAIL)}-block cells): {v['count']} sections, {v['p50Ms']} / {v['p90Ms']}"
+            )
+    if "reversion" in report:
+        rv = report["reversion"]
+        lines += [
+            "",
+            "LOD reversion (fine-built columns replaced by same-detail answers; children hidden by a parent)",
+        ]
+        for phase in ("moving", "resting", "unknown"):
+            if phase not in rv:
+                continue
+            v = rv[phase]
+            lines.append(
+                f"  {phase}: {v['seconds']} s, client lost {v['fineColumnsLost']} fine columns "
+                f"({v['fineColumnsLostPerSecond']}/s), replaced {v['columnsReplaced']}, "
+                f"filled {v['columnsFilled']}, stamped {v['columnsStamped']}; "
+                f"server lost {v['serverFineColumnsLost']}; hidden children mean "
+                f"{v['meanHiddenChildren']} under {v['meanParentsHiding']} parents, "
+                f"{v['fallbackStartsHiding']} fallbacks began hiding"
+            )
+        if rv["fineColumnsLostByDetail"]:
+            lines.append(
+                "  client lost by detail: "
+                + ", ".join(
+                    f"{2 ** (int(d) - SECTION_MIN_DETAIL)}-block {n}"
+                    for d, n in rv["fineColumnsLostByDetail"].items()
+                )
             )
     if report["warnings"]:
         lines += ["", "Warnings:"] + ["  " + w for w in report["warnings"]]
