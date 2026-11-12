@@ -88,24 +88,36 @@ def compile_sampler(source_dir, check=SAMPLER):
     classes = CACHE / "build" / digest.hexdigest()[:16]
     if (classes / ".complete").exists():
         return classes
-    if classes.exists():
-        shutil.rmtree(classes)
-    classes.mkdir(parents=True)
-    argfile = classes / "sources.txt"
+    # Compile beside the cache entry and move it in whole: concurrent CI jobs may compile the same
+    # sources, and none may see a half-written directory.
+    staging = classes.with_name(f"{classes.name}.{os.getpid()}.tmp")
+    if staging.exists():
+        shutil.rmtree(staging)
+    staging.mkdir(parents=True)
+    argfile = staging / "sources.txt"
     argfile.write_text("\n".join(f'"{p.as_posix()}"' for p in [*java_files, sampler]))
     started = time.monotonic()
     result = subprocess.run(
         [str(java().with_name("javac.exe")), "--release", "25", "-nowarn"]
-        + ["-cp", str(gson()), "-d", str(classes), "@" + str(argfile)],
+        + ["-cp", str(gson()), "-d", str(staging), "@" + str(argfile)],
         capture_output=True,
         text=True,
     )
     if result.returncode != 0:
-        shutil.rmtree(classes)
+        shutil.rmtree(staging)
         sys.exit("javac failed:\n" + result.stdout + result.stderr)
     for resource in resources:
-        shutil.copy2(resource, classes / resource.name)
-    (classes / ".complete").write_text("")
+        shutil.copy2(resource, staging / resource.name)
+    (staging / ".complete").write_text("")
+    if classes.exists() and not (classes / ".complete").exists():
+        shutil.rmtree(classes, ignore_errors=True)
+    try:
+        staging.rename(classes)
+    except OSError:
+        # Another job finished the same compile first; its classes are identical.
+        shutil.rmtree(staging, ignore_errors=True)
+        if not (classes / ".complete").exists():
+            raise
     print(f"compiled {len(java_files) + 1} sources in {time.monotonic() - started:.1f}s")
     return classes
 

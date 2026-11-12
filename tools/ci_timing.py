@@ -116,8 +116,12 @@ def report(summary: dict) -> str:
     rows = []
     for job, result in summary.get("jobs", {}).items():
         steps = result.get("steps", [])
-        rows.append([job, result.get("status"), sum(s.get("seconds", 0) for s in steps)])
-    lines += table(["Job", "Status", "Seconds"], rows)
+        status = result.get("status")
+        if result.get("cached"):
+            status = f"{status} (cached from {result['cached']})"
+        seconds = sum(s.get("seconds", 0) for s in steps)
+        rows.append([job, status, result.get("begun"), result.get("ended"), seconds])
+    lines += table(["Job", "Status", "Begun", "Ended", "Seconds"], rows)
     lines += ["", "## Steps", ""]
     rows = []
     for job, result in summary.get("jobs", {}).items():

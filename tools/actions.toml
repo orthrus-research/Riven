@@ -2,6 +2,14 @@
 # Placeholders: {python} the runner's interpreter, {quality_python}, {atlas_python},
 # {observability_python}, {run_id} the run's identifier, {frozen} .local/frozen/{run_id},
 # {riven} Riven's root, {cubature} the Cubature checkout dev/cc.lock.json names.
+#
+# Jobs run concurrently once the jobs they need have passed. A job claims `share` of the cores
+# (default 0.25), `memory` GiB (default 4) and its `locks`; jobs start, highest `priority` first,
+# while the running claims fit the machine (cores, three quarters of its memory) and no two
+# running jobs hold the same lock. `native` jobs run alone. actions.py --jobs 1 runs serially.
+#
+# `inputs` makes a job a pure check: globs of every file its verdict depends on, beside its steps
+# and the JDK. A job whose exact inputs passed before is not run again; list every file it reads.
 
 [interpreters]
 quality_python = ".local/quality-venv/Scripts/python.exe"
@@ -18,6 +26,7 @@ profile = ["quality", "riven-build", "cubature-build", "regional-store", "draina
 
 [jobs.quality]
 description = "Formatting, lint, types, both-loader compile, content assets and the Riven and Cubature tool tests"
+locks = ["riven-gradle"]
 steps = [
   { name = "code quality", run = ["{quality_python}", "tools/code_quality.py", "check"] },
   { name = "content assets", run = ["{quality_python}", "tools/content/build_content.py", "--check"] },
@@ -27,36 +36,47 @@ steps = [
 
 [jobs.riven-build]
 description = "Build Riven for Cleanroom and freeze the artifact for this run"
+locks = ["riven-gradle"]
 steps = [
   { name = "build riven", run = ["{python}", "tools/build_riven.py", "--diagnostics", "--no-daemon", "--freeze", "{run_id}"] },
 ]
 
 [jobs.cubature-build]
 description = "Build Cubature and the lab observer with Java 26 tests and freeze them"
+priority = 5
 steps = [
   { name = "build cubature", run = ["{python}", "{cubature}/tools/build_cubature.py", "--workspace", "{riven}", "--no-daemon", "--freeze", "{run_id}"] },
 ]
 
 [jobs.atlas-golden]
 description = "Generated terrain matches the golden atlas digests, with determinism verified"
+inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc/orthrus/riven/contrib/**/*.java", "src/main/resources/*.json", "tools/run_check.py", "tools/atlas/build.py", "tools/atlas_golden.py", "tools/atlas-golden.json", "tools/atlas/*.py", "tools/terrain_atlas.py", "tools/checks/TerrainAtlas.java"]
+share = 0.5
+memory = 16
+priority = 10
 steps = [
   { name = "golden digests", run = ["{atlas_python}", "tools/atlas_golden.py", "check", "--verify"] },
 ]
 
 [jobs.atlas-golden-profile]
 description = "atlas-golden with every window resampled and a timed second pass over its built plans"
+share = 0.5
+memory = 16
+priority = 10
 steps = [
   { name = "golden digests", run = ["{atlas_python}", "tools/atlas_golden.py", "check", "--verify", "--profile"] },
 ]
 
 [jobs.definitions]
 description = "Definitions catalogues exactly the packaged riven-*.json files, each loads, and the terrain version agrees"
+inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc/orthrus/riven/contrib/**/*.java", "src/main/resources/*.json", "tools/run_check.py", "tools/atlas/build.py", "tools/checks/DefinitionsCheck.java", "CHANGELOG.md", "README.md"]
 steps = [
   { name = "definitions", run = ["{atlas_python}", "tools/run_check.py", "DefinitionsCheck", "src/main/resources", "."] },
 ]
 
 [jobs.regional-store]
 description = "Derived-file and graph integrity, mapped-read lifetime, world ownership and cleanup without constructing terrain"
+inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc/orthrus/riven/contrib/**/*.java", "src/main/resources/*.json", "tools/run_check.py", "tools/atlas/build.py", "tools/checks/RegionalStoreCheck.java", "tools/checks/DrainageCodecCheck.java", "tools/checks/RegionalOwnershipCheck.java", "tools/checks/RegionalCleanupCheck.java", "src/main/java/cc/orthrus/riven/RegionalOwnership.java", "src/main/java/cc/orthrus/riven/RegionalCleanup.java"]
 steps = [
   { name = "regional file store", run = ["{atlas_python}", "tools/run_check.py", "RegionalStoreCheck", "{frozen}/regional-store-fixtures"] },
   { name = "regional graph and lifetime", run = ["{atlas_python}", "-B", "-c", '''
@@ -92,6 +112,9 @@ for main, fixture, arguments in [
 
 [jobs.drainage-prune]
 description = "Drainage answers are unchanged by skipping continents too far to reach a column (tools/checks/DrainagePruneCheck)"
+inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc/orthrus/riven/contrib/**/*.java", "src/main/resources/*.json", "tools/run_check.py", "tools/atlas/build.py", "tools/checks/DrainagePruneCheck.java"]
+memory = 8
+priority = 3
 steps = [
   { name = "prune, scale 1", run = ["{atlas_python}", "tools/run_check.py", "DrainagePruneCheck", "8675309", "1", "8104", "4552", "1000", "250"] },
   { name = "prune, scale 4", run = ["{atlas_python}", "tools/run_check.py", "DrainagePruneCheck", "8675309", "4", "64", "-64", "1000", "250"] },
@@ -99,6 +122,9 @@ steps = [
 
 [jobs.regional-bake]
 description = "Region preparation with a store bakes networks to disk and demand reads them back (tools/checks/RegionalBakeCheck)"
+inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc/orthrus/riven/contrib/**/*.java", "src/main/resources/*.json", "tools/run_check.py", "tools/atlas/build.py", "tools/checks/RegionalBakeCheck.java"]
+memory = 8
+priority = 6
 steps = [
   { name = "bake, scale 1", run = ["{atlas_python}", "tools/run_check.py", "RegionalBakeCheck", ".local/actions/{run_id}/regional-bake", "8675309", "1", "0", "0"] },
   { name = "bake, scale 4", run = ["{atlas_python}", "tools/run_check.py", "RegionalBakeCheck", ".local/actions/{run_id}/regional-bake", "8675309", "4", "0", "0"] },
@@ -106,12 +132,17 @@ steps = [
 
 [jobs.sample-history]
 description = "A reused terrain sample reports what a fresh one does (tools/checks/SampleHistoryCheck)"
+inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc/orthrus/riven/contrib/**/*.java", "src/main/resources/*.json", "tools/run_check.py", "tools/atlas/build.py", "tools/checks/SampleHistoryCheck.java"]
+memory = 8
+priority = 4
 steps = [
   { name = "sample history", run = ["{atlas_python}", "tools/run_check.py", "SampleHistoryCheck", "8675309", "101", "-991", "7", "42", "1"] },
 ]
 
 [jobs.variant-coverage]
 description = "Every biome variant forms patches in a parent biome's climate in every 32 km world (tools/checks/VariantCoverageCheck)"
+inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc/orthrus/riven/contrib/**/*.java", "src/main/resources/*.json", "tools/run_check.py", "tools/atlas/build.py", "tools/checks/VariantCoverageCheck.java"]
+memory = 8
 steps = [
   { name = "variant coverage", run = ["{atlas_python}", "tools/run_check.py", "VariantCoverageCheck", "8", "4"] },
 ]

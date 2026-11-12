@@ -275,9 +275,21 @@ the reviewed build is noted, not refused.
 
 ## Building and local actions
 
-`tools/actions.py` runs the workflows in `tools/actions.toml`, one at a time, with a log per step
-under `.local/actions/<run-id>/` and a `summary.json`. A failed job stops the run unless
-`--keep-going`; jobs that need it are skipped.
+`tools/actions.py` runs the workflows in `tools/actions.toml`, with a log per step under
+`.local/actions/<run-id>/` and a `summary.json`. Jobs run concurrently once the jobs they need have
+passed, as long as their declared core `share`, `memory` and `locks` fit the machine; longer jobs
+start first (`priority`). `--jobs 1` runs them one at a time. After a failed job no new job starts
+unless `--keep-going`; jobs that need it are skipped.
+
+A job with `inputs` is a pure check. Its key hashes its steps, every file its input globs match
+and the JDK release and Gson it runs with. A pass for the same key, recorded under
+`.local/actions/cache/`, stands for the job, so a commit that leaves worldgen and a check
+untouched does not run the check again. A failure is never cached, and `--no-cache` runs
+everything. A job's inputs must list every file its verdict reads.
+
+`riven.ps1 profile` runs `ci` with the golden windows resampled and timed, then `tools/ci_timing.py`
+writes `timing.md` beside the run's summary: when each job began and ended, each step, and for
+the golden windows the map building, sampling, plan building, site decisions and painting.
 
 Each `summary.json` records the Riven and Cubature trees the run tested, hashed as `git add --all`
 would commit them (through a scratch copy of the index; the real index is untouched), and whether
@@ -301,6 +313,7 @@ jobs; `git push --no-verify` skips the check.
 | `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history` |
 | `python tools/actions.py ci --if-needed` | The `ci` jobs that have not passed for the current trees |
 | `riven.ps1 full` | `ci` plus `smoke`, a native timing capture of the run's frozen artifacts |
+| `riven.ps1 profile` | `ci` with timed golden windows, then a `timing.md` report |
 | `python tools/actions.py --list` / `<job> ...` / `--dry-run` | Inspect or run individual jobs |
 
 The PowerShell launcher forwards workflow options, so `riven.ps1 full --if-needed`
