@@ -332,6 +332,19 @@ public final class VolcanicTerrain {
         return new Decision(null, reason, bounds);
     }
 
+    /**
+     * Crustal activity from smooth facts alone, for geology: a rift weight in place of the
+     * landform class, the spine weight, and the hotspot field read with geology's own, higher
+     * thresholds (the stage's selector covers broad regions that its sites then thin).
+     */
+    public double potential(
+            double x, double z, double rift, double spine, double hotFrom, double hotFull) {
+        double arc = arcWeight * Rules.smooth((spine - arcFrom) / (arcFull - arcFrom));
+        double regional = .5 + .5 * opportunity.sample(x / potentialSpan, z / potentialSpan);
+        double hotspot = Rules.smooth((regional - hotFrom) / (hotFull - hotFrom));
+        return Math.max(riftWeight * rift, Math.max(arc, hotspot));
+    }
+
     private double potential(double x, double z, TerrainMap.BaseSample base) {
         // Where the ground model says the crust is active: rifts, arcs along the ranges, and
         // sparse hotspots. A selector, not evidence of magma or a physical heat source.

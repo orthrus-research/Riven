@@ -410,9 +410,27 @@ public final class GeologyMap {
     private final CellMemo<double[]> chamberCells = new CellMemo<>(512),
             kimberliteCells = new CellMemo<>(256);
 
-    GeologyMap(long worldSeed, PlateMap plates) {
+    GeologyMap(long worldSeed, PlateMap plates, ProvinceMap provinces, VolcanicTerrain volcanic) {
         seed = SeededNoise.mix(worldSeed ^ Rules.seed(RULES.json, "variationSeed"));
         this.plates = plates;
+        this.provinces = provinces;
+        this.volcanic = volcanic;
+        JsonObject inputs = RULES.json.getAsJsonObject("inputs");
+        provinceBlend = Rules.number(inputs, "provinceBlendBlocks", 1, 2048);
+        hotspotFrom = Rules.number(inputs, "hotspotFrom", 0, 1);
+        hotspotFull = Rules.number(inputs, "hotspotFull", hotspotFrom + 0.01, 1.01);
+        // The interior is measured in this world's (layout-scaled) plate widths.
+        cratonInterior =
+                Rules.number(inputs, "cratonInteriorInPlateWidths", 0.01, 2) * plates.cellBlocks();
+        java.util.List<Integer> shield = new java.util.ArrayList<>();
+        for (com.google.gson.JsonElement e : inputs.getAsJsonArray("cratonProvinces"))
+            for (int i = 0; i < provinces.typeCount(); i++)
+                if (provinces.typeId(i).equals(e.getAsString())) shield.add(i);
+        cratonProvinces = shield.stream().mapToInt(Integer::intValue).toArray();
+        int rifts = -1;
+        for (int i = 0; i < provinces.typeCount(); i++)
+            if (provinces.typeId(i).equals("rift")) rifts = i;
+        riftProvince = rifts;
         thicknessField = noise(0x544849434b4e4553L);
         erosionField = noise(0x45524f53494f4e31L);
         beltField = noise(0x42454c5453434849L);
@@ -434,7 +452,28 @@ public final class GeologyMap {
     }
 
     /** One column's rock: its event surfaces and the formation surfaces of each stack. */
+    private final ProvinceMap provinces;
+
+    private final VolcanicTerrain volcanic;
+    private final double provinceBlend, cratonInterior, hotspotFrom, hotspotFull;
+    private final int[] cratonProvinces;
+    private final int riftProvince;
+
+    /** The province types' count, for sizing a column's memberships. */
+    public int provinceTypes() {
+        return provinces.typeCount();
+    }
+
     public static final class Column {
+        /**
+         * Inputs the terranes will choose from (content-neutral until they do): each province
+         * type's smooth share (by type index), the spine weight, the volcanic potential from smooth
+         * facts, and a craton weight for old stable interiors.
+         */
+        public double[] province = new double[0];
+
+        public double spine, volcanic, craton;
+
         /** lower[k] is lower formation k's top at the column (after faults); lower[n] its base. */
         final double[] lower = new double[LOWER.length + 1];
 
@@ -640,12 +679,36 @@ public final class GeologyMap {
         return y;
     }
 
+    /**
+     * The terrane inputs: province shares blended over provinceBlendBlocks, the spine weight, the
+     * smooth volcanic potential, and the craton weight (far from plate boundaries, neither
+     * compressed nor extended, on shield provinces, away from volcanism).
+     */
+    private void inputs(
+            double x, double z, TerrainMap.Sample s, double compression, double rift, Column out) {
+        if (out.province.length != provinces.typeCount())
+            out.province = new double[provinces.typeCount()];
+        provinces.memberships(x, z, s.ocean.marine, provinceBlend, out.province);
+        out.spine = s.baseTerrain().spine();
+        // Rift volcanism follows the rift provinces, not plate-wide extension.
+        double riftShare = riftProvince >= 0 ? out.province[riftProvince] : 0;
+        out.volcanic = volcanic.potential(x, z, riftShare, out.spine, hotspotFrom, hotspotFull);
+        double shield = 0;
+        for (int i : cratonProvinces) shield += out.province[i];
+        double interior =
+                Rules.smooth(
+                        plates.sample((int) Math.floor(x), (int) Math.floor(z)).boundaryDistance
+                                / cratonInterior);
+        out.craton = interior * (1 - compression) * (1 - rift) * shield * (1 - out.volcanic);
+    }
+
     /** Fills the column's rock from earlier, smooth facts of the sample and its event cells. */
     public void column(double x, double z, TerrainMap.Sample s, Column out) {
         double compression = Math.max(0, Math.min(1, s.uplift));
         // Rifts follow the smooth extension of the blended plate velocities, never a plate switch.
         double rift = Rules.smooth(plates.extension(x, z) / RIFT_EXTENSION);
         out.rift = rift;
+        inputs(x, z, s, compression, rift, out);
         // Land and sea floor bases do not meet at the coast: blend to one level across it.
         double inland = s.ocean.marine ? 0 : Rules.smooth(s.ocean.coastCoordinate / COAST_BLEND);
         double base = COAST_FLOOR + (s.baseHeight - COAST_FLOOR) * inland;

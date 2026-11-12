@@ -111,7 +111,7 @@ public final class TerrainMap {
                         majorFeatureParent,
                         hydro,
                         hydro.cellBlocks);
-        geology = new GeologyMap(seed, plates);
+        geology = new GeologyMap(seed, plates, provinces, volcanic);
         floods = new FloodMap(seed, world, this::sampleGeology);
         caves = new CaveMap(seed, heights, this::sample, this::sampleWater);
         ores = new OreMap(seed, heights);
@@ -131,6 +131,11 @@ public final class TerrainMap {
         double maxX = minX + hydro.cellBlocks, maxZ = minZ + hydro.cellBlocks;
         return sediment.prepareRegion(minX, minZ, maxX, maxZ, pool)
                 && rocky.prepareRegion(minX, minZ, maxX, maxZ, pool);
+    }
+
+    /** The geology map columns fill their rock from (diagnostics). */
+    GeologyMap geology() {
+        return geology;
     }
 
     /** Scratch belongs to one call sequence, never to the map or a shared cache. */

@@ -113,7 +113,7 @@ public final class GeologySection {
 
     /** GeologySection cost SEED: chunk-column build time and the geology share of it. */
     private static void cost(GenerationMaps maps, long seed) {
-        GeologyMap geology = new GeologyMap(seed, maps.plates);
+        GeologyMap geology = maps.terrain.geology();
         TerrainMap.Sample s = new TerrainMap.Sample();
         GeologyMap.Column column = new GeologyMap.Column();
         int[] bounds = new int[GeologyMap.MAXIMUM_BOUNDARIES];

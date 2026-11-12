@@ -236,7 +236,7 @@ public final class TerrainAtlas {
                 provinceType,
                 coast;
         final byte[] river, mouth, channelBeyond;
-        final float[] celsius, moisture, micros;
+        final float[] celsius, moisture, micros, craton, volcanic, spine, provinceShare;
         final float[][] delta, footprintDelta;
         final byte[][] family, reason, footprintFamily;
         final Codes[] reasons = new Codes[STAGE_NAMES.length];
@@ -270,6 +270,10 @@ public final class TerrainAtlas {
             celsius = new float[n];
             moisture = new float[n];
             micros = new float[n];
+            craton = new float[n];
+            volcanic = new float[n];
+            spine = new float[n];
+            provinceShare = new float[n];
             delta = new float[k][n];
             family = new byte[k][n];
             reason = new byte[k][n];
@@ -531,6 +535,12 @@ public final class TerrainAtlas {
                                 | (s.ocean.supplied ? 2 : 0)
                                 | (s.ocean.deepOcean ? 4 : 0)
                                 | (s.water.wet ? 8 : 0));
+        r.craton[i] = (float) s.geology.craton;
+        r.volcanic[i] = (float) s.geology.volcanic;
+        r.spine[i] = (float) s.geology.spine;
+        double share = 0;
+        for (double v : s.geology.province) share = Math.max(share, v);
+        r.provinceShare[i] = (float) share;
         r.celsius[i] = (float) s.climate.celsius;
         r.moisture[i] = (float) s.climate.moisture;
         // Codes are provisional while threads sample; raster() renumbers them in sorted order.
@@ -734,6 +744,10 @@ public final class TerrainAtlas {
         bytes(out, "flags.u8", r.flags, digest);
         floats(out, "celsius.f32", r.celsius, digest);
         floats(out, "moisture.f32", r.moisture, digest);
+        floats(out, "geo_craton.f32", r.craton, digest);
+        floats(out, "geo_volcanic.f32", r.volcanic, digest);
+        floats(out, "geo_spine.f32", r.spine, digest);
+        floats(out, "geo_province_share.f32", r.provinceShare, digest);
         shorts(out, "plate.u16", r.plate, digest);
         shorts(out, "province.u16", r.province, digest);
         bytes(out, "province_type.u8", r.provinceType, digest);

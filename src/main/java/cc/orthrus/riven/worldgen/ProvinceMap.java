@@ -928,6 +928,45 @@ public final class ProvinceMap {
         out.ground = ground / weights;
     }
 
+    /** How many province types there are (land types, then ocean classes). */
+    public int typeCount() {
+        return def.types.length;
+    }
+
+    /** A province type's id by its index. */
+    public String typeId(int index) {
+        return def.types[index].id;
+    }
+
+    /**
+     * Each province type's smooth share of a column (out, by Type.index, summing to 1): the cells
+     * within blend blocks of the nearest, each weighted down smoothly by how much farther it lies,
+     * as the climate offsets blend over edgeBlocks. A face is its ground's: marine or land.
+     */
+    public void memberships(double x, double z, boolean marine, double blend, double[] out) {
+        java.util.Arrays.fill(out, 0);
+        double[] warped = new double[2];
+        warp(x, z, warped);
+        double wx = warped[0], wz = warped[1];
+        int ci = (int) Math.floor(wx / size), cj = (int) Math.floor(wz / size);
+        double[] d = new double[25];
+        int first = 0;
+        for (int k = 0; k < 25; k++) {
+            double[] p = seedPoint(ci + k / 5 - 2, cj + k % 5 - 2);
+            d[k] = Math.hypot(wx - p[0], wz - p[1]);
+            if (d[k] < d[first]) first = k;
+        }
+        double weights = 0;
+        for (int k = 0; k < 25; k++) {
+            double t = (d[k] - d[first]) / blend;
+            if (t >= 1) continue;
+            double w = 1 - Rules.smooth(t);
+            out[cellAt(ci + k / 5 - 2, cj + k % 5 - 2).face(marine).index] += w;
+            weights += w;
+        }
+        for (int i = 0; i < out.length; i++) out[i] /= weights;
+    }
+
     /**
      * The land ground at a column, blended like its level: {level, relief blocks, ridged share,
      * plateau share} in out[0..3], the plateau's cap level and the other ground's level in out[5]

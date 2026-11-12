@@ -968,6 +968,22 @@ column's groundwater head. A column's stack is still a set of 2D surfaces and pl
 its runs are exact and cost 3-11% of a chunk-column build. Below the lowest soil, cubes fill from the column runs. `tools/checks/GeologySection.java`
 draws vertical slices and outcrop maps, and probes columns.
 
+
+**Terrane inputs** (geology revision 5, `riven-geology.json` inputs; content-neutral, read by nothing
+yet): every geology column carries the facts terranes will choose from. Province shares: each
+province type's smooth share of the column, from the province cells within 200 blocks of the
+nearest, each weighted down smoothly by how much farther it lies (`ProvinceMap.memberships`; the
+column's own province stays crisp for biomes). Spine weight, from the base terrain. Volcanic
+potential: the strongest of the rift provinces' share, arcs by spine weight
+(`VolcanicTerrain.potential`) and the hotspot field above 0.82 (full at 0.95), where the volcanic
+stage's own selector, thinned later by its sites, starts far lower. Craton weight: full at least a
+fifth of a plate width from any plate boundary on plain, upland and basin provinces, falling with
+compression, extension and volcanic potential. On seed 2485331 at 32 km, 13% of land is craton above
+one half and 33% volcanic, mostly arcs flanking the range spines; at 8-block resolution the largest
+step between land columns is 0.18 in province share, 0.085 in craton and 0.027 in volcanic
+potential. The atlas writes them as `geo_province_share`, `geo_spine`, `geo_volcanic` and
+`geo_craton` and paints `terranes.png`; with those rasters left out the golden digests match the
+previous ones.
 **Caves** (prototype, phase 3 of the subsurface design; `riven-caves.json`, `CaveMap`): voids
 rooted in the geology. Each block belongs to a realm by its rock, so the deep reads differently
 from the middle layers (each realm also reports depth biomes; see Realms and depth biomes):

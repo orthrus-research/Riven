@@ -264,6 +264,21 @@ class Painter:
             if i > 0 and (variant == i).any()
         ]
 
+    def terrane_inputs(self, path):
+        """Geology's terrane inputs: volcanic potential red, craton green, spine weight blue."""
+        if not self.atlas.has("geo_craton.f32"):
+            return []
+        red = self.atlas.layer("geo_volcanic.f32", np.float32)
+        green = self.atlas.layer("geo_craton.f32", np.float32)
+        blue = self.atlas.layer("geo_spine.f32", np.float32)
+        rgb = np.stack([red, green, blue], axis=-1).clip(0, 1) * 220 + 20
+        save(np.where(self.wet[..., None], self.base, rgb * (0.6 + 0.5 * self.shade)), path)
+        return [
+            {"label": "volcanic potential", "color": (240, 20, 20)},
+            {"label": "craton", "color": (20, 240, 20)},
+            {"label": "spine weight", "color": (20, 20, 240)},
+        ]
+
     def climate(self, path):
         region = self.atlas.layer("region.u8", np.uint8)
         colors = [region_color(n) for n in self.atlas.meta["regions"]]
@@ -441,6 +456,7 @@ def paint(atlas: Atlas, out: Path, threshold: float):
         "elevation": p.elevation(out / "elevation.png"),
         "biomes": p.biomes(out / "biomes.png"),
         "variants": p.variants(out / "variants.png"),
+        "terranes": p.terrane_inputs(out / "terranes.png"),
         "climate": p.climate(out / "climate.png"),
         "water": p.water_bodies(out / "water.png"),
     }
@@ -531,6 +547,7 @@ def write_index(out: Path, summary):
         ("elevation", "Elevation"),
         ("biomes", "Final biomes"),
         ("variants", "Biome variants (faded: none)"),
+        ("terranes", "Terrane inputs (volcanic red, craton green, spine blue)"),
         ("climate", "Climate regions"),
         ("water", "Water bodies and marine supply"),
     ]:

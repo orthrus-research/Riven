@@ -1,7 +1,8 @@
 {
   "schema": 1,
-  "revision": 4,
+  "revision": 5,
   "variationSeed": "0x47454f4c4f475931",
+  "inputs": {"about": "Terrane inputs on each column, read by nothing yet: province shares blended over provinceBlendBlocks, and the craton weight, highest at least cratonInteriorInPlateWidths from any plate boundary on the cratonProvinces, falling with compression, extension and volcanic potential; volcanic potential is the rift provinces' share, arcs by spine weight and the hotspot field above hotspotFrom.", "provinceBlendBlocks": 200, "hotspotFrom": 0.82, "hotspotFull": 0.95, "cratonInteriorInPlateWidths": 0.2, "cratonProvinces": ["plain", "upland", "basin"]},
   "units": {
     "gneiss":    {"block": "rock.gneiss",        "color": "#8c8a86", "solubility": 0,    "permeability": 0.1, "strength": 0.95, "hosts": ["veins", "pegmatite"]},
     "schist":    {"block": "rock.mica_schist",   "color": "#6f7a74", "solubility": 0,    "permeability": 0.1, "strength": 0.7,  "hosts": ["veins", "gold"]},
