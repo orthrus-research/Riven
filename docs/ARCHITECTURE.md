@@ -339,8 +339,9 @@ Terrain-v39, 64 km windows on seeds 8675309, 101, 1, 42, 7 and -991 (atlas and `
   `riven-terrain.json`, lane-salted keys), replacing the share cascade that left cold and volcanic
   lanes 3.8% and 1.9% of cells. Other lanes keep their earlier densities; cold and volcanic get
   0.15. Cold forms need only a cold, fit anchor (other columns fade), raising cold forms and
-  volcanic cones may overhang the sea, and a volcano needs a HOT anchor and fades toward cooler columns (v55, user
-  decision). On 4 seeds at v54 an 8 km world built 1.5 cold forms and 0.5 volcanoes (0 at v53),
+  volcanic cones may overhang the sea, and from v55 a volcano needed a HOT anchor and faded toward
+  cooler columns (since terrain-v130 volcanism follows tectonics in any climate; FEATURES.md, Land
+  stages). On 4 seeds at v54 an 8 km world built 1.5 cold forms and 0.5 volcanoes (0 at v53),
   most volcanic candidates then failing the all-HOT footprint; v55 is unmeasured. Coastal
   formations still build none.
   Regional passes (about 47% of land) and shore shaping (22-24%) are the main active stages;

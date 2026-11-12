@@ -511,14 +511,11 @@ Shared rules for the land stages:
   `shoreReservationInCoastalPlainWidths` (0.5) coastal-plain widths in `riven-terrain.json`.
 - Drylands require hot dry climate and attenuate around earlier major relief. Dunes in regional
   passes need hot dry climate and fade on steep slopes; benches need dry warm or hot climate.
-- Volcanoes are reserved for hot biomes ([DECISIONS.md](DECISIONS.md)): since v55 the anchor column must be in
-  `supportTemperatureBand` (HOT, 25 C and up) or the site is rejected (`CLIMATE_SUPPORT`), and the
-  cone fades smoothly from full at 25 C to nothing at 20 C (`climateFadeFullCelsius`,
-  `climateFadeZeroCelsius`). Since v54 marine columns leave the volcanic certificate and slope
-  stencil, so cones may overhang the sea.
-  Coverage gap: `VolcanicBoundaryCheck discover` finds no built volcano among 285 admitted owners
-  in cells 0..512 of seed 8675309 (47 of 52 land anchors are shore-protected columns), so only
-  `capture-rejections` applies.
+- Volcanoes follow tectonics in any climate ([DECISIONS.md](DECISIONS.md), Volcanoes; terrain-v130):
+  the potential is the strongest of rift weight, arc weight along the ranges and a sparse hotspot
+  field (`VolcanicTerrain.potential`, `riven-volcanic.json`). Climate changes what grows on and
+  around a volcano, never whether it stands. Since v54 marine columns leave the volcanic
+  certificate and slope stencil, so cones may overhang the sea.
 - Surface rules put soil before rock (surface-rules-v9, terrain-v90). A rocky coast shows rock
   only within 20 blocks of the water (40 on a full cape) and on cliff faces within 40 blocks;
   inland of that it carries soil like any other ground (before, rock reached about 250 blocks
