@@ -714,7 +714,6 @@ public final class TerrainAtlas {
             }
     }
 
-    /** Every raw site anchor near the window with its lane, admission and outcome at the anchor. */
     /**
      * Every site whose disc reaches the window, by lane, row and column. Each decision is a pure
      * function of its cell, so they run on {@code threads} threads (in reverse with the raster)
