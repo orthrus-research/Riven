@@ -221,6 +221,7 @@ class ReversionTest(unittest.TestCase):
             (int(2.6 * second), "fallback-start", fine, 3, 4),
             (int(2.7 * second), "fallback", 0, 6, 2, 5),
             (int(5.5 * second), "merge-same", coarse, 0, 0, 30, 5),
+            (int(5.6 * second), "merge-restore", coarse, 800),
             (int(5.7 * second), "fallback", 0, 1, 0, 0),
         ]
         server = [(int(1.2 * second), "merge-same", coarse, 7, 0, 0, 5)]
@@ -238,6 +239,7 @@ class ReversionTest(unittest.TestCase):
         self.assertEqual(rv["moving"]["meanHiddenChildren"], 5)
         self.assertEqual(rv["resting"]["fineColumnsLost"], 0)
         self.assertEqual(rv["resting"]["columnsFilled"], 30)
+        self.assertEqual(rv["resting"]["fineColumnsRestored"], 800)
         self.assertEqual(rv["resting"]["meanHiddenChildren"], 0)
         self.assertEqual(rv["fineColumnsLostByDetail"], {"7": 100, "10": 900})
         self.assertIn("LOD reversion", lod_report_text(report))

@@ -273,6 +273,8 @@ def timeline(side_rows, origin, bin_seconds=1.0):
                 bins[b][_key(prefix, "fineColumnsLost")] += r[A]
                 bins[b][_key(prefix, "columnsReplaced")] += r[B]
                 bins[b][_key(prefix, "columnsFilled")] += r[C]
+            elif op == "merge-restore":
+                bins[b][_key("" if side == "client" else "server", "fineColumnsRestored")] += r[A]
             elif op == "merge-stamp":
                 bins[b][_key("" if side == "client" else "server", "columnsStamped")] += r[A]
             elif op == "fallback":
@@ -534,10 +536,12 @@ def _key(prefix, name):
 MOVING_BLOCKS_PER_SECOND = 2.0
 REVERSION_SUMS = [
     "fineColumnsLost",
+    "fineColumnsRestored",
     "columnsReplaced",
     "columnsFilled",
     "columnsStamped",
     "serverFineColumnsLost",
+    "serverFineColumnsRestored",
     "serverColumnsReplaced",
     "serverColumnsFilled",
     "serverColumnsStamped",
@@ -866,9 +870,11 @@ def render_text(report):
             v = rv[phase]
             lines.append(
                 f"  {phase}: {v['seconds']} s, client lost {v['fineColumnsLost']} fine columns "
-                f"({v['fineColumnsLostPerSecond']}/s), replaced {v['columnsReplaced']}, "
+                f"({v['fineColumnsLostPerSecond']}/s), restored {v['fineColumnsRestored']}, "
+                f"replaced {v['columnsReplaced']}, "
                 f"filled {v['columnsFilled']}, stamped {v['columnsStamped']}; "
-                f"server lost {v['serverFineColumnsLost']}; hidden children mean "
+                f"server lost {v['serverFineColumnsLost']}, restored {v['serverFineColumnsRestored']}; "
+                f"hidden children mean "
                 f"{v['meanHiddenChildren']} under {v['meanParentsHiding']} parents, "
                 f"{v['fallbackStartsHiding']} fallbacks began hiding"
             )
