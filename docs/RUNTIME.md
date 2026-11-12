@@ -355,6 +355,9 @@ records both JVMs with JFR's profile settings for attributing a phase further.
   area. `tools/tree_census.py <dir>` writes `report.md`: stems per hectare by layer, height spread,
   species shares, crown spread and leaf volume against height, and the Clark-Evans ratio and
   quadrat dispersion of the upper layers. The canonical census takes about 70 s.
+- `cc.orthrus.riven.TreeGallery` takes `<out.png> [trees per species]` through `runDiagnostics`
+  with the mapped game option and draws every species' side elevation across its own height band
+  (logs brown, leaves green, depth shaded), from the production shapes.
 - `cc.orthrus.riven.CubeClassificationCheck` takes `<new receipt.json> [seed ...]` through
   `runDiagnostics` with the mapped game option. The receipt path must be new. Without seed
   arguments it checks all six intended seeds; optional seed arguments select a partition. Each

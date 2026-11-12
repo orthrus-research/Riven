@@ -811,9 +811,9 @@ of visible tree heights (`heightBlocks` on the layer), so forests differ by stat
 sharing one band; a species keeps its own `heightBlocks` where a stand gives none and a
 `limitBlocks` band it never leaves, and draws a stand band as stems, less the crown it measures
 above its stem on sample trees, inside its limit (loading fails when a species cannot reach a
-band). A tree's crown scales with its stem: crown and cluster radii, branch and limb lengths by
-the square root of the stem's ratio to the species' reference height (0.6 to 1.6), clusters held
-within four steps of a log and conifer discs within 3.4 blocks. Cube classification and the
+band). A tree's crown follows its stem through its growth form (below); palms and the umbrella
+family scale fronds, limbs and discs by the square root of the stem's ratio to the species'
+reference height (0.6 to 1.6), clusters held within four steps of a log. Cube classification and the
 coarse preview canopy follow: `maximumTop` and `reach` bound every tree a species' limit allows at
 its largest scale (loading fails at a reach of 16), and a layer's distant leaf run stands at the
 crowns of its own band. Measured realised heights and densities (tree census, seed 2485331 at
@@ -826,6 +826,25 @@ boreal highlands 7-11 (94/ha, was 32), snow taiga highlands 6-10, misty highland
 10-15; mangrove 5-8; savanna 6-9. Crown spread now follows height (Pearson r 0.64-0.90 by species,
 was about 0). The temperate rainforest's emergents are conifer giants (cedar, spruce).
 `tools/checks/TreeCensus` and `tools/tree_census.py` measure all of this (docs/RUNTIME.md).
+
+**Growth forms** (trees revision 7, terrain-v136): a broadleaf names a growth form, an architecture
+the engine draws, and its crown proportions (`crown`: cluster `radius` and `depth`, envelope
+`width` and `base` as fractions of the tree's height, `leaders`, `fill`). DOME forks a third of
+the way up into leaders and keeps a central leader (oak, beech, maple, mahogany, strangler fig);
+VETERAN forks low into near-level limbs and loses its leader (old oak); OVOID keeps one leader
+(birch, aspen, alder, rubber, rowan); WEEPING is a dome with strands (willow); EMERGENT holds a
+clear bole under a broad flat crown (kapok, giant mahogany); MULTISTEM rises as stems from the base
+(hazel, cacao, olive, mangrove). After the skeleton, twigs grow from the nearest skeleton log to
+points spread through the crown envelope, as many as the envelope's volume over a cluster's times
+the fill, each ending in a leaf cluster, so crowns fill their envelope and every leaf stays within
+four steps of a log. Conifers give a crown `width` fraction too: spires (spruce 0.30-0.40, fir
+0.25-0.32), tiered cedar, cypress as a column, pine as a flat top on a bare bole, juniper and dwarf
+spruce as bushes. Every tree's shape varies by its id (fork height, leader count and directions,
+twig placement). Census, seed 2485331 at 32 km: mean crown spread of domes about their height (oak
+12.2 on trees 8-17 tall, old oak 17.7, strangler fig 14.2), of ovoids about half (birch 5.7);
+leaves per hectare at most 1.95 times v135 in any forest (temperate rainforest; 1.47 overall),
+inside the approved cap of double; every forest signature still holds. `tools/checks/TreeGallery`
+renders every species' side elevation across its band (docs/RUNTIME.md).
 
 **Ground cover** (prototype, ground-cover-v2, terrain-v99, `riven-ground-cover.json`,
 `GroundCover`): Riven places the plants and decals on the ground itself, on land and in and under

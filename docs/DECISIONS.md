@@ -33,6 +33,14 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
 
 ## Adopted 2026-11-11
 
+- **Tree growth forms and the leaf budget.** A tree's architecture is a growth form from a fixed
+  engine menu (broadleaf dome, veteran, ovoid, weeping, emergent and multi-stem; conifer spire,
+  tiered, column, flat top and bush through crown profile and width), which a species chooses and
+  tunes in `riven-trees.json`; a form's proportions of the tree's height set crown width and base,
+  replacing any general crown-scaling rule. Fuller crowns are held to a budget: no forest's leaves
+  per hectare may pass double their terrain-v135 census figure, measured by the tree census before
+  a change lands.
+
 - **Pack-neutral capabilities.** Riven implements nothing for one modpack. When a pack such as
   Supersymmetry has a requirement, Riven meets it with a generic, definition-driven capability
   (a deposit kind, a host stone, a fluid reservoir rule, a mapping layer), and the pack expresses

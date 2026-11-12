@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 6,
+  "revision": 7,
   "variationSeed": "0x5452454553495445",
   "about": "Tree sites (trees-v3): Riven decides where trees stand, which species, and their blocks, as pure functions of seed, definitions and coordinates. Layers are grids of candidate cells, visited in this order: each cell holds at most one candidate, which stands down within trunkSpacingBlocks of a higher-priority candidate of its layer or of a valid site of an earlier layer. A riven: biome lists stands, the first whose climate (when: celsius and moisture, [min, max)) holds at the candidate deciding; a stand gives each layer a chance and species weights. A site is valid on its species ground (grass and dirt, any ground material such as mud, unless ground adds sand or snow; every trunk column of a 2 x 2 trunk at one height) with every column its tree reaches open sky from its lowest block up. Species name a wood (roles wood.<wood>.log and wood.<wood>.leaves), heightBlocks [min, max] and a family: broadleaf (a crown cluster at the trunk top, branches from start of the height ending in clusters, optional droop strands and roots), conifer (discs from crown start to top rows above the trunk; cone, round or column profile; every whorl-th row full), palm (a trunk leaning up to lean blocks, fronds in 4 or 8 directions drooping over their last rows) or umbrella (limbs rising from the trunk top under flat discs). Clusters are ellipsoids of radius and depth whose edge blocks stand by the tree hash with the species density; every leaf lies within four steps of a log. Roots (buttress up the trunk sides, prop arching to the corners) stand only where their foot is on the trunk ground. Each cube writes the tree blocks inside itself; the distant preview draws the same blocks over fine cells and, over cells at least coarseFootprintBlocks wide, the most covering layer of the stand as a leaf run where its combined cover reaches coverThreshold.",
   "coarseFootprintBlocks": 4,
@@ -14,165 +14,164 @@
     "oak": {
       "wood": "oak",
       "family": "broadleaf",
-      "heightBlocks": [5, 8], "limitBlocks": [3, 16],
-      "crown": {"radius": [2.5, 3.2], "depth": 2},
-      "branches": {"count": [2, 4], "start": 0.55, "length": [2, 3.5], "rise": 0.5, "cluster": [2, 2.6]}
+      "heightBlocks": [5, 8],
+      "limitBlocks": [3, 16],
+      "crown": {"radius": [2, 2.6], "depth": 1.8, "width": [0.75, 1.0], "base": [0.3, 0.4], "leaders": [2, 4], "fill": 1.1},
+      "form": "dome"
     },
     "oak_old": {
       "wood": "oak",
       "family": "broadleaf",
-      "heightBlocks": [8, 12], "limitBlocks": [8, 15],
-      "crown": {"radius": [2.8, 3.2], "depth": 2},
-      "branches": {"count": [4, 6], "start": 0.5, "length": [3, 5.5], "rise": 0.45, "cluster": [2.5, 3.2]}
+      "heightBlocks": [8, 12],
+      "limitBlocks": [8, 15],
+      "crown": {"radius": [2.2, 2.8], "depth": 1.8, "width": [1.0, 1.3], "base": [0.2, 0.3], "leaders": [3, 5], "fill": 1.0},
+      "form": "veteran"
     },
     "beech": {
       "wood": "beech",
       "family": "broadleaf",
-      "heightBlocks": [8, 12], "limitBlocks": [6, 16],
-      "crown": {"radius": [2.8, 3.2], "depth": 2},
-      "branches": {"count": [3, 5], "start": 0.6, "length": [2, 4], "rise": 0.6, "cluster": [2.2, 2.8]},
-      "density": 0.8
+      "heightBlocks": [8, 12],
+      "limitBlocks": [6, 16],
+      "crown": {"radius": [2, 2.6], "depth": 1.8, "width": [0.7, 0.9], "base": [0.3, 0.4], "leaders": [2, 4], "fill": 1.0},
+      "density": 0.8,
+      "form": "dome"
     },
     "birch": {
       "wood": "birch",
       "family": "broadleaf",
-      "heightBlocks": [7, 11], "limitBlocks": [3, 12],
-      "crown": {"radius": [1.6, 2.2], "depth": 2.5},
-      "branches": {"count": [1, 3], "start": 0.6, "length": [1, 2], "rise": 1, "cluster": [1.5, 2]},
-      "ground": ["grass", "dirt", "snow"]
+      "heightBlocks": [7, 11],
+      "limitBlocks": [3, 12],
+      "crown": {"radius": [1.4, 1.8], "depth": 1.8, "width": [0.35, 0.45], "base": [0.35, 0.45], "leaders": [1, 1], "fill": 2.0},
+      "ground": ["grass", "dirt", "snow"],
+      "form": "ovoid"
     },
     "alder": {
       "wood": "alder",
       "family": "broadleaf",
-      "heightBlocks": [6, 9], "limitBlocks": [3, 16],
-      "crown": {"radius": [2, 2.6], "depth": 2.5},
-      "branches": {"count": [2, 3], "start": 0.5, "length": [1.5, 2.5], "rise": 0.8, "cluster": [1.8, 2.2]}
+      "heightBlocks": [6, 9],
+      "limitBlocks": [3, 16],
+      "crown": {"radius": [1.5, 1.9], "depth": 1.8, "width": [0.4, 0.5], "base": [0.3, 0.4], "leaders": [1, 1], "fill": 1.2},
+      "form": "ovoid"
     },
     "aspen": {
       "wood": "aspen",
       "family": "broadleaf",
-      "heightBlocks": [8, 12], "limitBlocks": [6, 12],
-      "crown": {"radius": [1.5, 2], "depth": 3},
-      "branches": {"count": [1, 2], "start": 0.65, "length": [1, 2], "rise": 1.2, "cluster": [1.4, 1.8]}
+      "heightBlocks": [8, 12],
+      "limitBlocks": [6, 12],
+      "crown": {"radius": [1.3, 1.7], "depth": 1.8, "width": [0.3, 0.4], "base": [0.4, 0.5], "leaders": [1, 1], "fill": 2.0},
+      "form": "ovoid"
     },
     "maple": {
       "wood": "maple",
       "family": "broadleaf",
-      "heightBlocks": [6, 10], "limitBlocks": [5, 16],
-      "crown": {"radius": [2.6, 3.2], "depth": 2},
-      "branches": {"count": [3, 4], "start": 0.5, "length": [2, 3], "rise": 0.7, "cluster": [2.2, 2.8]}
+      "heightBlocks": [6, 10],
+      "limitBlocks": [5, 16],
+      "crown": {"radius": [2, 2.6], "depth": 1.8, "width": [0.65, 0.9], "base": [0.3, 0.4], "leaders": [2, 4], "fill": 1.1},
+      "form": "dome"
     },
     "rowan": {
       "wood": "rowan",
       "family": "broadleaf",
-      "heightBlocks": [4, 7], "limitBlocks": [3, 13],
-      "crown": {"radius": [2, 2.6], "depth": 1.8},
-      "branches": {
-        "count": [2, 3],
-        "start": 0.45,
-        "length": [1.5, 2.5],
-        "rise": 0.8,
-        "cluster": [1.6, 2.2]
-      }
+      "heightBlocks": [4, 7],
+      "limitBlocks": [3, 13],
+      "crown": {"radius": [1.5, 1.9], "depth": 1.6, "width": [0.45, 0.55], "base": [0.3, 0.4], "leaders": [1, 1], "fill": 2.0},
+      "form": "ovoid"
     },
     "hazel": {
       "wood": "hazel",
       "family": "broadleaf",
       "heightBlocks": [2, 3],
-      "crown": {"radius": [1.6, 2.2], "depth": 1.5},
-      "branches": {"count": [3, 4], "start": 0.2, "length": [1, 2], "rise": 1, "cluster": [1.4, 1.8]},
-      "density": 0.75
+      "crown": {"radius": [1.3, 1.7], "depth": 1.4, "width": [1.0, 1.4], "base": [0.15, 0.25], "leaders": [3, 5], "fill": 1.0},
+      "density": 0.75,
+      "form": "multistem"
     },
     "willow": {
       "wood": "willow",
       "family": "broadleaf",
-      "heightBlocks": [5, 7], "limitBlocks": [5, 13],
-      "crown": {"radius": [2.4, 3], "depth": 1.6},
-      "branches": {"count": [4, 6], "start": 0.6, "length": [2, 3.5], "rise": 0.35, "cluster": [2, 2.6]},
-      "droop": [1, 3]
+      "heightBlocks": [5, 7],
+      "limitBlocks": [5, 13],
+      "crown": {"radius": [2, 2.4], "depth": 1.6, "width": [0.8, 1.0], "base": [0.3, 0.35], "leaders": [3, 4], "fill": 1.1},
+      "droop": [1, 3],
+      "form": "weeping"
     },
     "mangrove": {
       "wood": "mangrove",
       "family": "broadleaf",
-      "heightBlocks": [4, 6], "limitBlocks": [3, 9],
-      "crown": {"radius": [2.2, 2.8], "depth": 1.8},
-      "branches": {"count": [2, 3], "start": 0.6, "length": [1.5, 2.5], "rise": 0.6, "cluster": [1.8, 2.4]},
+      "heightBlocks": [4, 6],
+      "limitBlocks": [3, 9],
+      "crown": {"radius": [1.6, 2], "depth": 1.5, "width": [1.0, 1.3], "base": [0.25, 0.35], "leaders": [2, 4], "fill": 1.0},
       "ground": ["grass", "dirt", "sand"],
-      "roots": {"count": 4, "reach": 2, "height": 3, "style": "prop"}
+      "roots": {"count": 4, "reach": 2, "height": 3, "style": "prop"},
+      "form": "multistem"
     },
     "kapok": {
       "wood": "kapok",
       "family": "broadleaf",
-      "heightBlocks": [20, 28], "limitBlocks": [18, 28],
-      "crown": {"radius": [3, 3.2], "depth": 1.6},
-      "branches": {"count": [5, 7], "start": 0.78, "length": [4.5, 7], "rise": 0.3, "cluster": [2.8, 3.2]},
+      "heightBlocks": [20, 28],
+      "limitBlocks": [18, 28],
+      "crown": {"radius": [2.2, 2.8], "depth": 1.4, "width": [0.55, 0.65], "base": [0.7, 0.8], "leaders": [4, 6], "fill": 1.0},
       "width": 2,
       "density": 0.75,
-      "roots": {"count": 4, "reach": 2, "height": 4, "style": "buttress"}
+      "roots": {"count": 4, "reach": 2, "height": 4, "style": "buttress"},
+      "form": "emergent"
     },
     "mahogany": {
       "wood": "mahogany",
       "family": "broadleaf",
-      "heightBlocks": [9, 13], "limitBlocks": [9, 17],
-      "crown": {"radius": [2.4, 3], "depth": 1.8},
-      "branches": {"count": [3, 4], "start": 0.65, "length": [2.5, 4], "rise": 0.4, "cluster": [2.2, 2.8]}
+      "heightBlocks": [9, 13],
+      "limitBlocks": [9, 17],
+      "crown": {"radius": [2, 2.6], "depth": 1.8, "width": [0.6, 0.8], "base": [0.45, 0.55], "leaders": [2, 4], "fill": 1.1},
+      "form": "dome"
     },
     "mahogany_giant": {
       "wood": "mahogany",
       "family": "broadleaf",
-      "heightBlocks": [16, 22], "limitBlocks": [16, 28],
-      "crown": {"radius": [2.6, 3.2], "depth": 1.8},
-      "branches": {
-        "count": [4, 5],
-        "start": 0.75,
-        "length": [3.5, 5.5],
-        "rise": 0.35,
-        "cluster": [2.6, 3.2]
-      },
+      "heightBlocks": [16, 22],
+      "limitBlocks": [16, 28],
+      "crown": {"radius": [2.2, 2.8], "depth": 1.4, "width": [0.55, 0.65], "base": [0.65, 0.75], "leaders": [3, 5], "fill": 1.0},
       "width": 2,
-      "roots": {"count": 4, "reach": 1, "height": 3, "style": "buttress"}
+      "roots": {"count": 4, "reach": 1, "height": 3, "style": "buttress"},
+      "form": "emergent"
     },
     "strangler_fig": {
       "wood": "strangler_fig",
       "family": "broadleaf",
-      "heightBlocks": [10, 14], "limitBlocks": [5, 16],
-      "crown": {"radius": [2.6, 3.2], "depth": 2},
-      "branches": {"count": [3, 5], "start": 0.6, "length": [2.5, 4.5], "rise": 0.35, "cluster": [2.4, 3]},
-      "roots": {"count": 3, "reach": 1, "height": 4, "style": "buttress"}
+      "heightBlocks": [10, 14],
+      "limitBlocks": [5, 16],
+      "crown": {"radius": [2.2, 2.8], "depth": 1.8, "width": [0.8, 1.0], "base": [0.4, 0.5], "leaders": [3, 5], "fill": 1.1},
+      "roots": {"count": 3, "reach": 1, "height": 4, "style": "buttress"},
+      "form": "dome"
     },
     "rubber": {
       "wood": "rubber",
       "family": "broadleaf",
-      "heightBlocks": [9, 13], "limitBlocks": [9, 16],
-      "crown": {"radius": [2.2, 2.8], "depth": 2},
-      "branches": {"count": [2, 4], "start": 0.6, "length": [2, 3.5], "rise": 0.6, "cluster": [2, 2.6]}
+      "heightBlocks": [9, 13],
+      "limitBlocks": [9, 16],
+      "crown": {"radius": [1.6, 2], "depth": 1.8, "width": [0.45, 0.55], "base": [0.4, 0.5], "leaders": [1, 1], "fill": 1.2},
+      "form": "ovoid"
     },
     "cacao": {
       "wood": "cacao",
       "family": "broadleaf",
       "heightBlocks": [3, 4],
-      "crown": {"radius": [1.8, 2.4], "depth": 1.6},
-      "branches": {"count": [2, 3], "start": 0.4, "length": [1, 2], "rise": 0.6, "cluster": [1.4, 1.8]}
+      "crown": {"radius": [1.3, 1.7], "depth": 1.4, "width": [0.9, 1.2], "base": [0.2, 0.3], "leaders": [2, 3], "fill": 1.0},
+      "form": "multistem"
     },
     "olive": {
       "wood": "olive",
       "family": "broadleaf",
-      "heightBlocks": [3, 5], "limitBlocks": [3, 8],
-      "crown": {"radius": [1.8, 2.4], "depth": 1.5},
-      "branches": {
-        "count": [3, 4],
-        "start": 0.35,
-        "length": [1.5, 2.5],
-        "rise": 0.6,
-        "cluster": [1.8, 2.2]
-      },
-      "density": 0.65
+      "heightBlocks": [3, 5],
+      "limitBlocks": [3, 8],
+      "crown": {"radius": [1.5, 1.9], "depth": 1.4, "width": [1.0, 1.3], "base": [0.2, 0.3], "leaders": [2, 4], "fill": 1.0},
+      "density": 0.65,
+      "form": "multistem"
     },
     "spruce": {
       "wood": "spruce",
       "family": "conifer",
-      "heightBlocks": [9, 15], "limitBlocks": [3, 16],
-      "crown": {"start": 0.22, "radius": [2, 2.8], "profile": "cone", "whorl": 2, "top": 2},
+      "heightBlocks": [9, 15],
+      "limitBlocks": [3, 16],
+      "crown": {"start": 0.22, "radius": [2, 2.8], "profile": "cone", "whorl": 2, "top": 2, "width": [0.3, 0.4]},
       "density": 0.8,
       "ground": ["grass", "dirt", "snow"]
     },
@@ -180,14 +179,14 @@
       "wood": "spruce",
       "family": "conifer",
       "heightBlocks": [3, 5],
-      "crown": {"start": 0.05, "radius": [1, 1.6], "profile": "cone", "whorl": 0, "top": 1},
+      "crown": {"start": 0.0, "radius": [1, 1.6], "profile": "cone", "whorl": 0, "top": 1, "width": [0.6, 0.8]},
       "ground": ["grass", "dirt", "snow"]
     },
     "spruce_giant": {
       "wood": "spruce",
       "family": "conifer",
       "heightBlocks": [18, 26],
-      "crown": {"start": 0.3, "radius": [2.8, 3.4], "profile": "cone", "whorl": 2, "top": 2},
+      "crown": {"start": 0.3, "radius": [2.8, 3.4], "profile": "cone", "whorl": 2, "top": 2, "width": [0.28, 0.34]},
       "width": 2,
       "density": 0.8,
       "ground": ["grass", "dirt", "snow"]
@@ -195,8 +194,9 @@
     "fir": {
       "wood": "fir",
       "family": "conifer",
-      "heightBlocks": [10, 16], "limitBlocks": [5, 17],
-      "crown": {"start": 0.25, "radius": [2, 2.6], "profile": "cone", "whorl": 0, "top": 1},
+      "heightBlocks": [10, 16],
+      "limitBlocks": [5, 17],
+      "crown": {"start": 0.25, "radius": [2, 2.6], "profile": "cone", "whorl": 0, "top": 1, "width": [0.25, 0.32]},
       "density": 0.85,
       "ground": ["grass", "dirt", "snow"]
     },
@@ -204,7 +204,7 @@
       "wood": "fir",
       "family": "conifer",
       "heightBlocks": [20, 28],
-      "crown": {"start": 0.35, "radius": [2.8, 3.4], "profile": "cone", "whorl": 0, "top": 2},
+      "crown": {"start": 0.35, "radius": [2.8, 3.4], "profile": "cone", "whorl": 0, "top": 2, "width": [0.25, 0.3]},
       "width": 2,
       "density": 0.85,
       "ground": ["grass", "dirt", "snow"]
@@ -212,34 +212,37 @@
     "pine": {
       "wood": "pine",
       "family": "conifer",
-      "heightBlocks": [10, 15], "limitBlocks": [5, 15],
-      "crown": {"start": 0.6, "radius": [2, 2.8], "profile": "round", "whorl": 0, "top": 1},
+      "heightBlocks": [10, 15],
+      "limitBlocks": [5, 15],
+      "crown": {"start": 0.65, "radius": [2, 2.8], "profile": "round", "whorl": 0, "top": 1, "width": [0.42, 0.55]},
       "ground": ["grass", "dirt", "snow"]
     },
     "cedar": {
       "wood": "cedar",
       "family": "conifer",
-      "heightBlocks": [9, 14], "limitBlocks": [5, 18],
-      "crown": {"start": 0.25, "radius": [2.2, 3], "profile": "cone", "whorl": 3, "top": 1}
+      "heightBlocks": [9, 14],
+      "limitBlocks": [5, 18],
+      "crown": {"start": 0.25, "radius": [2.2, 3], "profile": "cone", "whorl": 3, "top": 1, "width": [0.42, 0.52]}
     },
     "cedar_giant": {
       "wood": "cedar",
       "family": "conifer",
       "heightBlocks": [18, 26],
-      "crown": {"start": 0.3, "radius": [3, 3.4], "profile": "cone", "whorl": 3, "top": 2},
+      "crown": {"start": 0.3, "radius": [3, 3.4], "profile": "cone", "whorl": 3, "top": 2, "width": [0.36, 0.42]},
       "width": 2
     },
     "cypress": {
       "wood": "cypress",
       "family": "conifer",
-      "heightBlocks": [11, 16], "limitBlocks": [9, 16],
-      "crown": {"start": 0.5, "radius": [2, 2.6], "profile": "round", "whorl": 0, "top": 1}
+      "heightBlocks": [11, 16],
+      "limitBlocks": [9, 16],
+      "crown": {"start": 0.15, "radius": [2, 2.6], "profile": "column", "whorl": 0, "top": 1, "width": [0.2, 0.28]}
     },
     "juniper": {
       "wood": "juniper",
       "family": "conifer",
       "heightBlocks": [3, 5],
-      "crown": {"start": 0.1, "radius": [1.2, 2], "profile": "round", "whorl": 0, "top": 1},
+      "crown": {"start": 0.05, "radius": [1.2, 2], "profile": "round", "whorl": 0, "top": 1, "width": [0.8, 1.0]},
       "ground": ["grass", "dirt", "snow"]
     },
     "coconut_palm": {
@@ -258,13 +261,7 @@
       "fronds": {"count": 8, "length": [3, 4], "droop": 2},
       "ground": ["grass", "dirt", "sand"]
     },
-    "tree_fern": {
-      "wood": "tree_fern",
-      "family": "palm",
-      "heightBlocks": [3, 5],
-      "lean": [0, 0.6],
-      "fronds": {"count": 8, "length": [2, 3], "droop": 1}
-    },
+    "tree_fern": {"wood": "tree_fern", "family": "palm", "heightBlocks": [3, 5], "lean": [0, 0.6], "fronds": {"count": 8, "length": [2, 3], "droop": 1}},
     "umbrella_acacia": {
       "wood": "umbrella_acacia",
       "family": "umbrella",
@@ -283,7 +280,8 @@
     "mesquite": {
       "wood": "mesquite",
       "family": "umbrella",
-      "heightBlocks": [2, 4], "limitBlocks": [2, 6],
+      "heightBlocks": [2, 4],
+      "limitBlocks": [2, 6],
       "limbs": {"count": [2, 4], "length": [1.5, 2.5], "rise": 0.8},
       "disc": {"radius": [1.8, 2.4], "depth": 1.1}
     }
@@ -299,14 +297,8 @@
       "canopy": {"chance": 0.318, "heightBlocks": [6, 10], "species": {"spruce": 4, "fir": 4}},
       "understory": {"chance": 0.079, "heightBlocks": [3, 5], "species": {"spruce_dwarf": 2, "juniper": 1}}
     },
-    "riven:frozen_hills": {
-      "canopy": {"chance": 0.12, "species": {"spruce": 1, "fir": 1}},
-      "understory": {"chance": 0.04, "species": {"spruce_dwarf": 1}}
-    },
-    "riven:cold_steppe": {
-      "canopy": {"chance": 0.04, "species": {"pine": 3, "birch": 2, "aspen": 1}},
-      "understory": {"chance": 0.04, "species": {"juniper": 1}}
-    },
+    "riven:frozen_hills": {"canopy": {"chance": 0.12, "species": {"spruce": 1, "fir": 1}}, "understory": {"chance": 0.04, "species": {"spruce_dwarf": 1}}},
+    "riven:cold_steppe": {"canopy": {"chance": 0.04, "species": {"pine": 3, "birch": 2, "aspen": 1}}, "understory": {"chance": 0.04, "species": {"juniper": 1}}},
     "riven:boreal_forest": [
       {
         "when": {"celsius": [-100, 0]},
@@ -323,10 +315,7 @@
       "canopy": {"chance": 0.773, "heightBlocks": [14, 18], "species": {"cedar": 3, "fir": 3, "spruce": 2, "alder": 2, "maple": 1}},
       "understory": {"chance": 0.242, "heightBlocks": [4, 7], "species": {"hazel": 2, "rowan": 1}}
     },
-    "riven:cold_uplands": {
-      "canopy": {"chance": 0.08, "species": {"pine": 3, "birch": 2}},
-      "understory": {"chance": 0.06, "species": {"juniper": 2}}
-    },
+    "riven:cold_uplands": {"canopy": {"chance": 0.08, "species": {"pine": 3, "birch": 2}}, "understory": {"chance": 0.06, "species": {"juniper": 2}}},
     "riven:boreal_highlands": {
       "canopy": {"chance": 1, "heightBlocks": [7, 11], "species": {"spruce": 4, "fir": 4, "pine": 2, "birch": 1}},
       "understory": {"chance": 1, "heightBlocks": [3, 5], "species": {"spruce_dwarf": 2, "juniper": 1}}
@@ -335,14 +324,8 @@
       "canopy": {"chance": 0.293, "heightBlocks": [5, 9], "species": {"birch": 2, "rowan": 3, "alder": 2, "spruce": 2}},
       "understory": {"chance": 0.117, "heightBlocks": [3, 5], "species": {"hazel": 2, "juniper": 1}}
     },
-    "riven:cold_hills": {
-      "canopy": {"chance": 0.18, "species": {"spruce": 2, "pine": 2, "birch": 1}},
-      "understory": {"chance": 0.05, "species": {"juniper": 1}}
-    },
-    "riven:grassland": {
-      "canopy": {"chance": 0.03, "species": {"oak": 3, "oak_old": 1, "birch": 1}},
-      "understory": {"chance": 0.02, "species": {"hazel": 1}}
-    },
+    "riven:cold_hills": {"canopy": {"chance": 0.18, "species": {"spruce": 2, "pine": 2, "birch": 1}}, "understory": {"chance": 0.05, "species": {"juniper": 1}}},
+    "riven:grassland": {"canopy": {"chance": 0.03, "species": {"oak": 3, "oak_old": 1, "birch": 1}}, "understory": {"chance": 0.02, "species": {"hazel": 1}}},
     "riven:temperate_woodland": [
       {
         "when": {"celsius": [-100, 9]},
@@ -361,10 +344,7 @@
       "canopy": {"chance": 0.748, "heightBlocks": [14, 19], "species": {"beech": 3, "maple": 3, "alder": 2, "oak": 2, "cedar": 1}},
       "understory": {"chance": 0.264, "heightBlocks": [4, 8], "species": {"hazel": 3, "tree_fern": 1}}
     },
-    "riven:dry_uplands": {
-      "canopy": {"chance": 0.05, "species": {"pine": 3, "oak": 1}},
-      "understory": {"chance": 0.06, "species": {"juniper": 3, "hazel": 1}}
-    },
+    "riven:dry_uplands": {"canopy": {"chance": 0.05, "species": {"pine": 3, "oak": 1}}, "understory": {"chance": 0.06, "species": {"juniper": 3, "hazel": 1}}},
     "riven:wooded_highlands": {
       "canopy": {"chance": 0.513, "heightBlocks": [9, 13], "species": {"oak": 3, "beech": 2, "maple": 2, "pine": 2, "birch": 2}},
       "understory": {"chance": 0.128, "heightBlocks": [3, 6], "species": {"hazel": 2, "rowan": 2}}
@@ -373,31 +353,18 @@
       "canopy": {"chance": 0.819, "heightBlocks": [8, 12], "species": {"alder": 2, "strangler_fig": 1, "maple": 1, "oak": 1}},
       "understory": {"chance": 0.382, "heightBlocks": [3, 6], "species": {"tree_fern": 4, "hazel": 1}}
     },
-    "riven:rugged_hills": {
-      "canopy": {"chance": 0.2, "species": {"pine": 3, "birch": 2, "oak": 1, "spruce": 1}},
-      "understory": {"chance": 0.05, "species": {"juniper": 1}}
-    },
-    "riven:scrubland": {
-      "canopy": {"chance": 0.06, "species": {"olive": 3, "mesquite": 2}},
-      "understory": {"chance": 0.08, "species": {"juniper": 3}}
-    },
+    "riven:rugged_hills": {"canopy": {"chance": 0.2, "species": {"pine": 3, "birch": 2, "oak": 1, "spruce": 1}}, "understory": {"chance": 0.05, "species": {"juniper": 1}}},
+    "riven:scrubland": {"canopy": {"chance": 0.06, "species": {"olive": 3, "mesquite": 2}}, "understory": {"chance": 0.08, "species": {"juniper": 3}}},
     "riven:warm_woodland": {
       "canopy": {"chance": 0.305, "heightBlocks": [6, 10], "species": {"olive": 3, "oak": 2, "pine": 2, "cedar": 2}},
       "understory": {"chance": 0.081, "heightBlocks": [3, 5], "species": {"juniper": 2}}
     },
     "riven:subtropical_forest": {
       "emergent": {"chance": 0.154, "heightBlocks": [20, 24], "species": {"mahogany_giant": 1}},
-      "canopy": {
-        "chance": 0.78,
-        "heightBlocks": [13, 17],
-        "species": {"mahogany": 2, "strangler_fig": 2, "rubber": 2, "maple": 1, "cypress": 1}
-      },
+      "canopy": {"chance": 0.78, "heightBlocks": [13, 17], "species": {"mahogany": 2, "strangler_fig": 2, "rubber": 2, "maple": 1, "cypress": 1}},
       "understory": {"chance": 0.294, "heightBlocks": [4, 7], "species": {"tree_fern": 2, "cacao": 1}}
     },
-    "riven:scrub_plateau": {
-      "canopy": {"chance": 0.04, "species": {"mesquite": 2, "olive": 1}},
-      "understory": {"chance": 0.06, "species": {"juniper": 3}}
-    },
+    "riven:scrub_plateau": {"canopy": {"chance": 0.04, "species": {"mesquite": 2, "olive": 1}}, "understory": {"chance": 0.06, "species": {"juniper": 3}}},
     "riven:warm_highlands": {
       "canopy": {"chance": 0.27, "heightBlocks": [6, 10], "species": {"pine": 3, "cedar": 3, "oak": 1, "olive": 1}},
       "understory": {"chance": 0.067, "heightBlocks": [3, 5], "species": {"juniper": 2}}
@@ -406,10 +373,7 @@
       "canopy": {"chance": 0.67, "heightBlocks": [12, 16], "species": {"pine": 2, "fir": 2, "cedar": 2, "oak": 1, "mahogany": 1}},
       "understory": {"chance": 0.191, "heightBlocks": [3, 6], "species": {"tree_fern": 2, "hazel": 1}}
     },
-    "riven:warm_hills": {
-      "canopy": {"chance": 0.15, "species": {"pine": 2, "cedar": 1, "olive": 1}},
-      "understory": {"chance": 0.05, "species": {"juniper": 1}}
-    },
+    "riven:warm_hills": {"canopy": {"chance": 0.15, "species": {"pine": 2, "cedar": 1, "olive": 1}}, "understory": {"chance": 0.05, "species": {"juniper": 1}}},
     "riven:badland_hills": {"understory": {"chance": 0.03, "species": {"juniper": 1, "mesquite": 1}}},
     "riven:savanna": {
       "emergent": {"chance": 0.06, "species": {"baobab": 1}},
@@ -426,22 +390,14 @@
       "canopy": {"chance": 0.767, "heightBlocks": [12, 16], "species": {"mahogany": 2, "rubber": 1, "strangler_fig": 1}},
       "understory": {"chance": 0.361, "heightBlocks": [3, 7], "species": {"tree_fern": 3, "cacao": 1}}
     },
-    "riven:beach": [
-      {
-        "when": {"celsius": [20, 100]},
-        "canopy": {"chance": 0.12, "species": {"coconut_palm": 1}}
-      }
-    ],
+    "riven:beach": [{"when": {"celsius": [20, 100]}, "canopy": {"chance": 0.12, "species": {"coconut_palm": 1}}}],
     "riven:marsh": {"canopy": {"chance": 0.08, "species": {"willow": 2, "alder": 2, "cypress": 1}}},
     "riven:wetland": {"canopy": {"chance": 0.261, "heightBlocks": [10, 15], "species": {"willow": 3, "alder": 2, "cypress": 3}}},
     "riven:oasis": {"canopy": {"chance": 0.35, "species": {"date_palm": 4, "coconut_palm": 1}}},
     "riven:fjord_mouth": {"canopy": {"chance": 0.15, "species": {"spruce": 2, "fir": 2}}},
     "riven:delta_wetland": [
-      {
-        "when": {"celsius": [20, 100]},
-        "canopy": {"chance": 0.326, "heightBlocks": [10, 15], "species": {"cypress": 3, "mangrove": 2, "willow": 1}}
-      },
-      {"canopy": {"chance": 0.326, "heightBlocks": [10, 15], "species": {"cypress": 3, "willow": 2, "alder": 1}}}
+      {"when": {"celsius": [20, 100]}, "canopy": {"chance": 0.44, "heightBlocks": [10, 15], "species": {"cypress": 3, "mangrove": 2, "willow": 1}}},
+      {"canopy": {"chance": 0.44, "heightBlocks": [10, 15], "species": {"cypress": 3, "willow": 2, "alder": 1}}}
     ],
     "riven:mangrove_coast": {"canopy": {"chance": 0.645, "heightBlocks": [5, 8], "species": {"mangrove": 1}}}
   },

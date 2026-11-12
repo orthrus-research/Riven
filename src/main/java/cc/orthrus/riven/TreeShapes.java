@@ -43,6 +43,22 @@ final class TreeShapes {
         }
     }
 
+    /**
+     * Broadleaf growth forms: a skeleton the engine draws and where leaf clusters sit on it.
+     * DOME forks into leaders a third of the way up; VETERAN forks low into near-level limbs and
+     * loses its leader; OVOID keeps one leader with short side branches; WEEPING is a dome with
+     * strands; EMERGENT holds a clear bole under a broad flat crown; MULTISTEM rises as stems from
+     * the base.
+     */
+    enum Form {
+        DOME,
+        VETERAN,
+        OVOID,
+        WEEPING,
+        EMERGENT,
+        MULTISTEM
+    }
+
     enum Family {
         BROADLEAF,
         CONIFER,
@@ -88,10 +104,13 @@ final class TreeShapes {
         final int offset;
 
         final double density;
-        // Broadleaf: crown cluster at the trunk top, branches with a cluster each, hanging strands.
-        private final double[] crownRadius, branchLength, branchCluster;
-        private final double crownDepth, branchStart, branchRise;
-        private final int[] branches, droop;
+        // Broadleaf: a growth form's skeleton, leaf clusters of crown radius and depth on its
+        // twigs over an envelope of width and base (fractions of the tree's height), and hanging
+        // strands.
+        private final Form form;
+        private final double[] crownRadius, crownWidth, crownBase;
+        private final double crownDepth, fill;
+        private final int[] leaders, droop;
         // Roots: buttresses up the trunk's sides, or prop roots arching down from it.
         private final int rootCount, rootReach, rootHeight;
         private final boolean propRoots;
@@ -123,20 +142,8 @@ final class TreeShapes {
             double k = scale(h);
             switch (family) {
                 case BROADLEAF:
-                    highest = h - 1 + (int) Math.ceil(crownDepth);
-                    if (branches != null && branches[1] > 0) {
-                        int start = Math.max(1, h - 1);
-                        highest =
-                                Math.max(
-                                        highest,
-                                        (int)
-                                                        Math.ceil(
-                                                                start
-                                                                        + Math.max(0, branchRise)
-                                                                                * branchLength[1]
-                                                                                * k)
-                                                + (int) Math.ceil(crownDepth));
-                    }
+                    // Twigs end inside the envelope, whose top is the stem's top.
+                    highest = h + (int) Math.ceil(crownDepth) + 1;
                     break;
                 case CONIFER:
                     highest = h - 1 + topRows;
@@ -199,19 +206,22 @@ final class TreeShapes {
             density = j.has("density") ? Rules.number(j, "density", 0, 1) : 0.7;
             JsonObject none = new JsonObject();
             JsonObject crown = j.has("crown") ? j.getAsJsonObject("crown") : none;
-            JsonObject branch = j.has("branches") ? j.getAsJsonObject("branches") : none;
             JsonObject root = j.has("roots") ? j.getAsJsonObject("roots") : none;
             JsonObject frond = j.has("fronds") ? j.getAsJsonObject("fronds") : none;
             JsonObject limb = j.has("limbs") ? j.getAsJsonObject("limbs") : none;
             boolean broadleaf = family == Family.BROADLEAF, conifer = family == Family.CONIFER;
             boolean palm = family == Family.PALM, umbrella = family == Family.UMBRELLA;
+            form =
+                    broadleaf
+                            ? Form.valueOf(
+                                    j.get("form").getAsString().toUpperCase(java.util.Locale.ROOT))
+                            : null;
             crownRadius = broadleaf ? range(crown, "radius", 0.5, 3.4) : null;
             crownDepth = broadleaf ? Rules.number(crown, "depth", 0.5, 3) : 0;
-            branches = broadleaf && branch.has("count") ? integers(branch, "count", 0, 8) : null;
-            branchStart = branches != null ? Rules.number(branch, "start", 0, 1) : 0;
-            branchLength = branches != null ? range(branch, "length", 1, 8) : null;
-            branchRise = branches != null ? Rules.number(branch, "rise", -1, 3) : 0;
-            branchCluster = branches != null ? range(branch, "cluster", 0.5, 3.4) : null;
+            crownWidth = broadleaf || crown.has("width") ? range(crown, "width", 0.1, 1.6) : null;
+            crownBase = broadleaf ? range(crown, "base", 0, 0.9) : null;
+            fill = broadleaf ? Rules.number(crown, "fill", 0.05, 3) : 0;
+            leaders = broadleaf ? integers(crown, "leaders", 1, 6) : null;
             droop = broadleaf && j.has("droop") ? integers(j, "droop", 0, 6) : null;
             rootCount = j.has("roots") ? (int) Rules.number(root, "count", 1, 4) : 0;
             rootReach = rootCount > 0 ? (int) Rules.number(root, "reach", 1, 3) : 0;
@@ -239,7 +249,6 @@ final class TreeShapes {
             // sqrt(2 rh^2 + rv^2) steps from its centre log.
             if (broadleaf) {
                 decayReach(crownRadius[1], crownDepth, id);
-                if (branches != null) decayReach(branchCluster[1], crownDepth, id);
             }
             if (umbrella) decayReach(disc[1], discDepth, id);
             // Crowns grow with the stem up to the limit, so bounds take the largest scale.
@@ -247,21 +256,11 @@ final class TreeShapes {
             int bound;
             switch (family) {
                 case BROADLEAF:
-                    bound =
-                            (int)
-                                    Math.ceil(
-                                            Math.max(
-                                                    cap(crownRadius[1] * k, crownDepth),
-                                                    branches == null
-                                                            ? 0
-                                                            : branchLength[1] * k
-                                                                    + cap(
-                                                                            branchCluster[1] * k,
-                                                                            crownDepth)
-                                                                    + 1));
+                    // Twigs end inside the envelope's radius; a cluster around each.
+                    bound = (int) Math.ceil(envelope(limit[1], crownWidth[1]) + crownRadius[1] + 1);
                     break;
                 case CONIFER:
-                    bound = (int) Math.ceil(Math.min(RADIUS_CAP, radius[1] * k) + 0.5);
+                    bound = (int) Math.ceil(discRadius(limit[1], radius[1], k) + 0.5);
                     break;
                 case PALM:
                     bound =
@@ -327,6 +326,23 @@ final class TreeShapes {
                     Math.min(t - 1, (int) Math.round(bottom / samples)),
                     t,
                     drawn / samples);
+        }
+
+        /** A broadleaf envelope's horizontal radius for a stem height and width fraction. */
+        static double envelope(int h, double width) {
+            return Math.max(1.5, width * h / 2);
+        }
+
+        /**
+         * A conifer's widest disc: its width fraction of the height where the species gives one
+         * (the form's proportion), else its radius scaled with the stem; within 3.4 blocks.
+         */
+        double discRadius(int h, double radius, double g) {
+            double r =
+                    crownWidth != null
+                            ? radius / this.radius[1] * crownWidth[1] * h / 2
+                            : radius * g;
+            return Math.min(RADIUS_CAP, r);
         }
 
         /**
@@ -549,49 +565,134 @@ final class TreeShapes {
         out.finish();
     }
 
+    /**
+     * A broadleaf of its growth form: a skeleton of logs (bole and leaders, one leader with side
+     * branches, or stems from the base), then twigs from the nearest skeleton node to points spread
+     * through the crown envelope, each ending in a leaf cluster, so the crown fills the envelope and
+     * every leaf stays within four steps of a log.
+     */
     private static void broadleaf(Species s, long id, int h, double g, Shape out) {
         int w = s.width;
         double c = (w - 1) / 2.0;
-        trunk(out, w, h);
-        double crown = cap(draw(s.crownRadius, id, 2) * g, s.crownDepth);
-        cluster(out, c, h - 1, c, crown, s.crownDepth, s, id, 3);
-        if (s.branches != null) {
-            int n = draw(s.branches, id, 4), turn = (int) (unit(id, 5) * 16);
-            for (int k = 0; k < n; k++) {
-                long b = SeededNoise.mix(id + 0x632be59bd9b4e019L * (k + 1));
-                int dir = (turn + k * 16 / n + (int) (unit(b, 1) * 3) - 1) & 15;
-                int ys =
-                        Math.max(
-                                1,
-                                Math.min(
-                                        h - 1,
-                                        (int)
-                                                Math.floor(
-                                                        h
-                                                                * (s.branchStart
-                                                                        + (1 - s.branchStart)
-                                                                                * unit(b, 2)))));
-                double length = draw(s.branchLength, b, 3) * g;
-                int sx = side(c, DIRECTION_X[dir]), sz = side(c, DIRECTION_Z[dir]);
-                int ex = (int) Math.round(c + DIRECTION_X[dir] * length);
-                int ez = (int) Math.round(c + DIRECTION_Z[dir] * length);
-                int ey = (int) Math.round(ys + s.branchRise * length);
-                line(out, sx, ys, sz, ex, ey, ez);
-                double rh =
-                        cap(
-                                (s.branchCluster[0]
-                                                + unit(b, 4)
-                                                        * (s.branchCluster[1] - s.branchCluster[0]))
-                                        * g,
-                                s.crownDepth);
-                cluster(out, ex, ey, ez, rh, s.crownDepth, s, b, 5);
-            }
+        double radius = Species.envelope(h, draw(s.crownWidth, id, 20));
+        double base = Math.max(1, draw(s.crownBase, id, 21) * h), top = h;
+        double half = Math.max(1, (top - base) / 2), mid = base + half;
+        java.util.List<double[]> nodes = new java.util.ArrayList<>();
+        int n = draw(s.leaders, id, 22), turn = (int) (unit(id, 23) * 16);
+        switch (s.form) {
+            case OVOID:
+                trunk(out, w, h);
+                for (int y = (int) base; y < h; y++) nodes.add(new double[] {c, y, c});
+                break;
+            case MULTISTEM:
+                for (int k = 0; k < n; k++) {
+                    long b = SeededNoise.mix(id + 0x632be59bd9b4e019L * (k + 1));
+                    int dir = (turn + k * 16 / n + (int) (unit(b, 1) * 3) - 1) & 15;
+                    double r = radius * (0.35 + 0.3 * unit(b, 2));
+                    int ex = (int) Math.round(c + DIRECTION_X[dir] * r);
+                    int ez = (int) Math.round(c + DIRECTION_Z[dir] * r);
+                    int ey = (int) Math.round(top - 1 - unit(b, 3) * half * 0.6);
+                    out.log((int) Math.round(c), 0, (int) Math.round(c), AXIS_Y);
+                    line(out, (int) Math.round(c), 0, (int) Math.round(c), ex, ey, ez, nodes);
+                }
+                break;
+            default:
+                // A bole to the fork, then leaders out to the envelope.
+                boolean veteran = s.form == Form.VETERAN, emergent = s.form == Form.EMERGENT;
+                int fork =
+                        (int)
+                                Math.max(
+                                        1,
+                                        Math.round(
+                                                emergent
+                                                        ? base
+                                                        : base
+                                                                * (veteran ? 0.8 : 1.0)
+                                                                * (0.9 + 0.2 * unit(id, 24))));
+                fork = Math.min(fork, h - 1);
+                trunk(out, w, fork + 1);
+                for (int y = 1; y <= fork; y++) nodes.add(new double[] {c, y, c});
+                // Domes keep a central leader to the top; veterans lose it.
+                if (!veteran && !emergent) {
+                    for (int y = fork + 1; y < h; y++) {
+                        for (int j = 0; j < w; j++)
+                            for (int i = 0; i < w; i++) out.log(i, y, j, AXIS_Y);
+                        nodes.add(new double[] {c, y, c});
+                    }
+                }
+                for (int k = 0; k < n; k++) {
+                    long b = SeededNoise.mix(id + 0x9e3779b97f4a7c15L * (k + 1));
+                    int dir = (turn + k * 16 / n + (int) (unit(b, 1) * 3) - 1) & 15;
+                    double r =
+                            radius
+                                    * (emergent || veteran
+                                            ? 0.65 + 0.25 * unit(b, 2)
+                                            : 0.4 + 0.3 * unit(b, 2));
+                    double rise =
+                            emergent
+                                    ? top - 1 - unit(b, 3)
+                                    : veteran
+                                            ? mid - half * 0.2 + unit(b, 3) * half * 0.5
+                                            : mid + unit(b, 3) * half * 0.6;
+                    int sx = side(c, DIRECTION_X[dir]), sz = side(c, DIRECTION_Z[dir]);
+                    int ex = (int) Math.round(c + DIRECTION_X[dir] * r);
+                    int ez = (int) Math.round(c + DIRECTION_Z[dir] * r);
+                    int ey = (int) Math.round(Math.min(top - 1, Math.max(fork + 1, rise)));
+                    line(out, sx, fork, sz, ex, ey, ez, nodes);
+                }
         }
+        // Twigs: points through the envelope (a flattened one for emergents), each joined to its
+        // nearest node by logs and carrying a cluster.
+        double vertical = s.form == Form.EMERGENT ? Math.min(half, 2.5) : half;
+        double centre = s.form == Form.EMERGENT ? top - vertical : mid;
+        // As many clusters as fill the envelope's volume over a cluster's, times the fill.
+        double cr = (s.crownRadius[0] + s.crownRadius[1]) / 2;
+        int twigs =
+                (int)
+                        Math.max(
+                                n + 2,
+                                Math.round(
+                                        s.fill
+                                                * radius
+                                                * radius
+                                                * vertical
+                                                / (cr * cr * s.crownDepth)));
+        for (int t = 0; t < twigs; t++) {
+            long b = SeededNoise.mix(id + 0x3c6ef372fe94f82bL * (t + 1));
+            double a = unit(b, 1) * 2 * Math.PI;
+            double q = Math.sqrt(0.15 + 0.85 * unit(b, 2)), v = unit(b, 3) * 2 - 1;
+            double px = c + Math.cos(a) * radius * q * Math.sqrt(1 - 0.5 * v * v);
+            double pz = c + Math.sin(a) * radius * q * Math.sqrt(1 - 0.5 * v * v);
+            double py = centre + v * vertical;
+            double[] near = null;
+            double best = Double.MAX_VALUE;
+            for (double[] node : nodes) {
+                double d =
+                        (node[0] - px) * (node[0] - px)
+                                + (node[1] - py) * (node[1] - py)
+                                + (node[2] - pz) * (node[2] - pz);
+                if (d < best) {
+                    best = d;
+                    near = node;
+                }
+            }
+            if (near == null) continue;
+            int ex = (int) Math.round(px), ey = (int) Math.round(py), ez = (int) Math.round(pz);
+            int nx = (int) Math.round(near[0]), ny = (int) Math.round(near[1]);
+            int nz = (int) Math.round(near[2]);
+            if (Math.abs(ex - nx) + Math.abs(ey - ny) + Math.abs(ez - nz) > 1)
+                line(out, nx, ny, nz, ex, ey, ez, null);
+            else out.log(ex, ey, ez, AXIS_NONE);
+            cluster(out, ex, ey, ez, draw(s.crownRadius, b, 4), s.crownDepth, s, b, 5);
+        }
+        // Forms with a leader to the top end in a cluster over it.
+        if (s.form != Form.VETERAN && s.form != Form.EMERGENT && s.form != Form.MULTISTEM)
+            cluster(out, c, h - 1, c, s.crownRadius[1], s.crownDepth, s, id, 3);
     }
 
     private static void conifer(Species s, long id, int h, double g, Shape out) {
         int w = s.width;
-        double c = (w - 1) / 2.0, r0 = Math.min(RADIUS_CAP, draw(s.radius, id, 2) * g);
+        double c = (w - 1) / 2.0, r0 = s.discRadius(h, draw(s.radius, id, 2), g);
         int bottom = Math.max(1, Math.min(h - 1, (int) Math.round(h * s.crownStart)));
         int top = h - 1 + s.topRows, span = Math.max(1, top - bottom);
         for (int y = bottom; y <= top; y++) {
@@ -717,6 +818,28 @@ final class TreeShapes {
     /** The trunk column on the side a direction leaves from. */
     private static int side(double centre, double direction) {
         return (int) Math.round(centre + 0.49 * Math.signum(direction));
+    }
+
+    /** As line, also adding each log to nodes (twigs grow from them) when nodes is given. */
+    private static void line(
+            Shape out,
+            int x0,
+            int y0,
+            int z0,
+            int x1,
+            int y1,
+            int z1,
+            java.util.List<double[]> nodes) {
+        line(out, x0, y0, z0, x1, y1, z1);
+        if (nodes == null) return;
+        int steps = Math.max(Math.abs(x1 - x0), Math.max(Math.abs(y1 - y0), Math.abs(z1 - z0)));
+        for (int i = 1; i <= steps; i++)
+            nodes.add(
+                    new double[] {
+                        x0 + Math.round((x1 - x0) * i / (double) steps),
+                        y0 + Math.round((y1 - y0) * i / (double) steps),
+                        z0 + Math.round((z1 - z0) * i / (double) steps)
+                    });
     }
 
     /** Logs from a trunk block (excluded) to an end block, along the line's dominant axis. */
