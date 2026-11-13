@@ -126,6 +126,11 @@ def main(argv=None):
         "--shader-pack",
         help="With --shaders: a pinned shader pack to install and enable (runtime.lock.json)",
     )
+    capture.add_argument(
+        "--client-mod",
+        action="append",
+        help="An extra mod JAR for the client only; repeat for several",
+    )
     for name, description in [
         ("inspect", "Reconcile raw samples, inputs, failures and native captures"),
         ("trace", "Attribute bounded JFR windows and export a timeline"),
@@ -278,6 +283,8 @@ def main(argv=None):
             options.append("--no-distant-horizons")
         if args.shader_pack:
             options += ["--shader-pack", args.shader_pack]
+        for mod in args.client_mod or []:
+            options += ["--client-mod", mod]
         try:
             return measure_pipeline.main(options)
         finally:

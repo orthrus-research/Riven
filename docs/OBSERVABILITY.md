@@ -119,7 +119,7 @@ instrumentation. The same bounded worker counters remain on both variants.
 instead of the vanilla renderer; `--no-distant-horizons` leaves DH off both sides. The
 telemetry record's `setup.clientRenderer` names the renderer (`vanilla` or `celeritas`).
 `--shader-pack <name>` (with `--shaders`) installs and enables a pinned shader pack, recorded
-as `setup.shaderPack`.
+as `setup.shaderPack`. `--client-mod <jar>` (repeatable) adds an extra mod to the client only.
 `--render-ready` additionally requires native renderer demand and the GPU
 marker; a timeout is retained as failure. `--storage` adds storage spans and
 requires diagnostic mode. Do not build or run other experiments during a

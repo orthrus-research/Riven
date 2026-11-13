@@ -219,6 +219,11 @@ def main(argv=None):
         "--shader-pack",
         help="With --shaders: a pinned shader pack to install and enable (runtime.lock.json)",
     )
+    parser.add_argument(
+        "--client-mod",
+        action="append",
+        help="An extra mod JAR for the client only; repeat for several",
+    )
     args = parser.parse_args(argv)
     if args.shader_pack and not args.shaders:
         parser.error("--shader-pack needs --shaders")
@@ -273,6 +278,7 @@ def main(argv=None):
             shaders=args.shaders,
             shader_pack=[args.shader_pack] if args.shader_pack else None,
             distant_horizons=args.distant_horizons,
+            client_mods=args.client_mod,
         )
         if args.world_from:
             runtime.adopt_world(args.name, args.world_from)
@@ -392,6 +398,8 @@ def main(argv=None):
                 counters = captured.get("threadCosts", {})
                 if args.dh_visited_only and captured is server and not counters.get("threads"):
                     continue  # A visited-only server runs no DH threads to count.
+                if not args.distant_horizons and not counters.get("threads"):
+                    continue  # Without DH neither side runs DH threads to count.
                 if (
                     not counters.get("enabled")
                     or not counters.get("threads")
