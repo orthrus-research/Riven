@@ -164,7 +164,13 @@ def prepare(
     arrival_plan=True,
     dh_lod_only=False,
     keep_fine_columns=True,
+    distant_horizons=True,
 ):
+    if not distant_horizons:
+        # A near-terrain-only instance: DH is left off both sides, so nothing distant is drawn.
+        if dh_lod_only or lod_observer is not None:
+            raise ValueError("--no-distant-horizons excludes --dh-lod-only and --lod-trace")
+        distant_generation = False
     if lod_observer is not None:
         lod_observer = Path(lod_observer).resolve()
         if not lod_observer.is_file():
@@ -231,6 +237,8 @@ def prepare(
             # Optional pins (the shader stack) join only when prepare asks for them.
             if mod.get("optional") == "shaders" and not shaders:
                 continue
+            if not distant_horizons and mod["file"].startswith("dev/pins/DistantHorizons-"):
+                continue
             if (
                 side == "server"
                 and not distant_generation
@@ -295,7 +303,7 @@ def prepare(
         (home / "config/forge_early.cfg").write_text(
             "general {\n    B:DISABLE_PATCH_MOD_CHECK=false\n}\n"
         )
-        if side == "client" or distant_generation:
+        if distant_horizons and (side == "client" or distant_generation):
             # The optional CC adapter supplies seed-only SURFACE data on DH's executor.
             # The legacy visited-only lane remains available for comparison.
             (home / "config/DistantHorizons.toml").write_text(
@@ -417,7 +425,9 @@ def prepare(
             "qualification": "Explicit candidate CC; see native receipt"
             if cubic_artifact
             else "Pinned unmodified upstream DH; see dev/dh.lock.json and the instance native receipt",
-        },
+        }
+        if distant_horizons
+        else {},
         sourceArtifact={"path": str(artifact), "sha256": sha(artifact)},
         sourceCubicArtifact={
             "path": str(cubic),
@@ -428,7 +438,9 @@ def prepare(
             "path": str(ROOT / distant_mod["file"]),
             "sha256": distant_mod["sha256"],
             "candidate": False,
-        },
+        }
+        if distant_horizons
+        else None,
         shaderPacks=[record for _, record in packs],
         complementaryCaveFog=complementary_cave_fog,
         lodTrace={
@@ -828,6 +840,12 @@ def main():
     )
     p.set_defaults(distant_generation=True)
     p.add_argument(
+        "--no-distant-horizons",
+        action="store_false",
+        dest="distant_horizons",
+        help="prepare: leave DH off both sides, for near-terrain-only captures",
+    )
+    p.add_argument(
         "--capture-ticks",
         type=int,
         default=400,
@@ -956,6 +974,7 @@ def main():
             arrival_plan=not a.no_arrival_plan,
             dh_lod_only=a.dh_lod_only,
             keep_fine_columns=not a.no_keep_fine_columns,
+            distant_horizons=a.distant_horizons,
         )
     elif a.command == "play":
         if a.shader_pack and len(a.shader_pack) != 1:
