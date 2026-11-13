@@ -249,7 +249,8 @@ daylight and weather and teleports on first join; `--scale` sets Riven's layout 
 `generator-settings` (0.5-8: 1 = 8 km tuning, 0.5 = 4 km, 4 = 32 km worlds; see FEATURES.md); `--capture` saves one native screenshot after
 400 client ticks. `--spawn-animals` allows animals (off for terrain captures).
 `--no-distant-horizons` leaves Distant Horizons off both sides, so the client draws native cubes
-only; it excludes `--dh-lod-only` and `--lod-trace`. `--shaders` adds the
+only; it excludes `--dh-lod-only` and `--lod-trace`. `--client-mod <jar>` (repeatable) adds
+an extra mod to the client only and records it with the instance. `--shaders` adds the
 optional shader pins (Demonica) to the client, and `--shader-pack <pack> [<pack> ...]` copies packs
 into its `shaderpacks` and enables the first in Demonica's `config/shaders.properties`: a pinned
 pack by name (`bsl`, `complementary-reimagined`, `complementary-unbound`),

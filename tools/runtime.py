@@ -165,7 +165,13 @@ def prepare(
     dh_lod_only=False,
     keep_fine_columns=True,
     distant_horizons=True,
+    client_mods=None,
 ):
+    # Extra client-side mods (a renderer under test, for example), recorded with the instance.
+    client_mods = [Path(mod).resolve() for mod in client_mods or []]
+    for mod in client_mods:
+        if not mod.is_file():
+            raise RuntimeError("Client mod not found: " + str(mod))
     if not distant_horizons:
         # A near-terrain-only instance: DH is left off both sides, so nothing distant is drawn.
         if dh_lod_only or lod_observer is not None:
@@ -251,6 +257,9 @@ def prepare(
                 selected = ROOT / mod["file"]
                 shutil.copy2(selected, home / "mods" / selected.name)
         shutil.copy2(artifact, home / "mods/riven.jar")
+        if side == "client":
+            for mod in client_mods:
+                shutil.copy2(mod, home / "mods" / mod.name)
         if lod_observer:
             # The lab observer stays idle without a workload; play turns on its LOD trace.
             shutil.copy2(lod_observer, home / "mods/cubicchunks-lab.jar")
@@ -442,6 +451,7 @@ def prepare(
         if distant_horizons
         else None,
         shaderPacks=[record for _, record in packs],
+        clientMods=[{"path": str(mod), "sha256": sha(mod)} for mod in client_mods],
         complementaryCaveFog=complementary_cave_fog,
         lodTrace={
             "observer": str(lod_observer),
@@ -846,6 +856,11 @@ def main():
         help="prepare: leave DH off both sides, for near-terrain-only captures",
     )
     p.add_argument(
+        "--client-mod",
+        action="append",
+        help="prepare: an extra mod JAR for the client only; repeat for several",
+    )
+    p.add_argument(
         "--capture-ticks",
         type=int,
         default=400,
@@ -975,6 +990,7 @@ def main():
             dh_lod_only=a.dh_lod_only,
             keep_fine_columns=not a.no_keep_fine_columns,
             distant_horizons=a.distant_horizons,
+            client_mods=a.client_mod,
         )
     elif a.command == "play":
         if a.shader_pack and len(a.shader_pack) != 1:
