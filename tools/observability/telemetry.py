@@ -373,6 +373,14 @@ def capture_record(instance, commits=None):
             "worldFrom": (manifest.get("worldFrom") or {}).get("instance"),
             # Captures made before this field existed all used the vanilla renderer.
             "clientRenderer": manifest.get("clientRenderer", "vanilla"),
+            # The enabled shader pack is the first one prepared; None means no pack is active.
+            "shaderPack": next(
+                (
+                    pack.get("name") or pack.get("installedAs")
+                    for pack in manifest.get("shaderPacks") or []
+                ),
+                None,
+            ),
             "distantHorizons": {
                 "side": dh.get("side"),
                 "workers": dh.get("workers"),

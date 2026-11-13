@@ -215,7 +215,13 @@ def main(argv=None):
         dest="distant_horizons",
         help="Leave DH off both sides: near terrain only",
     )
+    parser.add_argument(
+        "--shader-pack",
+        help="With --shaders: a pinned shader pack to install and enable (runtime.lock.json)",
+    )
     args = parser.parse_args(argv)
+    if args.shader_pack and not args.shaders:
+        parser.error("--shader-pack needs --shaders")
     if not args.distant_horizons and (args.lod_trace or args.dh_visited_only or args.dh_lod_only):
         parser.error(
             "--no-distant-horizons excludes --lod-trace, --dh-visited-only and --dh-lod-only"
@@ -265,6 +271,7 @@ def main(argv=None):
             # The config file selects the delivery mode; Cubature reads it as the server starts.
             cubature_delivery=args.delivery_experiment,
             shaders=args.shaders,
+            shader_pack=[args.shader_pack] if args.shader_pack else None,
             distant_horizons=args.distant_horizons,
         )
         if args.world_from:

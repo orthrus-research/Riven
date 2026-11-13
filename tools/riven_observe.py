@@ -122,6 +122,10 @@ def main(argv=None):
         action="store_true",
         help="Leave DH off both sides: near terrain only",
     )
+    capture.add_argument(
+        "--shader-pack",
+        help="With --shaders: a pinned shader pack to install and enable (runtime.lock.json)",
+    )
     for name, description in [
         ("inspect", "Reconcile raw samples, inputs, failures and native captures"),
         ("trace", "Attribute bounded JFR windows and export a timeline"),
@@ -272,6 +276,8 @@ def main(argv=None):
             options.append("--shaders")
         if args.no_distant_horizons:
             options.append("--no-distant-horizons")
+        if args.shader_pack:
+            options += ["--shader-pack", args.shader_pack]
         try:
             return measure_pipeline.main(options)
         finally:
