@@ -204,7 +204,22 @@ def main(argv=None):
         action="store_true",
         help="The client draws only DH LODs (DH lodOnlyMode); a rendering diagnostic",
     )
+    parser.add_argument(
+        "--shaders",
+        action="store_true",
+        help="Add the optional shader pins to the client, so Celeritas draws near terrain",
+    )
+    parser.add_argument(
+        "--no-distant-horizons",
+        action="store_false",
+        dest="distant_horizons",
+        help="Leave DH off both sides: near terrain only",
+    )
     args = parser.parse_args(argv)
+    if not args.distant_horizons and (args.lod_trace or args.dh_visited_only or args.dh_lod_only):
+        parser.error(
+            "--no-distant-horizons excludes --lod-trace, --dh-visited-only and --dh-lod-only"
+        )
     if args.dh_visited_only and args.lod_trace:
         parser.error("--lod-trace observes server-side DH; a visited-only server has none")
     if not 0 <= args.cube_packet_bytes <= 2147483647:
@@ -249,6 +264,8 @@ def main(argv=None):
             keep_fine_columns=not args.no_keep_fine_columns,
             # The config file selects the delivery mode; Cubature reads it as the server starts.
             cubature_delivery=args.delivery_experiment,
+            shaders=args.shaders,
+            distant_horizons=args.distant_horizons,
         )
         if args.world_from:
             runtime.adopt_world(args.name, args.world_from)
@@ -264,6 +281,8 @@ def main(argv=None):
         for side in ["server", "client"]:
             configured = lab_profiles.configure_cube_experiments(Path(manifest[side]), policy)
         manifest["cubeExperiments"] = configured
+        # The shader pins bring Celeritas, which replaces the vanilla near-terrain renderer.
+        manifest["clientRenderer"] = "celeritas" if args.shaders else "vanilla"
         manifest["packetPolicyCapabilities"] = packet_capabilities
         for side in ["server", "client"]:
             home = Path(manifest[side])

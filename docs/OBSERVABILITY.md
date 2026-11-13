@@ -115,6 +115,9 @@ python -B tools/riven_observe.py capture --name <fresh-name> --riven <frozen-riv
 instrumentation. The same bounded worker counters remain on both variants.
 `--cubature` selects a frozen candidate without changing accepted pins.
 `--workload` selects a validated named workload; `--port` must be free.
+`--shaders` adds the optional shader pins to the client, so Celeritas draws near terrain
+instead of the vanilla renderer; `--no-distant-horizons` leaves DH off both sides. The
+telemetry record's `setup.clientRenderer` names the renderer (`vanilla` or `celeritas`).
 `--render-ready` additionally requires native renderer demand and the GPU
 marker; a timeout is retained as failure. `--storage` adds storage spans and
 requires diagnostic mode. Do not build or run other experiments during a

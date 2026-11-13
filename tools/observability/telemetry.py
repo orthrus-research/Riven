@@ -371,6 +371,8 @@ def capture_record(instance, commits=None):
             if isinstance(manifest.get("viewDistance"), dict)
             else manifest.get("viewDistance"),
             "worldFrom": (manifest.get("worldFrom") or {}).get("instance"),
+            # Captures made before this field existed all used the vanilla renderer.
+            "clientRenderer": manifest.get("clientRenderer", "vanilla"),
             "distantHorizons": {
                 "side": dh.get("side"),
                 "workers": dh.get("workers"),

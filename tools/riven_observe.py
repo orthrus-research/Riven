@@ -112,6 +112,16 @@ def main(argv=None):
         action="store_true",
         help="The client draws only DH LODs (DH lodOnlyMode); a rendering diagnostic",
     )
+    capture.add_argument(
+        "--shaders",
+        action="store_true",
+        help="Add the optional shader pins to the client, so Celeritas draws near terrain",
+    )
+    capture.add_argument(
+        "--no-distant-horizons",
+        action="store_true",
+        help="Leave DH off both sides: near terrain only",
+    )
     for name, description in [
         ("inspect", "Reconcile raw samples, inputs, failures and native captures"),
         ("trace", "Attribute bounded JFR windows and export a timeline"),
@@ -258,6 +268,10 @@ def main(argv=None):
             options.append("--dh-visited-only")
         if args.dh_lod_only:
             options.append("--dh-lod-only")
+        if args.shaders:
+            options.append("--shaders")
+        if args.no_distant_horizons:
+            options.append("--no-distant-horizons")
         try:
             return measure_pipeline.main(options)
         finally:
