@@ -380,6 +380,13 @@ records both JVMs with JFR's profile settings for attributing a phase further.
   unique `EMPTY` cube is generated into a fresh checked primer. Receipts separate
   `selectedSeedsPassed` from `fullIntendedProofPassed`; the full flag requires all six intended
   seeds to finish successfully. CI compiles this check; invoke its workload explicitly.
+- `cc.orthrus.riven.PreviewParityCheck` takes `<out> <seed> <scale> <threads> <sources>
+  <name:x:z:high-low[:tiles]> ...` through `runDiagnostics` with the mapped game option. It
+  samples the terrain preview over windows of 64 x 64-column tiles at each level (cells of
+  2^level blocks, sampled at their integer centres) and digests every column's biome and runs,
+  so preview content can be compared exactly between two trees. The source `generator` is the
+  server's cube generator on a fixture world. CI compiles this check; invoke its workload
+  explicitly.
 - `CUBATURE_LAB_JVM=g1-ship8-nmt` prepares a capture on the shipping G1 profile with native memory
   tracking. After every scenario it records each process's NMT summary, the JVM's tagged
   address-space map (`jcmd System.map`) and, with Sysinternals VMMap on PATH, VMMap's CSV, and joins
