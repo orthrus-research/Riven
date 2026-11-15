@@ -63,7 +63,7 @@ public final class TerrainMap {
         passes = new RegionalTerrainPasses(seed, heights);
         drylands = new DrylandTerrain(seed, heights, substrate);
         landmarks = new RegionalLandmarks(seed, heights, types.sites);
-        carvers = new SurfaceCarvers(seed, heights, types.sites, plates);
+        carvers = new SurfaceCarvers(seed, heights, types.sites, plates, world);
         oceanBed = new OceanBed(seed, heights, continents);
         minimumSurfaceY =
                 Math.min(
@@ -92,7 +92,13 @@ public final class TerrainMap {
                         seed, heights, provinces.spines(), intentSampler, hydro, hydro.cellBlocks);
         cold =
                 new ColdTerrain(
-                        seed, heights, types.sites, majorFeatureParent, hydro, hydro.cellBlocks);
+                        seed,
+                        heights,
+                        types.sites,
+                        majorFeatureParent,
+                        hydro,
+                        hydro.cellBlocks,
+                        world);
         volcanic =
                 new VolcanicTerrain(
                         seed,
@@ -101,7 +107,8 @@ public final class TerrainMap {
                         majorFeatureParent,
                         hydro,
                         hydro.cellBlocks,
-                        plates.cellBlocks());
+                        plates.cellBlocks(),
+                        world);
         cuts =
                 new GeneralSurfaceCuts(
                         seed,
@@ -110,10 +117,11 @@ public final class TerrainMap {
                         intentSampler,
                         majorFeatureParent,
                         hydro,
-                        hydro.cellBlocks);
+                        hydro.cellBlocks,
+                        world);
         geology = new GeologyMap(seed, plates, provinces, volcanic);
         floods = new FloodMap(seed, world, this::sampleGeology);
-        caves = new CaveMap(seed, heights, this::sample, this::sampleWater);
+        caves = new CaveMap(seed, heights, world, this::sample, this::sampleWater);
         ores = new OreMap(seed, heights);
         rocky = new CoastForms(seed, heights, shores, this::sampleBeforeRocky);
         sediment = new CoastSediment(seed, heights, shores, rocky, this::sampleBeforeSediment);

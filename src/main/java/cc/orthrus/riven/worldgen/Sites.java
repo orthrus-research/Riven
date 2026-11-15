@@ -24,6 +24,13 @@ public final class Sites {
         }
     }
 
+    /**
+     * The slots of a lane's memo of anchor decisions at the 8 km layout. Sites keep their spacing
+     * in blocks, so a larger world reads more of them and its memos grow with its area
+     * ({@link WorldScale#areaScaled}).
+     */
+    static final int ANCHOR_MEMO = 4096;
+
     public final double spacing, maximumRadius;
 
     /**

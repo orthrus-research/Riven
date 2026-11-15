@@ -47,7 +47,14 @@ once a memo would pass its headroom: a quarter of a set-associative memo, half t
 or 10 MB x layout squared of networks. A `CellMemo`
 keeps each cell in either of two slots and a miss replaces the older entry, so cells no longer read age out and
 two cells sharing a slot do not rebuild each other on every read (with a fixed victim, two
-continents' drainage networks did, and a 16 km check on seed 5 ran for hours). A drainage query
+continents' drainage networks did, and a 16 km check on seed 5 ran for hours). Memos of cells
+that keep their size in blocks are sized at the 8 km layout and grow with the layout scale
+squared (`WorldScale.areaScaled`), so a larger world holds as large a share of what it reads:
+hydrology plans, flood cells, the cold, volcanic and cut lanes' decisions (`cacheSets` x
+`cacheWays`) and anchors, carver eligibility and sinkhole cells. The whole 32 km world at
+128-block spacing then repeats in 1.8 s on 4 threads (`RegionalCacheProbe`, 81,036 columns);
+with the site memos at their 8 km size it took 52.8 s, each column rebuilding certificates
+another had evicted. A drainage query
 takes the continents whose support reaches the column, then builds only those with an own cell of
 their network grid within the query's reach plus a bound on how far a channel strays from its
 cells (the largest meander offset and three cells). Each continent's own cells come from the same

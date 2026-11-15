@@ -31,9 +31,10 @@ public final class ColdTerrain {
     private final double radius, protectionBlend, coldFull, coldZero;
     private final int searchRadius, sets, ways, maximumColumns;
     private final AtomicReferenceArray<Entry> memo;
-    private final CellMemo<Boolean> anchors = new CellMemo<>(4096);
+    private final CellMemo<Boolean> anchors;
     private final AtomicIntegerArray next;
 
+    /** At the 8 km layout, for checks. */
     ColdTerrain(
             long worldSeed,
             TerrainHeightReference heights,
@@ -41,6 +42,24 @@ public final class ColdTerrain {
             MajorFeatureParent earlierTerrain,
             BoundedWaterClearance waterClearance,
             int waterCellBlocks) {
+        this(
+                worldSeed,
+                heights,
+                sites,
+                earlierTerrain,
+                waterClearance,
+                waterCellBlocks,
+                WorldScale.DEFAULT);
+    }
+
+    ColdTerrain(
+            long worldSeed,
+            TerrainHeightReference heights,
+            Sites sites,
+            MajorFeatureParent earlierTerrain,
+            BoundedWaterClearance waterClearance,
+            int waterCellBlocks,
+            WorldScale world) {
         this.earlierTerrain = earlierTerrain;
         this.waterClearance = waterClearance;
         this.sites = sites;
@@ -96,11 +115,15 @@ public final class ColdTerrain {
         for (int i = 0; i < FAMILIES.length; i++)
             weights[i] =
                     Rules.number(j.getAsJsonObject("familyWeights"), FAMILIES[i].name(), 0, 10);
-        sets = integer(j, "cacheSets", 16, 256);
+        // cacheSets is the memo at the 8 km layout. Sites keep their spacing in blocks, so the
+        // decisions a world reads grow with its area and the memos grow with it (timing only).
+        int baseSets = integer(j, "cacheSets", 16, 256);
+        if ((baseSets & (baseSets - 1)) != 0)
+            throw new IllegalStateException("Cold cache sets must be a power of two");
+        sets = world.areaScaled(baseSets);
         ways = integer(j, "cacheWays", 1, 4);
         maximumColumns = integer(j, "maximumCertificateColumns", 65536, 8000000);
-        if ((sets & (sets - 1)) != 0)
-            throw new IllegalStateException("Cold cache sets must be a power of two");
+        anchors = new CellMemo<>(world.areaScaled(Sites.ANCHOR_MEMO));
         memo = new AtomicReferenceArray<>(sets * ways);
         next = new AtomicIntegerArray(sets);
     }

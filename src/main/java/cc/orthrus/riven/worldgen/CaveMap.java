@@ -595,9 +595,14 @@ public final class CaveMap {
             jointSpacing,
             jointMask;
     private final CellMemo<Lattice> lattices = new CellMemo<>(Integer.highestOneBit(CHUNK_CACHE));
-    private final CellMemo<double[]> domes = new CellMemo<>(1024),
-            sinkholes = new CellMemo<>(1024),
-            geodes = new CellMemo<>(2048);
+    private final CellMemo<double[]> domes = new CellMemo<>(1024), geodes = new CellMemo<>(2048);
+
+    /**
+     * Sinkhole cells are part of every column sample (entrances), so the cells a world reads grow
+     * with its area; the memo, sized at the 8 km layout, grows with it (timing only).
+     */
+    private final CellMemo<double[]> sinkholes;
+
     private final CellMemo<JointDomain> jointDomains = new CellMemo<>(1024);
 
     private final CaveDecor decor;
@@ -620,8 +625,14 @@ public final class CaveMap {
      * Caves over a world seed: sampler gives whole samples (pools and seeps read their
      * neighbours), waters samples up to the water over a column's finished surface.
      */
-    CaveMap(long worldSeed, TerrainHeightReference heights, Sampler sampler, Sampler waters) {
+    CaveMap(
+            long worldSeed,
+            TerrainHeightReference heights,
+            WorldScale world,
+            Sampler sampler,
+            Sampler waters) {
         this.waters = waters;
+        sinkholes = new CellMemo<>(world.areaScaled(1024));
         seed = SeededNoise.mix(worldSeed ^ Rules.seed(RULES.json, "variationSeed"));
         cavern = new Rotation(seed ^ 0x43415645524e3131L);
         detail = new Rotation(seed ^ 0x44455441494c3131L);

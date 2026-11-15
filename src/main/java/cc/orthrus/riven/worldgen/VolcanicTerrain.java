@@ -43,18 +43,8 @@ public final class VolcanicTerrain {
 
     private final int searchRadius, sets, ways, maximumColumns;
     private final AtomicReferenceArray<Entry> memo;
-    private final CellMemo<Boolean> anchors = new CellMemo<>(4096);
+    private final CellMemo<Boolean> anchors;
     private final AtomicIntegerArray next;
-
-    VolcanicTerrain(
-            long worldSeed,
-            TerrainHeightReference heights,
-            Sites sites,
-            MajorFeatureParent parent,
-            BoundedWaterClearance water,
-            int waterCellBlocks) {
-        this(worldSeed, heights, sites, parent, water, waterCellBlocks, PlateMap.CELL_BLOCKS);
-    }
 
     /** Volcanic provinces span plate widths of this world's (layout-scaled) plates. */
     VolcanicTerrain(
@@ -64,7 +54,8 @@ public final class VolcanicTerrain {
             MajorFeatureParent parent,
             BoundedWaterClearance water,
             int waterCellBlocks,
-            double plateBlocks) {
+            double plateBlocks,
+            WorldScale world) {
         this.parent = parent;
         this.water = water;
         this.sites = sites;
@@ -118,11 +109,14 @@ public final class VolcanicTerrain {
         for (int i = 0; i < FAMILIES.length; i++)
             weights[i] =
                     Rules.number(j.getAsJsonObject("familyWeights"), FAMILIES[i].name(), 0, 10);
-        sets = integer(j, "cacheSets", 16, 256);
+        // As ColdTerrain: the memos are sized at the 8 km layout and grow with the world's area.
+        int baseSets = integer(j, "cacheSets", 16, 256);
+        if ((baseSets & (baseSets - 1)) != 0)
+            throw new IllegalStateException("Volcanic cache sets must be a power of two");
+        sets = world.areaScaled(baseSets);
         ways = integer(j, "cacheWays", 1, 4);
         maximumColumns = integer(j, "maximumCertificateColumns", 1024, 2000000);
-        if ((sets & (sets - 1)) != 0)
-            throw new IllegalStateException("Volcanic cache sets must be a power of two");
+        anchors = new CellMemo<>(world.areaScaled(Sites.ANCHOR_MEMO));
         memo = new AtomicReferenceArray<>(sets * ways);
         next = new AtomicIntegerArray(sets);
     }

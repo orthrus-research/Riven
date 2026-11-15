@@ -55,8 +55,13 @@ public final class SurfaceCarvers {
     private final int searchRadius;
 
     public SurfaceCarvers(
-            long worldSeed, TerrainHeightReference heights, Sites sites, PlateMap plates) {
+            long worldSeed,
+            TerrainHeightReference heights,
+            Sites sites,
+            PlateMap plates,
+            WorldScale world) {
         seed = SeededNoise.mix(worldSeed ^ DEFINITION.variationSeed);
+        eligibility = new CellMemo<>(world.areaScaled(Sites.ANCHOR_MEMO));
         this.sites = sites;
         this.plates = plates;
         spacing = sites.spacing;
@@ -208,7 +213,7 @@ public final class SurfaceCarvers {
         return plate;
     }
 
-    private final CellMemo<Boolean> eligibility = new CellMemo<>(4096);
+    private final CellMemo<Boolean> eligibility;
 
     /**
      * A site's own cheap tests (a land anchor that selects a profile) before it competes, so an

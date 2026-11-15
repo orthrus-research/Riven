@@ -49,7 +49,8 @@ public final class GeneralSurfaceCuts {
             IntentSampler earlierIntent,
             MajorFeatureParent earlierTerrain,
             BoundedWaterClearance waterClearance,
-            int waterCellBlocks) {
+            int waterCellBlocks,
+            WorldScale world) {
         this.earlierIntent = earlierIntent;
         this.earlierTerrain = earlierTerrain;
         this.waterClearance = waterClearance;
@@ -97,11 +98,14 @@ public final class GeneralSurfaceCuts {
             weights[i] =
                     Rules.number(j.getAsJsonObject("familyWeights"), FAMILIES[i].name(), 0, 10);
         }
-        sets = integer(j, "cacheSets", 16, 256);
+        // As ColdTerrain: the memos are sized at the 8 km layout and grow with the world's area.
+        int baseSets = integer(j, "cacheSets", 16, 256);
+        if ((baseSets & (baseSets - 1)) != 0)
+            throw new IllegalStateException("Cut cache sets must be a power of two");
+        sets = world.areaScaled(baseSets);
         ways = integer(j, "cacheWays", 1, 4);
         maximumColumns = integer(j, "maximumCertificateColumns", 65536, 2000000);
-        if ((sets & (sets - 1)) != 0)
-            throw new IllegalStateException("Cut cache sets must be a power of two");
+        eligibility = new CellMemo<>(world.areaScaled(Sites.ANCHOR_MEMO));
         memo = new AtomicReferenceArray<>(sets * ways);
         next = new AtomicIntegerArray(sets);
     }
@@ -183,7 +187,7 @@ public final class GeneralSurfaceCuts {
         return built;
     }
 
-    private final CellMemo<Boolean> eligibility = new CellMemo<>(4096);
+    private final CellMemo<Boolean> eligibility;
 
     /**
      * A site's own cheap tests (family, support budget, material and occurrence) before it competes,
