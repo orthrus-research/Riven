@@ -31,6 +31,14 @@ public final class RegionalIdentity {
         return new RegionalIdentity(seed, world, Definitions.loadAll());
     }
 
+    /**
+     * The identity as a SHA-256: equal for two sides exactly when their terrain version, seed,
+     * layout scale bits and every packaged definition's fingerprint are equal.
+     */
+    public String hash() {
+        return namespace;
+    }
+
     void write(RegionalData.Writer out) {
         out.bytes(manifest);
     }

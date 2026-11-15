@@ -114,10 +114,20 @@ rebuild and store the same value.
 | `RivenWorldType.Generator.generateColumn` | Cubature, biome arrays | The same `NativeColumns` entry's habitats |
 | `RivenWorldType.Generator.prepareRetainedColumn` | Cubature generation workers, held arrivals | Retains the immutable `NativeColumns` entry until the host installs the destination column or releases the last arrival |
 | `RivenWorldType.Generator.cubeClass` / `regenerable` / `surfaceBand` | Optional host capability (`ICubeClassification`) | Loaded bounds and completed memo or retained columns, including required neighbours; missing required facts yield `UNKNOWN` or no surface band |
-| `createTerrainPreviewSampler` | Cubature DH provider | `TerrainMap.sample` per preview column, assembled by the column engine and emitted as its runs |
+| `TerrainPreview.createTerrainPreviewSampler` | Cubature's distant terrain (the generator delegates to it) | `TerrainMap.sample` per preview column, assembled by the column engine and emitted as its runs |
 | `ClimateBiomeProvider` | Minecraft biome queries | `surfaceHabitat`; spawn biomes exclude ocean, deep ocean, river, swamp and all three beach biomes |
 | `RivenSpawn` | Forge `CreateSpawnPosition` | First dry land column, in 64-block rings out to 16,384 blocks, with a 16-block dry margin |
 | `/riven` (`RivenCommand`, report in `ColumnReport`) | Player | All observations at the player's column |
+
+`TerrainPreview` is the one preview sampler. It holds the seed maps, tree sites and ground cover
+and nothing of a world: the server's generator builds it on its own maps, and
+`TerrainPreview.create` builds one from a seed, a layout scale and the recorded definitions as
+bytes, with no world, save directory or live biome provider. Its `identity` hashes the regional
+identity (terrain version, seed, layout scale bits, every packaged definition's fingerprint), the
+recorded definitions' fingerprint and the block each recorded role and catalogue entry resolved
+to, so two sides with equal identities emit equal columns. `PreviewParityCheck` with sources
+`generator,standalone` requires equal identities and equal digests: at seed 8675309 the forest
+and mountain windows agree at levels 0 to 5 (1,392 tiles each).
 
 Cubes entirely below the lowest possible soil are filled with stone directly unless an aquifer
 intersects them; cubes above the highest possible surface are air. `NativeColumns` holds

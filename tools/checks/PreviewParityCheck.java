@@ -44,7 +44,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>Usage: PreviewParityCheck OUT SEED SCALE THREADS SOURCES WINDOW..., where SOURCES is a
  * comma-separated list of {@code generator} (the server's cube generator, built on a fixture world
- * whose every chunk, block and biome access throws) and WINDOW is {@code NAME:CX:CZ:HIGH-LOW[:N]}:
+ * whose every chunk, block and biome access throws) and {@code standalone} (a {@link
+ * TerrainPreview} built from the seed, the layout scale and the recorded definitions' bytes alone,
+ * with maps of its own), and WINDOW is {@code NAME:CX:CZ:HIGH-LOW[:N]}:
  * for each level from HIGH down to LOW (cells of 2^level blocks), a tile-aligned square of N x N
  * tiles of 64 x 64 columns around (CX, CZ); N defaults to the size survey's rule, at least 2,048
  * blocks and at least 4 x 4 tiles. Each column is sampled at its cell's integer centre with the
@@ -52,7 +54,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>A level's digest is the SHA-256 of its tiles' digests in order; a tile's covers, for every
  * column in order, the biome's registry name and each run's bounds and block state. Writes
- * OUT/NAME.json per window. With more than one source, every level's digests must be equal.
+ * OUT/NAME.json per window. With more than one source, their preview identities and every level's
+ * digests must be equal. The identity must also change with the seed, the layout scale and a
+ * recorded role.
  */
 public final class PreviewParityCheck {
     private static final int CELLS = 64;
@@ -169,7 +173,10 @@ public final class PreviewParityCheck {
                 (System.nanoTime() - started) / 1e9);
     }
 
-    private static ICubicTerrainPreview source(
+    /** A source's preview and the identity it reports. */
+    private record Source(ICubicTerrainPreview preview, String identity) {}
+
+    private static Source source(
             String kind, Path out, long seed, WorldScale scale, String recorded) throws Exception {
         if (kind.equals("generator")) {
             Path fixture = out.resolve("fixture");
@@ -178,9 +185,44 @@ public final class PreviewParityCheck {
             Files.writeString(file, recorded, StandardCharsets.UTF_8);
             ClimateBiomeProvider biomes = new ClimateBiomeProvider(seed, scale, null, null);
             World world = CubePrimerFixture.create(fixture, seed, biomes);
-            return (ICubicTerrainPreview) new RivenWorldType().createCubeGenerator(world);
+            RivenWorldType.Generator generator =
+                    (RivenWorldType.Generator) new RivenWorldType().createCubeGenerator(world);
+            return new Source(generator, generator.preview().identity);
+        }
+        if (kind.equals("standalone")) {
+            // Only what a server could send: no world, no fixture, no shared maps.
+            TerrainPreview preview =
+                    TerrainPreview.create(
+                            seed,
+                            scale,
+                            Mappings.read(recorded.getBytes(StandardCharsets.UTF_8)).bytes(),
+                            null,
+                            null);
+            return new Source(preview, preview.identity);
         }
         throw new IllegalArgumentException("Unknown source " + kind);
+    }
+
+    /** A different seed, layout scale or recorded role each gives a different identity. */
+    private static void identityFollowsItsInputs(long seed, WorldScale scale, String recorded) {
+        Mappings.Snapshot snapshot = Mappings.read(recorded.getBytes(StandardCharsets.UTF_8));
+        String identity = TerrainPreview.identity(seed, scale, snapshot);
+        JsonObject edited = new com.google.gson.Gson().fromJson(recorded, JsonObject.class);
+        JsonObject roles = edited.getAsJsonObject("roles");
+        String role = roles.entrySet().iterator().next().getKey();
+        JsonArray stone = new JsonArray();
+        stone.add("minecraft:stone");
+        roles.add(role, stone);
+        WorldScale other = new WorldScale(scale.layout == 2 ? 4 : 2);
+        if (!identity.equals(TerrainPreview.identity(seed, scale, snapshot))
+                || identity.equals(TerrainPreview.identity(seed + 1, scale, snapshot))
+                || identity.equals(TerrainPreview.identity(seed, other, snapshot))
+                || identity.equals(
+                        TerrainPreview.identity(
+                                seed,
+                                scale,
+                                Mappings.read(edited.toString().getBytes(StandardCharsets.UTF_8)))))
+            throw new AssertionError("The preview identity does not follow its inputs");
     }
 
     public static void main(String[] args) throws Exception {
@@ -196,7 +238,16 @@ public final class PreviewParityCheck {
         bootstrap();
         String recorded = recordedDefaults();
         Map<String, ICubicTerrainPreview> sources = new LinkedHashMap<>();
-        for (String kind : kinds) sources.put(kind, source(kind, out, seed, scale, recorded));
+        boolean equal = true;
+        String identity = null;
+        for (String kind : kinds) {
+            Source source = source(kind, out, seed, scale, recorded);
+            sources.put(kind, source.preview());
+            System.out.println(kind + " identity " + source.identity());
+            if (identity == null) identity = source.identity();
+            else if (!identity.equals(source.identity())) equal = false;
+        }
+        identityFollowsItsInputs(seed, scale, recorded);
         AtomicInteger made = new AtomicInteger();
         ExecutorService pool =
                 Executors.newFixedThreadPool(
@@ -207,7 +258,6 @@ public final class PreviewParityCheck {
                             thread.setDaemon(true);
                             return thread;
                         });
-        boolean equal = true;
         try {
             for (int w = 5; w < args.length; w++) {
                 String[] window = args[w].split(":");
@@ -218,6 +268,7 @@ public final class PreviewParityCheck {
                 report.addProperty("window", args[w]);
                 report.addProperty("seed", seed);
                 report.addProperty("layoutScale", scale.layout);
+                report.addProperty("identity", identity);
                 JsonArray rows = new JsonArray();
                 for (int level = Integer.parseInt(levels[0]);
                         level >= Integer.parseInt(levels[1]);
@@ -261,7 +312,9 @@ public final class PreviewParityCheck {
         }
         System.out.println(
                 "PreviewParityCheck passed"
-                        + (kinds.length > 1 ? ": every level equal across " + args[4] : ""));
+                        + (kinds.length > 1
+                                ? ": identity and every level equal across " + args[4]
+                                : ""));
         // Minecraft's bootstrap leaves non-daemon threads behind.
         System.exit(0);
     }

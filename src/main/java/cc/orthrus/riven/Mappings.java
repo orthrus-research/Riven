@@ -85,6 +85,13 @@ final class Mappings {
             return state;
         }
 
+        /** The snapshot as a world records it and a server sends it: canonical, with its fingerprint. */
+        byte[] bytes() {
+            JsonObject stored = canonical();
+            stored.addProperty("fingerprint", fingerprint);
+            return GSON.toJson(stored).getBytes(StandardCharsets.UTF_8);
+        }
+
         /** The snapshot as stored: layers, role candidates, colours (fingerprint excluded). */
         private JsonObject canonical() {
             JsonObject out = new JsonObject();
@@ -125,18 +132,15 @@ final class Mappings {
         Snapshot snapshot;
         try {
             if (file.isFile()) {
-                snapshot =
-                        read(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8));
+                snapshot = read(Files.readAllBytes(file.toPath()));
                 LOG.info(
                         "Riven definitions {} loaded from the world ({})",
                         snapshot.fingerprint,
                         file);
             } else {
                 snapshot = resolve();
-                JsonObject stored = snapshot.canonical();
-                stored.addProperty("fingerprint", snapshot.fingerprint);
                 Files.createDirectories(file.getParentFile().toPath());
-                Files.write(file.toPath(), GSON.toJson(stored).getBytes(StandardCharsets.UTF_8));
+                Files.write(file.toPath(), snapshot.bytes());
                 LOG.info(
                         "Riven definitions {} resolved from layers {} and recorded in the world ({})",
                         snapshot.fingerprint,
@@ -195,8 +199,15 @@ final class Mappings {
         return new Snapshot(layers, roles, colours);
     }
 
-    private static Snapshot read(String text) {
-        JsonObject j = new JsonParser().parse(text).getAsJsonObject();
+    /**
+     * A snapshot from its recorded form ({@link Snapshot#bytes}), resolving each role against the
+     * blocks loaded here. Touches no world and applies no colours.
+     */
+    static Snapshot read(byte[] recorded) {
+        JsonObject j =
+                new JsonParser()
+                        .parse(new String(recorded, StandardCharsets.UTF_8))
+                        .getAsJsonObject();
         List<String> layers = new ArrayList<>();
         for (JsonElement e : j.getAsJsonArray("layers")) layers.add(e.getAsString());
         Map<String, List<String>> roles = new TreeMap<>();

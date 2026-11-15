@@ -60,6 +60,14 @@ final class TerrainColumn {
         return result;
     }
 
+    /** Every catalogue entry and the state it resolved to here, one per line. */
+    static String resolution() {
+        StringBuilder text = new StringBuilder();
+        for (TerrainBlock b : TerrainBlock.values())
+            text.append(b.id).append('=').append(STATES[b.index()]).append('\n');
+        return text.toString();
+    }
+
     /** The startup log line: how the catalogue resolved. */
     static String catalogueSummary() {
         return "Riven catalogue: "

@@ -1,6 +1,5 @@
 package cc.orthrus.riven;
 
-import cc.orthrus.riven.worldgen.BuildPool;
 import cc.orthrus.riven.worldgen.NativeColumns;
 import cc.orthrus.riven.worldgen.OreMap;
 import cc.orthrus.riven.worldgen.RealmMap;
@@ -89,6 +88,12 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         return generator instanceof Generator ? (Generator) generator : null;
     }
 
+    /** The terrain preview of a Riven cubic server world, or null. */
+    static TerrainPreview preview(World world) {
+        Generator generator = generator(world);
+        return generator == null ? null : generator.preview;
+    }
+
     /** The tree sites of a Riven cubic server world, or null. */
     static TreeSites trees(World world) {
         Generator generator = generator(world);
@@ -113,7 +118,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         return generator == null ? null : generator.realms;
     }
 
-    private static final class Generator
+    static final class Generator
             implements ICubeGenerator,
                     ICubicTerrainPreview,
                     IRetainedColumnPreparation,
@@ -128,6 +133,9 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             snapshot = Mappings.load(world);
             trees = new TreeSites(world.getSeed(), biomes, HEIGHTS, snapshot);
             cover = new GroundCover(world.getSeed(), biomes, trees);
+            preview =
+                    new TerrainPreview(
+                            world.getSeed(), biomes.context.scale, snapshot, biomes, trees, cover);
             groundKindsSupported = groundKindsSupported();
             surfaceBandSupported = trees.surfaceBandSupported() && groundPreservingBodies();
             animals = new FirstAnimals(world.getSeed(), biomes);
@@ -158,6 +166,13 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
 
         /** Riven's ground cover. */
         private final GroundCover cover;
+
+        /** The terrain preview: the one sampler, on this generator's maps. */
+        private final TerrainPreview preview;
+
+        TerrainPreview preview() {
+            return preview;
+        }
 
         /** Riven's population: each chunk column's first animals. */
         private final FirstAnimals animals;
@@ -282,47 +297,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
 
         @Override
         public Sampler createTerrainPreviewSampler() {
-            // The maps are immutable. Only this sampler's scratch sample and buffers are mutable.
-            TerrainMap.Sample sample = new TerrainMap.Sample();
-            TerrainColumn.Scratch scratch = new TerrainColumn.Scratch();
-            return new Sampler() {
-                @Override
-                public void sampleColumn(int x, int z, ColumnConsumer consumer) {
-                    sampleColumn(x, z, 1, consumer);
-                }
-
-                @Override
-                public void sampleColumn(int x, int z, int footprint, ColumnConsumer consumer) {
-                    if (!ClimateBiomeProvider.inWorld(x, z)) {
-                        consumer.begin(Biomes.PLAINS);
-                        consumer.addRun(
-                                HEIGHTS.worldMinimumY,
-                                HEIGHTS.maximumYExclusive,
-                                Blocks.AIR.getDefaultState());
-                        return;
-                    }
-                    // Preview columns build regional plans on this thread alone (BuildPool.alone).
-                    boolean was = BuildPool.alone(true);
-                    try {
-                        biomes.maps.terrain.sample(x, z, sample);
-                        TerrainColumn.preview(
-                                sample,
-                                biomes.biome(sample, x, z),
-                                biomes.maps.columns.assembler(),
-                                HEIGHTS,
-                                biomes.maps.boulders,
-                                trees,
-                                cover,
-                                footprint,
-                                x,
-                                z,
-                                scratch,
-                                consumer);
-                    } finally {
-                        BuildPool.alone(was);
-                    }
-                }
-            };
+            return preview.createTerrainPreviewSampler();
         }
 
         /** Cubes are pure functions of seed, definitions and coordinates; every map is thread-safe. */
