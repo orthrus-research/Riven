@@ -385,10 +385,11 @@ records both JVMs with JFR's profile settings for attributing a phase further.
   samples the terrain preview over windows of 64 x 64-column tiles at each level (cells of
   2^level blocks, sampled at their integer centres) and digests every column's biome and runs,
   so preview content can be compared exactly between two trees. The source `generator` is the
-  server's cube generator on a fixture world; `standalone` is a `TerrainPreview` built from the
-  seed, the layout scale and the recorded definitions' bytes alone. With both, their identities
-  and every level's digest must be equal, and the identity must change with the seed, the scale
-  and a recorded role. CI compiles this check; invoke its workload explicitly.
+  server's cube generator on a fixture world; `join` is what a client builds: the generator's
+  offer written as Cubature's join message, and Riven's registered factory given the bytes of that
+  message alone. With both, their identities and every level's digest must be equal, the identity
+  must change with the seed, the scale and a recorded role, and the factory must decline a message
+  whose seed is not its identity's. CI compiles this check; invoke its workload explicitly.
 - `CUBATURE_LAB_JVM=g1-ship8-nmt` prepares a capture on the shipping G1 profile with native memory
   tracking. After every scenario it records each process's NMT summary, the JVM's tagged
   address-space map (`jcmd System.map`) and, with Sysinternals VMMap on PATH, VMMap's CSV, and joins

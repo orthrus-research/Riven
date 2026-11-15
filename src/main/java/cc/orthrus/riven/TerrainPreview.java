@@ -2,32 +2,39 @@ package cc.orthrus.riven;
 
 import cc.orthrus.riven.worldgen.BuildPool;
 import cc.orthrus.riven.worldgen.RegionalIdentity;
-import cc.orthrus.riven.worldgen.RegionalStore;
 import cc.orthrus.riven.worldgen.Rules;
 import cc.orthrus.riven.worldgen.TerrainHeightReference;
 import cc.orthrus.riven.worldgen.TerrainMap;
 import cc.orthrus.riven.worldgen.WorldScale;
 
+import io.github.opencubicchunks.cubicchunks.api.worldgen.ClientPreviewInputs;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubicTerrainPreview;
+import io.github.opencubicchunks.cubicchunks.api.worldgen.TerrainPreviewFactories;
 
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
 import net.minecraft.init.Blocks;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.ForkJoinPool;
 
 /**
  * Riven's terrain preview: every column as vertical runs of block states, the one sampler native
  * cubes' distant stand-in and any distant renderer share. It holds only what a column reads (the
  * seed maps, tree sites and ground cover) and is a pure function of seed, layout scale and the
  * world's recorded definitions, so it is built the same way with a world (the server's generator
- * hands over its own maps) and without one ({@link #create}: no world, no save directory, no
- * live biome provider).
+ * hands over its own maps) and without one ({@link #fromServer}: on a client, from what the
+ * server sent at join, with no world, no save directory and no live biome provider).
  */
 final class TerrainPreview implements ICubicTerrainPreview {
     private static final TerrainHeightReference HEIGHTS = TerrainHeightReference.DEFAULT;
+    private static final Logger LOG = LogManager.getLogger("riven");
+
+    /** The name Riven's client factory is registered under, and its server's offers carry. */
+    static final String FACTORY = "riven";
 
     private final ClimateBiomeProvider biomes;
     private final TreeSites trees;
@@ -56,16 +63,41 @@ final class TerrainPreview implements ICubicTerrainPreview {
         identity = identity(seed, scale, snapshot);
     }
 
+    /** Registers the factory that builds a client's preview from what its server sent at join. */
+    static void registerFactory() {
+        TerrainPreviewFactories.register(FACTORY, TerrainPreview::fromServer);
+    }
+
     /**
-     * A preview from a seed, a layout scale and the recorded definitions as {@link
-     * Mappings.Snapshot#bytes} wrote them. Regional builds run on the pool, or on the sampling
-     * thread when it is null; a null store keeps derived data in memory only.
+     * A client's preview from its server's offer, or null to decline: the definitions cannot be
+     * resolved here, or the identity they give with this build's packaged definitions and this
+     * client's blocks is not the server's. The identity is compared before any map is built.
      */
-    static TerrainPreview create(
-            long seed, WorldScale scale, byte[] recorded, ForkJoinPool pool, RegionalStore store) {
-        Mappings.Snapshot snapshot = Mappings.read(recorded);
-        ClimateBiomeProvider biomes = new ClimateBiomeProvider(seed, scale, pool, store);
+    static TerrainPreview fromServer(ClientPreviewInputs inputs) {
+        long seed = inputs.seed();
+        WorldScale scale;
+        Mappings.Snapshot snapshot;
+        try {
+            scale = WorldScale.parse(inputs.generatorOptions());
+            snapshot = Mappings.read(inputs.recordedDefinitions());
+        } catch (RuntimeException unreadable) {
+            LOG.warn("Riven declines the server's terrain preview: {}", unreadable.toString());
+            return null;
+        }
+        String identity = identity(seed, scale, snapshot);
+        if (!identity.equals(inputs.identity())) {
+            LOG.warn(
+                    "Riven declines the server's terrain preview: its identity {} is not this"
+                            + " client's {} (another Riven build, or a block resolved differently)",
+                    inputs.identity(),
+                    identity);
+            return null;
+        }
+        // The host offers no derived-data directory yet, so regional data stays in memory.
+        ClimateBiomeProvider biomes =
+                new ClimateBiomeProvider(seed, scale, inputs.buildPool(), null);
         TreeSites trees = new TreeSites(seed, biomes, HEIGHTS, snapshot);
+        LOG.info("Riven terrain preview {} built from the server's definitions", identity);
         return new TerrainPreview(
                 seed, scale, snapshot, biomes, trees, new GroundCover(seed, biomes, trees));
     }

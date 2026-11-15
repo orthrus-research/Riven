@@ -12,7 +12,9 @@ import io.github.opencubicchunks.cubicchunks.api.util.Box;
 import io.github.opencubicchunks.cubicchunks.api.util.IntRange;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldType;
+import io.github.opencubicchunks.cubicchunks.api.worldgen.ClientPreviewOffer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.CubePrimer;
+import io.github.opencubicchunks.cubicchunks.api.worldgen.IClientTerrainPreviewOffer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeClassification;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubicTerrainPreview;
@@ -121,6 +123,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
     static final class Generator
             implements ICubeGenerator,
                     ICubicTerrainPreview,
+                    IClientTerrainPreviewOffer,
                     IRetainedColumnPreparation,
                     ICubeClassification {
         private final ClimateBiomeProvider biomes;
@@ -298,6 +301,17 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
         @Override
         public Sampler createTerrainPreviewSampler() {
             return preview.createTerrainPreviewSampler();
+        }
+
+        /** What a client needs to build this world's preview itself (TerrainPreview.fromServer). */
+        @Override
+        public ClientPreviewOffer clientPreviewOffer() {
+            return new ClientPreviewOffer(
+                    TerrainPreview.FACTORY,
+                    preview.identity,
+                    world.getSeed(),
+                    world.getWorldInfo().getGeneratorOptions(),
+                    snapshot.bytes());
         }
 
         /** Cubes are pure functions of seed, definitions and coordinates; every map is thread-safe. */

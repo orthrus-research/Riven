@@ -17,6 +17,7 @@ import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 public final class Riven {
     @Mod.EventHandler
     public void construct(net.minecraftforge.fml.common.event.FMLConstructionEvent event) {
+        TerrainPreview.registerFactory();
         // GTCEu posts its material events in its own preInit, which may run before Riven's.
         if (net.minecraftforge.fml.common.Loader.isModLoaded("gregtech"))
             MinecraftForge.EVENT_BUS.register(cc.orthrus.riven.content.GregTechMaterials.class);

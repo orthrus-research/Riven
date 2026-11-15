@@ -29,6 +29,11 @@ final class CubePrimerFixture {
     private CubePrimerFixture() {}
 
     static World create(Path root, long seed, ClimateBiomeProvider biomes) {
+        return create(root, seed, "", biomes);
+    }
+
+    /** With the generator options the world was created with (Riven: its layout scale). */
+    static World create(Path root, long seed, String options, ClimateBiomeProvider biomes) {
         Path directory = Objects.requireNonNull(root).toAbsolutePath().normalize();
         Objects.requireNonNull(biomes);
         if (!Files.isDirectory(directory)
@@ -36,7 +41,8 @@ final class CubePrimerFixture {
             throw new IllegalArgumentException("The primer fixture needs a recorded snapshot");
         WorldInfo info =
                 new WorldInfo(
-                        new WorldSettings(seed, GameType.CREATIVE, false, false, WorldType.DEFAULT),
+                        new WorldSettings(seed, GameType.CREATIVE, false, false, WorldType.DEFAULT)
+                                .setGeneratorOptions(options),
                         "primer-fixture");
         WorldProviderSurface provider =
                 new WorldProviderSurface() {

@@ -120,14 +120,21 @@ rebuild and store the same value.
 | `/riven` (`RivenCommand`, report in `ColumnReport`) | Player | All observations at the player's column |
 
 `TerrainPreview` is the one preview sampler. It holds the seed maps, tree sites and ground cover
-and nothing of a world: the server's generator builds it on its own maps, and
-`TerrainPreview.create` builds one from a seed, a layout scale and the recorded definitions as
-bytes, with no world, save directory or live biome provider. Its `identity` hashes the regional
-identity (terrain version, seed, layout scale bits, every packaged definition's fingerprint), the
-recorded definitions' fingerprint and the block each recorded role and catalogue entry resolved
-to, so two sides with equal identities emit equal columns. `PreviewParityCheck` with sources
-`generator,standalone` requires equal identities and equal digests: at seed 8675309 the forest
-and mountain windows agree at levels 0 to 5 (1,392 tiles each).
+and nothing of a world. Its `identity` hashes the regional identity (terrain version, seed, layout
+scale bits, every packaged definition's fingerprint), the recorded definitions' fingerprint and
+the block each recorded role and catalogue entry resolved to, so two sides with equal identities
+emit equal columns. The server's generator builds it on its own maps and, through Cubature's
+`IClientTerrainPreviewOffer`, offers each joining client what it needs to build the same one: the
+factory name `riven`, the identity, the seed, the generator options (the layout scale) and the
+recorded definitions as bytes, 4.9 KB in all for the packaged defaults. On the client
+`TerrainPreview.fromServer`, the factory Riven registers at mod construction, parses those,
+compares the identity before building any map and declines unless it is the server's (another
+Riven build, or an optional mod's block resolved differently); it uses no world, no save
+directory and no live biome provider. A single-player client samples the integrated server's
+generator instead (Cubature `docs/CUBE-SOURCE.md`, section 8). `PreviewParityCheck` with sources
+`generator,join` requires equal identities and equal digests between the generator and a preview
+built from the bytes of the join message alone: at seed 8675309 the forest and mountain windows
+agree at levels 0 to 5 (1,392 tiles each), as do a 32 km world's levels 7 and 6.
 
 Cubes entirely below the lowest possible soil are filled with stone directly unless an aquifer
 intersects them; cubes above the highest possible surface are air. `NativeColumns` holds

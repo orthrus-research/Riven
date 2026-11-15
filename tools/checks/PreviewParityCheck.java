@@ -7,7 +7,13 @@ import cc.orthrus.riven.worldgen.WorldScale;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
+import io.github.opencubicchunks.cubicchunks.api.worldgen.ClientPreviewInputs;
+import io.github.opencubicchunks.cubicchunks.api.worldgen.ClientPreviewOffer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubicTerrainPreview;
+import io.github.opencubicchunks.cubicchunks.api.worldgen.TerrainPreviewFactories;
+import io.github.opencubicchunks.cubicchunks.core.network.PacketClientPreview;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Bootstrap;
@@ -44,9 +50,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>Usage: PreviewParityCheck OUT SEED SCALE THREADS SOURCES WINDOW..., where SOURCES is a
  * comma-separated list of {@code generator} (the server's cube generator, built on a fixture world
- * whose every chunk, block and biome access throws) and {@code standalone} (a {@link
- * TerrainPreview} built from the seed, the layout scale and the recorded definitions' bytes alone,
- * with maps of its own), and WINDOW is {@code NAME:CX:CZ:HIGH-LOW[:N]}:
+ * whose every chunk, block and biome access throws) and {@code join} (what a client builds: the
+ * generator's offer is written as Cubature's join message, and Riven's registered factory builds
+ * a preview from the bytes of that message alone, with maps of its own), and WINDOW is {@code
+ * NAME:CX:CZ:HIGH-LOW[:N]}:
  * for each level from HIGH down to LOW (cells of 2^level blocks), a tile-aligned square of N x N
  * tiles of 64 x 64 columns around (CX, CZ); N defaults to the size survey's rule, at least 2,048
  * blocks and at least 4 x 4 tiles. Each column is sampled at its cell's integer centre with the
@@ -56,7 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * column in order, the biome's registry name and each run's bounds and block state. Writes
  * OUT/NAME.json per window. With more than one source, their preview identities and every level's
  * digests must be equal. The identity must also change with the seed, the layout scale and a
- * recorded role.
+ * recorded role, and the factory must decline a message whose seed is not its identity's.
  */
 public final class PreviewParityCheck {
     private static final int CELLS = 64;
@@ -76,6 +83,8 @@ public final class PreviewParityCheck {
         RivenBiomes.register(
                 new RegistryEvent.Register<>(
                         new ResourceLocation("minecraft", "biomes"), ForgeRegistries.BIOMES));
+        // As Riven does at mod construction.
+        TerrainPreview.registerFactory();
     }
 
     /** The packaged definitions as a world records them, as CubePrimerBootstrapCheck writes it. */
@@ -176,29 +185,66 @@ public final class PreviewParityCheck {
     /** A source's preview and the identity it reports. */
     private record Source(ICubicTerrainPreview preview, String identity) {}
 
-    private static Source source(
-            String kind, Path out, long seed, WorldScale scale, String recorded) throws Exception {
-        if (kind.equals("generator")) {
+    private static RivenWorldType.Generator server;
+
+    /** The server's cube generator, on a fixture world; built once. */
+    private static RivenWorldType.Generator server(
+            Path out, long seed, WorldScale scale, String recorded) throws Exception {
+        if (server == null) {
             Path fixture = out.resolve("fixture");
             Path file = fixture.resolve("data/riven/definitions.json");
             Files.createDirectories(file.getParent());
             Files.writeString(file, recorded, StandardCharsets.UTF_8);
             ClimateBiomeProvider biomes = new ClimateBiomeProvider(seed, scale, null, null);
-            World world = CubePrimerFixture.create(fixture, seed, biomes);
-            RivenWorldType.Generator generator =
-                    (RivenWorldType.Generator) new RivenWorldType().createCubeGenerator(world);
-            return new Source(generator, generator.preview().identity);
+            World world = CubePrimerFixture.create(fixture, seed, scale.toString(), biomes);
+            server = (RivenWorldType.Generator) new RivenWorldType().createCubeGenerator(world);
         }
-        if (kind.equals("standalone")) {
-            // Only what a server could send: no world, no fixture, no shared maps.
-            TerrainPreview preview =
-                    TerrainPreview.create(
-                            seed,
-                            scale,
-                            Mappings.read(recorded.getBytes(StandardCharsets.UTF_8)).bytes(),
-                            null,
-                            null);
-            return new Source(preview, preview.identity);
+        return server;
+    }
+
+    /** The join message a server sends for an offer, as its bytes on the wire. */
+    private static byte[] message(ClientPreviewOffer offer) {
+        ByteBuf wire = Unpooled.buffer();
+        try {
+            new PacketClientPreview(0, offer).toBytes(wire);
+            byte[] bytes = new byte[wire.readableBytes()];
+            wire.readBytes(bytes);
+            return bytes;
+        } finally {
+            wire.release();
+        }
+    }
+
+    /** What a client's registered factory builds from a join message's bytes, or null. */
+    private static ICubicTerrainPreview client(byte[] message) {
+        PacketClientPreview received = new PacketClientPreview();
+        received.fromBytes(Unpooled.wrappedBuffer(message));
+        ClientPreviewOffer offer = received.offer();
+        return TerrainPreviewFactories.get(offer.factory())
+                .create(new ClientPreviewInputs(received.dimension(), offer, null, null));
+    }
+
+    private static Source source(
+            String kind, Path out, long seed, WorldScale scale, String recorded) throws Exception {
+        RivenWorldType.Generator generator = server(out, seed, scale, recorded);
+        if (kind.equals("generator")) return new Source(generator, generator.preview().identity);
+        if (kind.equals("join")) {
+            ClientPreviewOffer offer = generator.clientPreviewOffer();
+            // From here on, only the message: no world, no fixture, none of the server's maps.
+            byte[] message = message(offer);
+            System.out.println("join message: " + message.length + " bytes");
+            ICubicTerrainPreview built = client(message);
+            if (built == null) throw new AssertionError("The factory declined its server's offer");
+            ClientPreviewOffer other =
+                    new ClientPreviewOffer(
+                            offer.factory(),
+                            offer.identity(),
+                            offer.seed() + 1,
+                            offer.generatorOptions(),
+                            offer.recordedDefinitions());
+            if (client(message(other)) != null)
+                throw new AssertionError("The factory built a preview for another seed's identity");
+            return new Source(built, ((TerrainPreview) built).identity);
         }
         throw new IllegalArgumentException("Unknown source " + kind);
     }
