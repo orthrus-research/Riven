@@ -21,14 +21,3 @@ out/
 venv/
 .DS_Store
 Thumbs.db
-
-# Agent tooling: local only, never committed
-AGENTS.md
-CLAUDE.md
-CLAUDE.local.md
-GEMINI.md
-.mcp.json
-.claude/
-.codex/
-.cursor/
-.agents/
