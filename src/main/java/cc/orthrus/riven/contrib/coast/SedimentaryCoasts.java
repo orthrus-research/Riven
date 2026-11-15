@@ -11,12 +11,17 @@
  * Riven modification (2026-11-03): the barrier family, the Column sampling API, reservation
  * masks, the whole-body admission and the unread sample outputs are removed; Riven's caller
  * places each form where its facts already hold and leaves reserved water alone itself.
+ * Riven modification (2026-11-15): the least spacing between a plan's nodes is named so callers
+ * can end a guide before it; the bound is unchanged.
  */
 package cc.orthrus.riven.contrib.coast;
 
 /** Independently authored, bounded sediment geometry. No Minecraft or loader dependency. */
 public final class SedimentaryCoasts {
     private SedimentaryCoasts() {}
+
+    /** The least distance between two consecutive nodes of a plan, in blocks. */
+    public static final double MINIMUM_NODE_SPACING = .001;
 
     public enum Family {
         BEACH_BENCH(0x5343445F42454131L),
@@ -196,7 +201,8 @@ public final class SedimentaryCoasts {
                             "Coordinates outside Minecraft world bounds");
                 if (i > 0) {
                     double d = hypot(x[i] - x[i - 1], z[i] - z[i - 1]);
-                    if (d < .001) throw new IllegalArgumentException("Degenerate segment");
+                    if (d < MINIMUM_NODE_SPACING)
+                        throw new IllegalArgumentException("Degenerate segment");
                     s[i] = s[i - 1] + d;
                 }
                 loX = StrictMath.min(loX, x[i]);

@@ -394,7 +394,9 @@ records both JVMs with JFR's profile settings for attributing a phase further.
   The `sample-history`
   job runs `SampleHistoryCheck` on six seeds: every stage result in `TerrainMap.Sample` is
   registered with one phase, and a sample reused across 640 shuffled land and sea visits equals a
-  fresh one in every field except the scratch and count-bounded arrays the check names.
+  fresh one in every field except the scratch and count-bounded arrays the check names. It also
+  runs `CoastStretchCheck`: a shore walk that runs into a cusp ends its stretch there, where it
+  once handed the sedimentary kernel two coinciding points (seed 8675309, column 11840, 42816).
 - The `drainage-prune` job runs `DrainagePruneCheck` at layout scales 1 and 4: drainage answers
   over a grid and scattered columns, with continent pruning on and off, must be bit-identical.
 - The `regional-bake` job runs `RegionalBakeCheck` at layout scales 1 and 4: preparing a region

@@ -131,12 +131,13 @@ steps = [
 ]
 
 [jobs.sample-history]
-description = "A reused terrain sample reports what a fresh one does (tools/checks/SampleHistoryCheck)"
-inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc/orthrus/riven/contrib/**/*.java", "src/main/resources/*.json", "tools/run_check.py", "tools/atlas/build.py", "tools/checks/SampleHistoryCheck.java"]
+description = "A reused terrain sample reports what a fresh one does (tools/checks/SampleHistoryCheck), and a stalled shore walk ends its stretch (tools/checks/CoastStretchCheck)"
+inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc/orthrus/riven/contrib/**/*.java", "src/main/resources/*.json", "tools/run_check.py", "tools/atlas/build.py", "tools/checks/SampleHistoryCheck.java", "tools/checks/CoastStretchCheck.java"]
 memory = 8
 priority = 4
 steps = [
   { name = "sample history", run = ["{atlas_python}", "tools/run_check.py", "SampleHistoryCheck", "8675309", "101", "-991", "7", "42", "1"] },
+  { name = "coast stretch", run = ["{atlas_python}", "tools/run_check.py", "CoastStretchCheck"] },
 ]
 
 [jobs.variant-coverage]

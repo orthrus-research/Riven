@@ -305,7 +305,8 @@ public final class CoastSediment {
     /**
      * Walks a segment's shore from its site both ways, a guide's step at a time along each point's
      * own shore, snapping every step onto the shore line, until the next point belongs to another
-     * segment (that point is kept, so neighbouring benches overlap) or the shore is lost.
+     * segment (that point is kept, so neighbouring benches overlap) or the shore is lost: the
+     * snap fails, jumps more than two steps away, or stalls.
      */
     private Stretch stretch(Shore.Segment s) {
         // A site lies near its shore, not on it (S3a moves it toward the line).
@@ -323,8 +324,12 @@ public final class CoastSediment {
                 double[] next =
                         shore.onShore(
                                 at[0] + sign * at[3] * guide, at[1] - sign * at[2] * guide, guide);
-                if (next == null || Rules.hypot(next[0] - at[0], next[1] - at[1]) > 2 * guide)
-                    break;
+                if (next == null) break;
+                // The shore is lost where the snap jumps away, and where it no longer advances:
+                // in a cusp narrower than a step the snap returns each step to the same point,
+                // closer every time, and the kernel refuses a plan whose nodes coincide.
+                double advance = Rules.hypot(next[0] - at[0], next[1] - at[1]);
+                if (advance > 2 * guide || advance < SedimentaryCoasts.MINIMUM_NODE_SPACING) break;
                 walk.add(next);
                 shore.nearest(next[0], next[1], owner);
                 if (!s.is(owner.a)) {
