@@ -196,6 +196,18 @@ cumulative, opt-in experiments, not accepted defaults.
 Different stages are intentional treatment changes and do not pass the existing
 single-artifact strict comparator automatically.
 
+### View distance
+
+Instances are prepared at the lab's baseline view distance, 12 for the server's horizontal and
+vertical distances and for the client's render distance, so runs compare. `runtime.py play` may
+raise any of them, freely, with `--view-distance`, `--vertical-view-distance` and
+`--client-render-distance`, and a tour may ask for raised distances itself as an object,
+`{"viewDistance": {"clientRender": 20}, "views": [...]}`; an option wins over the tour, and
+whatever neither raises stays at the baseline. Below the baseline is refused. Each play sets the
+instance to the run's distances before the launch, the baseline for a run that asks for nothing,
+records them in `standalone.json` (`viewDistance`, and `viewDistanceLabel`: `baseline` or what was
+raised), prints them, and files them as `view-distance.json` beside a tour's captures.
+
 ## Telemetry ledger
 
 Every capture and pregeneration, passed or failed, ends by writing one compact JSON record

@@ -597,9 +597,45 @@ def adopt_world(name, source):
     return size
 
 
+TOUR_VIEW_DISTANCE_KEYS = ("horizontal", "vertical", "clientRender")
+
+
+def read_tour(path):
+    """A tour file: a JSON list of views, or {"viewDistance": {...}, "views": [...]}."""
+    tour = json.loads(Path(path).read_text(encoding="utf-8"))
+    if isinstance(tour, list):
+        return tour, {}
+    if not isinstance(tour, dict) or not isinstance(tour.get("views"), list):
+        raise ValueError("A tour is a list of views or an object with views")
+    unknown = set(tour) - {"views", "viewDistance"}
+    if unknown:
+        raise ValueError("Unknown tour fields: " + ", ".join(sorted(unknown)))
+    distances = tour.get("viewDistance", {})
+    if not isinstance(distances, dict) or set(distances) - set(TOUR_VIEW_DISTANCE_KEYS):
+        raise ValueError("A tour's viewDistance takes " + ", ".join(TOUR_VIEW_DISTANCE_KEYS))
+    return tour["views"], distances
+
+
+def tour_view_distance(path):
+    """The view distances a tour asks for, by key; empty for none."""
+    return read_tour(path)[1]
+
+
+def run_view_distance(tour_distances=None, horizontal=None, vertical=None, client_render=None):
+    """A run's view distances: an option given to play, else the tour's, else the lab's baseline."""
+    tour_distances = tour_distances or {}
+
+    def pick(given, key):
+        return given if given is not None else tour_distances.get(key)
+
+    return lab_profiles.view_distance_profile(
+        pick(horizontal, "horizontal"), pick(vertical, "vertical"), pick(client_render, "clientRender")
+    )
+
+
 def load_tour(path):
-    """Viewpoints for a capture tour: a JSON list of {label, x, y, z, yaw, pitch}."""
-    views = json.loads(Path(path).read_text(encoding="utf-8"))
+    """Viewpoints for a capture tour: {label, x, y, z, yaw, pitch} each (see read_tour)."""
+    views = read_tour(path)[0]
     if not views:
         raise ValueError("A tour needs at least one viewpoint")
     for view in views:
@@ -610,9 +646,21 @@ def load_tour(path):
     return views
 
 
-def play(name, tour=None, window=None, shader_pack=None):
+def play(name, tour=None, window=None, shader_pack=None, distances=None):
     directory, m = load(name)
     views = load_tour(tour) if tour else None
+    # The lab's baseline unless the run or its tour raises a distance; recorded before the launch.
+    distances = distances or {}
+    profile = run_view_distance(
+        tour_view_distance(tour) if tour else None,
+        distances.get("horizontal"),
+        distances.get("vertical"),
+        distances.get("clientRender"),
+    )
+    if lab_profiles.apply_view_distance(m, profile):
+        lab_files.write_json(directory / "standalone.json", m)
+    lab_profiles.validate_view_distance_inputs(m)
+    print("View distance: " + lab_profiles.view_distance_label(profile) + " " + json.dumps(profile), flush=True)
     if shader_pack:
         installed = {
             r.get("name", r["installedAs"]): r["installedAs"] for r in m.get("shaderPacks", [])
@@ -769,6 +817,10 @@ def tour_views(directory, m, views, server, client, client_messages, username):
     for i, (view, shot) in enumerate(zip(views, taken)):
         shutil.move(str(shot), str(out / f"{i + 1:02d}-{view['label']}.png"))
     lab_files.write_json(out / "views.json", views)
+    lab_files.write_json(
+        out / "view-distance.json",
+        {"viewDistance": m["viewDistance"], "label": lab_profiles.view_distance_label(m["viewDistance"])},
+    )
     print("Tour captures: " + str(out), flush=True)
 
 
@@ -951,7 +1003,23 @@ def main():
     p.add_argument("--text")
     p.add_argument(
         "--tour",
-        help="play: JSON list of {label, x, y, z, yaw, pitch}; capture each, then stop and close",
+        help="play: JSON list of {label, x, y, z, yaw, pitch}, or {viewDistance, views}; capture each, "
+        "then stop and close",
+    )
+    p.add_argument(
+        "--view-distance",
+        type=int,
+        help="play: the server's horizontal view distance, raised above the lab's baseline of 12",
+    )
+    p.add_argument(
+        "--vertical-view-distance",
+        type=int,
+        help="play: the server's and client's vertical view distance, raised above the baseline of 12",
+    )
+    p.add_argument(
+        "--client-render-distance",
+        type=int,
+        help="play: the client's render distance, raised above the baseline of 12",
     )
     p.add_argument("--window", help="play: client window WIDTHxHEIGHT (default 1280x720)")
     a = p.parse_args()
@@ -995,7 +1063,17 @@ def main():
     elif a.command == "play":
         if a.shader_pack and len(a.shader_pack) != 1:
             raise ValueError("play takes one --shader-pack")
-        play(a.name, a.tour, a.window, a.shader_pack[0] if a.shader_pack else None)
+        play(
+            a.name,
+            a.tour,
+            a.window,
+            a.shader_pack[0] if a.shader_pack else None,
+            {
+                "horizontal": a.view_distance,
+                "vertical": a.vertical_view_distance,
+                "clientRender": a.client_render_distance,
+            },
+        )
     else:
         if not a.text or "\n" in a.text or "\r" in a.text:
             raise ValueError("One console command required")
