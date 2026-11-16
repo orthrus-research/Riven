@@ -159,8 +159,8 @@ public final class CoastForms {
             this.cz = cz;
             this.rise = rise;
             double angle = 2 * Math.PI * unit(h, 20), e = lerp(elongation, unit(h, 21));
-            cos = Math.cos(angle);
-            sin = Math.sin(angle);
+            cos = StrictMath.cos(angle);
+            sin = StrictMath.sin(angle);
             ra = radius * (1 + e);
             rb = radius * (1 - e);
             taper = lerp(stackTaper, unit(h, 22));
@@ -174,10 +174,10 @@ public final class CoastForms {
         double inside(double x, double z) {
             double dx = x - cx, dz = z - cz;
             double p = (dx * cos + dz * sin) / ra, q = (dz * cos - dx * sin) / rb;
-            double theta = Math.atan2(q, p), outline = 1;
+            double theta = StrictMath.atan2(q, p), outline = 1;
             for (int k = 0; k < 3; k++)
-                outline += lobes[2 * k] * Math.cos((k + 2) * theta + lobes[2 * k + 1]);
-            return StrictMath.hypot(p, q) / outline;
+                outline += lobes[2 * k] * StrictMath.cos((k + 2) * theta + lobes[2 * k + 1]);
+            return Rules.hypot(p, q) / outline;
         }
 
         /** The farthest the outline reaches from the centre, in blocks. */
@@ -520,7 +520,7 @@ public final class CoastForms {
                 // A slot stands only on its own segment's stretch of shore.
                 shore.nearest(at[0], at[1], owner);
                 if (!s.is(owner.a)) continue;
-                double length = StrictMath.hypot(at[2], at[3]);
+                double length = Rules.hypot(at[2], at[3]);
                 at[2] /= length;
                 at[3] /= length;
                 if (form == Form.SEA_CAVE) keep(cave(s, at, h), out);
@@ -541,8 +541,8 @@ public final class CoastForms {
         if (p.body != null)
             for (Placed q : placed)
                 if (q.body != null
-                        && StrictMath.hypot(p.cx - q.cx, p.cz - q.cz)
-                                < p.radius + q.radius + CLEARANCE) return;
+                        && Rules.hypot(p.cx - q.cx, p.cz - q.cz) < p.radius + q.radius + CLEARANCE)
+                    return;
         placed.add(p);
     }
 
@@ -584,7 +584,8 @@ public final class CoastForms {
         if (!(relief >= stackHeight[0])) return;
         parent.sample(at[0], at[1], probe);
         if (exposure(probe) < minimumExposure) return;
-        int size = Math.min(groupMax, 1 + (int) Math.floor(Math.pow(unit(h, 10), 2) * groupMax));
+        int size =
+                Math.min(groupMax, 1 + (int) Math.floor(StrictMath.pow(unit(h, 10), 2) * groupMax));
         double radius = lerp(stackRadius, unit(h, 11));
         double rise = Math.min(relief, lerp(stackHeight, unit(h, 12)));
         double offshore = lerp(stackCentre, unit(h, 13)), side = unit(h, 14) < .5 ? -1 : 1;
@@ -674,7 +675,7 @@ public final class CoastForms {
         double reach = k.extent() + MOAT;
         for (int z = (int) Math.floor(k.cz - reach); z <= (int) Math.ceil(k.cz + reach); z++)
             for (int x = (int) Math.floor(k.cx - reach); x <= (int) Math.ceil(k.cx + reach); x++) {
-                double n = k.inside(x, z), rho = StrictMath.hypot(x - k.cx, z - k.cz);
+                double n = k.inside(x, z), rho = Rules.hypot(x - k.cx, z - k.cz);
                 // Blocks beyond the outline along the column's own ray.
                 if (n > 1 && rho * (1 - 1 / n) > MOAT) continue;
                 parent.sample(x, z, probe);
@@ -710,7 +711,7 @@ public final class CoastForms {
                 RockyCoasts.prepare(
                         family, anchor(h, at, crest, reference.high, exposure), local(relief), t);
         if (plan.admission != RockyCoasts.Reason.ACCEPTED) return null;
-        double reach = StrictMath.hypot(plan.halfAlong, Math.max(plan.inland, plan.offshore));
+        double reach = Rules.hypot(plan.halfAlong, Math.max(plan.inland, plan.offshore));
         return new Placed(form, s, h, at, reach, plan);
     }
 

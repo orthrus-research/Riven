@@ -630,7 +630,7 @@ public final class EstuaryKernels {
                 double s = cu / .57;
                 double curve = .105 + arc * (1 - s * s) + .022 * sine(4 * cu + phase);
                 double half = .075 + .018 * sine(7 * cu + phase);
-                basin = half - StrictMath.hypot(u - cu, v - (curve + .11));
+                basin = half - hypot(u - cu, v - (curve + .11));
                 double ridge = .105 + arc * (1 - square(u / .57)) + .022 * sine(4 * u + phase);
                 barrier =
                         (1 - smooth((Math.abs(u) - .47) / .12))
@@ -768,7 +768,7 @@ public final class EstuaryKernels {
             double u, double v, double ax, double av, double bx, double bv, double ar, double br) {
         double du = bx - ax, dv = bv - av, den = du * du + dv * dv;
         double t = den == 0 ? 0 : clamp(((u - ax) * du + (v - av) * dv) / den);
-        return lerp(ar, br, t) - StrictMath.hypot(u - lerp(ax, bx, t), v - lerp(av, bv, t));
+        return lerp(ar, br, t) - hypot(u - lerp(ax, bx, t), v - lerp(av, bv, t));
     }
 
     private static double capsule(
@@ -836,5 +836,13 @@ public final class EstuaryKernels {
 
     private static int integer(Properties p, String key) {
         return Integer.parseInt(p.getProperty(key));
+    }
+
+    /**
+     * The length of (a, b) from exact IEEE operations: every platform agrees, and it costs a
+     * fraction of StrictMath.hypot.
+     */
+    private static double hypot(double a, double b) {
+        return Math.sqrt(a * a + b * b);
     }
 }

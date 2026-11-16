@@ -629,8 +629,7 @@ public final class Lakes {
                     bed = earlier.waterY - depth;
                     // An off-axis, elliptical island; disappears smoothly into original bed.
                     if (t.islandRadius > 0) {
-                        double ir =
-                                StrictMath.hypot((u - islandU) / 1.1, v - islandV) / t.islandRadius;
+                        double ir = hypot((u - islandU) / 1.1, v - islandV) / t.islandRadius;
                         double weight = 1 - smooth(ir);
                         bed += (earlier.waterY + 2 - bed) * weight;
                     }
@@ -641,7 +640,7 @@ public final class Lakes {
             if (t.outletWidth > 0) {
                 double along = u * rx, end = 1.30 * rx;
                 double at = clamp(along, 0, end);
-                double dist = StrictMath.hypot(along - at, v * rz);
+                double dist = hypot(along - at, v * rz);
                 double bank = rz * t.skirtFraction, half = t.outletWidth * .5;
                 if (dist < half + bank) {
                     // Hold lake head through ALL possible basin supports; drop outside them.
@@ -682,15 +681,15 @@ public final class Lakes {
                                                 * (.55 * waveSin(3 * theta + phase)
                                                         + .30 * waveSin(5 * theta + phase2)
                                                         + .15 * waveSin(8 * theta - phase));
-                        d = StrictMath.hypot(u, v) - r;
+                        d = hypot(u, v) - r;
                         break;
                     }
                 case LOBES:
                     {
                         // Polynomial smooth union, fixed 5 terms; no global field summation.
-                        d = StrictMath.hypot(u - a[0], v - b[0]) - c[0];
+                        d = hypot(u - a[0], v - b[0]) - c[0];
                         for (int i = 1; i < 5; i++) {
-                            double e = StrictMath.hypot(u - a[i], v - b[i]) - c[i];
+                            double e = hypot(u - a[i], v - b[i]) - c[i];
                             double k = .035 + t.detail * .25,
                                     h = Math.max(k - StrictMath.abs(d - e), 0) / k;
                             d = Math.min(d, e) - h * h * k * .25;
@@ -710,7 +709,7 @@ public final class Lakes {
                                             0,
                                             1);
                             double e =
-                                    StrictMath.hypot(u - a[i] - f * du, v - b[i] - f * dv)
+                                    hypot(u - a[i] - f * du, v - b[i] - f * dv)
                                             - (c[i] + f * (c[i + 1] - c[i]));
                             d = Math.min(d, e);
                         }
@@ -812,5 +811,13 @@ public final class Lakes {
     private static void finite(double... values) {
         for (double v : values)
             if (!Double.isFinite(v)) throw new IllegalArgumentException("nonfinite input");
+    }
+
+    /**
+     * The length of (a, b) from exact IEEE operations: every platform agrees, and it costs a
+     * fraction of StrictMath.hypot.
+     */
+    private static double hypot(double a, double b) {
+        return Math.sqrt(a * a + b * b);
     }
 }

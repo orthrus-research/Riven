@@ -2626,4 +2626,12 @@ public final class ContinentalKernels {
     private static boolean unit(double v) {
         return Double.isFinite(v) && v >= 0 && v <= 1;
     }
+
+    /**
+     * The length of (a, b) from exact IEEE operations: every platform agrees, and it costs a
+     * fraction of StrictMath.hypot.
+     */
+    private static double hypot(double a, double b) {
+        return Math.sqrt(a * a + b * b);
+    }
 }

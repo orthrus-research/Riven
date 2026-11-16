@@ -133,7 +133,7 @@ public final class MountainTerrain {
             amplitude = o == 0 ? .25 : o == 1 ? .15 : .1;
             wavelength *= .5;
         }
-        return massifRelief * (1 - Math.exp(-massifScale * crest)) * sum;
+        return massifRelief * (1 - StrictMath.exp(-massifScale * crest)) * sum;
     }
 
     public static final class Decision {

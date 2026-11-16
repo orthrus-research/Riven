@@ -223,7 +223,7 @@ public final strictfp class SurfaceCuts {
             bend = .07 + .05 * unit(id, 9);
             asymmetry = .15 + .25 * unit(id, 10);
             // All geometry lies in [-width/2,width/2] x [-length/2,length/2].
-            supportRadius = .5 * StrictMath.hypot(width, length);
+            supportRadius = .5 * hypot(width, length);
             if (f == Family.BRANCH_GULLY) {
                 sx = new double[20];
                 sz = new double[20];
@@ -351,9 +351,7 @@ public final strictfp class SurfaceCuts {
                 // Off-center lobed bowl joined to a through-cut across an earlier saddle.
                 double center = .13 * StrictMath.sin(b * 4 + phase);
                 double r =
-                        StrictMath.hypot(
-                                (a - center) / (.73 + .07 * StrictMath.sin(b * 5 + phase)),
-                                b / .57);
+                        hypot((a - center) / (.73 + .07 * StrictMath.sin(b * 5 + phase)), b / .57);
                 double bowl = 1 - smooth(r);
                 double neck = 1 - smooth(Math.abs(a - .10 * StrictMath.sin(b * 5 + phase)) / .30);
                 double downstream = smooth((b + .3) / .35);
@@ -431,7 +429,7 @@ public final strictfp class SurfaceCuts {
                     (gorge ? ref.gorgeWidth : ref.hollowWidth)
                             .varied(tuning.widthScale, unit(id, 3));
             length = width * tuning.lengthRatio * (.82 + .36 * unit(id, 4));
-            supportRadius = .5 * StrictMath.hypot(width, length);
+            supportRadius = .5 * hypot(width, length);
             nominalDepth =
                     (gorge ? ref.gorgeDepth : ref.hollowDepth)
                             .varied(tuning.depthScale, unit(id, 5));
@@ -453,7 +451,7 @@ public final strictfp class SurfaceCuts {
     public static double maximumColumnRadius(Family family, Reference ref, Tuning tuning) {
         boolean gorge = family == Family.RIBBON_RAVINE || family == Family.PINCHED_SLOT;
         double width = (gorge ? ref.gorgeWidth : ref.hollowWidth).varied(tuning.widthScale, 1);
-        return .5 * StrictMath.hypot(width, width * tuning.lengthRatio * 1.18);
+        return .5 * hypot(width, width * tuning.lengthRatio * 1.18);
     }
 
     /** Earlier evidence covering every native integer support column. Distances are
@@ -528,7 +526,7 @@ public final strictfp class SurfaceCuts {
     /** Same orientation recipe as the original planner, exposed for earlier corridor diagnostics. */
     public static double columnAngle(
             ColumnProposal p, double gradientX, double gradientZ, double saddleAxis) {
-        double gradient = StrictMath.hypot(gradientX, gradientZ);
+        double gradient = hypot(gradientX, gradientZ);
         double angle =
                 gradient > .015
                         ? StrictMath.atan2(gradientZ, gradientX) + Math.PI * .5
@@ -624,5 +622,13 @@ public final strictfp class SurfaceCuts {
     private static boolean finite(double... values) {
         for (double v : values) if (Double.isNaN(v) || Double.isInfinite(v)) return false;
         return true;
+    }
+
+    /**
+     * The length of (a, b) from exact IEEE operations: every platform agrees, and it costs a
+     * fraction of StrictMath.hypot.
+     */
+    private static double hypot(double a, double b) {
+        return Math.sqrt(a * a + b * b);
     }
 }

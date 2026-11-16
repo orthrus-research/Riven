@@ -60,8 +60,9 @@ public final class BaseTerrainMap {
     private static final double RIDGE_SPREAD = 1.421, RIDGE_CENTRE = .622;
 
     /** Each ridge octave's rotation (radians), so no two share lattice axes. */
-    private static final double[] RIDGE_COS = {Math.cos(.52), Math.cos(1.91), Math.cos(2.77)},
-            RIDGE_SIN = {Math.sin(.52), Math.sin(1.91), Math.sin(2.77)};
+    private static final double[]
+            RIDGE_COS = {StrictMath.cos(.52), StrictMath.cos(1.91), StrictMath.cos(2.77)},
+            RIDGE_SIN = {StrictMath.sin(.52), StrictMath.sin(1.91), StrictMath.sin(2.77)};
 
     private final SeededNoise body, detail, wide;
     private final double bodyScale, detailScale, wideScale;
@@ -583,8 +584,8 @@ public final class BaseTerrainMap {
         // The soft ceiling bends peaks toward the allocation's top.
         if (height > ceilingStart) {
             double span = ceiling - ceilingStart, u = (height - ceilingStart) / span;
-            double bent = ceilingStart + span * Math.tanh(u);
-            double k = 1 - Math.tanh(u) * Math.tanh(u);
+            double bent = ceilingStart + span * StrictMath.tanh(u);
+            double k = 1 - StrictMath.tanh(u) * StrictMath.tanh(u);
             height = bent;
             dx *= k;
             dz *= k;

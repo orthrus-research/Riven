@@ -836,7 +836,7 @@ final class Drainage {
             Network n = network(q.cells[2 * k], q.cells[2 * k + 1]);
             if (mouthRadius > 0)
                 for (int m = 0; m < n.mouths.length; m += 2) {
-                    double d = StrictMath.hypot(x - n.mouths[m], z - n.mouths[m + 1]);
+                    double d = Rules.hypot(x - n.mouths[m], z - n.mouths[m + 1]);
                     if (d < mouthRadius)
                         mouth[0] = Math.max(mouth[0], 1 - Rules.smooth(d / mouthRadius));
                 }
@@ -857,7 +857,7 @@ final class Drainage {
                                         Math.min(
                                                 1,
                                                 ((x - c.x[i]) * vx + (z - c.z[i]) * vz) / length2));
-                        double dist = StrictMath.hypot(x - c.x[i] - t * vx, z - c.z[i] - t * vz);
+                        double dist = Rules.hypot(x - c.x[i] - t * vx, z - c.z[i] - t * vz);
                         double radius = lerp(c.radius, i, t), braid = c.braid(i, t);
                         double bed = radius * (1 + braid * braidSpan);
                         // Signed distance across the course, along the normal that meanders offset
@@ -902,7 +902,7 @@ final class Drainage {
                                 long h = SeededNoise.mix(c.id + (b + 1) * 0x9e3779b97f4a7c15L);
                                 double centre =
                                         (bed - sub)
-                                                * Math.sin(
+                                                * StrictMath.sin(
                                                         2
                                                                 * Math.PI
                                                                 * (weave / (1 + .4 * b)
@@ -1005,9 +1005,7 @@ final class Drainage {
                             clearance =
                                     Math.min(
                                             clearance,
-                                            StrictMath.hypot(
-                                                            x - c.x[i] - t * vx,
-                                                            z - c.z[i] - t * vz)
+                                            Rules.hypot(x - c.x[i] - t * vx, z - c.z[i] - t * vz)
                                                     - support);
                         }
         }
@@ -1613,8 +1611,7 @@ final class Drainage {
                 flare = 1 + (estuaryFlare - 1) * Rules.smooth(s.ocean.shoaling);
                 double toMouth = 0;
                 for (int p = interior; p >= 0; p--) {
-                    if (p < interior)
-                        toMouth += StrictMath.hypot(px[p + 1] - px[p], pz[p + 1] - pz[p]);
+                    if (p < interior) toMouth += Rules.hypot(px[p + 1] - px[p], pz[p + 1] - pz[p]);
                     if (toMouth >= estuaryLength || flare <= 1) break;
                     rad[p] *= 1 + (flare - 1) * Rules.smooth(1 - toMouth / estuaryLength);
                 }
@@ -1703,7 +1700,7 @@ final class Drainage {
                                                     / length2));
             double px = mx[i] + t * vx,
                     pz = mz[i] + t * vz,
-                    d = StrictMath.hypot(x[last] - px, z[last] - pz);
+                    d = Rules.hypot(x[last] - px, z[last] - pz);
             if (d < best) {
                 best = d;
                 bx = px;
@@ -1733,8 +1730,7 @@ final class Drainage {
         double[] x = a[0], z = a[1];
         int n = x.length;
         double[] s = new double[n];
-        for (int i = 1; i < n; i++)
-            s[i] = s[i - 1] + StrictMath.hypot(x[i] - x[i - 1], z[i] - z[i - 1]);
+        for (int i = 1; i < n; i++) s[i] = s[i - 1] + Rules.hypot(x[i] - x[i - 1], z[i] - z[i - 1]);
         double total = s[n - 1];
         int m = total > 0 ? (int) Math.ceil(total / step) + 1 : 2;
         double[][] b = new double[a.length + 3][m];
@@ -1770,19 +1766,19 @@ final class Drainage {
             double fade =
                     Rules.smooth(along[k] / wave)
                             * Rules.smooth((total - along[k]) / Math.max(wave, fadeEnd));
-            double wave1 = Math.sin(phase);
+            double wave1 = StrictMath.sin(phase);
             double offset =
                     amplitude
                             * wave
                             * flat
                             * strength
                             * fade
-                            * (wave1 + skew * Math.sin(3 * phase));
+                            * (wave1 + skew * StrictMath.sin(3 * phase));
             // The bend bulges toward the offset; its point bar lies on the inside.
             bar[k] = -Math.signum(offset) * Math.abs(wave1) * flat * fade;
             // The normal from the unmeandered course around this point.
             int p = Math.max(0, k - 1), q = Math.min(m - 1, k + 1);
-            double tx = bx[q] - bx[p], tz = bz[q] - bz[p], length = StrictMath.hypot(tx, tz);
+            double tx = bx[q] - bx[p], tz = bz[q] - bz[p], length = Rules.hypot(tx, tz);
             if (length == 0) continue;
             b[0][k] = bx[k] - tz / length * offset;
             b[1][k] = bz[k] + tx / length * offset;
@@ -2078,7 +2074,7 @@ final class Drainage {
                 int k = j * l.nx + i, lake = l.lakeOf[k];
                 if (lake < 0 || !(l.ground[k] < l.level[lake])) continue;
                 double d =
-                        StrictMath.hypot(
+                        Rules.hypot(
                                         x - l.originX - (i + .5) * l.cell,
                                         z - l.originZ - (j + .5) * l.cell)
                                 - half;

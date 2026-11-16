@@ -269,7 +269,7 @@ public final class Boulders {
         double aspect = lerp(kind.minAspect, kind.maxAspect, unit(id, 8));
         double height = lerp(kind.minHeight, kind.maxHeight, unit(id, 9));
         double angle = unit(id, 10) * Math.PI;
-        double cos = Math.cos(angle), sin = Math.sin(angle);
+        double cos = StrictMath.cos(angle), sin = StrictMath.sin(angle);
         int r = (int) Math.ceil(radius + kind.jitter);
         r = Math.min(r, reach);
         int side = 2 * r + 1;
@@ -300,7 +300,7 @@ public final class Boulders {
                 if (kind.model.equals("tor")) {
                     h = 0;
                     for (int t = 0; t < tiers; t++) {
-                        double rt = radius * Math.pow(kind.shrink, t);
+                        double rt = radius * StrictMath.pow(kind.shrink, t);
                         double du = (u - tierU[t]) / rt, dv = (v - tierV[t]) / (rt * aspect);
                         if (du * du + dv * dv <= 1) h += tierHeights[t];
                     }
@@ -311,7 +311,7 @@ public final class Boulders {
                     h =
                             kind.model.equals("dome")
                                     ? height * Math.sqrt(1 - d * d)
-                                    : height * Math.pow(1 - d, kind.exponent);
+                                    : height * StrictMath.pow(1 - d, kind.exponent);
                     h += kind.roughness * (2 * unit(id ^ SeededNoise.cell(seed, dx, dz), 12) - 1);
                 }
                 int n = (int) Math.floor(h + .5);

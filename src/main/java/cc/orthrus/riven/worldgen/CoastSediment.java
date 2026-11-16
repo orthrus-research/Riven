@@ -323,7 +323,7 @@ public final class CoastSediment {
                 double[] next =
                         shore.onShore(
                                 at[0] + sign * at[3] * guide, at[1] - sign * at[2] * guide, guide);
-                if (next == null || StrictMath.hypot(next[0] - at[0], next[1] - at[1]) > 2 * guide)
+                if (next == null || Rules.hypot(next[0] - at[0], next[1] - at[1]) > 2 * guide)
                     break;
                 walk.add(next);
                 shore.nearest(next[0], next[1], owner);
@@ -401,7 +401,7 @@ public final class CoastSediment {
             SedimentaryCoasts.Anchor island = island(s, i, probe);
             if (island == null) continue;
             // The kernel's tie bounds, between the two attachments themselves.
-            double tie = StrictMath.hypot(island.x - mainland.x, island.z - mainland.z);
+            double tie = Rules.hypot(island.x - mainland.x, island.z - mainland.z);
             if (tie < reference.widthMean * 2 || tie > reference.plainWidth * 1.5) continue;
             long id = SeededNoise.mix(h + i);
             SedimentaryCoasts.Plan plan =
@@ -436,19 +436,19 @@ public final class CoastSediment {
         for (CoastForms.View v :
                 rocks.placed(x - farthest, z - farthest, x + farthest, z + farthest)) {
             if (v.form != CoastForms.Form.STACK_ARCH || v.arch) continue;
-            double dx = v.cx - x, dz = v.cz - z, d = StrictMath.hypot(dx, dz) - v.radius - 1;
+            double dx = v.cx - x, dz = v.cz - z, d = Rules.hypot(dx, dz) - v.radius - 1;
             // Out to sea: within 40 degrees of the seaward normal.
             if (d < nearest
                     || d > farthest
                     || -(dx * nx + dz * nz)
-                            < Math.cos(Math.toRadians(40)) * StrictMath.hypot(dx, dz)) continue;
+                            < StrictMath.cos(Math.toRadians(40)) * Rules.hypot(dx, dz)) continue;
             if (d < best) {
                 best = d;
                 stack = v;
             }
         }
         if (stack != null) {
-            double dx = x - stack.cx, dz = z - stack.cz, d = StrictMath.hypot(dx, dz);
+            double dx = x - stack.cx, dz = z - stack.cz, d = Rules.hypot(dx, dz);
             double r = stack.radius + 1;
             return new SedimentaryCoasts.Anchor(
                     stack.cx + dx / d * r,
@@ -468,7 +468,9 @@ public final class CoastSediment {
             for (int k = 0; k < ISLET_PROBES; k++) {
                 double a = 2 * Math.PI * k / ISLET_PROBES;
                 parent.sample(
-                        ix + Math.cos(a) * isletRadius, iz + Math.sin(a) * isletRadius, probe);
+                        ix + StrictMath.cos(a) * isletRadius,
+                        iz + StrictMath.sin(a) * isletRadius,
+                        probe);
                 if (!probe.ocean.marine) return null;
             }
             return new SedimentaryCoasts.Anchor(ix, iz, top, nz, -nx, true);
@@ -491,7 +493,7 @@ public final class CoastSediment {
             // Reserved water between nodes, at one-block steps: a stream narrower than the node
             // spacing would otherwise cross the form and cut its sand off from land.
             double bx = plan.nodeX(k + 1), bz = plan.nodeZ(k + 1);
-            int steps = (int) Math.ceil(StrictMath.hypot(bx - ax, bz - az));
+            int steps = (int) Math.ceil(Rules.hypot(bx - ax, bz - az));
             for (int i = 1; i < steps; i++) {
                 double t = i / (double) steps;
                 parent.sample(ax + t * (bx - ax), az + t * (bz - az), probe);
@@ -547,14 +549,14 @@ public final class CoastSediment {
                 new double[] {
                     s.x[i] - nx * 2,
                     s.z[i] - nz * 2,
-                    Math.atan2(nz, nx),
+                    StrictMath.atan2(nz, nx),
                     lerp(mouthHalfWidth, unit(id, 1)),
                     lerp(mouthDepth, unit(id, 2)),
                     lerp(creekLength, unit(id, 3)),
                     0,
                     -1
                 });
-        double inland = Math.atan2(nz, nx);
+        double inland = StrictMath.atan2(nz, nx);
         while (!queue.isEmpty() && channels.size() < maximumChannels) {
             double[] from = queue.poll();
             List<double[]> nodes =
@@ -605,7 +607,8 @@ public final class CoastSediment {
             angle = inland + clamp(angle - inland, spread);
             double t = (double) k / steps, r = width + (tip - width) * t;
             double d = depth + (1 - depth) * t;
-            double px = x + Math.cos(angle) * creekStep, pz = z + Math.sin(angle) * creekStep;
+            double px = x + StrictMath.cos(angle) * creekStep,
+                    pz = z + StrictMath.sin(angle) * creekStep;
             if (crosses(px, pz, r, earlier, k > JUNCTION_STEPS ? -1 : (int) from[7])) break;
             if (!fits(segment, px, pz, angle, r, probe)) break;
             x = px;
@@ -648,7 +651,7 @@ public final class CoastSediment {
         for (int c = 0; c < earlier.size(); c++) {
             if (c == leaving) continue;
             for (double[] n : earlier.get(c))
-                if (StrictMath.hypot(x - n[0], z - n[1]) < r + n[2] + bank) return true;
+                if (Rules.hypot(x - n[0], z - n[1]) < r + n[2] + bank) return true;
         }
         return false;
     }
@@ -672,7 +675,7 @@ public final class CoastSediment {
         parent.sample(x, z, probe);
         if (!holds(probe) || probe.shore.marsh < marshShare || probe.height > waterTop + flatRise)
             return false;
-        double px = -Math.sin(angle) * (r + bank), pz = Math.cos(angle) * (r + bank);
+        double px = -StrictMath.sin(angle) * (r + bank), pz = StrictMath.cos(angle) * (r + bank);
         for (int side = -1; side <= 1; side += 2) {
             parent.sample(x + px * side, z + pz * side, probe);
             if (!openSea(probe) && !holds(probe)) return false;

@@ -15,7 +15,7 @@ public final class ErosionFilter {
     public static final int OCTAVES = 3;
     private static final double TAU = Math.PI * 2;
     private static final double CELL_SCALE = 0.7;
-    private static final double CUTOFF = Math.exp(-4.5);
+    private static final double CUTOFF = StrictMath.exp(-4.5);
     private final long seed;
     private final double wavelength, firstAmplitude, rounding;
 
@@ -55,7 +55,7 @@ public final class ErosionFilter {
         out.kernelVisits = 0;
         if (octaves < 0 || octaves > OCTAVES)
             throw new IllegalArgumentException("Erosion octave count");
-        double slope = StrictMath.hypot(gradientX, gradientZ);
+        double slope = Rules.hypot(gradientX, gradientZ);
         double admission = smooth((slope - 0.025) / 0.30);
         if (admission == 0 || octaves == 0 || headroom <= 0) return;
         double requested = firstAmplitude * (2 - Math.scalb(1.0, 1 - octaves));
@@ -65,7 +65,7 @@ public final class ErosionFilter {
         double mask = easeOut(slope * 2), ridgeMask = mask, ridgeFade = fadeTarget;
         double wave = wavelength;
         for (int octave = 0; octave < octaves; octave++) {
-            double length = StrictMath.hypot(gx, gz),
+            double length = Rules.hypot(gx, gz),
                     sideX = -gz / length * TAU / wave,
                     sideZ = gx / length * TAU / wave;
             phacelle(x, z, sideX, sideZ, wave, octave, out);
@@ -78,7 +78,7 @@ public final class ErosionFilter {
             fadeTarget = gully;
             double round = lerp(rounding * 3, rounding, clamp(out.cosine + 0.5)) * TAU / wave;
             double newMask = easeOut(smoothStart(Math.abs(out.sine) * 1.25, round));
-            mask = (1 - Math.pow(1 - clamp(mask), 1.5)) * newMask;
+            mask = (1 - StrictMath.pow(1 - clamp(mask), 1.5)) * newMask;
             ridgeFade = lerp(ridgeFade, out.cosine, ridgeMask);
             ridgeMask *= easeOut(Math.abs(out.sine) * 1.5);
             amplitude *= 0.5;
@@ -101,16 +101,16 @@ public final class ErosionFilter {
                                 seed ^ ((long) octave * 0x9e3779b97f4a7c15L), ix + dx, iz + dz);
                 double rx = fx - dx - (SeededNoise.unit(id) - 0.5);
                 double rz = fz - dz - (SeededNoise.unit(SeededNoise.mix(id)) - 0.5);
-                double weight = Math.max(0, Math.exp(-2 * (rx * rx + rz * rz)) - CUTOFF);
+                double weight = Math.max(0, StrictMath.exp(-2 * (rx * rx + rz * rz)) - CUTOFF);
                 if (weight == 0) continue;
                 double phase = (rx * sideX + rz * sideZ) * cell + TAU * 0.25;
-                cosine += Math.cos(phase) * weight;
-                sine += Math.sin(phase) * weight;
+                cosine += StrictMath.cos(phase) * weight;
+                sine += StrictMath.sin(phase) * weight;
                 total += weight;
             }
         cosine /= total;
         sine /= total;
-        double magnitude = Math.max(0.5, StrictMath.hypot(cosine, sine));
+        double magnitude = Math.max(0.5, Rules.hypot(cosine, sine));
         out.cosine = cosine / magnitude;
         out.sine = sine / magnitude;
     }

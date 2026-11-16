@@ -182,8 +182,8 @@ public final class Hydro
             this.depth = depth;
             lakeHead = head;
             this.supply = supply;
-            cos = Math.cos(angle);
-            sin = Math.sin(angle);
+            cos = StrictMath.cos(angle);
+            sin = StrictMath.sin(angle);
             this.aspect = aspect;
             this.probes = probes;
             basins = new Basin[0];
@@ -590,7 +590,7 @@ public final class Hydro
                     && scratch.land.low > .5) {
                 double vx = network.x[1] - network.x[0],
                         vz = network.z[1] - network.z[0],
-                        length = StrictMath.hypot(vx, vz);
+                        length = Rules.hypot(vx, vz);
                 double radius = heights.feature("wetland_pool").width.targetAverage * 1.6;
                 double x = network.lakeX - vz / length * network.radius,
                         z = network.lakeZ + vx / length * network.radius;
@@ -605,7 +605,7 @@ public final class Hydro
                                 radius,
                                 heights.feature("wetland_pool").magnitude.max,
                                 river.width.targetAverage,
-                                Math.atan2(vz, vx));
+                                StrictMath.atan2(vz, vx));
                 if (admit(wet, cellX, cellZ, scratch, true)) basins.add(wet);
             }
             // Last land-side receiver provides both the fresh inlet and the seaward opening.
@@ -617,7 +617,7 @@ public final class Hydro
                         || scratch.shore.rocky()
                         || scratch.land.low < .5) continue;
                 double angle =
-                        Math.atan2(
+                        StrictMath.atan2(
                                 network.z(i + 1) - network.z(i), network.x(i + 1) - network.x(i));
                 Basin lagoon =
                         Basin.create(
@@ -668,12 +668,12 @@ public final class Hydro
                                 radius,
                                 river.magnitude.targetAverage,
                                 heights.feature("beach").width.targetAverage,
-                                Math.atan2(-scratch.shore.normalZ, -scratch.shore.normalX));
+                                StrictMath.atan2(-scratch.shore.normalZ, -scratch.shore.normalX));
                 if (network.present() && nearNetwork(lagoon, network)) continue;
                 boolean overlaps = false;
                 for (Basin other : basins)
-                    if (StrictMath.hypot(x - other.x, z - other.z)
-                            < lagoon.support() + other.support()) overlaps = true;
+                    if (Rules.hypot(x - other.x, z - other.z) < lagoon.support() + other.support())
+                        overlaps = true;
                 if (!overlaps && lagoonReceiver(lagoon, cellX, cellZ, scratch, network)) {
                     basins.add(lagoon);
                     break;
@@ -734,7 +734,7 @@ public final class Hydro
             if (network.present() && nearNetwork(basin, network)) continue;
             boolean overlaps = false;
             for (Basin other : basins)
-                if (StrictMath.hypot(x - other.x, z - other.z) < basin.support() + other.support())
+                if (Rules.hypot(x - other.x, z - other.z) < basin.support() + other.support())
                     overlaps = true;
             if (overlaps || !admit(basin, cellX, cellZ, scratch, true)) continue;
             if (kind == Kind.POND)
@@ -861,8 +861,8 @@ public final class Hydro
         for (int i = 0; i < 8; i++) {
             double a = i * Math.PI / 4;
             intent.sample(
-                    basin.x + Math.cos(a) * basin.support(),
-                    basin.z + Math.sin(a) * basin.support(),
+                    basin.x + StrictMath.cos(a) * basin.support(),
+                    basin.z + StrictMath.sin(a) * basin.support(),
                     scratch);
             if (!scratch.ocean.marine
                     && (scratch.shore.rocky()
@@ -886,7 +886,7 @@ public final class Hydro
 
     private boolean nearNetwork(Basin basin, Plan network) {
         for (Plan other : network.others) if (nearNetwork(basin, other)) return true;
-        if (StrictMath.hypot(basin.x - network.lakeX, basin.z - network.lakeZ)
+        if (Rules.hypot(basin.x - network.lakeX, basin.z - network.lakeZ)
                 < basin.support() + network.radius + 32) return true;
         for (int i = 0; i < network.nodes() - 1; i++) {
             double dx = network.x[i + 1] - network.x[i], dz = network.z[i + 1] - network.z[i];
@@ -897,7 +897,7 @@ public final class Hydro
                                     1,
                                     ((basin.x - network.x[i]) * dx + (basin.z - network.z[i]) * dz)
                                             / (dx * dx + dz * dz)));
-            if (StrictMath.hypot(basin.x - network.x[i] - t * dx, basin.z - network.z[i] - t * dz)
+            if (Rules.hypot(basin.x - network.x[i] - t * dx, basin.z - network.z[i] - t * dz)
                     < basin.support() + river.width.max * (1 + bankScale)) return true;
         }
         return false;
@@ -915,8 +915,8 @@ public final class Hydro
         for (int i = 0; i < 8; i++) {
             double angle = i * Math.PI / 4;
             intent.sample(
-                    basin.x + Math.cos(angle) * basin.support(),
-                    basin.z + Math.sin(angle) * basin.support(),
+                    basin.x + StrictMath.cos(angle) * basin.support(),
+                    basin.z + StrictMath.sin(angle) * basin.support(),
                     scratch);
             if (inland && (scratch.ocean.marine || scratch.shore.sandy || scratch.shore.rocky()))
                 return false;
@@ -998,7 +998,7 @@ public final class Hydro
             for (int rim = 0; rim < 16; rim++) {
                 double a = 2 * Math.PI * rim / 16,
                         r = radius + river.width.targetAverage * bankScale + 4;
-                intent.sample(sx + Math.cos(a) * r, sz + Math.sin(a) * r, scratch);
+                intent.sample(sx + StrictMath.cos(a) * r, sz + StrictMath.sin(a) * r, scratch);
                 probes++;
                 if (scratch.ocean.marine
                         || scratch.shore.sandy
@@ -1010,8 +1010,8 @@ public final class Hydro
             if (!contained) continue;
             for (int ray = 0; ray < directions; ray++) {
                 double angle = 2 * Math.PI * (ray + unit(hash, 5)) / directions,
-                        dx = Math.cos(angle),
-                        dz = Math.sin(angle);
+                        dx = StrictMath.cos(angle),
+                        dz = StrictMath.sin(angle);
                 // March out to the first supplied sea within the route reach, so the river ends
                 // one segment past the coast instead of at a fixed length far out at sea (whose
                 // wet channel ran on across the seabed, and which mostly left the owner cell).
@@ -1046,7 +1046,7 @@ public final class Hydro
                 int firstMarine = count;
                 double bend = (unit(hash, 7) - .5) * distance * .14;
                 for (int i = 0; i <= count; i++) {
-                    double t = i / (double) count, offset = Math.sin(t * Math.PI) * bend;
+                    double t = i / (double) count, offset = StrictMath.sin(t * Math.PI) * bend;
                     xs[i] = sx + dx * distance * t - dz * offset;
                     zs[i] = sz + dz * distance * t + dx * offset;
                     if (!inside(xs[i], zs[i], originX, originZ, margin)) {
@@ -1110,8 +1110,7 @@ public final class Hydro
                         && (firstMarine - tidal + 1) * spacing <= estuaryLength
                         && ground[tidal - 1] - heights.waterTopY <= maxCut
                         && !held[tidal - 1]
-                        && StrictMath.hypot(xs[tidal - 1] - sx, zs[tidal - 1] - sz) > outlet)
-                    tidal--;
+                        && Rules.hypot(xs[tidal - 1] - sx, zs[tidal - 1] - sz) > outlet) tidal--;
                 for (int i = tidal; i < firstMarine; i++) levels[i] = heights.waterTopY;
                 double span = (firstMarine - tidal) * spacing;
                 double[] meanders = new double[count + 1], valleys = new double[count + 1];
@@ -1137,7 +1136,7 @@ public final class Hydro
                                                 ((sx - xs[i]) * vx + (sz - zs[i]) * vz)
                                                         / (vx * vx + vz * vz)));
                         double distanceToLake =
-                                StrictMath.hypot(xs[i] + t * vx - sx, zs[i] + t * vz - sz);
+                                Rules.hypot(xs[i] + t * vx - sx, zs[i] + t * vz - sz);
                         double support = Math.max(widths[i], widths[i + 1]) * (1 + bankScale) + 2;
                         if (distanceToLake < outer + support
                                 && (levels[i] != head || levels[i + 1] != head)) {
@@ -1249,7 +1248,7 @@ public final class Hydro
     private boolean clear(Plan a, java.util.List<Plan> taken) {
         double gap = river.width.targetAverage * 2;
         for (Plan b : taken) {
-            if (StrictMath.hypot(a.lakeX - b.lakeX, a.lakeZ - b.lakeZ)
+            if (Rules.hypot(a.lakeX - b.lakeX, a.lakeZ - b.lakeZ)
                     < lakeReach(a) + lakeReach(b) + gap) return false;
             for (int i = 0; i < b.nodes() - 1; i++)
                 if (segment(a.lakeX, a.lakeZ, b.x[i], b.z[i], b.x[i + 1], b.z[i + 1])
@@ -1278,7 +1277,7 @@ public final class Hydro
             double px, double pz, double ax, double az, double bx, double bz) {
         double vx = bx - ax, vz = bz - az, l = vx * vx + vz * vz;
         double t = l > 0 ? Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / l)) : 0;
-        return StrictMath.hypot(px - ax - t * vx, pz - az - t * vz);
+        return Rules.hypot(px - ax - t * vx, pz - az - t * vz);
     }
 
     /** Distance between two segments: zero where they cross, else the nearest endpoint gap. */
@@ -1327,12 +1326,12 @@ public final class Hydro
     private void sampleOwner(double x, double z, Plan p, Sample out) {
         if (p.lens != null) p.lens.sample(x, z, out);
         if (mouthRadius > 0 && !Double.isNaN(p.mouthX)) {
-            double d = StrictMath.hypot(x - p.mouthX, z - p.mouthZ);
+            double d = Rules.hypot(x - p.mouthX, z - p.mouthZ);
             if (d < mouthRadius) out.mouth = Math.max(out.mouth, 1 - Rules.smooth(d / mouthRadius));
         }
         for (Plan other : p.others)
             if (mouthRadius > 0 && !Double.isNaN(other.mouthX)) {
-                double d = StrictMath.hypot(x - other.mouthX, z - other.mouthZ);
+                double d = Rules.hypot(x - other.mouthX, z - other.mouthZ);
                 if (d < mouthRadius)
                     out.mouth = Math.max(out.mouth, 1 - Rules.smooth(d / mouthRadius));
             }
@@ -1390,7 +1389,7 @@ public final class Hydro
             clearance =
                     Math.min(
                             clearance,
-                            StrictMath.hypot(x - p.lakeX, z - p.lakeZ)
+                            Rules.hypot(x - p.lakeX, z - p.lakeZ)
                                     - p.radius
                                     - river.width.targetAverage * bankScale);
             clearance = routeClearance(x, z, p.x, p.z, p.width, p.valley, clearance);
@@ -1398,8 +1397,8 @@ public final class Hydro
         for (Plan other : p.others) clearance = surfaceClearance(other, x, z, clearance);
         for (Basin basin : p.basins) {
             double support = basin.support();
-            if (basin.kind == Kind.LAGOON) support = StrictMath.hypot(support, basin.skirt * .25);
-            clearance = Math.min(clearance, StrictMath.hypot(x - basin.x, z - basin.z) - support);
+            if (basin.kind == Kind.LAGOON) support = Rules.hypot(support, basin.skirt * .25);
+            clearance = Math.min(clearance, Rules.hypot(x - basin.x, z - basin.z) - support);
         }
         return clearance;
     }
@@ -1429,7 +1428,7 @@ public final class Hydro
             clearance =
                     Math.min(
                             clearance,
-                            StrictMath.hypot(x - xs[i] - t * vx, z - zs[i] - t * vz) - support);
+                            Rules.hypot(x - xs[i] - t * vx, z - zs[i] - t * vz) - support);
         }
         return clearance;
     }
@@ -1507,8 +1506,7 @@ public final class Hydro
             double radius =
                     meanders == null ? width : meanders[i] + t * (meanders[i + 1] - meanders[i]);
             double dist =
-                    StrictMath.hypot(
-                            lateral - meander(id, i, t, length, radius), (raw - t) * length);
+                    Rules.hypot(lateral - meander(id, i, t, length, radius), (raw - t) * length);
             if (dist - width <= Drainage.LEVEE) {
                 // The water beside a bank column may stand a step higher two blocks along.
                 double a = Math.max(0, t - 2 / length), b = Math.min(1, t + 2 / length);

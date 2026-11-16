@@ -49,8 +49,8 @@ public final class SeededNoise {
     static {
         for (int i = 0; i < 64; i++) {
             double a = (i + .5) * Math.PI / 32;
-            GX[i] = Math.cos(a);
-            GZ[i] = Math.sin(a);
+            GX[i] = StrictMath.cos(a);
+            GZ[i] = StrictMath.sin(a);
         }
     }
 

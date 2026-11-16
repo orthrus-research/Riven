@@ -37,8 +37,8 @@ public final class Basin {
         this.skirt = skirt;
         this.waterY = waterY;
         aspect = .8;
-        cos = Math.cos(angle);
-        sin = Math.sin(angle);
+        cos = StrictMath.cos(angle);
+        sin = StrictMath.sin(angle);
         lakeShape = null;
         coastShape = null;
     }
@@ -109,7 +109,7 @@ public final class Basin {
         return coastShape != null && coastShape.shape != null
                 ? Math.max(
                         plain,
-                        StrictMath.hypot(
+                        Rules.hypot(
                                         x - coastShape.shape.geometry.x,
                                         z - coastShape.shape.geometry.z)
                                 + coastShape.shape.geometry.supportRadius)

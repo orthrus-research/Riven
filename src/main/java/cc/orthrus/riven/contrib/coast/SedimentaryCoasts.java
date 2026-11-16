@@ -195,7 +195,7 @@ public final class SedimentaryCoasts {
                     throw new IllegalArgumentException(
                             "Coordinates outside Minecraft world bounds");
                 if (i > 0) {
-                    double d = StrictMath.hypot(x[i] - x[i - 1], z[i] - z[i - 1]);
+                    double d = hypot(x[i] - x[i - 1], z[i] - z[i - 1]);
                     if (d < .001) throw new IllegalArgumentException("Degenerate segment");
                     s[i] = s[i - 1] + d;
                 }
@@ -281,7 +281,7 @@ public final class SedimentaryCoasts {
     public static Plan tombolo(
             long seed, long id, Reference r, Tuning t, Anchor mainland, Anchor island) {
         long k = mix(seed ^ Family.TOMBOLO.salt ^ mix(id));
-        double dx = island.x - mainland.x, dz = island.z - mainland.z, d = StrictMath.hypot(dx, dz);
+        double dx = island.x - mainland.x, dz = island.z - mainland.z, d = hypot(dx, dz);
         if (d < r.widthMean * 2 || d > r.plainWidth * 1.5)
             throw new IllegalArgumentException("Tie length outside bounds");
         double bow = (unit(k) * 2 - 1) * d * .13;
@@ -479,5 +479,13 @@ public final class SedimentaryCoasts {
     private static boolean finite(double... values) {
         for (double v : values) if (!Double.isFinite(v)) return false;
         return true;
+    }
+
+    /**
+     * The length of (a, b) from exact IEEE operations: every platform agrees, and it costs a
+     * fraction of StrictMath.hypot.
+     */
+    private static double hypot(double a, double b) {
+        return Math.sqrt(a * a + b * b);
     }
 }

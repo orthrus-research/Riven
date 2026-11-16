@@ -137,10 +137,12 @@ public final class SubsurfaceClimate {
         if (realm < 0) {
             celsius = s.climate.celsius + GRADIENT * (1 + RIFT_BOOST * g.rift) * depth;
             // Full heat at and below the lava level, falling off above it.
-            celsius += LAVA_CELSIUS * Math.exp(-Math.max(0, y - g.lavaY) / LAVA_REACH);
+            celsius += LAVA_CELSIUS * StrictMath.exp(-Math.max(0, y - g.lavaY) / LAVA_REACH);
             if (fault)
                 celsius +=
-                        RIFT_FAULT_CELSIUS * g.rift * Math.exp(-g.faultDistance / RIFT_FAULT_REACH);
+                        RIFT_FAULT_CELSIUS
+                                * g.rift
+                                * StrictMath.exp(-g.faultDistance / RIFT_FAULT_REACH);
         } else
             celsius =
                     REALM_TOP_CELSIUS[realm]
@@ -154,7 +156,7 @@ public final class SubsurfaceClimate {
                             : Math.abs(y - g.chamberCentreY);
             celsius +=
                     CHAMBER_CELSIUS
-                            * Math.exp(-StrictMath.hypot(g.chamberGap, vertical) / CHAMBER_REACH);
+                            * StrictMath.exp(-Rules.hypot(g.chamberGap, vertical) / CHAMBER_REACH);
         }
 
         // Water peaks at the water table. Below it, rock is saturated just under the table and
@@ -163,26 +165,31 @@ public final class SubsurfaceClimate {
         double moisture = clamp(s.climate.moisture);
         double water =
                 y >= g.waterTable
-                        ? Math.exp(-(y - g.waterTable) / FRINGE)
+                        ? StrictMath.exp(-(y - g.waterTable) / FRINGE)
                         : Math.max(
-                                Math.exp(-(g.waterTable - y) / SATURATION_FRINGE),
-                                unit.permeability * Math.exp(-(g.waterTable - y) / AQUIFER_REACH));
-        double rain = moisture * Math.exp(-depth / RAIN_REACH);
+                                StrictMath.exp(-(g.waterTable - y) / SATURATION_FRINGE),
+                                unit.permeability
+                                        * StrictMath.exp(-(g.waterTable - y) / AQUIFER_REACH));
+        double rain = moisture * StrictMath.exp(-depth / RAIN_REACH);
         double rock =
                 (ROCK_BASE + ROCK_WEIGHT * unit.permeability)
                         * (RECHARGE_BASE + RECHARGE_WEIGHT * moisture);
         // Water running along a fault is groundwater: like the water table's, heat does not dry
         // it, so hot faults steam.
         if (fault)
-            water = Math.max(water, FAULT_HUMIDITY * Math.exp(-g.faultDistance / FAULT_WET_REACH));
+            water =
+                    Math.max(
+                            water,
+                            FAULT_HUMIDITY * StrictMath.exp(-g.faultDistance / FAULT_WET_REACH));
         double dry = Math.max(rain, rock);
-        if (celsius > DRYING_CELSIUS) dry *= Math.exp(-(celsius - DRYING_CELSIUS) / DRYING_SCALE);
+        if (celsius > DRYING_CELSIUS)
+            dry *= StrictMath.exp(-(celsius - DRYING_CELSIUS) / DRYING_SCALE);
         double humidity = Math.max(water, dry);
         if (unit == EVAPORITE) humidity *= EVAPORITE_FACTOR;
 
-        double air = AIR_FLOOR + (1 - AIR_FLOOR) * Math.exp(-depth / AIR_DEPTH);
-        if (fault) air += FAULT_BOOST * Math.exp(-g.faultDistance / FAULT_REACH);
-        if (celsius > GAS_CELSIUS) air *= Math.exp(-(celsius - GAS_CELSIUS) / GAS_SCALE);
+        double air = AIR_FLOOR + (1 - AIR_FLOOR) * StrictMath.exp(-depth / AIR_DEPTH);
+        if (fault) air += FAULT_BOOST * StrictMath.exp(-g.faultDistance / FAULT_REACH);
+        if (celsius > GAS_CELSIUS) air *= StrictMath.exp(-(celsius - GAS_CELSIUS) / GAS_SCALE);
 
         out.celsius = celsius;
         out.humidity = clamp(humidity);

@@ -237,10 +237,7 @@ public final class ClimateForcingCheck {
                     ClimateForcingMap map =
                             new ClimateForcingMap(
                                     context.structure, TerrainHeightReference.DEFAULT, json);
-                    close(
-                            StrictMath.hypot(map.transportX, map.transportZ),
-                            1,
-                            "Normalized direction");
+                    close(Rules.hypot(map.transportX, map.transportZ), 1, "Normalized direction");
                     explicitStencil(map, context.structure, landX, landZ);
                 }
     }

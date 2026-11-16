@@ -30,7 +30,7 @@ public final class TemperatureMap {
     /** The map of one climate draw: attempt k moves the belt by k golden fractions of its period. */
     TemperatureMap(long worldSeed, WorldScale world, int attempt) {
         this.attempt = attempt;
-        layout = Math.pow(world.layout, Rules.number(RULES.json, "layoutExponent", 0, 1));
+        layout = StrictMath.pow(world.layout, Rules.number(RULES.json, "layoutExponent", 0, 1));
         broad = new SeededNoise(SeededNoise.mix(worldSeed ^ 0x54454d5042524f41L));
         detail = new SeededNoise(SeededNoise.mix(worldSeed ^ 0x54454d5044455441L));
         warpX = new SeededNoise(SeededNoise.mix(worldSeed ^ 0x54454d5057415258L));

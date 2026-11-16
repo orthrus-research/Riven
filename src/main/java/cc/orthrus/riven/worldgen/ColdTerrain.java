@@ -224,12 +224,12 @@ public final class ColdTerrain {
         earlierTerrain.sample(x, z, scratch);
         Decision invalid = inspect(candidate, scratch, certificate);
         if (invalid != null) return invalid;
-        double anchorSlope = StrictMath.hypot(scratch.broadDx, scratch.broadDz);
+        double anchorSlope = Rules.hypot(scratch.broadDx, scratch.broadDz);
         if (cut(candidate.family) && anchorSlope < .012)
             return reject("ANCHOR_SLOPE", ColdRegions.SLOPE, certificate);
         double direction =
                 cut(candidate.family)
-                        ? Math.atan2(-scratch.broadDz, -scratch.broadDx)
+                        ? StrictMath.atan2(-scratch.broadDz, -scratch.broadDx)
                         : Sites.random(owner, 0x43444952) * 2 * Math.PI;
         int diagnosticX = (int) Math.floor(x) - RELIEF_SIDE / 2,
                 diagnosticZ = (int) Math.floor(z) - RELIEF_SIDE / 2;
@@ -306,7 +306,7 @@ public final class ColdTerrain {
             if (fit <= 0 || c.cold < tuning.coldMinimum)
                 return reject("COLD_TERRAIN_SUPPORT", ColdRegions.WARM, c);
         }
-        c.slope = Math.max(c.slope, StrictMath.hypot(base.broadDx, base.broadDz));
+        c.slope = Math.max(c.slope, Rules.hypot(base.broadDx, base.broadDz));
         if (c.slope > (cut(candidate.family) ? .65 : .22))
             return reject("SLOPE_SUPPORT", ColdRegions.SLOPE, c);
         double margin = sites.certificateMargin;
@@ -392,7 +392,7 @@ public final class ColdTerrain {
                 ColdRegions.Plan plan = decision.plan;
                 if (plan == null) continue;
                 ColdRegions.Candidate candidate = plan.candidate;
-                if (StrictMath.hypot(x - candidate.x, z - candidate.z) >= candidate.radius) {
+                if (Rules.hypot(x - candidate.x, z - candidate.z) >= candidate.radius) {
                     out.reason = "OUTSIDE_SUPPORT";
                     continue;
                 }

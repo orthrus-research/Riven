@@ -87,7 +87,7 @@ public final class RiverShape {
             startZ = az;
             endX = bx;
             endZ = bz;
-            length = StrictMath.hypot(bx - ax, bz - az);
+            length = Rules.hypot(bx - ax, bz - az);
             cos = (bx - ax) / length;
             sin = (bz - az) / length;
             this.allowance = allowance;
@@ -230,7 +230,7 @@ public final class RiverShape {
                 bz = network.z(edge + 1);
         double dx = bx - ax,
                 dz = bz - az,
-                fullLength = StrictMath.hypot(dx, dz),
+                fullLength = Rules.hypot(dx, dz),
                 cos = dx / fullLength,
                 sin = dz / fullLength;
         double nativeHalf = Math.min(network.width(edge), network.width(edge + 1));
@@ -259,8 +259,7 @@ public final class RiverShape {
         for (int i = 0; i < network.basins(); i++) {
             Basin basin = network.basin(i);
             double support = basin.support();
-            if (basin.kind == Hydro.Kind.LAGOON)
-                support = StrictMath.hypot(support, basin.skirt * .25);
+            if (basin.kind == Hydro.Kind.LAGOON) support = Rules.hypot(support, basin.skirt * .25);
             // Include the existing outside-mouth receiver probes as well as all body/bank support.
             if (Rivers.pointDistance(basin.x, basin.z, ax, az, bx, bz)
                     <= support + 4 + allowance + 1)
@@ -317,8 +316,8 @@ public final class RiverShape {
         if (width < minimum) return reject(edge, family, "CORRIDOR_WIDTH", 0);
         double depth = ref.magnitude.targetAverage;
         double mx = (ax + bx) * .5, mz = (az + bz) * .5, midWater = water(network, edge, mx, mz);
-        double firstLength = StrictMath.hypot(mx - ax, mz - az),
-                lastLength = StrictMath.hypot(bx - mx, bz - mz);
+        double firstLength = Rules.hypot(mx - ax, mz - az),
+                lastLength = Rules.hypot(bx - mx, bz - mz);
         if (firstLength < 2
                 || lastLength < 2
                 || firstLength > 256
@@ -344,8 +343,7 @@ public final class RiverShape {
             double side = unit(key, 0x4252414e43483031L) < .5 ? -1 : 1,
                     offset = side * BRANCH * width;
             double sx = (ax + mx) * .5 - sin * offset, sz = (az + mz) * .5 + cos * offset;
-            double first = StrictMath.hypot(sx - ax, sz - az),
-                    last = StrictMath.hypot(mx - sx, mz - sz);
+            double first = Rules.hypot(sx - ax, sz - az), last = Rules.hypot(mx - sx, mz - sz);
             if (first < 2 || last < 2 || first + last < 16 || first > 256 || last > 256)
                 return reject(edge, family, "BRANCH_LENGTH", 0);
             branch =
@@ -471,8 +469,7 @@ public final class RiverShape {
                                     1,
                                     ((x - network.x(i)) * dx + (z - network.z(i)) * dz)
                                             / (dx * dx + dz * dz)));
-            double distance =
-                    StrictMath.hypot(x - network.x(i) - t * dx, z - network.z(i) - t * dz);
+            double distance = Rules.hypot(x - network.x(i) - t * dx, z - network.z(i) - t * dz);
             double half = network.width(i) + t * (network.width(i + 1) - network.width(i));
             if (distance / half < nearest) {
                 nearest = distance / half;

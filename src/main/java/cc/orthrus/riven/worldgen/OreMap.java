@@ -437,7 +437,7 @@ public final class OreMap {
                         double sx = 1 + NODE_SHAPE * (2 * unit(h, 7) - 1),
                                 sy = 1 + NODE_SHAPE * (2 * unit(h, 8) - 1),
                                 sz = 1 + NODE_SHAPE * (2 * unit(h, 9) - 1);
-                        double norm = Math.cbrt(sx * sy * sz), r = radius(ore);
+                        double norm = StrictMath.cbrt(sx * sy * sz), r = radius(ore);
                         double ex = (x + 0.5 - nx) * norm / sx,
                                 ey = (y + 0.5 - ny) * norm / sy,
                                 ez = (z + 0.5 - nz) * norm / sz;
@@ -455,7 +455,7 @@ public final class OreMap {
 
     /** The radius of a ball holding about {@code blocks} blocks. */
     private static double radius(double blocks) {
-        return Math.cbrt(3 * blocks / (4 * Math.PI));
+        return StrictMath.cbrt(3 * blocks / (4 * Math.PI));
     }
 
     private static double unit(long key, int parameter) {

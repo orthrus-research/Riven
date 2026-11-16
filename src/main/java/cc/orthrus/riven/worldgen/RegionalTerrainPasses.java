@@ -134,8 +134,8 @@ public final class RegionalTerrainPasses {
                         third = SeededNoise.mix(second);
                 double lottery = 0.05 + 0.90 * SeededNoise.unit(key), cdf = 0;
                 double angle = SeededNoise.unit(second) * Math.PI * 2,
-                        c = Math.cos(angle),
-                        s = Math.sin(angle);
+                        c = StrictMath.cos(angle),
+                        s = StrictMath.sin(angle);
                 double rx = wx * c - wz * s, rz = wx * s + wz * c;
                 double scale = 0.7 + 0.6 * SeededNoise.unit(third);
                 double strength = 0.7 + 0.6 * SeededNoise.unit(SeededNoise.mix(third));
@@ -282,7 +282,7 @@ public final class RegionalTerrainPasses {
 
     private static double bounded(double original, double delta, double min, double max) {
         double room = delta >= 0 ? max - original : original - min;
-        return room <= 0 ? original : original + room * Math.tanh(delta / room);
+        return room <= 0 ? original : original + room * StrictMath.tanh(delta / room);
     }
 
     private static double smooth(double t) {

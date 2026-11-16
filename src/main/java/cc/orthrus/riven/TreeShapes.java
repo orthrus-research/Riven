@@ -696,8 +696,8 @@ final class TreeShapes {
             long b = SeededNoise.mix(id + 0x3c6ef372fe94f82bL * (t + 1));
             double a = unit(b, 1) * 2 * Math.PI;
             double q = Math.sqrt(0.15 + 0.85 * unit(b, 2)), v = unit(b, 3) * 2 - 1;
-            double px = c + Math.cos(a) * radius * q * Math.sqrt(1 - 0.5 * v * v);
-            double pz = c + Math.sin(a) * radius * q * Math.sqrt(1 - 0.5 * v * v);
+            double px = c + StrictMath.cos(a) * radius * q * Math.sqrt(1 - 0.5 * v * v);
+            double pz = c + StrictMath.sin(a) * radius * q * Math.sqrt(1 - 0.5 * v * v);
             double py = centre + v * vertical;
             double[] near = null;
             double best = Double.MAX_VALUE;

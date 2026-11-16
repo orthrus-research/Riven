@@ -211,7 +211,7 @@ public final class Rivers {
                                 && Math.abs(x[i]) <= 29999000
                                 && Math.abs(z[i]) <= 29999000);
                 if (i > 0) {
-                    double d = StrictMath.hypot(x[i] - x[i - 1], z[i] - z[i - 1]);
+                    double d = hypot(x[i] - x[i - 1], z[i] - z[i - 1]);
                     require(d >= 2 && d <= 256 && w[i] <= w[i - 1]);
                     s[i] = s[i - 1] + d;
                     g = Math.max(g, (w[i - 1] - w[i]) / d);
@@ -371,7 +371,7 @@ public final class Rivers {
                     span =
                             Math.max(
                                     span,
-                                    StrictMath.hypot(
+                                    hypot(
                                                     lines[0].x[i] - lines[1].x[i],
                                                     lines[0].z[i] - lines[1].z[i])
                                             * .5);
@@ -408,7 +408,7 @@ public final class Rivers {
                             len2 = dx * dx + dz * dz;
                     double t = clamp(((x - l.x[i]) * dx + (z - l.z[i]) * dz) / len2, 0, 1);
                     double px = x - l.x[i] - t * dx, pz = z - l.z[i] - t * dz;
-                    double r = mix(l.r[i], l.r[i + 1], t), dist = StrictMath.hypot(px, pz);
+                    double r = mix(l.r[i], l.r[i + 1], t), dist = hypot(px, pz);
                     if (nativeBanks)
                         out.foundationWeight =
                                 Math.max(
@@ -450,15 +450,13 @@ public final class Rivers {
                     double dx = bx - ax, dz = bz - az;
                     double t = clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz), 0, 1);
                     double ra =
-                            StrictMath.hypot(left.x[i] - right.x[i], left.z[i] - right.z[i]) * .5
+                            hypot(left.x[i] - right.x[i], left.z[i] - right.z[i]) * .5
                                     + Math.max(left.r[i], right.r[i]);
                     double rb =
-                            StrictMath.hypot(
-                                                    left.x[i + 1] - right.x[i + 1],
-                                                    left.z[i + 1] - right.z[i + 1])
+                            hypot(left.x[i + 1] - right.x[i + 1], left.z[i + 1] - right.z[i + 1])
                                             * .5
                                     + Math.max(left.r[i + 1], right.r[i + 1]);
-                    double dist = StrictMath.hypot(x - ax - t * dx, z - az - t * dz);
+                    double dist = hypot(x - ax - t * dx, z - az - t * dz);
                     out.foundationWeight =
                             Math.max(
                                     out.foundationWeight,
@@ -612,8 +610,8 @@ public final class Rivers {
         if (f == Family.JUNCTION) {
             int end = tributary.x.length - 1, join = -1;
             for (int i = 1; i < main.x.length - 1; i++)
-                if (StrictMath.hypot(main.x[i] - tributary.x[end], main.z[i] - tributary.z[end])
-                        < 1e-6) join = i;
+                if (hypot(main.x[i] - tributary.x[end], main.z[i] - tributary.z[end]) < 1e-6)
+                    join = i;
             if (join < 0 || Math.abs(main.w[join] - tributary.w[end]) > 1e-6)
                 return reject(Rejection.JUNCTION_MISMATCH);
         }
@@ -640,7 +638,7 @@ public final class Rivers {
             for (Line l : lines)
                 for (int i = 0; i < l.n; i++) {
                     double q =
-                            StrictMath.hypot(l.x[i] - branch.x[last], l.z[i] - branch.z[last])
+                            hypot(l.x[i] - branch.x[last], l.z[i] - branch.z[last])
                                     / (main.width * 1.5);
                     double scour = 1 - smooth(q);
                     l.d[i] = Math.min(ref.maxDepth, l.d[i] * (1 + tune.poolFraction * scour));
@@ -688,9 +686,7 @@ public final class Rivers {
             int i = Math.min(r.x.length - 2, j / 4);
             double v = (j - 4 * i) / 4.0;
             double s = mix(r.s[i], r.s[i + 1], v), u = s / r.length;
-            double dx = r.x[i + 1] - r.x[i],
-                    dz = r.z[i + 1] - r.z[i],
-                    len = StrictMath.hypot(dx, dz);
+            double dx = r.x[i + 1] - r.x[i], dz = r.z[i + 1] - r.z[i], len = hypot(dx, dz);
             double env = 16 * u * u * (1 - u) * (1 - u);
             double wave = StrictMath.sin(u * cycles * 2 * Math.PI + phase),
                     fine = StrictMath.sin(u * (cycles * 1.73) * 2 * Math.PI + phase2);
@@ -730,8 +726,7 @@ public final class Rivers {
             for (int j = 1; j < l.n - 1; j++) {
                 double ax = l.x[j] - l.x[j - 1], az = l.z[j] - l.z[j - 1];
                 double bx = l.x[j + 1] - l.x[j], bz = l.z[j + 1] - l.z[j];
-                double turn =
-                        (ax * bz - az * bx) / (StrictMath.hypot(ax, az) * StrictMath.hypot(bx, bz));
+                double turn = (ax * bz - az * bx) / (hypot(ax, az) * hypot(bx, bz));
                 l.skew[j] = t.barFraction * clamp(turn * 2, -.5, .5);
             }
         return l;
@@ -740,7 +735,7 @@ public final class Rivers {
     private static boolean folded(Line l) {
         double[] arc = new double[l.n];
         for (int i = 0; i < l.n - 1; i++) {
-            double length = StrictMath.hypot(l.x[i + 1] - l.x[i], l.z[i + 1] - l.z[i]);
+            double length = hypot(l.x[i + 1] - l.x[i], l.z[i + 1] - l.z[i]);
             if (length < .5) return true;
             arc[i + 1] = arc[i] + length;
         }
@@ -795,7 +790,7 @@ public final class Rivers {
         double dx = bx - ax,
                 dz = bz - az,
                 t = clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz), 0, 1);
-        return StrictMath.hypot(x - ax - t * dx, z - az - t * dz);
+        return hypot(x - ax - t * dx, z - az - t * dz);
     }
 
     private static Result reject(Rejection r) {
@@ -832,5 +827,13 @@ public final class Rivers {
 
     private static double unit(long x, long salt) {
         return (hash(x + salt * 0x9e3779b97f4a7c15L) >>> 11) * 0x1.0p-53;
+    }
+
+    /**
+     * The length of (a, b) from exact IEEE operations: every platform agrees, and it costs a
+     * fraction of StrictMath.hypot.
+     */
+    private static double hypot(double a, double b) {
+        return Math.sqrt(a * a + b * b);
     }
 }

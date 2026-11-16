@@ -84,6 +84,15 @@ public final class Rules {
         return value;
     }
 
+    /**
+     * The length of (a, b): the correctly rounded square root of the sum of squares. Every step is
+     * an exact IEEE operation, so all platforms agree, and it costs a fraction of {@code
+     * StrictMath.hypot}, whose overflow and last-ulp care world coordinates never need.
+     */
+    public static double hypot(double a, double b) {
+        return Math.sqrt(a * a + b * b);
+    }
+
     public static double smooth(double value) {
         double t = Math.max(0, Math.min(1, value));
         return t * t * t * (t * (t * 6 - 15) + 10);

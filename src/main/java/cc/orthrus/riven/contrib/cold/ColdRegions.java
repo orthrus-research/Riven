@@ -341,7 +341,7 @@ public final class ColdRegions {
             double skirt =
                     1
                             - smooth(
-                                    (StrictMath.hypot(u, v) / candidate.radius - (1 - tuning.skirt))
+                                    (hypot(u, v) / candidate.radius - (1 - tuning.skirt))
                                             / tuning.skirt);
             return value * skirt;
         }
@@ -350,7 +350,7 @@ public final class ColdRegions {
             double w = candidate.width, d = candidate.depth;
             double wobble =
                     1 + tuning.roughness * .5 * StrictMath.sin(3 * StrictMath.atan2(v, u) + phase);
-            double q = StrictMath.hypot(u / (w * .53), v / (w * .5)) / wobble;
+            double q = hypot(u / (w * .53), v / (w * .5)) / wobble;
             // Broad hollow, asymmetric headwall, open downstream lip. All shapes compact.
             double bowl =
                     (1 - smooth((q - .40) / .60)) * (.94 + .06 * StrictMath.sin(v / w * 6 + phase));
@@ -480,5 +480,13 @@ public final class ColdRegions {
         double x = Double.parseDouble(p.getProperty(k, Double.toString(d)));
         if (!Double.isFinite(x) || x < lo || x > hi) throw new IllegalArgumentException(k);
         return x;
+    }
+
+    /**
+     * The length of (a, b) from exact IEEE operations: every platform agrees, and it costs a
+     * fraction of StrictMath.hypot.
+     */
+    private static double hypot(double a, double b) {
+        return Math.sqrt(a * a + b * b);
     }
 }

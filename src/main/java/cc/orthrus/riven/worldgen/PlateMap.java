@@ -146,8 +146,8 @@ public final class PlateMap {
         s.x = siteX(cx, id);
         s.z = siteZ(cz, id);
         s.w = weight(id);
-        s.vx = Math.cos(angle);
-        s.vz = Math.sin(angle);
+        s.vx = StrictMath.cos(angle);
+        s.vz = StrictMath.sin(angle);
         s.set = true;
         return s;
     }

@@ -67,7 +67,7 @@ public final class ClimateForcingMap {
         this.structure = structure;
         double tx = Rules.number(json, "transportX", -1, 1);
         double tz = Rules.number(json, "transportZ", -1, 1);
-        double length = StrictMath.hypot(tx, tz);
+        double length = Rules.hypot(tx, tz);
         if (length <= 1e-12) throw new IllegalStateException("Nonzero climate transport required");
         transportX = tx / length;
         transportZ = tz / length;

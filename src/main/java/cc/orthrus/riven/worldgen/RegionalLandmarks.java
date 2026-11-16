@@ -93,7 +93,7 @@ public final class RegionalLandmarks {
                 intent.sample(ax, az, out.anchorBase);
                 if (out.anchorBase.ocean.marine) continue;
                 TerrainMap.BaseSample base = out.anchorBase;
-                double slope = StrictMath.hypot(base.baseDx, base.baseDz);
+                double slope = Rules.hypot(base.baseDx, base.baseDz);
                 double[] regional =
                         DEFINITION.regionWeights[out.anchorBase.climate.region.ordinal()];
                 for (Family family : FAMILIES) {
@@ -119,8 +119,10 @@ public final class RegionalLandmarks {
                 double angle = random(id, 7) * Math.PI * 2;
                 if ((chosen == Family.FAN_APRON || chosen == Family.BRANCHING_RAVINE)
                         && slope > 0.025)
-                    angle = Math.atan2(base.baseDx, -base.baseDz) + (random(id, 7) - 0.5) * 1.2;
-                double c = Math.cos(angle), s = Math.sin(angle);
+                    angle =
+                            StrictMath.atan2(base.baseDx, -base.baseDz)
+                                    + (random(id, 7) - 0.5) * 1.2;
+                double c = StrictMath.cos(angle), s = StrictMath.sin(angle);
                 double u = (px * c + pz * s) / rx, v = (-px * s + pz * c) / rz;
                 double r2 = u * u + v * v;
                 if (r2 >= 1) continue;
@@ -170,48 +172,53 @@ public final class RegionalLandmarks {
                 }
             }
         double room = out.rawDisplacement >= 0 ? max - original : original - min;
-        out.appliedDisplacement = room <= 0 ? 0 : room * Math.tanh(out.rawDisplacement / room);
+        out.appliedDisplacement =
+                room <= 0 ? 0 : room * StrictMath.tanh(out.rawDisplacement / room);
         out.height = original + out.appliedDisplacement;
     }
 
     private static double shape(
             Family family, int variant, double u, double v, double skew, long id, boolean capped) {
-        double r = Math.sqrt(u * u + v * v), theta = Math.atan2(v, u);
+        double r = Math.sqrt(u * u + v * v), theta = StrictMath.atan2(v, u);
         double bend = 0.18 + 0.3 * random(id, 11), width = 0.12 + 0.12 * random(id, 12);
         switch (family) {
             case CAPPED_HILL:
                 double radius =
-                        r * (1 + 0.1 * Math.sin(3 * theta + skew * 9) + 0.06 * Math.sin(5 * theta));
-                if (variant == 1) return Math.pow(Math.max(0, 1 - radius * radius), 1.3);
+                        r
+                                * (1
+                                        + 0.1 * StrictMath.sin(3 * theta + skew * 9)
+                                        + 0.06 * StrictMath.sin(5 * theta));
+                if (variant == 1) return StrictMath.pow(Math.max(0, 1 - radius * radius), 1.3);
                 if (!capped) {
-                    if (variant == 0) return Math.pow(Math.max(0, 1 - radius), 1.2);
+                    if (variant == 0) return StrictMath.pow(Math.max(0, 1 - radius), 1.2);
                     return Math.max(
-                            Math.exp(-5 * (square(u - 0.3) + square(v + 0.1))),
-                            0.8 * Math.exp(-7 * (square(u + 0.35) + square(v - 0.2))));
+                            StrictMath.exp(-5 * (square(u - 0.3) + square(v + 0.1))),
+                            0.8 * StrictMath.exp(-7 * (square(u + 0.35) + square(v - 0.2))));
                 }
                 if (variant == 2)
                     radius =
                             Math.sqrt(
-                                    (u + 0.13 * Math.sin(v * 7)) * (u + 0.13 * Math.sin(v * 7))
+                                    (u + 0.13 * StrictMath.sin(v * 7))
+                                                    * (u + 0.13 * StrictMath.sin(v * 7))
                                             + v * v);
                 return 1 - smooth((radius - 0.30 - skew * 0.15) / 0.45);
             case CURVED_RIDGE:
                 if (variant == 1) {
-                    double ring = Math.exp(-square((r - 0.53) / width));
+                    double ring = StrictMath.exp(-square((r - 0.53) / width));
                     double opening = smooth((v + 0.45) / 0.5);
                     return ring * opening;
                 }
                 double curve = bend * (v * v * 2 - 0.6) + skew * v;
-                double ridge = Math.exp(-square((u - curve) / width));
+                double ridge = StrictMath.exp(-square((u - curve) / width));
                 if (variant == 2)
-                    ridge += 0.7 * Math.exp(-square((u + 0.4 + curve) / (width * 0.8)));
-                return ridge * (0.65 + 0.35 * Math.cos(v * 2));
+                    ridge += 0.7 * StrictMath.exp(-square((u + 0.4 + curve) / (width * 0.8)));
+                return ridge * (0.65 + 0.35 * StrictMath.cos(v * 2));
             case RIMMED_BASIN:
                 double ellipse = Math.sqrt(square(u + skew * v * v) + v * v);
-                double bowl = -Math.exp(-square(ellipse / 0.49));
-                double rim = 0.48 * Math.exp(-square((ellipse - 0.63) / (width * 0.8)));
+                double bowl = -StrictMath.exp(-square(ellipse / 0.49));
+                double rim = 0.48 * StrictMath.exp(-square((ellipse - 0.63) / (width * 0.8)));
                 double gap = variant == 1 ? smooth((v + 0.55) / 0.5) : 1;
-                if (variant == 2) rim *= 0.7 + 0.3 * Math.cos(theta * 3 + skew * 7);
+                if (variant == 2) rim *= 0.7 + 0.3 * StrictMath.cos(theta * 3 + skew * 7);
                 return bowl + rim * gap;
             case FAN_APRON:
                 double along = (v + 0.7) / 1.5;
@@ -220,15 +227,16 @@ public final class RegionalLandmarks {
                 double ribs =
                         0.78
                                 + 0.22
-                                        * Math.cos(
+                                        * StrictMath.cos(
                                                 (u / (0.22 + Math.max(0, along)))
                                                         * Math.PI
                                                         * (variant + 3));
                 return cone * smooth(along / 0.18) * (1 - smooth((along - 0.25) / 0.75)) * ribs;
             case BRANCHING_RAVINE:
                 double center =
-                        skew * Math.sin(v * 4) + 0.08 * Math.sin(v * 9 + random(id, 13) * 6);
-                double cut = Math.exp(-square((u - center) / (width * 0.65)));
+                        skew * StrictMath.sin(v * 4)
+                                + 0.08 * StrictMath.sin(v * 9 + random(id, 13) * 6);
+                double cut = StrictMath.exp(-square((u - center) / (width * 0.65)));
                 int branches = variant + 2;
                 for (int i = 0; i < branches; i++) {
                     double start = -0.5 + i * 0.8 / branches;
@@ -236,7 +244,10 @@ public final class RegionalLandmarks {
                     double progress = (v - start) / (0.8 - start);
                     double branch = center + side * progress;
                     double taper = smooth(progress / 0.18) * (1 - smooth((progress - 0.65) / 0.35));
-                    cut = Math.max(cut, Math.exp(-square((u - branch) / (width * 0.45))) * taper);
+                    cut =
+                            Math.max(
+                                    cut,
+                                    StrictMath.exp(-square((u - branch) / (width * 0.45))) * taper);
                 }
                 return -cut * (0.65 + 0.35 * smooth((v + 1) / 2));
             case SCULPTED_DUNE:
@@ -245,12 +256,12 @@ public final class RegionalLandmarks {
                     int count = 3 + (int) (random(id, 14) * 3);
                     for (int i = 0; i < count; i++) {
                         double a = i * Math.PI * 2 / count,
-                                across = -u * Math.sin(a) + v * Math.cos(a),
-                                alongArm = u * Math.cos(a) + v * Math.sin(a);
+                                across = -u * StrictMath.sin(a) + v * StrictMath.cos(a),
+                                alongArm = u * StrictMath.cos(a) + v * StrictMath.sin(a);
                         arms =
                                 Math.max(
                                         arms,
-                                        Math.exp(-square(across / (width * (1 - r * 0.5))))
+                                        StrictMath.exp(-square(across / (width * (1 - r * 0.5))))
                                                 * smooth((alongArm + 0.08) / 0.2));
                     }
                     return arms * (1 - smooth(r));
@@ -258,12 +269,13 @@ public final class RegionalLandmarks {
                 double crest = 0.38 + 0.42 * u * u + skew * u;
                 double d = v - crest + 0.2;
                 double crescent =
-                        Math.exp(-square(d / (d < 0 ? 0.28 : 0.10))) * (1 - smooth(Math.abs(u)));
+                        StrictMath.exp(-square(d / (d < 0 ? 0.28 : 0.10)))
+                                * (1 - smooth(Math.abs(u)));
                 if (variant == 2)
                     crescent =
                             Math.max(
                                     crescent,
-                                    0.7 * Math.exp(-square((v + 0.38 + 0.2 * u * u) / 0.16)));
+                                    0.7 * StrictMath.exp(-square((v + 0.38 + 0.2 * u * u) / 0.16)));
                 return crescent;
             default:
                 throw new AssertionError(family);
