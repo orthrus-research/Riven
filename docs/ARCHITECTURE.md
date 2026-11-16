@@ -18,6 +18,9 @@ may rebuild it). Memos with a `SharedBuild`
 (every `CellMemo` and hydrology plans) give concurrent misses on one key
 a single build, which publishes its value before it lets go of the key and first looks for the
 value again, so a miss that raced a build ending finds the value instead of building it again.
+`ContinentalMap` keeps a direct-mapped memo of integer-column samples (`columnMemo`, 65,536
+slots, about 13 MB): planners, certificates and final columns read the same columns many times
+(24.2 million intent reads of 2.0 million columns in one 32 km arrival on seed 2485331).
 In-build parallelism (drainage scans, network and plan builds) runs through `BuildPool` on the
 host's bounded pool (Cubature's build pool in the game, a shared bounded pool in tools) or on the
 calling thread, never the JVM's common pool; the caller always works its own loop, so a bounded

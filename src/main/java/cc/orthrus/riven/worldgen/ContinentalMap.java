@@ -5,6 +5,8 @@ import cc.orthrus.riven.contrib.continents.ContinentalKernels.Family;
 
 import com.google.gson.JsonObject;
 
+import java.util.concurrent.atomic.AtomicReferenceArray;
+
 /**
  * Four original outline alternatives. Every marine column holds ocean water to the sea datum;
  * marine areas enclosed by land are inland seas at that datum, never dry basins.
@@ -29,6 +31,16 @@ public final class ContinentalMap {
     private final double calmShelf, ruggedShelf, styleMin, styleMax;
 
     private final int waterTop;
+
+    /**
+     * Samples of integer columns, direct-mapped by a hash of the column: every planner and
+     * certificate reads the same columns many times over (24 million reads of 2 million columns
+     * in a 32 km arrival). An entry is the immutable result of the pure sample, so eviction and
+     * races change timing only.
+     */
+    private final AtomicReferenceArray<Memo> memo;
+
+    private final int memoMask;
     public final double spacing, landBlend, oceanTransitionWidth;
     public final int minimumSurfaceY, seaLevel;
 
@@ -75,6 +87,83 @@ public final class ContinentalMap {
         JsonObject variation = j.getAsJsonObject("variation");
         styleMin = Rules.number(variation, "styleMin", 0, 4);
         styleMax = Rules.number(variation, "styleMax", 0, 4);
+        int slots = Integer.highestOneBit((int) Rules.number(j, "columnMemo", 1024, 1 << 22));
+        memo = new AtomicReferenceArray<>(slots);
+        memoMask = slots - 1;
+    }
+
+    /** One column's sample, copied out of a caller's Sample; never changed once published. */
+    private static final class Memo {
+        final long key;
+        final double coastCoordinate, blendWidth, bedHeight, distance, normalX, normalZ, shelter;
+        final double headland, landWeight, scaffoldClearance, continentSize, elongation;
+        final double roughness, interior, cape, shoaling, shelfScale, craggy;
+        final boolean marine, deepOcean, supplied, protectedWater, archipelago;
+        final long owner;
+        final Family family;
+        final ContinentalKernels.Reason reason;
+        final Form form;
+
+        Memo(long key, Sample s) {
+            this.key = key;
+            coastCoordinate = s.coastCoordinate;
+            blendWidth = s.blendWidth;
+            bedHeight = s.bedHeight;
+            distance = s.distance;
+            normalX = s.normalX;
+            normalZ = s.normalZ;
+            shelter = s.shelter;
+            headland = s.headland;
+            landWeight = s.landWeight;
+            scaffoldClearance = s.scaffoldClearance;
+            continentSize = s.continentSize;
+            elongation = s.elongation;
+            roughness = s.roughness;
+            interior = s.interior;
+            cape = s.cape;
+            shoaling = s.shoaling;
+            shelfScale = s.shelfScale;
+            craggy = s.craggy;
+            marine = s.marine;
+            deepOcean = s.deepOcean;
+            supplied = s.supplied;
+            protectedWater = s.protectedWater;
+            archipelago = s.archipelago;
+            owner = s.owner;
+            family = s.family;
+            reason = s.reason;
+            form = s.form;
+        }
+
+        void copyTo(Sample s) {
+            s.coastCoordinate = coastCoordinate;
+            s.blendWidth = blendWidth;
+            s.bedHeight = bedHeight;
+            s.distance = distance;
+            s.normalX = normalX;
+            s.normalZ = normalZ;
+            s.shelter = shelter;
+            s.headland = headland;
+            s.landWeight = landWeight;
+            s.scaffoldClearance = scaffoldClearance;
+            s.continentSize = continentSize;
+            s.elongation = elongation;
+            s.roughness = roughness;
+            s.interior = interior;
+            s.cape = cape;
+            s.shoaling = shoaling;
+            s.shelfScale = shelfScale;
+            s.craggy = craggy;
+            s.marine = marine;
+            s.deepOcean = deepOcean;
+            s.supplied = supplied;
+            s.protectedWater = protectedWater;
+            s.archipelago = archipelago;
+            s.owner = owner;
+            s.family = family;
+            s.reason = reason;
+            s.form = form;
+        }
     }
 
     public static final class Sample {
@@ -155,6 +244,25 @@ public final class ContinentalMap {
     }
 
     public void sample(double x, double z, Sample out) {
+        if (x == Math.floor(x)
+                && z == Math.floor(z)
+                && Math.abs(x) < 1 << 30
+                && Math.abs(z) < 1 << 30) {
+            long key = ((long) x << 32) ^ ((long) z & 0xffffffffL);
+            int slot = (int) SeededNoise.mix(key) & memoMask;
+            Memo m = memo.get(slot);
+            if (m != null && m.key == key) {
+                m.copyTo(out);
+                return;
+            }
+            compute(x, z, out);
+            memo.set(slot, new Memo(key, out));
+            return;
+        }
+        compute(x, z, out);
+    }
+
+    private void compute(double x, double z, Sample out) {
         outline.sample(x, z, out.value, out.work);
         ContinentalKernels.Sample value = out.value;
         out.family = value.family;

@@ -100,6 +100,7 @@
     "ruggedScale": 0.45
   },
   "normalBandInCoastalPlainWidths": 1.5,
+  "columnMemo": 65536,
   "contract": [
     "Choose one authored outline alternative per world, explicitly or by seed; do not blend incompatible scores or preserve the old continental grid underneath it.",
     "Continental dimensions are physical. Only the reference-derived coastal transition receives TerrainScale.HORIZONTAL.",
