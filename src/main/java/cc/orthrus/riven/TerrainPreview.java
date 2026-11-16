@@ -41,6 +41,16 @@ final class TerrainPreview implements ICubicTerrainPreview {
     private final GroundCover cover;
 
     /**
+     * Whether this preview's regional builds may be split over its maps' build pool. Only a
+     * preview a client built for itself from its server's offer, and only where its host gave it
+     * a pool: nothing else generates on those maps, so no other build waits for the helpers. The
+     * server's preview never: a distant preview tile can start regional builds native generation
+     * will not need for a while, and on the shared pool those would hold helpers generation's own
+     * builds wait for. The builds are pure, so this changes timing only.
+     */
+    private final boolean buildsPooled;
+
+    /**
      * What the preview is a function of, hashed: Riven's regional identity (terrain version, seed,
      * exact layout scale bits, every packaged definition's fingerprint), the recorded definitions'
      * fingerprint, and the block each recorded role and each catalogue entry resolved to here. Two
@@ -49,14 +59,19 @@ final class TerrainPreview implements ICubicTerrainPreview {
      */
     final String identity;
 
-    /** The server's preview, on the maps, tree sites and ground cover its generator built. */
+    /**
+     * The server's preview, on the maps, tree sites and ground cover its generator built; or a
+     * client's own, on maps of its own, with {@code buildsPooled} as {@link #fromServer} decides.
+     */
     TerrainPreview(
             long seed,
             WorldScale scale,
             Mappings.Snapshot snapshot,
             ClimateBiomeProvider biomes,
             TreeSites trees,
-            GroundCover cover) {
+            GroundCover cover,
+            boolean buildsPooled) {
+        this.buildsPooled = buildsPooled;
         this.biomes = biomes;
         this.trees = trees;
         this.cover = cover;
@@ -98,8 +113,20 @@ final class TerrainPreview implements ICubicTerrainPreview {
                 new ClimateBiomeProvider(seed, scale, inputs.buildPool(), null);
         TreeSites trees = new TreeSites(seed, biomes, HEIGHTS, snapshot);
         LOG.info("Riven terrain preview {} built from the server's definitions", identity);
+        // These maps are this client's alone, so their builds may use the pool the host gave.
         return new TerrainPreview(
-                seed, scale, snapshot, biomes, trees, new GroundCover(seed, biomes, trees));
+                seed,
+                scale,
+                snapshot,
+                biomes,
+                trees,
+                new GroundCover(seed, biomes, trees),
+                inputs.buildPool() != null);
+    }
+
+    /** Whether this preview's regional builds may be split over its maps' build pool. */
+    boolean buildsPooled() {
+        return buildsPooled;
     }
 
     static String identity(long seed, WorldScale scale, Mappings.Snapshot snapshot) {
@@ -133,8 +160,10 @@ final class TerrainPreview implements ICubicTerrainPreview {
                             Blocks.AIR.getDefaultState());
                     return;
                 }
-                // Preview columns build regional plans on this thread alone (BuildPool.alone).
-                boolean was = BuildPool.alone(true);
+                // The server's preview columns build regional plans on this thread alone
+                // (BuildPool.alone); a client's own may use its pool and leave the mark as it is.
+                boolean alone = !buildsPooled;
+                boolean was = alone && BuildPool.alone(true);
                 try {
                     biomes.maps.terrain.sample(x, z, sample);
                     TerrainColumn.preview(
@@ -151,7 +180,7 @@ final class TerrainPreview implements ICubicTerrainPreview {
                             scratch,
                             consumer);
                 } finally {
-                    BuildPool.alone(was);
+                    if (alone) BuildPool.alone(was);
                 }
             }
         };

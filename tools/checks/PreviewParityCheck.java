@@ -1,6 +1,7 @@
 package cc.orthrus.riven;
 
 import cc.orthrus.riven.content.RivenContent;
+import cc.orthrus.riven.worldgen.BuildPool;
 import cc.orthrus.riven.worldgen.Rules;
 import cc.orthrus.riven.worldgen.WorldScale;
 
@@ -50,9 +51,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>Usage: PreviewParityCheck OUT SEED SCALE THREADS SOURCES WINDOW..., where SOURCES is a
  * comma-separated list of {@code generator} (the server's cube generator, built on a fixture world
- * whose every chunk, block and biome access throws) and {@code join} (what a client builds: the
+ * whose every chunk, block and biome access throws), {@code join} (what a client builds: the
  * generator's offer is written as Cubature's join message, and Riven's registered factory builds
- * a preview from the bytes of that message alone, with maps of its own), and WINDOW is {@code
+ * a preview from the bytes of that message alone, with maps of its own) and {@code pooled} (the
+ * same with a build pool from the host, over which that preview splits its regional builds, as
+ * the server's never does), and WINDOW is {@code
  * NAME:CX:CZ:HIGH-LOW[:N]}:
  * for each level from HIGH down to LOW (cells of 2^level blocks), a tile-aligned square of N x N
  * tiles of 64 x 64 columns around (CX, CZ); N defaults to the size survey's rule, at least 2,048
@@ -217,24 +220,43 @@ public final class PreviewParityCheck {
 
     /** What a client's registered factory builds from a join message's bytes, or null. */
     private static ICubicTerrainPreview client(byte[] message) {
+        return client(message, null);
+    }
+
+    /** The same, with a build pool as a host may give one, or null for none. */
+    private static ICubicTerrainPreview client(
+            byte[] message, java.util.concurrent.ForkJoinPool pool) {
         PacketClientPreview received = new PacketClientPreview();
         received.fromBytes(Unpooled.wrappedBuffer(message));
         ClientPreviewOffer offer = received.offer();
         return TerrainPreviewFactories.get(offer.factory())
-                .create(new ClientPreviewInputs(received.dimension(), offer, null, null));
+                .create(new ClientPreviewInputs(received.dimension(), offer, pool, null));
     }
 
     private static Source source(
             String kind, Path out, long seed, WorldScale scale, String recorded) throws Exception {
         RivenWorldType.Generator generator = server(out, seed, scale, recorded);
-        if (kind.equals("generator")) return new Source(generator, generator.preview().identity);
-        if (kind.equals("join")) {
+        if (kind.equals("generator")) {
+            // The server's preview keeps its builds to the sampling thread, whatever pool there is.
+            if (generator.preview().buildsPooled())
+                throw new AssertionError("The server's preview must build alone");
+            return new Source(generator, generator.preview().identity);
+        }
+        if (kind.equals("join") || kind.equals("pooled")) {
             ClientPreviewOffer offer = generator.clientPreviewOffer();
             // From here on, only the message: no world, no fixture, none of the server's maps.
             byte[] message = message(offer);
             System.out.println("join message: " + message.length + " bytes");
-            ICubicTerrainPreview built = client(message);
+            // "pooled": the host gives the client a build pool, and the client's preview splits
+            // its regional builds over it. The columns must be those of a preview that builds
+            // alone.
+            boolean pooled = kind.equals("pooled");
+            ICubicTerrainPreview built =
+                    client(message, pooled ? BuildPool.bounded(4, "Preview parity build") : null);
             if (built == null) throw new AssertionError("The factory declined its server's offer");
+            if (((TerrainPreview) built).buildsPooled() != pooled)
+                throw new AssertionError(
+                        "A client's preview must split its builds exactly when its host gives a pool");
             ClientPreviewOffer other =
                     new ClientPreviewOffer(
                             offer.factory(),

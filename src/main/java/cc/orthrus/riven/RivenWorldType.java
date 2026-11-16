@@ -138,7 +138,13 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             cover = new GroundCover(world.getSeed(), biomes, trees);
             preview =
                     new TerrainPreview(
-                            world.getSeed(), biomes.context.scale, snapshot, biomes, trees, cover);
+                            world.getSeed(),
+                            biomes.context.scale,
+                            snapshot,
+                            biomes,
+                            trees,
+                            cover,
+                            false);
             groundKindsSupported = groundKindsSupported();
             surfaceBandSupported = trees.surfaceBandSupported() && groundPreservingBodies();
             animals = new FirstAnimals(world.getSeed(), biomes);
