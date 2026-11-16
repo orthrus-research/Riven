@@ -208,6 +208,11 @@ instance to the run's distances before the launch, the baseline for a run that a
 records them in `standalone.json` (`viewDistance`, and `viewDistanceLabel`: `baseline` or what was
 raised), prints them, and files them as `view-distance.json` beside a tour's captures.
 
+Below the baseline, `runtime.py prepare --view-profile near-8` prepares an instance with a named
+reduced profile (all three distances 8), recorded as `viewProfile`. Its distances are fixed: its
+plays refuse view-distance options and a tour's `viewDistance`, and `riven_observe compare` will
+not compare it with a run of another profile.
+
 ## Telemetry ledger
 
 Every capture and pregeneration, passed or failed, ends by writing one compact JSON record

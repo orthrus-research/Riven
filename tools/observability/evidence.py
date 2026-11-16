@@ -418,6 +418,7 @@ def controls(report, treatment, diagnostic_screen=False):
                 for key in [
                     "runtimeVersion",
                     "jvmProfile",
+                    "viewProfile",
                     "viewDistance",
                     "labProperties",
                     "generator",

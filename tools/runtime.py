@@ -166,6 +166,7 @@ def prepare(
     keep_fine_columns=True,
     distant_horizons=True,
     client_mods=None,
+    view_profile=None,
 ):
     # Extra client-side mods (a renderer under test, for example), recorded with the instance.
     client_mods = [Path(mod).resolve() for mod in client_mods or []]
@@ -461,6 +462,8 @@ def prepare(
         if lod_observer
         else None,
     )
+    # A named reduced view profile is chosen here, last, once for the instance's whole life.
+    lab_profiles.choose_view_profile(manifest, view_profile)
     lab_files.write_json(directory / "standalone.json", manifest)
     print("Prepared Riven terrain world:", directory, flush=True)
 
@@ -621,9 +624,19 @@ def tour_view_distance(path):
     return read_tour(path)[1]
 
 
-def run_view_distance(tour_distances=None, horizontal=None, vertical=None, client_render=None):
-    """A run's view distances: an option given to play, else the tour's, else the lab's baseline."""
+def run_view_distance(tour_distances=None, horizontal=None, vertical=None, client_render=None, manifest=None):
+    """A run's view distances: an option given to play, else the tour's, else the lab's baseline. An
+    instance prepared with a reduced view profile keeps its own, and asking it for any is refused."""
     tour_distances = tour_distances or {}
+    name = lab_profiles.view_profile_name(manifest or {})
+    if name != lab_profiles.BASELINE_VIEW_PROFILE:
+        asked = [v for v in (horizontal, vertical, client_render) if v is not None] + list(tour_distances.values())
+        if asked:
+            raise RuntimeError(
+                f"This instance was prepared with the reduced view profile {name}; its view distances are fixed, "
+                "so play options and a tour's viewDistance are refused"
+            )
+        return lab_profiles.reduced_view_profile(name)
 
     def pick(given, key):
         return given if given is not None else tour_distances.get(key)
@@ -656,11 +669,18 @@ def play(name, tour=None, window=None, shader_pack=None, distances=None):
         distances.get("horizontal"),
         distances.get("vertical"),
         distances.get("clientRender"),
+        m,
     )
     if lab_profiles.apply_view_distance(m, profile):
         lab_files.write_json(directory / "standalone.json", m)
     lab_profiles.validate_view_distance_inputs(m)
-    print("View distance: " + lab_profiles.view_distance_label(profile) + " " + json.dumps(profile), flush=True)
+    print(
+        "View distance: "
+        + lab_profiles.view_distance_label(profile, lab_profiles.view_profile_name(m))
+        + " "
+        + json.dumps(profile),
+        flush=True,
+    )
     if shader_pack:
         installed = {
             r.get("name", r["installedAs"]): r["installedAs"] for r in m.get("shaderPacks", [])
@@ -819,7 +839,11 @@ def tour_views(directory, m, views, server, client, client_messages, username):
     lab_files.write_json(out / "views.json", views)
     lab_files.write_json(
         out / "view-distance.json",
-        {"viewDistance": m["viewDistance"], "label": lab_profiles.view_distance_label(m["viewDistance"])},
+        {
+            "viewDistance": m["viewDistance"],
+            "viewProfile": lab_profiles.view_profile_name(m),
+            "label": lab_profiles.view_distance_label(m["viewDistance"], lab_profiles.view_profile_name(m)),
+        },
     )
     print("Tour captures: " + str(out), flush=True)
 
@@ -1007,6 +1031,12 @@ def main():
         "then stop and close",
     )
     p.add_argument(
+        "--view-profile",
+        choices=sorted(lab_profiles.REDUCED_VIEW_PROFILES),
+        help="prepare: a named view profile below the lab's baseline of 12, fixed for the instance; "
+        "its plays take no view-distance options",
+    )
+    p.add_argument(
         "--view-distance",
         type=int,
         help="play: the server's horizontal view distance, raised above the lab's baseline of 12",
@@ -1059,6 +1089,7 @@ def main():
             keep_fine_columns=not a.no_keep_fine_columns,
             distant_horizons=a.distant_horizons,
             client_mods=a.client_mod,
+            view_profile=a.view_profile,
         )
     elif a.command == "play":
         if a.shader_pack and len(a.shader_pack) != 1:

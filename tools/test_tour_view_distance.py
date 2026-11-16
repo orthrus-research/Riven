@@ -64,5 +64,23 @@ class RunViewDistanceTests(unittest.TestCase):
             runtime.run_view_distance({"clientRender": 6})
 
 
+class ReducedProfileTests(unittest.TestCase):
+    REDUCED = {"viewProfile": "near-8"}
+
+    def test_a_reduced_instance_keeps_its_profile(self):
+        self.assertEqual(
+            runtime.run_view_distance(manifest=self.REDUCED), {"horizontal": 8, "vertical": 8, "clientRender": 8}
+        )
+
+    def test_a_reduced_instance_refuses_options_and_tour_distances(self):
+        with self.assertRaisesRegex(RuntimeError, "reduced view profile near-8"):
+            runtime.run_view_distance(client_render=20, manifest=self.REDUCED)
+        with self.assertRaisesRegex(RuntimeError, "reduced view profile near-8"):
+            runtime.run_view_distance({"clientRender": 20}, manifest=self.REDUCED)
+
+    def test_an_instance_without_a_profile_is_baseline(self):
+        self.assertEqual(runtime.run_view_distance(client_render=20, manifest={})["clientRender"], 20)
+
+
 if __name__ == "__main__":
     unittest.main()
