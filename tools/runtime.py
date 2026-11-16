@@ -822,8 +822,9 @@ def descend(server, username, previous, view, step=32, pause=5.0):
         time.sleep(pause)
 
 
-# Seconds a client is given to leave the world before the launcher ends it.
-LEAVE_SECONDS = 5
+# Seconds a client is given to leave the world before the launcher ends it: past the last of the
+# counts its pools make of their threads after they stop (10 s).
+LEAVE_SECONDS = 12
 
 
 def leave_world(server, username, wait=time.sleep):
