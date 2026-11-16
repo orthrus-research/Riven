@@ -16,7 +16,7 @@ public final class TerrainMap {
     private final DrylandTerrain drylands;
     private final ColdTerrain cold;
     private final VolcanicTerrain volcanic;
-    private final GeneralSurfaceCuts cuts;
+    final GeneralSurfaceCuts cuts;
     public final CoastSediment sediment;
     public final CoastForms rocky;
     private final RegionalLandmarks landmarks;

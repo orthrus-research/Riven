@@ -19,6 +19,16 @@ public final class GeneralSurfaceCuts {
         SurfaceCuts.Family.BREACH_SADDLE
     };
     private static final double HALF_CORRIDOR = 128;
+
+    /**
+     * The lattice, in blocks, on which a plan's shore guard reads the inside of its protection
+     * disk (outside its support and corridor); the disk's rim is read at every column.
+     */
+    private static final int GUARD_LATTICE = 4;
+
+    /** Whether the shore guard reads every column (checks compare the two). */
+    private boolean exhaustive;
+
     private final long seed;
     private final IntentSampler earlierIntent;
     private final MajorFeatureParent earlierTerrain;
@@ -298,6 +308,14 @@ public final class GeneralSurfaceCuts {
                                         && v >= -HALF_CORRIDOR
                                         && v < HALF_CORRIDOR;
                 if (!protection && !inSupport && !diagnostic) continue;
+                // The guard only asks whether coast or sea reaches the disk; inside its rim a
+                // world-aligned lattice finds any reserved shore, which is many blocks wide.
+                if (!inSupport
+                        && !diagnostic
+                        && !exhaustive
+                        && (Math.floorMod(x, GUARD_LATTICE) != 0
+                                || Math.floorMod(z, GUARD_LATTICE) != 0)
+                        && !rim(dx, dz, e.shore)) continue;
                 if (inSupport || diagnostic) earlierTerrain.sample(x, z, scratch);
                 else earlierIntent.sample(x, z, scratch);
                 if (protection) e.protectedColumns++;
@@ -342,6 +360,20 @@ public final class GeneralSurfaceCuts {
                         e.supportColumns);
         SurfaceCuts.ColumnDecision decision = SurfaceCuts.selectColumns(p, facts);
         return new Decision(decision.plan, decision.reason.name(), e);
+    }
+
+    /** Whether a column inside a disk of the radius has a four-neighbour outside it. */
+    private static boolean rim(double dx, double dz, double radius) {
+        double r2 = radius * radius;
+        return (dx + 1) * (dx + 1) + dz * dz > r2
+                || (dx - 1) * (dx - 1) + dz * dz > r2
+                || dx * dx + (dz + 1) * (dz + 1) > r2
+                || dx * dx + (dz - 1) * (dz - 1) > r2;
+    }
+
+    /** Checks: read every column of the shore guard (true) or its rim and lattice (false). */
+    void exhaustive(boolean on) {
+        exhaustive = on;
     }
 
     private void saddle(
