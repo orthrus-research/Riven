@@ -624,13 +624,17 @@ def tour_view_distance(path):
     return read_tour(path)[1]
 
 
-def run_view_distance(tour_distances=None, horizontal=None, vertical=None, client_render=None, manifest=None):
+def run_view_distance(
+    tour_distances=None, horizontal=None, vertical=None, client_render=None, manifest=None
+):
     """A run's view distances: an option given to play, else the tour's, else the lab's baseline. An
     instance prepared with a reduced view profile keeps its own, and asking it for any is refused."""
     tour_distances = tour_distances or {}
     name = lab_profiles.view_profile_name(manifest or {})
     if name != lab_profiles.BASELINE_VIEW_PROFILE:
-        asked = [v for v in (horizontal, vertical, client_render) if v is not None] + list(tour_distances.values())
+        asked = [v for v in (horizontal, vertical, client_render) if v is not None] + list(
+            tour_distances.values()
+        )
         if asked:
             raise RuntimeError(
                 f"This instance was prepared with the reduced view profile {name}; its view distances are fixed, "
@@ -642,7 +646,9 @@ def run_view_distance(tour_distances=None, horizontal=None, vertical=None, clien
         return given if given is not None else tour_distances.get(key)
 
     return lab_profiles.view_distance_profile(
-        pick(horizontal, "horizontal"), pick(vertical, "vertical"), pick(client_render, "clientRender")
+        pick(horizontal, "horizontal"),
+        pick(vertical, "vertical"),
+        pick(client_render, "clientRender"),
     )
 
 
@@ -842,7 +848,9 @@ def tour_views(directory, m, views, server, client, client_messages, username):
         {
             "viewDistance": m["viewDistance"],
             "viewProfile": lab_profiles.view_profile_name(m),
-            "label": lab_profiles.view_distance_label(m["viewDistance"], lab_profiles.view_profile_name(m)),
+            "label": lab_profiles.view_distance_label(
+                m["viewDistance"], lab_profiles.view_profile_name(m)
+            ),
         },
     )
     print("Tour captures: " + str(out), flush=True)

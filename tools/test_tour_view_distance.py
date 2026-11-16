@@ -30,8 +30,12 @@ class TourFileTests(unittest.TestCase):
         self.assertEqual(runtime.tour_view_distance(path), {"clientRender": 20})
 
     def test_unknown_fields_and_distances_are_refused(self):
-        for content in [{"views": [VIEW], "speed": 2}, {"views": [VIEW], "viewDistance": {"render": 20}},
-                        {"viewDistance": {"clientRender": 20}}, "views"]:
+        for content in [
+            {"views": [VIEW], "speed": 2},
+            {"views": [VIEW], "viewDistance": {"render": 20}},
+            {"viewDistance": {"clientRender": 20}},
+            "views",
+        ]:
             with self.assertRaises(ValueError, msg=str(content)):
                 runtime.read_tour(written(content))
 
@@ -45,10 +49,14 @@ class TourFileTests(unittest.TestCase):
 
 class RunViewDistanceTests(unittest.TestCase):
     def test_the_baseline_when_nothing_asks(self):
-        self.assertEqual(runtime.run_view_distance(), {"horizontal": 12, "vertical": 12, "clientRender": 12})
+        self.assertEqual(
+            runtime.run_view_distance(), {"horizontal": 12, "vertical": 12, "clientRender": 12}
+        )
 
     def test_an_option_wins_over_the_tour(self):
-        profile = runtime.run_view_distance({"clientRender": 20, "horizontal": 14}, client_render=24)
+        profile = runtime.run_view_distance(
+            {"clientRender": 20, "horizontal": 14}, client_render=24
+        )
         self.assertEqual(profile, {"horizontal": 14, "vertical": 12, "clientRender": 24})
 
     def test_each_distance_may_be_raised(self):
@@ -69,7 +77,8 @@ class ReducedProfileTests(unittest.TestCase):
 
     def test_a_reduced_instance_keeps_its_profile(self):
         self.assertEqual(
-            runtime.run_view_distance(manifest=self.REDUCED), {"horizontal": 8, "vertical": 8, "clientRender": 8}
+            runtime.run_view_distance(manifest=self.REDUCED),
+            {"horizontal": 8, "vertical": 8, "clientRender": 8},
         )
 
     def test_a_reduced_instance_refuses_options_and_tour_distances(self):
@@ -79,7 +88,9 @@ class ReducedProfileTests(unittest.TestCase):
             runtime.run_view_distance({"clientRender": 20}, manifest=self.REDUCED)
 
     def test_an_instance_without_a_profile_is_baseline(self):
-        self.assertEqual(runtime.run_view_distance(client_render=20, manifest={})["clientRender"], 20)
+        self.assertEqual(
+            runtime.run_view_distance(client_render=20, manifest={})["clientRender"], 20
+        )
 
 
 if __name__ == "__main__":
