@@ -93,5 +93,19 @@ class ReducedProfileTests(unittest.TestCase):
         )
 
 
+class LeaveWorldTests(unittest.TestCase):
+    def test_the_client_is_kicked_and_given_time_to_leave(self):
+        sent: list[str] = []
+        waited: list[float] = []
+        original = runtime.lab.send
+        runtime.lab.send = lambda server, command: sent.append(command)
+        try:
+            runtime.leave_world(object(), "CubicLab", wait=waited.append)
+        finally:
+            runtime.lab.send = original
+        self.assertEqual(sent, ["kick CubicLab Tour finished"])
+        self.assertEqual(waited, [runtime.LEAVE_SECONDS])
+
+
 if __name__ == "__main__":
     unittest.main()

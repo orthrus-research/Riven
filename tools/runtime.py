@@ -822,6 +822,18 @@ def descend(server, username, previous, view, step=32, pause=5.0):
         time.sleep(pause)
 
 
+# Seconds a client is given to leave the world before the launcher ends it.
+LEAVE_SECONDS = 5
+
+
+def leave_world(server, username, wait=time.sleep):
+    """Disconnects the client from the world before the launcher ends it, so what the client writes
+    as its world goes (its pools' stop lines, light dumps) is written: ended with the server, it never
+    leaves the world."""
+    lab.send(server, "kick " + username + " Tour finished")
+    wait(LEAVE_SECONDS)
+
+
 def tour_views(directory, m, views, server, client, client_messages, username):
     """Teleports through the viewpoints, one capture each, then files the shots by label."""
     shots = Path(m["client"]) / "screenshots"
@@ -837,6 +849,7 @@ def tour_views(directory, m, views, server, client, client_messages, username):
             lab.send(server, "tp " + username + " " + position)
         lab.await_line(client_messages, "Riven view captured", [server, client], 900)
         print(f"Captured view {i + 1}/{len(views)}: {view['label']}", flush=True)
+    leave_world(server, username)
     taken = sorted((s for s in set(shots.iterdir()) - before), key=lambda s: s.name)
     out = directory / "tours" / time.strftime("%Y%m%d-%H%M%S")
     out.mkdir(parents=True)
