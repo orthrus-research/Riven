@@ -18,7 +18,7 @@ CubicChunks.
 
 Research preview: public for study and testing. Every terrain version changes generated content
 and needs a fresh world; no version yet promises compatibility with existing worlds. The current
-version is terrain-v144 ([CHANGELOG.md](CHANGELOG.md)). There are no releases yet; they will be
+version is terrain-v145 ([CHANGELOG.md](CHANGELOG.md)). There are no releases yet; they will be
 published on GitHub Releases. Known structural limits are listed in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#measured-structural-limits).
 
@@ -31,7 +31,7 @@ published on GitHub Releases. Known structural limits are listed in
 | Land | Base relief with erosion and regional passes, and fifteen contributed landform families, from continental outlines and ocean floors to mountains, coasts and rivers ([THIRD-PARTY.md](THIRD-PARTY.md)). |
 | Water | Drainage networks per continent, from headwater streams to rivers; lakes, wetlands and lagoons; underground lakes and flooded caves. |
 | Underground | Geology with 13 host stones and their deposits, and 21 rocks of the deep realms' own; ores from a mineral catalog (GTCEu: Reloaded's overworld veins when it is installed, vanilla ores otherwise); caves through ten depth biomes. |
-| Surface life | 61 `riven:` biomes chosen from climate and terrain; trees from 34 species; boulders and ground cover. |
+| Surface life | 76 `riven:` biomes chosen from climate and terrain; trees from 34 species; boulders and ground cover. |
 | Distant view | Distant Horizons samples the same model as native cubes. |
 
 Every layer and its definition file: [docs/FEATURES.md](docs/FEATURES.md).

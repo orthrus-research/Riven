@@ -14,7 +14,7 @@ public final class BiomeTableCheck {
         Map<String, Integer> categories = new TreeMap<>();
         for (RivenBiomeTable.Definition d : RivenBiomeTable.definitions())
             categories.merge(d.category, 1, Integer::sum);
-        String[] levels = {"LOW", "MID", "HIGH"};
+        String[] levels = {"LOW", "MID", "UPLAND", "HIGH"};
         for (ClimateRegion region : ClimateRegion.values())
             for (String level : levels)
                 for (String relief : new String[] {"calm", "rugged"}) {

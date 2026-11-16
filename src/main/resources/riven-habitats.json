@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 9,
+  "revision": 10,
   "note": "Vanilla palettes per climate region and elevation level for the inland logical biomes in riven-biomes.json: each inland cell uses its core region (the value's side of each transition) and its elevation core (LOW, MID, HIGH), with the second entry for rugged columns. Coastal and water biomes use the vanilla table in riven-biomes.json.",
   "palettes": {
     "FROZEN_DRY": [
@@ -9,6 +9,9 @@
       ],
       [
         "ice_flats",
+        "ice_mountains"
+      ],
+      [
         "ice_mountains"
       ],
       [
@@ -26,6 +29,10 @@
       [
         "taiga_cold_hills",
         "ice_mountains"
+      ],
+      [
+        "taiga_cold_hills",
+        "ice_mountains"
       ]
     ],
     "FROZEN_WET": [
@@ -39,6 +46,10 @@
       [
         "taiga_cold_hills",
         "ice_mountains"
+      ],
+      [
+        "taiga_cold_hills",
+        "ice_mountains"
       ]
     ],
     "COOL_DRY": [
@@ -47,6 +58,9 @@
       ],
       [
         "plains",
+        "extreme_hills"
+      ],
+      [
         "extreme_hills"
       ],
       [
@@ -64,6 +78,10 @@
       [
         "taiga_hills",
         "extreme_hills_with_trees"
+      ],
+      [
+        "taiga_hills",
+        "extreme_hills_with_trees"
       ]
     ],
     "COOL_WET": [
@@ -76,6 +94,9 @@
       ],
       [
         "redwood_taiga_hills"
+      ],
+      [
+        "redwood_taiga_hills"
       ]
     ],
     "MILD_DRY": [
@@ -84,6 +105,9 @@
       ],
       [
         "plains",
+        "extreme_hills"
+      ],
+      [
         "extreme_hills"
       ],
       [
@@ -101,6 +125,10 @@
       [
         "birch_forest_hills",
         "extreme_hills_with_trees"
+      ],
+      [
+        "birch_forest_hills",
+        "extreme_hills_with_trees"
       ]
     ],
     "MILD_WET": [
@@ -110,6 +138,10 @@
       [
         "forest",
         "forest_hills"
+      ],
+      [
+        "forest_hills",
+        "extreme_hills_with_trees"
       ],
       [
         "forest_hills",
@@ -126,6 +158,9 @@
       ],
       [
         "savanna_rock"
+      ],
+      [
+        "savanna_rock"
       ]
     ],
     "WARM_MODERATE": [
@@ -134,6 +169,9 @@
       ],
       [
         "forest",
+        "forest_hills"
+      ],
+      [
         "forest_hills"
       ],
       [
@@ -150,6 +188,9 @@
       ],
       [
         "jungle_hills"
+      ],
+      [
+        "jungle_hills"
       ]
     ],
     "HOT_DRY": [
@@ -159,6 +200,9 @@
       [
         "desert",
         "desert_hills"
+      ],
+      [
+        "mesa_rock"
       ],
       [
         "mesa_rock"
@@ -174,6 +218,9 @@
       ],
       [
         "savanna_rock"
+      ],
+      [
+        "savanna_rock"
       ]
     ],
     "HOT_WET": [
@@ -182,6 +229,9 @@
       ],
       [
         "jungle",
+        "jungle_hills"
+      ],
+      [
         "jungle_hills"
       ],
       [

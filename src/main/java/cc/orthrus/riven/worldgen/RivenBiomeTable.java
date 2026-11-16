@@ -145,6 +145,7 @@ public final class RivenBiomeTable {
     private static final List<Definition> DEFINITIONS;
     private static final Map<String, Definition> BY_ID = new HashMap<>();
     private static final Map<String, String> INLAND_LOW = new HashMap<>(),
+            INLAND_UPLAND = new HashMap<>(),
             INLAND_HIGH = new HashMap<>(),
             HILLS = new HashMap<>(),
             PEAKS = new HashMap<>(),
@@ -183,6 +184,7 @@ public final class RivenBiomeTable {
         for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("inland").entrySet()) {
             JsonObject pair = e.getValue().getAsJsonObject();
             INLAND_LOW.put(e.getKey(), known(pair.get("lowland").getAsString()));
+            INLAND_UPLAND.put(e.getKey(), known(pair.get("upland").getAsString()));
             INLAND_HIGH.put(e.getKey(), known(pair.get("highland").getAsString()));
         }
         for (Map.Entry<String, JsonElement> e : j.getAsJsonObject("rugged").entrySet()) {
@@ -208,6 +210,7 @@ public final class RivenBiomeTable {
             if (!MOUTHS.containsKey(mouth))
                 throw new IllegalStateException("No river-mouth biome for " + mouth);
         INLAND.addAll(INLAND_LOW.values());
+        INLAND.addAll(INLAND_UPLAND.values());
         INLAND.addAll(INLAND_HIGH.values());
         INLAND.addAll(HILLS.values());
         INLAND.addAll(PEAKS.values());
@@ -252,8 +255,13 @@ public final class RivenBiomeTable {
         if (hash > 0) return required(COAST, key.substring(0, hash), key);
         String[] parts = key.split("/");
         if (parts.length != 3) return required(COAST, key, key);
-        boolean high = parts[1].equals("HIGH"), rugged = parts[2].equals("rugged");
-        if (!rugged) return required(high ? INLAND_HIGH : INLAND_LOW, parts[0], key);
+        // Calm land: lowland for LOW and MID, upland for UPLAND, highland for HIGH; rugged land:
+        // hills below the upland band, peaks from it up.
+        boolean upland = parts[1].equals("UPLAND"), high = upland || parts[1].equals("HIGH");
+        boolean rugged = parts[2].equals("rugged");
+        if (!rugged)
+            return required(
+                    upland ? INLAND_UPLAND : high ? INLAND_HIGH : INLAND_LOW, parts[0], key);
         String band = ClimateRegion.valueOf(parts[0]).temperature.name();
         return required(high ? PEAKS : HILLS, band, key);
     }

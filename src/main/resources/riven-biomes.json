@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 4,
+  "revision": 5,
   "temperature": {
     "cores": [
       "FROZEN",
@@ -33,11 +33,13 @@
     "cores": [
       "LOW",
       "MID",
+      "UPLAND",
       "HIGH"
     ],
     "boundariesAboveSea": [
       43,
-      66
+      66,
+      100
     ],
     "transitionHalfWidth": 3
   },

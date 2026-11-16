@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 9,
+  "revision": 10,
   "variationSeed": "0x5452454553495445",
   "about": "Tree sites (trees-v3): Riven decides where trees stand, which species, and their blocks, as pure functions of seed, definitions and coordinates. Layers are grids of candidate cells, visited in this order: each cell holds at most one candidate, which stands down within trunkSpacingBlocks of a higher-priority candidate of its layer or of a valid site of an earlier layer. A riven: biome lists stands, the first whose climate (when: celsius and moisture, [min, max)) holds at the candidate deciding; a stand gives each layer a chance and species weights. A site is valid on its species ground (grass and dirt, any ground material such as mud, unless ground adds sand or snow; every trunk column of a 2 x 2 trunk at one height) with every column its tree reaches open sky from its lowest block up. Species name a wood (roles wood.<wood>.log and wood.<wood>.leaves), heightBlocks [min, max] and a family: broadleaf (a crown cluster at the trunk top, branches from start of the height ending in clusters, optional droop strands and roots), conifer (discs from crown start to top rows above the trunk; cone, round or column profile; every whorl-th row full), palm (a trunk leaning up to lean blocks, fronds in 4 or 8 directions drooping over their last rows) or umbrella (limbs rising from the trunk top under flat discs). Clusters are ellipsoids of radius and depth whose edge blocks stand by the tree hash with the species density; every leaf lies within four steps of a log. Roots (buttress up the trunk sides, prop arching to the corners) stand only where their foot is on the trunk ground. Each cube writes the tree blocks inside itself; the distant preview draws the same blocks over fine cells and, over cells at least coarseFootprintBlocks wide, the most covering layer of the stand as a leaf run where its combined cover reaches coverThreshold.",
   "coarseFootprintBlocks": 4,
@@ -343,10 +343,12 @@
       "understory": {"chance": 0.141, "heightBlocks": [3, 5], "species": {"spruce_dwarf": 1}}
     },
     "riven:tundra_highlands": {"understory": {"chance": 0.02, "species": {"spruce_dwarf": 1}}},
+    "riven:tundra_rise": {"understory": {"chance": 0.025, "species": {"spruce_dwarf": 3, "juniper": 1}}},
     "riven:snow_taiga_highlands": {
       "canopy": {"chance": 0.707, "heightBlocks": [6, 10], "species": {"spruce": 4, "fir": 4}},
       "understory": {"chance": 0.176, "heightBlocks": [3, 5], "species": {"spruce_dwarf": 2, "juniper": 1}}
     },
+    "riven:snow_taiga_rise": {"canopy": {"chance": 0.741, "heightBlocks": [7, 11], "species": {"spruce": 9, "fir": 7, "pine": 1}}, "understory": {"chance": 0.159, "heightBlocks": [3, 5], "species": {"spruce_dwarf": 3, "juniper": 1}}},
     "riven:frozen_hills": {"canopy": {"chance": 0.12, "species": {"spruce": 1, "fir": 1}}, "understory": {"chance": 0.04, "species": {"spruce_dwarf": 1}}},
     "riven:cold_steppe": {"canopy": {"chance": 0.04, "species": {"pine": 3, "birch": 2, "aspen": 1}}, "understory": {"chance": 0.04, "species": {"juniper": 1}}},
     "riven:boreal_forest": {
@@ -359,14 +361,17 @@
       "understory": {"chance": 0.258, "heightBlocks": [4, 7], "species": {"hazel": 2, "rowan": 1}}
     },
     "riven:cold_uplands": {"canopy": {"chance": 0.08, "species": {"pine": 3, "birch": 2}}, "understory": {"chance": 0.06, "species": {"juniper": 2}}},
+    "riven:steppe_downs": {"canopy": {"chance": 0.06, "species": {"pine": 6, "birch": 4, "aspen": 1}}, "understory": {"chance": 0.05, "species": {"juniper": 3}}},
     "riven:boreal_highlands": {
       "canopy": {"chance": 1, "heightBlocks": [7, 11], "species": {"spruce": 4, "fir": 4, "pine": 2, "birch": 1}},
       "understory": {"chance": 1, "heightBlocks": [3, 5], "species": {"spruce_dwarf": 2, "juniper": 1}}
     },
+    "riven:boreal_rise": {"canopy": {"chance": 1.0, "heightBlocks": [8, 12], "species": {"spruce": 8, "fir": 7, "pine": 5, "birch": 3, "aspen": 2}}, "understory": {"chance": 0.578, "heightBlocks": [3, 5], "species": {"spruce_dwarf": 3, "juniper": 2, "hazel": 1}}},
     "riven:misty_highlands": {
       "canopy": {"chance": 0.331, "heightBlocks": [5, 9], "species": {"birch": 2, "rowan": 3, "alder": 2, "spruce": 2}},
       "understory": {"chance": 0.132, "heightBlocks": [3, 5], "species": {"hazel": 2, "juniper": 1}}
     },
+    "riven:misty_slopes": {"emergent": {"chance": 0.177, "heightBlocks": [22, 28], "species": {"spruce_giant": 2, "fir_giant": 2, "cedar_giant": 3}}, "canopy": {"chance": 0.579, "heightBlocks": [10, 14], "species": {"cedar": 3, "fir": 3, "spruce": 4, "alder": 4, "maple": 1, "birch": 2, "rowan": 3}}, "understory": {"chance": 0.195, "heightBlocks": [4, 6], "species": {"hazel": 4, "rowan": 1, "juniper": 1}}},
     "riven:cold_hills": {"canopy": {"chance": 0.18, "species": {"spruce": 2, "pine": 2, "birch": 1}}, "understory": {"chance": 0.05, "species": {"juniper": 1}}},
     "riven:grassland": {"canopy": {"chance": 0.03, "species": {"oak": 3, "oak_old": 1, "birch": 1}}, "understory": {"chance": 0.02, "species": {"hazel": 1}}},
     "riven:temperate_woodland": {
@@ -380,14 +385,17 @@
       "understory": {"chance": 0.264, "heightBlocks": [4, 8], "species": {"hazel": 3, "tree_fern": 1}}
     },
     "riven:dry_uplands": {"canopy": {"chance": 0.05, "species": {"pine": 3, "oak": 1}}, "understory": {"chance": 0.06, "species": {"juniper": 3, "hazel": 1}}},
+    "riven:grassy_downs": {"canopy": {"chance": 0.04, "species": {"oak": 4, "oak_old": 1, "birch": 1, "pine": 3}}, "understory": {"chance": 0.04, "species": {"hazel": 2, "juniper": 3}}},
     "riven:wooded_highlands": {
       "canopy": {"chance": 0.602, "heightBlocks": [9, 13], "species": {"oak": 3, "beech": 2, "maple": 2, "pine": 2, "birch": 2}},
       "understory": {"chance": 0.15, "heightBlocks": [3, 6], "species": {"hazel": 2, "rowan": 2}}
     },
+    "riven:woodland_downs": {"emergent": {"chance": 0.071, "heightBlocks": [15, 18], "species": {"oak_old": 1}}, "canopy": {"chance": 0.613, "heightBlocks": [10, 14], "species": {"oak": 6, "beech": 5, "maple": 5, "birch": 4, "rowan": 1, "pine": 2}}, "understory": {"chance": 0.171, "heightBlocks": [4, 6], "species": {"hazel": 5, "rowan": 3}}},
     "riven:cloud_forest": {
       "canopy": {"chance": 0.958, "heightBlocks": [8, 12], "species": {"alder": 2, "strangler_fig": 1, "maple": 1, "oak": 1}},
       "understory": {"chance": 0.447, "heightBlocks": [3, 6], "species": {"tree_fern": 4, "hazel": 1}}
     },
+    "riven:rainforest_slopes": {"emergent": {"chance": 0.093, "heightBlocks": [22, 28], "species": {"cedar_giant": 2, "spruce_giant": 1}}, "canopy": {"chance": 0.853, "heightBlocks": [11, 16], "species": {"beech": 3, "maple": 4, "alder": 4, "oak": 3, "cedar": 1, "strangler_fig": 1}}, "understory": {"chance": 0.356, "heightBlocks": [4, 7], "species": {"hazel": 4, "tree_fern": 5}}},
     "riven:rugged_hills": {"canopy": {"chance": 0.2, "species": {"pine": 3, "birch": 2, "oak": 1, "spruce": 1}}, "understory": {"chance": 0.05, "species": {"juniper": 1}}},
     "riven:scrubland": {"canopy": {"chance": 0.06, "species": {"olive": 3, "mesquite": 2}}, "understory": {"chance": 0.08, "species": {"juniper": 3}}},
     "riven:warm_woodland": {
@@ -400,14 +408,17 @@
       "understory": {"chance": 0.294, "heightBlocks": [4, 7], "species": {"tree_fern": 2, "cacao": 1}}
     },
     "riven:scrub_plateau": {"canopy": {"chance": 0.04, "species": {"mesquite": 2, "olive": 1}}, "understory": {"chance": 0.06, "species": {"juniper": 3}}},
+    "riven:scrub_downs": {"canopy": {"chance": 0.05, "species": {"olive": 4, "mesquite": 4}}, "understory": {"chance": 0.07, "species": {"juniper": 6}}},
     "riven:warm_highlands": {
       "canopy": {"chance": 0.27, "heightBlocks": [6, 10], "species": {"pine": 3, "cedar": 3, "oak": 1, "olive": 1}},
       "understory": {"chance": 0.067, "heightBlocks": [3, 5], "species": {"juniper": 2}}
     },
+    "riven:warm_downs": {"canopy": {"chance": 0.288, "heightBlocks": [6, 10], "species": {"olive": 4, "oak": 3, "pine": 5, "cedar": 5}}, "understory": {"chance": 0.074, "heightBlocks": [3, 5], "species": {"juniper": 4}}},
     "riven:montane_forest": {
       "canopy": {"chance": 0.67, "heightBlocks": [12, 16], "species": {"pine": 2, "fir": 2, "cedar": 2, "oak": 1, "mahogany": 1}},
       "understory": {"chance": 0.191, "heightBlocks": [3, 6], "species": {"tree_fern": 2, "hazel": 1}}
     },
+    "riven:subtropical_slopes": {"emergent": {"chance": 0.077, "heightBlocks": [20, 24], "species": {"mahogany_giant": 1}}, "canopy": {"chance": 0.725, "heightBlocks": [12, 16], "species": {"mahogany": 3, "strangler_fig": 2, "rubber": 2, "maple": 1, "cypress": 1, "pine": 2, "fir": 2, "cedar": 2, "oak": 1}}, "understory": {"chance": 0.243, "heightBlocks": [4, 6], "species": {"tree_fern": 4, "cacao": 1, "hazel": 1}}},
     "riven:warm_hills": {"canopy": {"chance": 0.15, "species": {"pine": 2, "cedar": 1, "olive": 1}}, "understory": {"chance": 0.05, "species": {"juniper": 1}}},
     "riven:badland_hills": {"understory": {"chance": 0.03, "species": {"juniper": 1, "mesquite": 1}}},
     "riven:savanna": {
@@ -420,11 +431,13 @@
       "understory": {"chance": 0.407, "heightBlocks": [4, 8], "species": {"cacao": 2, "tree_fern": 1}}
     },
     "riven:savanna_plateau": {"canopy": {"chance": 0.06, "species": {"umbrella_acacia": 4, "mesquite": 1}}},
+    "riven:savanna_downs": {"emergent": {"chance": 0.03, "species": {"baobab": 1}}, "canopy": {"chance": 0.059, "heightBlocks": [6, 9], "species": {"umbrella_acacia": 10, "mesquite": 2}}},
     "riven:tropical_highlands": {
       "emergent": {"chance": 0.166, "heightBlocks": [20, 26], "species": {"kapok": 1}},
       "canopy": {"chance": 0.821, "heightBlocks": [12, 16], "species": {"mahogany": 2, "rubber": 1, "strangler_fig": 1}},
       "understory": {"chance": 0.387, "heightBlocks": [3, 7], "species": {"tree_fern": 3, "cacao": 1}}
     },
+    "riven:tropical_slopes": {"emergent": {"chance": 0.289, "heightBlocks": [22, 28], "species": {"kapok": 4, "mahogany_giant": 2}}, "canopy": {"chance": 0.818, "heightBlocks": [13, 18], "species": {"mahogany": 4, "strangler_fig": 3, "rubber": 4}}, "understory": {"chance": 0.397, "heightBlocks": [4, 8], "species": {"cacao": 3, "tree_fern": 4}}},
     "riven:beach": {"canopy": {"chance": 0.12, "species": {"coconut_palm": 1}}},
     "riven:marsh": {"canopy": {"chance": 0.08, "species": {"willow": 2, "alder": 2, "cypress": 1}}},
     "riven:wetland": {"canopy": {"chance": 0.261, "heightBlocks": [10, 15], "species": {"willow": 3, "alder": 2, "cypress": 3}}},

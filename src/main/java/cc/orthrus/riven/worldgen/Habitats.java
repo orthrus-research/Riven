@@ -11,17 +11,21 @@ import java.util.Set;
 /** Terrain-qualified palettes. Consumes earlier habitat or final authorized emergence, without terrain queries. */
 public final class Habitats {
     private static final Rules RULES = Rules.load("riven-habitats.json", 1);
+
+    /** The elevation cores of riven-biomes.json, lowest first (terrain-v145 adds UPLAND). */
+    private static final String[] LEVELS = {"LOW", "MID", "UPLAND", "HIGH"};
+
     public static final String FINGERPRINT = RULES.fingerprint;
     private static final String[][][] PALETTES = create();
 
     private static String[][][] create() {
-        String[][][] result = new String[ClimateRegion.values().length][3][];
+        String[][][] result = new String[ClimateRegion.values().length][LEVELS.length][];
         JsonObject profiles = RULES.json.getAsJsonObject("palettes");
         for (ClimateRegion region : ClimateRegion.values()) {
             JsonArray row = profiles.getAsJsonArray(region.name());
-            if (row == null || row.size() != 3)
+            if (row == null || row.size() != LEVELS.length)
                 throw new IllegalStateException("Habitat terrain coverage: " + region);
-            for (int level = 0; level < 3; level++) {
+            for (int level = 0; level < LEVELS.length; level++) {
                 JsonArray palette = row.get(level).getAsJsonArray();
                 if (palette.size() < 1 || palette.size() > 2)
                     throw new IllegalStateException("Calm/rugged habitat pair required");
@@ -65,7 +69,7 @@ public final class Habitats {
     /**
      * The habitat key of the final logical biome: {@code MOUTH/<name>} for a river
      * mouth, the coastal or water key of the vanilla table (with {@code BEACH_COLD} and
-     * {@code RIVER_FROZEN}), or {@code <REGION>/<LOW|MID|HIGH>/<calm|rugged>} inland, from the same
+     * {@code RIVER_FROZEN}), or {@code <REGION>/<LOW|MID|UPLAND|HIGH>/<calm|rugged>} inland, from the same
      * region, level and rugged test as {@link #at}. RivenBiomeTable maps each key to its riven: biome.
      */
     public static String key(TerrainMap.Sample sample) {
@@ -91,8 +95,6 @@ public final class Habitats {
                 + LEVELS[level]
                 + (sample.land.rugged > .5 ? "/rugged" : "/calm");
     }
-
-    private static final String[] LEVELS = {"LOW", "MID", "HIGH"};
 
     public static Set<String> paths() {
         Set<String> result = new LinkedHashSet<>();
