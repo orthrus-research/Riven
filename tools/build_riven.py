@@ -66,11 +66,62 @@ def freeze(artifacts: dict, label: str, manifest: dict) -> Path:
             sys.exit(f"Refusing to overwrite a different frozen artifact: {destination}")
         shutil.copy2(entry["path"], destination)
         entry["frozen"] = str(destination)
-    existing = target / "manifest.json"
-    combined = json.loads(existing.read_text(encoding="utf-8")) if existing.exists() else {}
-    combined["riven"] = manifest
-    existing.write_text(json.dumps(combined, indent=2), encoding="utf-8")
+    merge_frozen_manifest(target, "riven", manifest)
     return target
+
+
+def merge_frozen_manifest(target: Path, key: str, value: dict) -> None:
+    """Sets one key of the frozen folder's manifest.json, safely beside another build doing the same.
+
+    Riven's and Cubature's builds freeze into one folder and may finish together. Each reads the
+    manifest, sets its own key and writes it back; done unguarded, the later write drops the other's
+    key or reads a half-written file. So the merge runs under a lock on a file both builds know, and
+    the result replaces the manifest in one step. Cubature's build_cubature.py holds the same lock.
+    """
+    path = target / "manifest.json"
+    with open(target / "manifest.lock", "a+b") as lock:
+        _lock(lock)
+        try:
+            combined = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+            combined[key] = value
+            temporary = target / f"manifest.json.{key}.tmp"
+            temporary.write_text(json.dumps(combined, indent=2), encoding="utf-8")
+            os.replace(temporary, path)
+        finally:
+            _unlock(lock)
+
+
+def _lock(stream, patience: float = 120.0) -> None:
+    """Waits for an exclusive lock on the first byte of an open file."""
+    stream.seek(0)
+    if sys.platform == "win32":
+        import msvcrt
+
+        deadline = time.monotonic() + patience
+        while True:
+            try:
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+                return
+            except OSError:
+                if time.monotonic() > deadline:
+                    raise
+                time.sleep(0.05)
+    else:
+        import fcntl
+
+        fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+
+
+def _unlock(stream) -> None:
+    stream.seek(0)
+    if sys.platform == "win32":
+        import msvcrt
+
+        msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+
+        fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
 
 
 def main():

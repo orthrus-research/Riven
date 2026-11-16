@@ -625,8 +625,14 @@ public final class TerrainAtlas {
                                 }
                                 return null;
                             }));
-        for (Future<?> f : work) f.get();
-        pool.shutdown();
+        try {
+            for (Future<?> f : work) f.get();
+        } finally {
+            // A tile that throws must not leave the pool's threads keeping the JVM alive: the
+            // other workers stop after the tile they are on.
+            next.set(order.length);
+            pool.shutdown();
+        }
     }
 
     private static void fill(
