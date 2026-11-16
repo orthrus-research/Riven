@@ -793,7 +793,8 @@ public final class Hydro
                                         freeboard,
                                         maxCut,
                                         maxFill,
-                                        bankScale)));
+                                        bankScale,
+                                        pool)));
         }
         Lens lens = null;
         // Groundwater bodies and sealed pockets share their source head, without a dependency

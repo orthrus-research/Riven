@@ -146,7 +146,8 @@ public final class CoastShape {
             double freeboard,
             double maxCut,
             double maxFill,
-            double bankScale) {
+            double bankScale,
+            BuildPool pool) {
         long key = SeededNoise.mix(seed ^ VARIATION ^ host.id);
         int chosen =
                 Rules.choose(WEIGHTS, SeededNoise.unit(SeededNoise.mix(key ^ 0x46414d494c593031L)));
@@ -279,53 +280,105 @@ public final class CoastShape {
         double low = h.water - t.depth,
                 minParent = Double.POSITIVE_INFINITY,
                 maxParent = Double.NEGATIVE_INFINITY;
-        OceanBed.Result bed = new OceanBed.Result();
-        Hydro.Sample water = new Hydro.Sample();
-        EstuaryKernels.Sample proposed = new EstuaryKernels.Sample();
+        // Rows run in parallel on the build pool, each into its own slots. The first failing row,
+        // at its first failing column, gives the rejection a serial scan gives; rows past a
+        // known failure stop early, so any order and thread count give the same decision.
+        int width = maxX - minX + 1, rows = maxZ - minZ + 1;
+        String[] failed = new String[rows];
+        int[] failedAt = new int[rows], rowReceivers = new int[rows];
+        double[] rowMin = new double[rows], rowMax = new double[rows];
+        java.util.concurrent.atomic.AtomicInteger firstFailed =
+                new java.util.concurrent.atomic.AtomicInteger(rows);
+        EstuaryKernels.ColumnProposal tentative = proposal;
+        double cx = x, cz = z, ux = nx, uz = nz;
+        pool.forEach(
+                rows,
+                row -> {
+                    if (row > firstFailed.get()) return;
+                    int pz = minZ + row;
+                    TerrainMap.BaseSample column = new TerrainMap.BaseSample();
+                    OceanBed.Result bed = new OceanBed.Result();
+                    Hydro.Sample water = new Hydro.Sample();
+                    EstuaryKernels.Sample proposed = new EstuaryKernels.Sample();
+                    double rowLo = Double.POSITIVE_INFINITY, rowHi = Double.NEGATIVE_INFINITY;
+                    int receivers = 0;
+                    String reason = null;
+                    int px = minX;
+                    for (; px <= maxX && reason == null; px++) {
+                        intent.sample(px, pz, column);
+                        double parent = foundation;
+                        if (column.ocean.marine) {
+                            oceanBed.apply(px, pz, column.ocean, false, bed);
+                            parent = bed.height;
+                        } else {
+                            if (column.shore.rocky()) {
+                                reason = "PROTECTED_ROCK";
+                                break;
+                            }
+                            if (high - column.shore.height > maxFill
+                                    || column.shore.height - low > maxCut) {
+                                reason = "EARTHWORK";
+                                break;
+                            }
+                        }
+                        rowLo = Math.min(rowLo, parent);
+                        rowHi = Math.max(rowHi, parent);
+                        tentative.inspectColumn(px, pz, parent, column.ocean.marine, proposed);
+                        earlierNetwork.sample(px, pz, network, water);
+                        boolean affected =
+                                proposed.wet
+                                        || proposed.weight > 0
+                                        || proposed.foundationWeight > 0;
+                        if (affected
+                                && ((water.wet && water.waterY != h.water)
+                                        || (!water.wet
+                                                && water.weight > 0
+                                                && Math.floor(water.head) != h.water))) {
+                            reason = "RESERVED_HEAD";
+                            break;
+                        }
+                        double u = (px - cx) * uz - (pz - cz) * ux,
+                                v = (px - cx) * ux + (pz - cz) * uz;
+                        if (family.lagoon()
+                                && column.ocean.marine
+                                && (proposed.barrierRequired
+                                        || (v >= 0 && proposed.wet && !proposed.channel))) {
+                            reason = "BARRIER_MARINE_CONFLICT";
+                            break;
+                        }
+                        // A complete integer strip across every possible seeded ocean mouth, with
+                        // a voxel halo.
+                        if (Math.abs(v + .25 * t.length) <= 2 && Math.abs(u) <= required + 2) {
+                            receivers++;
+                            if (!column.ocean.marine
+                                    || !column.ocean.supplied
+                                    || parent >= h.water
+                                    || (water.weight > 0
+                                            && (!water.wet || water.waterY != h.water))) {
+                                reason = "OCEAN_RECEIVER";
+                                break;
+                            }
+                        }
+                    }
+                    rowReceivers[row] = receivers;
+                    if (reason != null) {
+                        failed[row] = reason;
+                        failedAt[row] = px - minX;
+                        firstFailed.accumulateAndGet(row, Math::min);
+                        return;
+                    }
+                    rowMin[row] = rowLo;
+                    rowMax[row] = rowHi;
+                });
         int columns = 0, receivers = 0;
-        for (int pz = minZ; pz <= maxZ; pz++)
-            for (int px = minX; px <= maxX; px++) {
-                intent.sample(px, pz, base);
-                columns++;
-                double parent = foundation;
-                if (base.ocean.marine) {
-                    oceanBed.apply(px, pz, base.ocean, false, bed);
-                    parent = bed.height;
-                } else {
-                    if (base.shore.rocky())
-                        return reject(family, "PROTECTED_ROCK", columns, receivers);
-                    if (high - base.shore.height > maxFill || base.shore.height - low > maxCut)
-                        return reject(family, "EARTHWORK", columns, receivers);
-                }
-                minParent = Math.min(minParent, parent);
-                maxParent = Math.max(maxParent, parent);
-                proposal.inspectColumn(px, pz, parent, base.ocean.marine, proposed);
-                earlierNetwork.sample(px, pz, network, water);
-                boolean affected =
-                        proposed.wet || proposed.weight > 0 || proposed.foundationWeight > 0;
-                if (affected
-                        && ((water.wet && water.waterY != h.water)
-                                || (!water.wet
-                                        && water.weight > 0
-                                        && Math.floor(water.head) != h.water)))
-                    return reject(family, "RESERVED_HEAD", columns, receivers);
-                double u = (px - x) * nz - (pz - z) * nx, v = (px - x) * nx + (pz - z) * nz;
-                if (family.lagoon()
-                        && base.ocean.marine
-                        && (proposed.barrierRequired
-                                || (v >= 0 && proposed.wet && !proposed.channel)))
-                    return reject(family, "BARRIER_MARINE_CONFLICT", columns, receivers);
-                // A complete integer strip across every possible seeded ocean mouth, with a voxel
-                // halo.
-                if (Math.abs(v + .25 * t.length) <= 2 && Math.abs(u) <= required + 2) {
-                    receivers++;
-                    if (!base.ocean.marine
-                            || !base.ocean.supplied
-                            || parent >= h.water
-                            || (water.weight > 0 && (!water.wet || water.waterY != h.water)))
-                        return reject(family, "OCEAN_RECEIVER", columns, receivers);
-                }
-            }
+        for (int row = 0; row < rows; row++) {
+            receivers += rowReceivers[row];
+            if (failed[row] != null)
+                return reject(family, failed[row], row * width + failedAt[row] + 1, receivers);
+            minParent = Math.min(minParent, rowMin[row]);
+            maxParent = Math.max(maxParent, rowMax[row]);
+            columns += width;
+        }
         if (receivers == 0) return reject(family, "EMPTY_RECEIVER", columns, receivers);
         // The dry foundation is analytically constant. Actual marine parents retain their earlier
         // bed.
