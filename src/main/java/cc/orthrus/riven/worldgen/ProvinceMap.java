@@ -59,6 +59,9 @@ public final class ProvinceMap {
          */
         final double swell, inland;
 
+        /** A land type's bench share (terrain-v144): how much its level steps in treads, 0..1. */
+        final double benches;
+
         Type(
                 String id,
                 int index,
@@ -76,7 +79,8 @@ public final class ProvinceMap {
                 double swells,
                 double hollows,
                 double swell,
-                double inland) {
+                double inland,
+                double benches) {
             this.id = id;
             this.index = index;
             this.land = land;
@@ -94,6 +98,7 @@ public final class ProvinceMap {
             this.hollows = hollows;
             this.swell = swell;
             this.inland = inland;
+            this.benches = benches;
         }
 
         /** Whether the budget may give this type any land. */
@@ -150,6 +155,9 @@ public final class ProvinceMap {
 
         final double inlandBlocks, inlandReach, apronBlocks;
 
+        /** The bench driver's wavelength in cells and its stretch (terrain-v144). */
+        final double benchWavelength, benchStretch;
+
         final long variation;
         final String fingerprint;
 
@@ -200,6 +208,7 @@ public final class ProvinceMap {
                 double hollows = Rules.number(pal, "hollows", 0, 64);
                 double swell = Rules.number(r, "swell", 0, 64);
                 double inland = Rules.number(r, "inland", 0, 1);
+                double benches = Rules.number(r, "benches", 0, 1);
                 list.add(
                         new Type(
                                 id,
@@ -218,7 +227,8 @@ public final class ProvinceMap {
                                 swells,
                                 hollows,
                                 swell,
-                                inland));
+                                inland,
+                                benches));
             }
             landTypes = list.size();
             for (String ocean : OCEANS)
@@ -230,6 +240,7 @@ public final class ProvinceMap {
                                 true,
                                 0,
                                 1,
+                                0,
                                 0,
                                 0,
                                 0,
@@ -304,6 +315,9 @@ public final class ProvinceMap {
             inlandBlocks = Rules.number(regional, "inlandBlocks", 0, 64);
             inlandReach = Rules.number(regional, "inlandReachBlocks", 1, 8192);
             apronBlocks = Rules.number(regional, "apronBlocks", 0, 64);
+            JsonObject benchJson = j.getAsJsonObject("benches");
+            benchWavelength = Rules.number(benchJson, "driverWavelengthCells", .1, 8);
+            benchStretch = Rules.number(benchJson, "driverStretch", .5, 4);
             JsonObject oceans = j.getAsJsonObject("oceans");
             warmCelsius = Rules.number(oceans, "warmCelsius", -40, 60);
             frozenCelsius = Rules.number(oceans, "frozenCelsius", -60, warmCelsius);
@@ -415,6 +429,9 @@ public final class ProvinceMap {
     /** The regional swell's octaves, and the inland rise's reach in blocks. */
     private final SeededNoise[] swell;
 
+    /** The bench driver: which tread a bench province's ground stands on. */
+    private final SeededNoise bench;
+
     private final double inlandReach;
 
     /** The fine warp's shear noises (two per octave) and their frames. */
@@ -517,6 +534,7 @@ public final class ProvinceMap {
         for (int k = 0; k < swell.length; k++)
             swell[k] = new SeededNoise(SeededNoise.mix(seed ^ (0x5357454c4cL + k)));
         inlandReach = def.inlandReach * scale.layout;
+        bench = new SeededNoise(SeededNoise.mix(seed ^ 0x42454e4348L));
         // The world square's cells (seed point inside), each sampled once.
         int i0 = (int) Math.floor(-half / size) - 1, i1 = (int) Math.floor(half / size) + 1;
         Map<Long, Facts> cells = new HashMap<>();
@@ -1105,7 +1123,8 @@ public final class ProvinceMap {
      * The land ground at a column, blended like its level: {level, relief blocks, ridged share,
      * plateau share} in out[0..3], the continents' spine weight in out[4], the plateau's cap level
      * and the other ground's level in out[5] and out[6], and the landform palette (hills, spurs,
-     * swells, hollows) in out[7..10] (see Sample.ground), without the faces. The levels carry the
+     * swells, hollows) in out[7..10] and the bench share and driver (0..1) in out[11..12] (see
+     * Sample.ground), without the faces. The levels carry the
      * regional terms (terrain-v143): a swell of the blended amplitude, the inland rise by the
      * blended share, and the range apron. Read only at {@link ProvinceGround}'s nodes, so these
      * cost a ground node, not a column.
@@ -1125,6 +1144,7 @@ public final class ProvinceMap {
         double ground = 0, relief = 0, ridged = 0, plateau = 0, weights = 0;
         double capSum = 0, capWeight = 0, belowSum = 0, belowWeight = 0;
         double hills = 0, spurs = 0, swells = 0, hollows = 0, swellBlocks = 0, inlandShare = 0;
+        double benches = 0;
         for (int k = 0; k < 25; k++) {
             double t = (d[k] - d[first]) / edge;
             if (t >= 1) continue;
@@ -1140,6 +1160,7 @@ public final class ProvinceMap {
             hollows += w * c.land.hollows;
             swellBlocks += w * c.land.swell;
             inlandShare += w * c.land.inland;
+            benches += w * c.land.benches;
             capSum += w * c.land.plateau * c.ground;
             capWeight += w * c.land.plateau;
             belowSum += w * (1 - c.land.plateau) * c.ground;
@@ -1157,6 +1178,12 @@ public final class ProvinceMap {
         out[8] = spurs / weights;
         out[9] = swells / weights;
         out[10] = hollows / weights;
+        out[11] = benches / weights;
+        // The bench driver, stretched so the outer treads hold their share of the ground.
+        HeightSample b = new HeightSample();
+        double bl = def.benchWavelength * size;
+        bench.gradient(x / bl + .37, z / bl + .19, b);
+        out[12] = .5 + .5 * Math.max(-1, Math.min(1, def.benchStretch * b.height));
         // Regional terms: a swell, the inland rise and the range apron, the same on the cap and the
         // ground below it so a scarp keeps its height.
         double[] spine = new double[3];

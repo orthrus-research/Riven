@@ -184,6 +184,15 @@ exact derivatives:
   its band gives way, easing out 900 blocks (times the layout) beyond the band, so the land
   around a range rises toward it.
 
+**Benches (terrain-v144).** A type's `relief.benches` share (tableland 0.7, upland 0.35, rift
+0.3, downs 0.15, others 0) steps its ground through three treads 36 blocks from lowest to
+highest (`riven-base-terrain.json` `benches`), centred on the level. The treads follow a bench
+driver carried on the raster (gradient noise at half a cell, stretched by 1.6), and each
+riser, a twentieth of the driver wide, sits where the driver, warped by 0.08 of the plateau
+edge field, crosses a tread boundary; benches yield to spines as caps do. A column pays one
+gradient read only where the bench share is above zero and no plateau already read the edge
+field, and every column reads two more raster fields.
+
 **Landform classes (terrain-v129).** Every land column carries one class from the ground model,
 with its strength, for biomes to key on (`Terrain.Landform`, `landforms` in `riven-terrain.json`):
 MOUNTAIN where the spine weight passes 0.4 (strength rising from 0.25 to 0.55), PLATEAU on a cap,

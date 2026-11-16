@@ -5,14 +5,15 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * The province ground as a pure regional plan (S4): the province map's blended land fields (level,
  * relief, ridged share, plateau share, the plateau's cap level and the level below it, and the
- * landform palette; {@link ProvinceMap#ground}) and the range weight of the continents' spines
+ * landform palette, and the bench share and driver; {@link ProvinceMap#ground}) and the range
+ * weight of the continents' spines
  * ({@link SpineMap}, field 4) on a node grid, read with
  * Catmull-Rom interpolation, so the fields are C1 and their derivatives exact. Nodes are computed a
  * tile at a time and held in a bounded cache cleared whole when full; every node is a pure function
  * of the seed, the definitions and its position, so eviction never changes a result.
  */
 final class ProvinceGround {
-    static final int FIELDS = 11;
+    static final int FIELDS = 13;
     private static final int TILE = 16, TILES = 2048;
 
     private final ProvinceMap provinces;
@@ -39,8 +40,8 @@ final class ProvinceGround {
     }
 
     /**
-     * The fields at (x, z) into out: values in 0..10, x derivatives in 11..21, z derivatives in
-     * 22..32 (per block).
+     * The fields at (x, z) into out: values in 0..12, x derivatives in 13..25, z derivatives in
+     * 26..38 (per block).
      */
     void sample(double x, double z, double[] out) {
         double gx = x / step, gz = z / step;

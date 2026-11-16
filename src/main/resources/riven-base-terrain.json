@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 7,
+  "revision": 8,
   "bodySeed": "544552424f445931",
   "detailSeed": "5445524445544149",
   "wideSeed": "4241534557494431",
@@ -15,6 +15,7 @@
   "spine": {"liftBlocks": 170, "reliefBlocks": 110, "ridged": 0.85},
   "plateau": {"scarpWidth": 0.06, "edgeAmplitude": 0.3, "edgeWavelengthBlocks": 900, "flatten": 0.9, "scarpTerrace": 0.9, "spineYieldFrom": 0.25, "spineYieldFull": 0.55},
   "palette": {"hillWavelengthBlocks": 420, "spurWavelengthBlocks": 260, "swellWavelengthBlocks": 1600, "hollowWavelengthBlocks": 180, "variety": 0.6},
+  "benches": {"treads": 3, "riseBlocks": 36, "scarpWidth": 0.05, "edgeAmplitude": 0.08},
   "terraces": {"stepBlocks": 14, "riserShare": 0.3},
   "ceilingMarginBlocks": 4,
   "ceilingSoftBlocks": 48,

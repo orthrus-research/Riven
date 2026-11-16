@@ -30,6 +30,14 @@ public final class BaseTerrainMap {
      */
     private final double scarpWidth, plateauEdge, plateauEdgeScale, plateauFlatten, scarpTerrace;
 
+    /**
+     * Benches (terrain-v144): treads per bench province, the rise from the lowest tread to the
+     * highest in blocks, a riser's width in driver units, and the edge field's share of the driver.
+     */
+    private final int benchTreads;
+
+    private final double benchRise, benchScarp, benchEdge;
+
     /** The spine weights over which a plateau's cap yields to a range. */
     private final double spineYieldFrom, spineYieldFull;
 
@@ -120,6 +128,11 @@ public final class BaseTerrainMap {
         plateauEdgeScale = Rules.number(pl, "edgeWavelengthBlocks", 64, 8192);
         plateauFlatten = Rules.number(pl, "flatten", 0, 1);
         scarpTerrace = Rules.number(pl, "scarpTerrace", 0, 1);
+        JsonObject bn = j.getAsJsonObject("benches");
+        benchTreads = (int) Rules.number(bn, "treads", 2, 6);
+        benchRise = Rules.number(bn, "riseBlocks", 0, 96);
+        benchScarp = Rules.number(bn, "scarpWidth", .005, .2);
+        benchEdge = Rules.number(bn, "edgeAmplitude", 0, .3);
         spineYieldFrom = Rules.number(pl, "spineYieldFrom", 0, 1);
         spineYieldFull = Rules.number(pl, "spineYieldFull", spineYieldFrom + .01, 1);
         JsonObject lf = j.getAsJsonObject("palette");
@@ -364,6 +377,34 @@ public final class BaseTerrainMap {
                 f[fz + k] = f[fz + k] * (1 - spine) + gap * sz;
                 f[k] += gap * spine;
             }
+        }
+        // Benches (terrain-v144): where provinces carry a bench share, the level steps through
+        // treads, at the driver's crossings of k / treads, edges warped by the plateau edge field;
+        // centred, so a bench province keeps its mean level. Spines carry their own relief.
+        if (f[11] > 0 && benchRise > 0) {
+            double ps = plateauEdgeScale;
+            if (f[3] <= 0) edge1.gradient(x / ps + .17, z / ps + .61, out.edgeA);
+            double v = f[12] + benchEdge * out.edgeA.height;
+            double vx = f[fx + 12] + benchEdge * out.edgeA.dx / ps;
+            double vz = f[fz + 12] + benchEdge * out.edgeA.dz / ps;
+            double steps = 0, stepsSlope = 0;
+            int risers = benchTreads - 1;
+            for (int k = 1; k <= risers; k++) {
+                double q = (v - (double) k / benchTreads) / benchScarp + .5;
+                steps += Rules.smooth(q) / risers;
+                stepsSlope += smoothSlope(q) / (benchScarp * risers);
+            }
+            double yq = (f[4] - spineYieldFrom) / (spineYieldFull - spineYieldFrom);
+            double keep = 1 - Rules.smooth(yq);
+            double ks = -smoothSlope(yq) / (spineYieldFull - spineYieldFrom);
+            double keepDx = ks * f[fx + 4], keepDz = ks * f[fz + 4];
+            double share = f[11] * keep;
+            double shareDx = f[fx + 11] * keep + f[11] * keepDx;
+            double shareDz = f[fz + 11] * keep + f[11] * keepDz;
+            double centred = steps - .5;
+            f[0] += benchRise * share * centred;
+            f[fx] += benchRise * (shareDx * centred + share * stepsSlope * vx);
+            f[fz] += benchRise * (shareDz * centred + share * stepsSlope * vz);
         }
         double level = f[0], groundDx = f[fx], groundDz = f[fz];
         // Character strength: a slow patch field, calm over most of a province.
