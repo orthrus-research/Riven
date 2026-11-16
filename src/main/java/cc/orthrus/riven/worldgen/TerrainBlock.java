@@ -27,6 +27,8 @@ public final class TerrainBlock {
 
     public static final TerrainBlock AIR = of("air"),
             WATER = of("fluid.water"),
+            WATER_SPILL = of("fluid.water_spill"),
+            WATER_FALL = of("fluid.water_fall"),
             LAVA = of("fluid.lava"),
             DIRT = of("soil.dirt"),
             GRASS = of("soil.grass"),
@@ -67,6 +69,12 @@ public final class TerrainBlock {
             GREEN_BIOFILM = of("plant.green_biofilm"),
             COBWEB = of("decor.cobweb");
     public final String id, kind;
+
+    /** Water of any form: still, a step's flowing top or the falling water under it. */
+    public boolean water() {
+        return this == WATER || this == WATER_SPILL || this == WATER_FALL;
+    }
+
     public final List<String> tags, candidates;
     private final int index;
     private final String stoneId, rockId;

@@ -40,6 +40,18 @@
         "minecraft:water"
       ]
     },
+    "fluid.water_spill": {
+      "kind": "fluid",
+      "block": [
+        "minecraft:flowing_water[level=1]"
+      ]
+    },
+    "fluid.water_fall": {
+      "kind": "fluid",
+      "block": [
+        "minecraft:flowing_water[level=9]"
+      ]
+    },
     "fluid.lava": {
       "kind": "fluid",
       "tags": [

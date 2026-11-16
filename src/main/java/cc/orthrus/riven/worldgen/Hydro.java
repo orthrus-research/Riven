@@ -66,6 +66,13 @@ public final class Hydro
         public Bed bar;
 
         public Bed bed = Bed.GRAVEL;
+
+        /**
+         * The top of flowing water over a wet column where higher water beside it steps down
+         * (falling water fills below it), or Integer.MIN_VALUE.
+         */
+        public int spillY = Integer.MIN_VALUE;
+
         public int aquiferMin = Integer.MAX_VALUE, aquiferMax = Integer.MIN_VALUE, aquiferRoof;
         public long aquiferId;
 
@@ -94,6 +101,7 @@ public final class Hydro
             floor = bank = weight = head = mouth = 0;
             stream = channel = false;
             bar = null;
+            spillY = Integer.MIN_VALUE;
             channelHead = channelBeyond = channelBank = channelLevee = 0;
             lakeHold = Double.NaN;
             aquiferMin = Integer.MAX_VALUE;
@@ -1486,6 +1494,7 @@ public final class Hydro
             Sample out) {
         double nearest = Double.POSITIVE_INFINITY, riverHead = 0, nearWidth = 0, nearValley = 0;
         double nearGradient = 0;
+        int nearSpill = Integer.MIN_VALUE;
         double levee = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < xs.length - 1; i++) {
             double support =
@@ -1523,6 +1532,26 @@ public final class Hydro
                 nearest = dist / width;
                 riverHead = levels[i] + t * (levels[i + 1] - levels[i]);
                 nearGradient = (levels[i] - levels[i + 1]) / length;
+                // Higher water in a neighbouring wet column of this reach pours over the step.
+                nearSpill = Integer.MIN_VALUE;
+                int own = (int) Math.floor(riverHead);
+                for (int k = 0; k < 4; k++) {
+                    int ox = k == 0 ? 1 : k == 1 ? -1 : 0, oz = k == 2 ? 1 : k == 3 ? -1 : 0;
+                    double rawN = raw + (ox * vx + oz * vz) / (length * length);
+                    double tN = Math.max(0, Math.min(1, rawN));
+                    double latN = lateral + (oz * vx - ox * vz) / length;
+                    double radiusN =
+                            meanders == null
+                                    ? width
+                                    : meanders[i] + tN * (meanders[i + 1] - meanders[i]);
+                    double widthN = widths[i] + tN * (widths[i + 1] - widths[i]);
+                    if (Rules.hypot(
+                                    latN - meander(id, i, tN, length, radiusN),
+                                    (rawN - tN) * length)
+                            > widthN) continue;
+                    int levelN = (int) Math.floor(levels[i] + tN * (levels[i + 1] - levels[i]));
+                    if (levelN > own) nearSpill = Math.max(nearSpill, levelN);
+                }
                 nearWidth = width;
                 nearValley = valleys == null ? 0 : valleys[i] + t * (valleys[i + 1] - valleys[i]);
             }
@@ -1534,6 +1563,7 @@ public final class Hydro
                                     * (1 - nearest * nearest);
             wet(out, id, Kind.RIVER, riverHead, Math.floor(riverHead) - depth);
             out.bed = drainage.bed(x, z, 0, nearGradient, river.magnitude.targetAverage, nearest);
+            out.spillY = Math.max(out.spillY, nearSpill);
         } else {
             // Flush banks hold the highest water beside them.
             double beyond = (nearest - 1) * nearWidth;
@@ -1626,6 +1656,7 @@ public final class Hydro
                     hit.level,
                     Math.floor(hit.level) - 1 - (hit.depth - 1) * (1 - n * n));
             out.bed = hit.bed;
+            out.spillY = Math.max(out.spillY, hit.spill);
             return hit.river ? 0 : hit.id;
         }
         // A bar inside a braided bed stands flush with the water; banks ease out from it.

@@ -404,7 +404,7 @@ public final class NativeColumns {
      */
     public boolean water(int x, int y, int z) {
         Column held = held(x, z);
-        if (held != null) return held.block(((z & 15) << 4) | (x & 15), y) == TerrainBlock.WATER;
+        if (held != null) return held.block(((z & 15) << 4) | (x & 15), y).water();
         Resolved r = resolved.get();
         int[] water = r.waters[exact(x, z, r)];
         for (int i = 0; i < water.length; i += 2)
@@ -482,7 +482,7 @@ public final class NativeColumns {
         int count = c.count(), top = Integer.MIN_VALUE, waters = 0;
         for (int i = 0; i < count; i++) {
             if (c.runBlock(i) != TerrainBlock.AIR) top = c.top(i);
-            if (c.runBlock(i) == TerrainBlock.WATER) waters++;
+            if (c.runBlock(i).water()) waters++;
         }
         s.top = top;
         if (!water) {
@@ -491,7 +491,7 @@ public final class NativeColumns {
         }
         int[] runs = waters == 0 ? DRY : new int[2 * waters];
         for (int i = 0, w = 0; i < count; i++)
-            if (c.runBlock(i) == TerrainBlock.WATER) {
+            if (c.runBlock(i).water()) {
                 runs[w++] = c.bottom(i);
                 runs[w++] = c.top(i);
             }
@@ -597,9 +597,8 @@ public final class NativeColumns {
                     TerrainBlock block = c.runBlock(i);
                     blocks[n++] = block;
                     if (block != TerrainBlock.AIR) maximumTop = Math.max(maximumTop, c.top(i));
-                    if (block != TerrainBlock.AIR
-                            && block != TerrainBlock.WATER
-                            && block != TerrainBlock.LAVA) groundKind = block;
+                    if (block != TerrainBlock.AIR && !block.water() && block != TerrainBlock.LAVA)
+                        groundKind = block;
                 }
                 groundKindSeen[groundKind.index()] = true;
                 // The allocation top closes the column; it is never read as a run block.
@@ -675,9 +674,8 @@ public final class NativeColumns {
     static int ground(AssembledColumn c) {
         for (int i = c.count() - 1; i >= 0; i--) {
             TerrainBlock block = c.runBlock(i);
-            if (block != TerrainBlock.AIR
-                    && block != TerrainBlock.WATER
-                    && block != TerrainBlock.LAVA) return c.top(i) - 1;
+            if (block != TerrainBlock.AIR && !block.water() && block != TerrainBlock.LAVA)
+                return c.top(i) - 1;
         }
         return c.bottomY() - 1;
     }

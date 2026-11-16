@@ -624,9 +624,15 @@ they cover 4.0% of land (1.8-4.2% over eight seeds), most in the valleys and pie
 - **Flush banks:** the columns within 1.5 blocks of a bed stand level with the highest water beside
   them, a riffle's step upstream or a neighboring channel included; network lakes and routes keep
   flush banks the same way, and no drainage valley cuts into them. `tools/checks/SurfaceWaterCheck`
-  counts wet columns beside lower dry ground, where water would spill: 2 of 180,597 on seed
-  8675309 and 6 of 372,732 on seed 101 (1,659 and 3,423 before these rules), where network rivers
-  meet unbanked ground or a drainage valley; it fails above one in 10,000.
+  counts wet columns beside lower dry ground, where water would spill, and fails above one in
+  10,000: at v141, 2 of 717,950 on seed 8675309 pass, and 53 of 258,970 on seed 101 fail (the same
+  at v139), where a shaped network river reach meets unbanked ground (an open question).
+- **Steps:** where a channel's or network river's water steps down to a neighbour's lower water,
+  the lower column carries the flowing water a world update would pour there (v141): a flowing top
+  at the higher level over falling water, the state Minecraft settles on, so nothing pours when the
+  world updates. SurfaceWaterCheck counts still water with its side open over lower water: 2,514
+  steps on seed 8675309 and 895 on seed 101 remain (22,882 and 9,301 before), where two courses or
+  segments meet.
 
 Drainage replaces the crest trunk rivers (v63-v68). Over 8 km, 36% of land on seed 8675309 lies
 within 100 blocks of a channel (6.9% before) and 43% on seed 101; each seed has 500-770 streams and

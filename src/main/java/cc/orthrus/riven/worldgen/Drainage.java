@@ -36,6 +36,9 @@ final class Drainage {
         boolean river, wet;
         Hydro.Bed bar, bed;
 
+        /** The highest water beside a wet column that stands above its own, or MIN_VALUE. */
+        int spill;
+
         /** The highest water level of any bed within the levee of a dry column. */
         double levee;
 
@@ -48,6 +51,7 @@ final class Drainage {
             river = c.river;
             wet = false;
             bar = bed = null;
+            spill = Integer.MIN_VALUE;
         }
     }
 
@@ -915,6 +919,15 @@ final class Drainage {
                             wet.bed = bed(x, z, riffle, lerp(c.gradient, i, t), depth, score);
                             if (braid < .05) {
                                 wet.wet = true;
+                                wet.spill =
+                                        spill(
+                                                c,
+                                                i,
+                                                t * length,
+                                                vx / length,
+                                                vz / length,
+                                                lateral,
+                                                bed);
                                 continue;
                             }
                             // A braided reach: a few shallow channels weave across a gravel bed
@@ -934,6 +947,15 @@ final class Drainage {
                                 wet.wet = Math.abs(lateral - centre) <= sub;
                             }
                             if (wet.wet) {
+                                wet.spill =
+                                        spill(
+                                                c,
+                                                i,
+                                                t * length,
+                                                vx / length,
+                                                vz / length,
+                                                lateral,
+                                                bed);
                                 wet.distance = 0;
                                 wet.depth = 1;
                                 // Braided channels run over gravel, with sand where they slacken.
@@ -976,6 +998,40 @@ final class Drainage {
         if (patch < gravelBelow) return Hydro.Bed.GRAVEL;
         if (patch > clayAbove || depth >= clayDepth && across < clayCore) return Hydro.Bed.CLAY;
         return Hydro.Bed.SAND;
+    }
+
+    /**
+     * The highest water among a wet column's four neighbours inside the same bed that stands above
+     * its own (MIN_VALUE for none): where the course steps down, the higher water would pour over
+     * the step. Each neighbour reads the course's level at its own place along it.
+     */
+    private static int spill(
+            Channel c, int i, double along, double ux, double uz, double lateral, double bed) {
+        int own = (int) Math.floor(levelAlong(c, i, along)), best = Integer.MIN_VALUE;
+        for (int k = 0; k < 4; k++) {
+            int ox = k == 0 ? 1 : k == 1 ? -1 : 0, oz = k == 2 ? 1 : k == 3 ? -1 : 0;
+            if (Math.abs(lateral + oz * ux - ox * uz) > bed) continue;
+            int level = (int) Math.floor(levelAlong(c, i, along + ox * ux + oz * uz));
+            if (level > own) best = Math.max(best, level);
+        }
+        return best;
+    }
+
+    /** A course's level {@code along} blocks past its point i, walking into neighbouring segments. */
+    private static double levelAlong(Channel c, int i, double along) {
+        int last = c.x.length - 2;
+        double length = Rules.hypot(c.x[i + 1] - c.x[i], c.z[i + 1] - c.z[i]);
+        while (along < 0 && i > 0) {
+            i--;
+            length = Rules.hypot(c.x[i + 1] - c.x[i], c.z[i + 1] - c.z[i]);
+            along += length;
+        }
+        while (along > length && i < last) {
+            along -= length;
+            i++;
+            length = Rules.hypot(c.x[i + 1] - c.x[i], c.z[i + 1] - c.z[i]);
+        }
+        return lerp(c.level, i, length > 0 ? Math.max(0, Math.min(1, along / length)) : 0);
     }
 
     private static double lerp(double[] a, int i, double t) {

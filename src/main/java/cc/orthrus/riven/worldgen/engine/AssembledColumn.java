@@ -275,7 +275,18 @@ public final class AssembledColumn {
                 else if (level >= top - 1) emit(bottom, fluid, wet, pass);
                 else {
                     emit(bottom, fluid, wet, pass);
-                    emit(level + 1, air, open, pass);
+                    // Where higher water beside it steps down, the sky's water carries the
+                    // flowing top a world update would pour there, over falling water.
+                    int spill =
+                            entry == CAVITY_FILL && fluid == TerrainBlock.WATER.index()
+                                    ? horizons[Horizons.SPILL]
+                                    : Horizons.ABSENT;
+                    if (spill != Horizons.ABSENT && spill > level && spill < top) {
+                        if (spill > level + 1)
+                            emit(level + 1, (short) TerrainBlock.WATER_FALL.index(), wet, pass);
+                        emit(spill, (short) TerrainBlock.WATER_SPILL.index(), wet, pass);
+                        emit(spill + 1, air, open, pass);
+                    } else emit(level + 1, air, open, pass);
                 }
             } else if (entry == CAVE_FILL) caveFill(bottom, top, refs[i] != 0, pass);
             else emit(bottom, entry, role, pass);

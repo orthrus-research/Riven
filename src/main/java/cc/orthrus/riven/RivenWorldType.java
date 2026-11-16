@@ -169,9 +169,7 @@ final class RivenWorldType extends WorldType implements ICubicWorldType {
             TerrainBlock[] kinds = TerrainBlock.values();
             boolean[] supported = new boolean[kinds.length];
             for (TerrainBlock kind : kinds) {
-                if (kind == TerrainBlock.AIR
-                        || kind == TerrainBlock.WATER
-                        || kind == TerrainBlock.LAVA) continue;
+                if (kind == TerrainBlock.AIR || kind.water() || kind == TerrainBlock.LAVA) continue;
                 Material material = TerrainColumn.state(kind).getMaterial();
                 supported[kind.index()] = material != Material.AIR && !material.isLiquid();
             }

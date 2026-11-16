@@ -4,7 +4,6 @@ import cc.orthrus.riven.worldgen.NativeColumns;
 import cc.orthrus.riven.worldgen.RivenBiomeTable;
 import cc.orthrus.riven.worldgen.Rules;
 import cc.orthrus.riven.worldgen.SeededNoise;
-import cc.orthrus.riven.worldgen.TerrainBlock;
 
 import com.google.gson.JsonObject;
 
@@ -152,8 +151,7 @@ final class FirstAnimals {
                 int feet = (int) m[2];
                 if (bottom != Integer.MIN_VALUE && (feet < bottom || feet >= bottom + 16)) continue;
                 // A member over water stays out: the ground below its feet is the water's top.
-                if (column.block((int) (m[1] << 4 | m[0]), feet - 1) == TerrainBlock.WATER)
-                    continue;
+                if (column.block((int) (m[1] << 4 | m[0]), feet - 1).water()) continue;
                 out.add(
                         new Animal(
                                 kind,

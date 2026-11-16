@@ -26,7 +26,8 @@ public final class Horizons {
         "lava",
         "unconformity",
         "flood-floor",
-        "flood-level"
+        "flood-level",
+        "spill"
     };
 
     /** The frame: one above the highest block, the sea, the crust's lowest Y and the world's. */
@@ -52,6 +53,12 @@ public final class Horizons {
 
     /** A flood cell's band: water holds where flood-floor < y <= flood-level. */
     public static final int FLOOD_FLOOR = 14, FLOOD_LEVEL = 15;
+
+    /**
+     * The highest Y of flowing water standing over a column's surface water where higher water
+     * beside it steps down: the block a world update would pour there, placed at generation.
+     */
+    public static final int SPILL = 16;
 
     private Horizons() {}
 

@@ -67,7 +67,7 @@ public final class SurfaceWaterCheck {
         cc.orthrus.riven.worldgen.engine.AssembledColumn c =
                 new cc.orthrus.riven.worldgen.engine.AssembledColumn();
         int[] top = new int[n * n], water = new int[n * n], state = new int[n * n];
-        int[] ground = new int[n * n];
+        int[] ground = new int[n * n], still = new int[n * n];
         boolean[] wet = new boolean[n * n], holds = new boolean[n * n], marine = new boolean[n * n];
         for (int j = 0; j < n; j++)
             for (int i = 0; i < n; i++) {
@@ -77,11 +77,13 @@ public final class SurfaceWaterCheck {
                 // The column's top solid block and the top of the water over it, as its blocks
                 // hold them.
                 top[k] = c.bottomY() - 1;
-                water[k] = Integer.MIN_VALUE;
+                water[k] = still[k] = Integer.MIN_VALUE;
                 for (int r = c.count() - 1; r >= 0; r--) {
                     cc.orthrus.riven.worldgen.engine.Role role = c.runRole(r);
                     if (role == cc.orthrus.riven.worldgen.engine.Role.FLUID
                             && water[k] == Integer.MIN_VALUE) water[k] = c.top(r) - 1;
+                    if (c.runBlock(r) == TerrainBlock.WATER && still[k] == Integer.MIN_VALUE)
+                        still[k] = c.top(r) - 1;
                     if (!role.open() && role != cc.orthrus.riven.worldgen.engine.Role.DECOR) {
                         top[k] = c.top(r) - 1;
                         break;
@@ -101,9 +103,9 @@ public final class SurfaceWaterCheck {
                 if (!wet[k] || marine[k]) continue;
                 count.incrementAndGet(0);
                 for (int m : new int[] {k - 1, k + 1, k - n, k + n})
-                    // Lower water beside it leaves the top block's side open: the step a world
-                    // update would pour over.
-                    if (holds[m] && !marine[m] && water[m] < water[k] && top[m] < water[k]) {
+                    // Lower water beside its still water leaves that block's side open: the step a
+                    // world update would pour over (flowing water over water never spreads).
+                    if (holds[m] && !marine[m] && water[m] < still[k] && top[m] < still[k]) {
                         count.incrementAndGet(5);
                         break;
                     }

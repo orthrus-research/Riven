@@ -51,6 +51,7 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
             out.publish(Horizons.GROUND_BEFORE_ROCKY, floor(s.rocky.parentHeight));
         out.publish(Horizons.WATER, s.waterY());
         Hydro.Sample w = s.water;
+        if (w.wet && w.spillY > s.waterY()) out.publish(Horizons.SPILL, w.spillY);
         if (w.aquiferMin <= w.aquiferMax) {
             out.publish(Horizons.POCKET_FLOOR, w.aquiferMin);
             out.publish(Horizons.POCKET_ROOF, w.aquiferMax + 1);

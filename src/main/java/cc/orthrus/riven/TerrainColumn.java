@@ -13,6 +13,7 @@ import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubicTerrainPreview;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockColored;
 import net.minecraft.block.BlockDirt;
+import net.minecraft.block.BlockLiquid;
 import net.minecraft.block.BlockStone;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.properties.IProperty;
@@ -73,6 +74,10 @@ final class TerrainColumn {
         result[at("rock.bedrock")] = Blocks.BEDROCK.getDefaultState();
         result[at("rock.stone")] = Blocks.STONE.getDefaultState();
         result[at("fluid.water")] = Blocks.WATER.getDefaultState();
+        result[at("fluid.water_spill")] =
+                Blocks.FLOWING_WATER.getDefaultState().withProperty(BlockLiquid.LEVEL, 1);
+        result[at("fluid.water_fall")] =
+                Blocks.FLOWING_WATER.getDefaultState().withProperty(BlockLiquid.LEVEL, 9);
         result[at("sediment.sand")] = Blocks.SAND.getDefaultState();
         result[at("sediment.gravel")] = Blocks.GRAVEL.getDefaultState();
         result[at("soil.dirt")] = Blocks.DIRT.getDefaultState();
@@ -271,8 +276,7 @@ final class TerrainColumn {
         // The preview cannot light air under water: air below a column's highest water (an
         // underground lake's dome under a pond) never shows from the sky and previews as stone.
         int highestWater = -1;
-        for (int i = 0; i < count; i++)
-            if (column.runBlock(i) == TerrainBlock.WATER) highestWater = i;
+        for (int i = 0; i < count; i++) if (column.runBlock(i).water()) highestWater = i;
         for (int i = 0; i < count; i++) {
             TerrainBlock block = column.runBlock(i);
             // Buried magma never shows from the sky, and the preview cannot light emitting or
