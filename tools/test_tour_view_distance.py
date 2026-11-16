@@ -42,7 +42,10 @@ class TourFileTests(unittest.TestCase):
     def test_the_stale_mesh_walk_asks_for_a_wider_client_view(self):
         path = CUBATURE_TOOLS.parent / "lab/tours/stale-mesh-walk-2485331.json"
         views = runtime.load_tour(path)
-        self.assertEqual(len(views), 61)
+        # 61 views walking east, then two stepping back west, facing the edge the cubes left from.
+        self.assertEqual(len(views), 63)
+        self.assertEqual([v["yaw"] for v in views[-2:]], [90.0, 90.0])
+        self.assertLess(views[-1]["x"], views[-3]["x"])
         profile = runtime.run_view_distance(runtime.tour_view_distance(path))
         self.assertEqual(profile, {"horizontal": 12, "vertical": 12, "clientRender": 20})
 
