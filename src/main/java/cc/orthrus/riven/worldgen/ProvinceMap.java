@@ -53,6 +53,12 @@ public final class ProvinceMap {
         /** A land type's landform palette, in blocks: rounded hills, spurs, broad swells, hollows. */
         final double hills, spurs, swells, hollows;
 
+        /**
+         * A land type's regional terms (terrain-v143): the amplitude in blocks of its regional
+         * swell, and its share of the continents' inland rise; 0 for ocean classes.
+         */
+        final double swell, inland;
+
         Type(
                 String id,
                 int index,
@@ -68,7 +74,9 @@ public final class ProvinceMap {
                 double hills,
                 double spurs,
                 double swells,
-                double hollows) {
+                double hollows,
+                double swell,
+                double inland) {
             this.id = id;
             this.index = index;
             this.land = land;
@@ -84,6 +92,8 @@ public final class ProvinceMap {
             this.spurs = spurs;
             this.swells = swells;
             this.hollows = hollows;
+            this.swell = swell;
+            this.inland = inland;
         }
 
         /** Whether the budget may give this type any land. */
@@ -130,6 +140,16 @@ public final class ProvinceMap {
         final double warmCelsius, frozenCelsius;
         final double interiorBlocks, continentality, maritimeMoisture, maritimePull, mildCelsius;
         final double maxCelsius, maxMoisture;
+
+        /**
+         * The regional terms (terrain-v143), added to the ground at every node: the swell's octave
+         * wavelengths in cells and weights, the inland rise's height and reach in blocks, and the
+         * range apron's height in blocks.
+         */
+        final double[] swellWavelength, swellWeight;
+
+        final double inlandBlocks, inlandReach, apronBlocks;
+
         final long variation;
         final String fingerprint;
 
@@ -178,6 +198,8 @@ public final class ProvinceMap {
                 double spurs = Rules.number(pal, "spurs", 0, 128);
                 double swells = Rules.number(pal, "swells", 0, 64);
                 double hollows = Rules.number(pal, "hollows", 0, 64);
+                double swell = Rules.number(r, "swell", 0, 64);
+                double inland = Rules.number(r, "inland", 0, 1);
                 list.add(
                         new Type(
                                 id,
@@ -194,12 +216,31 @@ public final class ProvinceMap {
                                 hills,
                                 spurs,
                                 swells,
-                                hollows));
+                                hollows,
+                                swell,
+                                inland));
             }
             landTypes = list.size();
             for (String ocean : OCEANS)
                 list.add(
-                        new Type(ocean, list.size(), false, true, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+                        new Type(
+                                ocean,
+                                list.size(),
+                                false,
+                                true,
+                                0,
+                                1,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0));
             types = list.toArray(new Type[0]);
             JsonObject spine = j.getAsJsonObject("spine");
             spined = landType(spine.get("type").getAsString());
@@ -248,6 +289,21 @@ public final class ProvinceMap {
             if (all.length != landTypes)
                 throw new IllegalStateException(
                         "riven-provinces.json: every land type fills one slot");
+            JsonObject regional = j.getAsJsonObject("regional");
+            JsonArray swellOctaves = regional.getAsJsonArray("swellOctaves");
+            swellWavelength = new double[swellOctaves.size()];
+            swellWeight = new double[swellOctaves.size()];
+            for (int k = 0; k < swellOctaves.size(); k++) {
+                JsonArray o = swellOctaves.get(k).getAsJsonArray();
+                swellWavelength[k] = o.get(0).getAsDouble();
+                swellWeight[k] = o.get(1).getAsDouble();
+                if (!(swellWavelength[k] >= .1 && swellWavelength[k] <= 16)
+                        || !(swellWeight[k] >= 0 && swellWeight[k] <= 1))
+                    throw new IllegalStateException("riven-provinces.json: swellOctaves");
+            }
+            inlandBlocks = Rules.number(regional, "inlandBlocks", 0, 64);
+            inlandReach = Rules.number(regional, "inlandReachBlocks", 1, 8192);
+            apronBlocks = Rules.number(regional, "apronBlocks", 0, 64);
             JsonObject oceans = j.getAsJsonObject("oceans");
             warmCelsius = Rules.number(oceans, "warmCelsius", -40, 60);
             frozenCelsius = Rules.number(oceans, "frozenCelsius", -60, warmCelsius);
@@ -356,6 +412,11 @@ public final class ProvinceMap {
     private final double size, edge, reach, interiorBlocks, half;
     private final SeededNoise warpX, warpZ, level;
 
+    /** The regional swell's octaves, and the inland rise's reach in blocks. */
+    private final SeededNoise[] swell;
+
+    private final double inlandReach;
+
     /** The fine warp's shear noises (two per octave) and their frames. */
     private final SeededNoise[] shearU, shearV;
 
@@ -452,6 +513,10 @@ public final class ProvinceMap {
             shearSin[k] = StrictMath.sin(a);
         }
         level = new SeededNoise(SeededNoise.mix(seed ^ 0x4c4556454cL));
+        swell = new SeededNoise[def.swellWavelength.length];
+        for (int k = 0; k < swell.length; k++)
+            swell[k] = new SeededNoise(SeededNoise.mix(seed ^ (0x5357454c4cL + k)));
+        inlandReach = def.inlandReach * scale.layout;
         // The world square's cells (seed point inside), each sampled once.
         int i0 = (int) Math.floor(-half / size) - 1, i1 = (int) Math.floor(half / size) + 1;
         Map<Long, Facts> cells = new HashMap<>();
@@ -1038,9 +1103,12 @@ public final class ProvinceMap {
 
     /**
      * The land ground at a column, blended like its level: {level, relief blocks, ridged share,
-     * plateau share} in out[0..3], the plateau's cap level and the other ground's level in out[5]
-     * and out[6], and the landform palette (hills, spurs, swells, hollows) in out[7..10] (see
-     * Sample.ground), without the faces.
+     * plateau share} in out[0..3], the continents' spine weight in out[4], the plateau's cap level
+     * and the other ground's level in out[5] and out[6], and the landform palette (hills, spurs,
+     * swells, hollows) in out[7..10] (see Sample.ground), without the faces. The levels carry the
+     * regional terms (terrain-v143): a swell of the blended amplitude, the inland rise by the
+     * blended share, and the range apron. Read only at {@link ProvinceGround}'s nodes, so these
+     * cost a ground node, not a column.
      */
     public void ground(double x, double z, double[] out) {
         double[] warped = new double[2];
@@ -1056,7 +1124,7 @@ public final class ProvinceMap {
         }
         double ground = 0, relief = 0, ridged = 0, plateau = 0, weights = 0;
         double capSum = 0, capWeight = 0, belowSum = 0, belowWeight = 0;
-        double hills = 0, spurs = 0, swells = 0, hollows = 0;
+        double hills = 0, spurs = 0, swells = 0, hollows = 0, swellBlocks = 0, inlandShare = 0;
         for (int k = 0; k < 25; k++) {
             double t = (d[k] - d[first]) / edge;
             if (t >= 1) continue;
@@ -1070,6 +1138,8 @@ public final class ProvinceMap {
             spurs += w * c.land.spurs;
             swells += w * c.land.swells;
             hollows += w * c.land.hollows;
+            swellBlocks += w * c.land.swell;
+            inlandShare += w * c.land.inland;
             capSum += w * c.land.plateau * c.ground;
             capWeight += w * c.land.plateau;
             belowSum += w * (1 - c.land.plateau) * c.ground;
@@ -1087,6 +1157,34 @@ public final class ProvinceMap {
         out[8] = spurs / weights;
         out[9] = swells / weights;
         out[10] = hollows / weights;
+        // Regional terms: a swell, the inland rise and the range apron, the same on the cap and the
+        // ground below it so a scarp keeps its height.
+        double[] spine = new double[3];
+        spines.fields(x, z, spine);
+        out[4] = spine[0];
+        HeightSample n = new HeightSample();
+        double s = 0, total = 0;
+        for (int k = 0; k < swell.length; k++) {
+            double l = def.swellWavelength[k] * size;
+            swell[k].gradient(x / l + .23 * k, z / l + .71 * k, n);
+            s += def.swellWeight[k] * n.height;
+            total += def.swellWeight[k];
+        }
+        s = total > 0 ? Math.max(-1, Math.min(1, s / total)) : 0;
+        // The swell is centred on the level, eased out toward the sea's datum so low ground
+        // never sinks below it; the inland rise and the apron only raise.
+        double level0 = out[0], swellAmp = swellBlocks / weights;
+        double guard = swellAmp > 0 ? Rules.smooth(level0 / (2 * swellAmp)) : 0;
+        double lift =
+                swellAmp * .5 * s * guard
+                        + def.inlandBlocks
+                                * inlandShare
+                                / weights
+                                * Rules.smooth(spine[1] / inlandReach)
+                        + def.apronBlocks * spine[2];
+        out[0] += lift;
+        out[5] += lift;
+        out[6] += lift;
     }
 
     /** The width over which neighbouring provinces blend, in blocks (scaled with the layout). */

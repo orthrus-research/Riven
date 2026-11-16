@@ -28,19 +28,29 @@ public final class SpineMap {
     private final long seed;
     private final BuildPool pool;
     private final double cell, cap, flatSlope, halfFrom, halfFull, widthShare, minWidth;
+
+    /** How far beyond a range's band its apron reaches, in blocks (times the layout). */
+    private final double apronReach;
+
     private final int tile, halo, blur;
     private final ConcurrentHashMap<Long, Tile> tiles = new ConcurrentHashMap<>();
     private final SharedBuild<Tile> builds = new SharedBuild<>();
 
-    /** One tile of node weights and its own coordinates (a hash collision is rebuilt, not misread). */
+    /**
+     * One tile of nodes and its own coordinates (a hash collision is rebuilt, not misread): the
+     * range weight, the smoothed coast distance in blocks (capped) and the range apron.
+     */
     private static final class Tile {
         final long i, j;
         final double[] weight;
+        final float[] inland, apron;
 
-        Tile(long i, long j, double[] weight) {
+        Tile(long i, long j, double[] weight, float[] inland, float[] apron) {
             this.i = i;
             this.j = j;
             this.weight = weight;
+            this.inland = inland;
+            this.apron = apron;
         }
     }
 
@@ -67,7 +77,10 @@ public final class SpineMap {
                                         Rules.number(j, "blurBlocks", 1, 2048)
                                                 * scale.layout
                                                 / cell));
-        halo = (int) Math.ceil(cap * (1 + widthShare) / cell) + 3 * blur + 3;
+        apronReach = Rules.number(j, "apronReachBlocks", 0, 4096) * scale.layout;
+        // Every spine cell within the widest band plus the apron's reach, and every coast within
+        // the cap of it, lies inside the halo, so every distance a tile node reads is exact.
+        halo = (int) Math.ceil((cap * (1 + widthShare) + apronReach) / cell) + 3 * blur + 3;
         nodeFrom = Rules.number(j, "nodeWeight", 0, 1);
     }
 
@@ -132,6 +145,34 @@ public final class SpineMap {
         if (nodeMemo.size() >= NODE_MEMO) nodeMemo.clear();
         nodeMemo.put(key, made);
         return made;
+    }
+
+    /**
+     * The fields at (x, z) into out: the range weight (0 off every range to 1 on a full one), the
+     * smoothed coast distance in blocks (0 at the sea, capped), and the range apron (the range's
+     * strength within its band, falling smoothly to 0 at apronReach beyond it), each read with
+     * Catmull-Rom like {@link #weight}.
+     */
+    public void fields(double x, double z, double[] out) {
+        double gx = x / cell, gz = z / cell;
+        long i0 = (long) Math.floor(gx), j0 = (long) Math.floor(gz);
+        double[] wu = new double[4], du = new double[4], wv = new double[4], dv = new double[4];
+        ProvinceGround.weights(gx - i0, wu, du);
+        ProvinceGround.weights(gz - j0, wv, dv);
+        double weight = 0, inland = 0, apron = 0;
+        for (int b = 0; b < 4; b++)
+            for (int a = 0; a < 4; a++) {
+                long i = i0 - 1 + a, j = j0 - 1 + b;
+                Tile t = tile(Math.floorDiv(i, tile), Math.floorDiv(j, tile));
+                int at = Math.floorMod(j, tile) * tile + Math.floorMod(i, tile);
+                double w = wu[a] * wv[b];
+                weight += w * t.weight[at];
+                inland += w * t.inland[at];
+                apron += w * t.apron[at];
+            }
+        out[0] = Math.max(0, Math.min(1, weight));
+        out[1] = Math.max(0, inland);
+        out[2] = Math.max(0, Math.min(1, apron));
     }
 
     /** The range weight at (x, z), 0 off every range to 1 on a full one. */
@@ -209,17 +250,31 @@ public final class SpineMap {
         double[] t = new double[n * n];
         transform(spine, n, t, nearest);
         double[] weight = new double[tile * tile];
+        float[] inland = new float[tile * tile], apron = new float[tile * tile];
         for (int r = 0; r < tile; r++)
             for (int a = 0; a < tile; a++) {
                 int k = (r + halo) * n + a + halo, at = nearest[k];
+                inland[r * tile + a] = land[k] ? (float) smooth[k] : 0;
                 if (at < 0) continue;
                 double half = smooth[at];
                 double width = Math.max(minWidth, widthShare * half);
-                double across = Rules.smooth(1 - Math.sqrt(t[k]) * cell / width);
+                double distance = Math.sqrt(t[k]) * cell;
+                double across = Rules.smooth(1 - distance / width);
                 double strength = Rules.smooth((half - halfFrom) / (halfFull - halfFrom));
                 weight[r * tile + a] = across * strength;
+                // The apron: the range's flanks, where its band gives way, easing out over
+                // apronReach beyond the band, so the land around a range rises toward it (a
+                // piedmont) while the band's own lift carries the range.
+                double beyond = Math.max(0, distance - width);
+                apron[r * tile + a] =
+                        apronReach > 0
+                                ? (float)
+                                        (strength
+                                                * (1 - across)
+                                                * Rules.smooth(1 - beyond / apronReach))
+                                : 0;
             }
-        return new Tile(ti, tj, weight);
+        return new Tile(ti, tj, weight, inland, apron);
     }
 
     private static double inside(double v) {

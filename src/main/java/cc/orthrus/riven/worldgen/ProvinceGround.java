@@ -95,7 +95,6 @@ final class ProvinceGround {
                 // province cell's seed point is still a legal coordinate.
                 double x = inside((ti * TILE + m) * step), z = inside((tj * TILE + n) * step);
                 provinces.ground(x, z, node);
-                node[4] = provinces.spines().weight(x, z);
                 System.arraycopy(node, 0, values, FIELDS * (n * TILE + m), FIELDS);
             }
         Tile fresh = new Tile(ti, tj, values);

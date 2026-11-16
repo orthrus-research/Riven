@@ -170,6 +170,20 @@ and foreland draw theirs whole. Levels, relief and shares blend
 across the 500-block edge with smooth weights. `ProvinceGround` holds these fields as a bounded
 regional plan: a Catmull-Rom raster at a fifth of the edge width, with exact derivatives.
 
+**Regional terms (terrain-v143).** Each raster node (400 blocks apart at 32 km) adds three terms
+to the blended level, the plateau cap and the ground below it (`riven-provinces.json`
+`regional`), so they cost a node, not a column, and reach columns through the raster with
+exact derivatives:
+- A swell: two gradient octaves at 1.2 and 0.45 cells, centred on the level, of each type's
+  `relief.swell` (plain 8 blocks, basin 4, downs and upland 10, tableland, rift and foreland 8,
+  range 0), eased out toward the sea's datum so low ground never sinks below it.
+- An inland rise: 16 blocks times the type's `relief.inland` share (plain and downs 1, rift and
+  foreland 0.5, basin, upland and tableland 0.3, range 0), over the smoothstep of the spines'
+  smoothed coast distance across 600 blocks (times the layout).
+- A range apron: 10 blocks times the spines' apron, the range's strength on its flanks where
+  its band gives way, easing out 900 blocks (times the layout) beyond the band, so the land
+  around a range rises toward it.
+
 **Landform classes (terrain-v129).** Every land column carries one class from the ground model,
 with its strength, for biomes to key on (`Terrain.Landform`, `landforms` in `riven-terrain.json`):
 MOUNTAIN where the spine weight passes 0.4 (strength rising from 0.25 to 0.55), PLATEAU on a cap,
@@ -187,6 +201,8 @@ yields to a spine as its weight rises from 0.25 to 0.55, so ranges keep their ri
 tablelands. Passes' ridges thin on spines, which carry their own.
 
 **Spines (terrain-v127).** Mountain ranges follow each landmass's own axis. `SpineMap`
+tiles also carry the smoothed coast distance and the range apron for the regional terms
+(terrain-v143), their halos widened by the apron's reach so every distance stays exact.
 (`riven-provinces.json` `spines`) finds the land's medial axis: the ridge of the distance to the
 coast, where its smoothed slope falls below 0.35 (away from the axis it rises one block per
 block). A range is the band around the axis, half as wide as the land's half width there, and as
