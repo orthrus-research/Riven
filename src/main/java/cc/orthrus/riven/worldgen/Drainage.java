@@ -27,14 +27,14 @@ final class Drainage {
      * One channel near a column: its id, distance to the centreline and its section there (radius
      * is the open channel's, or a braided reach's whole bed). {@code wet} for water; else {@code
      * bar} names a bar's material (a braided reach's gravel bar or a point bar inside a bend), or
-     * null for a bank. {@code steep} marks a gravel bed. {@code levee} is the highest water a dry
-     * column within LEVEE blocks of a bed may touch.
+     * null for a bank. {@code bed} is a wet column's bed material. {@code levee} is the highest
+     * water a dry column within LEVEE blocks of a bed may touch.
      */
     static final class Hit {
         long id;
         double distance, radius, level, depth;
-        boolean river, wet, steep;
-        Hydro.Bed bar;
+        boolean river, wet;
+        Hydro.Bed bar, bed;
 
         /** The highest water level of any bed within the levee of a dry column. */
         double levee;
@@ -46,8 +46,8 @@ final class Drainage {
             this.level = level;
             this.depth = depth;
             river = c.river;
-            wet = steep = false;
-            bar = null;
+            wet = false;
+            bar = bed = null;
         }
     }
 
@@ -660,6 +660,17 @@ final class Drainage {
     private final double meanderWaves, minimumWave, amplitude, flatGradient, steepGradient, skew;
     private final double step, wanderBlocks;
     private final double poolDrop, poolWidths, poolMinimum, riffleRun, sandGradient, pointBar;
+
+    /** Graded profiles: the steepest rise upstream of a river's and a stream's water, and the deepest cut below the ground's course that grading may make. */
+    private final double riverGrade, streamGrade, incision;
+
+    /** A reflective coast's share of the full estuary flare (a shoaling coast takes all of it). */
+    private final double reflectiveFlare;
+
+    /** Bed patches: their wavelength, the patch field's bounds for gravel and clay, the sand patches of a steep bed, and a deep pool's clay core (its depth and share of the bed). */
+    private final double patchWave, gravelBelow, clayAbove, steepSandAbove, clayDepth, clayCore;
+
+    private final SeededNoise patches;
     private final double braidStart, braidFull, braidCold, braidDry, braidLow, braidHigh;
     private final double braidWave;
     private final int braidChannels;
@@ -788,6 +799,19 @@ final class Drainage {
         JsonObject bars = j.getAsJsonObject("bars");
         sandGradient = Rules.number(bars, "sandBelowGradient", 0, 1);
         pointBar = Rules.number(bars, "pointBarStrength", 0, 1);
+        JsonObject beds = j.getAsJsonObject("beds");
+        patchWave = Rules.number(beds, "patchWavelengthBlocks", 4, 512);
+        gravelBelow = Rules.number(beds, "gravelBelow", -1, 1);
+        clayAbove = Rules.number(beds, "clayAbove", gravelBelow, 1);
+        steepSandAbove = Rules.number(beds, "steepSandAbove", -1, 1);
+        clayDepth = Rules.number(beds, "clayCoreFromDepthBlocks", 1, 64);
+        clayCore = Rules.number(beds, "clayCoreShareOfBed", 0, 1);
+        patches = new SeededNoise(SeededNoise.mix(this.seed ^ 0x4245445041544348L));
+        JsonObject graded = j.getAsJsonObject("grade");
+        riverGrade = Rules.number(graded, "riverMaximum", 0, 1);
+        streamGrade = Rules.number(graded, "streamMaximum", riverGrade, 4);
+        incision = Rules.number(graded, "incisionBlocks", 0, 64);
+        reflectiveFlare = Rules.number(j, "reflectiveFlareShare", 0, 1);
         JsonObject braids = j.getAsJsonObject("braids");
         braidStart = Rules.number(braids, "fromWidthBlocks", 1, 256);
         braidFull = Rules.number(braids, "fullWidthBlocks", braidStart + .001, 512);
@@ -888,7 +912,7 @@ final class Drainage {
                                     bed,
                                     lerp(c.level, i, t),
                                     depth - (depth - 1) * riffle);
-                            wet.steep = riffle > .5 || lerp(c.gradient, i, t) >= sandGradient;
+                            wet.bed = bed(x, z, riffle, lerp(c.gradient, i, t), depth, score);
                             if (braid < .05) {
                                 wet.wet = true;
                                 continue;
@@ -912,6 +936,8 @@ final class Drainage {
                             if (wet.wet) {
                                 wet.distance = 0;
                                 wet.depth = 1;
+                                // Braided channels run over gravel, with sand where they slacken.
+                                wet.bed = bed(x, z, 0, sandGradient, 1, 1);
                             } else wet.bar = Hydro.Bed.GRAVEL;
                         } else {
                             double beyond = dist - bed;
@@ -935,6 +961,21 @@ final class Drainage {
         Hit hit = wetScore <= 1 ? wet : nearScore < Double.POSITIVE_INFINITY ? near : null;
         if (hit != null) hit.levee = levee;
         return hit;
+    }
+
+    /**
+     * A wet column's bed: gravel on a riffle; on a steep bed gravel with sand patches; on a gentle
+     * one sand, with gravel and clay patches from a seeded field about patchWavelengthBlocks across
+     * and clay in the core of a deep pool, where the slowest water drops the finest sediment.
+     */
+    Hydro.Bed bed(double x, double z, double riffle, double gradient, double depth, double across) {
+        if (riffle > .5) return Hydro.Bed.GRAVEL;
+        double patch = patches.sample(x / patchWave, z / patchWave);
+        if (gradient >= sandGradient)
+            return patch > steepSandAbove ? Hydro.Bed.SAND : Hydro.Bed.GRAVEL;
+        if (patch < gravelBelow) return Hydro.Bed.GRAVEL;
+        if (patch > clayAbove || depth >= clayDepth && across < clayCore) return Hydro.Bed.CLAY;
+        return Hydro.Bed.SAND;
     }
 
     private static double lerp(double[] a, int i, double t) {
@@ -1589,6 +1630,15 @@ final class Drainage {
             }
             for (int p = 0; p < interior; p++) lv[p] = Math.max(lv[p], endLevel);
             lv[interior] = endLevel;
+            // Graded toward the water it joins: upstream the level rises no faster than the
+            // channel's grade (gentle for a river, steeper for a stream), cutting at most
+            // incisionBlocks below the ground's course, so a fall over a coastal berm or into a
+            // valley spreads upstream as a cut instead of dropping within one cell.
+            for (int p = interior - 1; p >= 0; p--) {
+                double d = Rules.hypot(px[p + 1] - px[p], pz[p + 1] - pz[p]);
+                double grade = 2 * rad[p] >= riverWidth ? riverGrade : streamGrade;
+                lv[p] = Math.max(Math.min(lv[p], lv[p + 1] + grade * d), lv[p] - incision);
+            }
             rawLevel[li] = lv.clone();
             gr[interior] = gr[interior - 1];
             cel[interior] = cel[interior - 1];
@@ -1608,7 +1658,10 @@ final class Drainage {
             if (marine[end] && 2 * rad[interior - 1] >= riverWidth && estuaryLength > 0) {
                 TerrainMap.BaseSample s = new TerrainMap.BaseSample();
                 intent.sample(px[interior], pz[interior], s);
-                flare = 1 + (estuaryFlare - 1) * Rules.smooth(s.ocean.shoaling);
+                flare =
+                        1
+                                + (estuaryFlare - 1)
+                                        * Math.max(reflectiveFlare, Rules.smooth(s.ocean.shoaling));
                 double toMouth = 0;
                 for (int p = interior; p >= 0; p--) {
                     if (p < interior) toMouth += Rules.hypot(px[p + 1] - px[p], pz[p + 1] - pz[p]);

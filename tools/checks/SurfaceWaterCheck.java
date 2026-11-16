@@ -36,19 +36,20 @@ public final class SurfaceWaterCheck {
             for (int i = 0; i < points.size(); i += stride) chosen.add(points.get(i));
             // 0 wet columns, 1 beside a channel, 2 beside a network bank, 3 beside neither, 4
             // into a cave entrance.
-            AtomicLongArray count = new AtomicLongArray(5);
+            AtomicLongArray count = new AtomicLongArray(6);
             List<String> examples = new ArrayList<>();
             chosen.parallelStream().forEach(p -> window(maps, p[0], p[1], count, examples));
             long spills = count.get(1) + count.get(2) + count.get(3);
             System.out.printf(
-                    "seed %d: %d windows, %d wet columns; spills beside a channel %d, a network bank %d, neither %d; into a cave entrance %d%n",
+                    "seed %d: %d windows, %d wet columns; spills beside a channel %d, a network bank %d, neither %d; into a cave entrance %d; open steps to lower water %d%n",
                     seed,
                     chosen.size(),
                     count.get(0),
                     count.get(1),
                     count.get(2),
                     count.get(3),
-                    count.get(4));
+                    count.get(4),
+                    count.get(5));
             examples.forEach(e -> System.out.println("  " + e));
             if (spills > TOLERANCE * count.get(0))
                 throw new AssertionError("Surface water spills on seed " + seed);
@@ -99,6 +100,13 @@ public final class SurfaceWaterCheck {
                 int k = j * n + i;
                 if (!wet[k] || marine[k]) continue;
                 count.incrementAndGet(0);
+                for (int m : new int[] {k - 1, k + 1, k - n, k + n})
+                    // Lower water beside it leaves the top block's side open: the step a world
+                    // update would pour over.
+                    if (holds[m] && !marine[m] && water[m] < water[k] && top[m] < water[k]) {
+                        count.incrementAndGet(5);
+                        break;
+                    }
                 for (int m : new int[] {k - 1, k + 1, k - n, k + n}) {
                     // A neighbour is dry when its blocks hold no water over its ground.
                     if (holds[m] || marine[m] || top[m] >= water[k]) continue;

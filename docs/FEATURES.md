@@ -578,15 +578,19 @@ at 8 km and 6.6 MB at 32 km on seed 8675309 (`tools/checks/DrainageFootprint`). 
 cells, and every channel continues the upstream channel that brings it the most water: heads join
 into creeks, creeks into rivers. Width grows with the square root of the area drained (1.5 blocks
 at a head, 14 blocks more per extra root square kilometre, at most 48), so rivers widen below every
-junction; depth grows from 1 to 8. A channel's level is the running minimum of the ground less one
-block from its head, never below the water it joins; its points sit at seeded spots within each
+junction; depth grows from 2 to 14 (v140; 1 to 8 before). A channel's level is the running minimum of the ground less one
+block from its head, never below the water it joins, graded toward that water (v140): upstream it rises
+no faster than 2% on a river and 12% on a stream, cutting at most 10 blocks below the ground's course,
+so a fall over a coastal berm spreads upstream as a cut (rivers reached the sea in one cell's drop of up
+to 6 blocks before); its points sit at seeded spots within each
 cell, smoothed twice, and a tributary ends on its main channel's centreline at that channel's level.
 Channels 6 blocks wide or more are rivers: they reserve bed, bank and valley (2.5 times their cut)
 like any river, so landforms keep their skirts, and they mark river-mouth weights; narrower streams
 reserve nothing, so no landform site reads them, and they keep the land's biome. Every channel's
 bank and valley is cut at the hydrology constraint from the column's own height: the valley widens
 by 2.5 blocks per block the ground stands above the water (at most 48). A river on a shoaling coast
-flares into a funnel estuary (up to 3.5 times its width over the last 320 blocks). Channel form:
+flares into a funnel estuary (up to 3.5 times its width over the last 320 blocks); since v140 every
+coast flares a river's mouth, a reflective one by 0.3 of the full flare. Channel form:
 
 **Drainage lakes** (terrain-v127, `riven-hydrology.json` drainage.lakes): a second priority flood
 of each continent's own intent ground, from every outlet (the sea, receiving water, another
@@ -612,8 +616,10 @@ they cover 4.0% of land (1.8-4.2% over eight seeds), most in the valleys and pie
   into a gravel bed up to four times its width where three shallow channels weave across bars at
   the water's level; an estuary's funnel fades them out. They take 21-32% of wide cold-river length on seeds 8675309 and
   101, about 10% of all river length.
-- **Beds and point bars:** beds are sand where a channel falls less than 1% and gravel elsewhere and
-  on riffles; the inside of a strong bend holds a point bar of the same material at the water's
+- **Beds and point bars:** riffles are gravel; a channel falling 2.5% or more has a gravel bed with sand
+  patches, a gentler one a sand bed with gravel and clay patches (a seeded field about 28 blocks
+  across) and clay in the middle 45% of pools 5 blocks deep or more; braided channels run over gravel with sand
+  patches, and network rivers take the same beds (v140; sand or gravel only before); the inside of a strong bend holds a point bar of the same material at the water's
   level.
 - **Flush banks:** the columns within 1.5 blocks of a bed stand level with the highest water beside
   them, a riffle's step upstream or a neighboring channel included; network lakes and routes keep

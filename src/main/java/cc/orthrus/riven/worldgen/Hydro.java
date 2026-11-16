@@ -27,7 +27,8 @@ public final class Hydro
     public enum Bed {
         GRAVEL,
         SAND,
-        DIRT
+        DIRT,
+        CLAY
     }
 
     public static final class Sample {
@@ -1484,6 +1485,7 @@ public final class Hydro
             double[] meanders,
             Sample out) {
         double nearest = Double.POSITIVE_INFINITY, riverHead = 0, nearWidth = 0, nearValley = 0;
+        double nearGradient = 0;
         double levee = Double.NEGATIVE_INFINITY;
         for (int i = 0; i < xs.length - 1; i++) {
             double support =
@@ -1520,21 +1522,19 @@ public final class Hydro
             if (dist / width < nearest) {
                 nearest = dist / width;
                 riverHead = levels[i] + t * (levels[i + 1] - levels[i]);
+                nearGradient = (levels[i] - levels[i + 1]) / length;
                 nearWidth = width;
                 nearValley = valleys == null ? 0 : valleys[i] + t * (valleys[i + 1] - valleys[i]);
             }
         }
-        if (nearest <= 1)
-            wet(
-                    out,
-                    id,
-                    Kind.RIVER,
-                    riverHead,
-                    Math.floor(riverHead)
-                            - river.magnitude.min
-                            - (river.magnitude.targetAverage - river.magnitude.min)
-                                    * (1 - nearest * nearest));
-        else {
+        if (nearest <= 1) {
+            double depth =
+                    river.magnitude.min
+                            + (river.magnitude.targetAverage - river.magnitude.min)
+                                    * (1 - nearest * nearest);
+            wet(out, id, Kind.RIVER, riverHead, Math.floor(riverHead) - depth);
+            out.bed = drainage.bed(x, z, 0, nearGradient, river.magnitude.targetAverage, nearest);
+        } else {
             // Flush banks hold the highest water beside them.
             double beyond = (nearest - 1) * nearWidth;
             double head = beyond <= Drainage.LEVEE ? Math.max(riverHead, levee) : riverHead;
@@ -1625,7 +1625,7 @@ public final class Hydro
                     Kind.RIVER,
                     hit.level,
                     Math.floor(hit.level) - 1 - (hit.depth - 1) * (1 - n * n));
-            out.bed = hit.steep ? Bed.GRAVEL : Bed.SAND;
+            out.bed = hit.bed;
             return hit.river ? 0 : hit.id;
         }
         // A bar inside a braided bed stands flush with the water; banks ease out from it.

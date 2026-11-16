@@ -30,7 +30,7 @@ public final class DrainagePruneCheck {
                 + "/"
                 + h.river
                 + h.wet
-                + h.steep
+                + h.bed
                 + "/"
                 + h.bar
                 + "/"

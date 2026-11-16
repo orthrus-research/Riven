@@ -78,11 +78,13 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
                     Settings.bit(
                             w.bed == Hydro.Bed.SAND
                                     ? Settings.WATER_BED_SAND
-                                    : w.bed != Hydro.Bed.DIRT
-                                            ? Settings.WATER_BED_GRAVEL
-                                            : clay(s)
-                                                    ? Settings.WATER_BED_CLAY
-                                                    : Settings.WATER_BED_DIRT);
+                                    : w.bed == Hydro.Bed.CLAY
+                                            ? Settings.WATER_BED_CLAY
+                                            : w.bed != Hydro.Bed.DIRT
+                                                    ? Settings.WATER_BED_GRAVEL
+                                                    : clay(s)
+                                                            ? Settings.WATER_BED_CLAY
+                                                            : Settings.WATER_BED_DIRT);
         if (w.bar != null && floor <= Math.floor(w.channelHead) + bar)
             h |= Settings.bit(w.bar == Hydro.Bed.SAND ? Settings.BAR_SAND : Settings.BAR_GRAVEL);
         if ((w.kind == Hydro.Kind.OASIS || w.kind == Hydro.Kind.WETLAND) && w.weight > green)
