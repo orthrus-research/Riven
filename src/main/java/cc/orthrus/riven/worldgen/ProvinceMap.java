@@ -110,7 +110,23 @@ public final class ProvinceMap {
         final double reach, threshold, spineThreshold, levelWavelength, forelandReach;
         final int side;
         final Type[] types;
-        final int landTypes, foreland, spined, divergent, coastal, interior, rest, top, beside;
+        final int landTypes, foreland, spined, divergent, coastal, interior, top, beside;
+
+        /**
+         * The stable ladder, lowest rung first: the stable types in rung order (the first rung's
+         * coastal and interior types, then one type per rung), each land type's rung (-1 for the
+         * tectonic types and foreland), and the number of rungs.
+         */
+        final int[] stable, rungOf;
+
+        final int rungs;
+
+        /**
+         * How far a stable province's level follows its place in its rung's span of the level
+         * field (1) rather than a draw from its cell key (0).
+         */
+        final double levelOrder;
+
         final double warmCelsius, frozenCelsius;
         final double interiorBlocks, continentality, maritimeMoisture, maritimePull, mildCelsius;
         final double maxCelsius, maxMoisture;
@@ -192,17 +208,38 @@ public final class ProvinceMap {
             divergent = landType(tectonic.get("divergent").getAsString());
             reach = Rules.number(tectonic, "reachBlocks", 1, 16384);
             threshold = Rules.number(tectonic, "threshold", 0, 1);
-            JsonObject stable = j.getAsJsonObject("stable");
-            coastal = landType(stable.getAsJsonObject("low").get("coastal").getAsString());
-            interior = landType(stable.getAsJsonObject("low").get("interior").getAsString());
-            rest = landType(stable.getAsJsonObject("high").get("rest").getAsString());
-            top = landType(stable.getAsJsonObject("high").get("top").getAsString());
-            levelWavelength = Rules.number(stable, "levelWavelengthCells", 0.5, 64);
+            JsonObject stableJson = j.getAsJsonObject("stable");
+            JsonArray ladder = stableJson.getAsJsonArray("ladder");
+            if (ladder == null || ladder.size() < 2)
+                throw new IllegalStateException(
+                        "riven-provinces.json: a stable ladder of two rungs");
+            JsonObject first = ladder.get(0).getAsJsonObject();
+            coastal = landType(first.get("coastal").getAsString());
+            interior = landType(first.get("interior").getAsString());
+            rungs = ladder.size();
+            stable = new int[rungs + 1];
+            rungOf = new int[landTypes];
+            java.util.Arrays.fill(rungOf, -1);
+            stable[0] = coastal;
+            stable[1] = interior;
+            rungOf[coastal] = rungOf[interior] = 0;
+            for (int k = 1; k < rungs; k++) {
+                int t = landType(ladder.get(k).getAsJsonObject().get("type").getAsString());
+                stable[k + 1] = t;
+                rungOf[t] = k;
+            }
+            top = stable[rungs];
+            levelOrder = Rules.number(stableJson, "levelOrder", 0, 1);
+            levelWavelength = Rules.number(stableJson, "levelWavelengthCells", 0.5, 64);
             JsonObject f = j.getAsJsonObject("foreland");
             foreland = landType(f.get("type").getAsString());
             beside = landType(f.get("beside").getAsString());
             forelandReach = Rules.number(f, "reachCells", 0.5, 3);
-            int[] all = {spined, divergent, foreland, coastal, interior, rest, top};
+            int[] all = new int[3 + stable.length];
+            all[0] = spined;
+            all[1] = divergent;
+            all[2] = foreland;
+            System.arraycopy(stable, 0, all, 3, stable.length);
             for (int a = 0; a < all.length; a++)
                 for (int b = 0; b < a; b++)
                     if (all[a] == all[b])
@@ -338,11 +375,17 @@ public final class ProvinceMap {
     private final CellMemo<Cell> outside = new CellMemo<>(1024);
 
     // The world's cuts, which cells outside the world square read without the budget: the level at
-    // or below which a stable cell is low, at or above which a high cell is top, and the coast
-    // distance at or beyond which a low cell is interior.
-    private double lowCut = Double.NEGATIVE_INFINITY,
-            topCut = Double.POSITIVE_INFINITY,
-            interiorCut = Double.POSITIVE_INFINITY;
+    // or below which a stable cell takes each rung but the last, and the coast distance at or
+    // beyond which a first-rung cell is interior.
+    private final double[] rungCut;
+
+    private double interiorCut = Double.POSITIVE_INFINITY;
+
+    /**
+     * Each rung's span of the level field, edge k to edge k + 1 (the lowest and highest stable
+     * levels at the ends), which places a stable province's level inside its band.
+     */
+    private final double[] rungEdge;
 
     /** Each land type's share of the world's land (foreland included). */
     public final double[] shares;
@@ -450,6 +493,10 @@ public final class ProvinceMap {
         land.sort(Comparator.comparingLong((Facts f) -> key(f.i, f.j)));
         shares = new double[def.types.length];
         provinces = new int[def.types.length];
+        rungCut = new double[def.rungs - 1];
+        java.util.Arrays.fill(rungCut, Double.NEGATIVE_INFINITY);
+        rungEdge = new double[def.rungs + 1];
+        java.util.Arrays.fill(rungEdge, Double.NaN);
         Map<Long, Type> base = assign(land);
         // Provinces without measured land still have a land face for the land they hold.
         for (Facts f : cells.values())
@@ -544,7 +591,7 @@ public final class ProvinceMap {
         }
         // The stable types' shares: the middle of each range, scaled to fill what is left, held
         // inside the range.
-        int[] stable = {def.coastal, def.interior, def.rest, def.top};
+        int[] stable = def.stable;
         double left =
                 Math.max(0, 1 - share[def.spined] - share[def.divergent] - share[def.foreland]);
         double[] target = new double[def.types.length];
@@ -590,19 +637,31 @@ public final class ProvinceMap {
             rank.get(key(f.i, f.j))[1] = sum + a / 2;
             sum += a;
         }
-        // Each type's home in rank space: the low types on the lowest levels, the interior one
-        // farthest from the coast and the coastal one nearest it; the top type on the highest
-        // levels, the rest between.
-        double low = (target[def.coastal] + target[def.interior]) / stableArea,
-                topShare = target[def.top] / stableArea;
+        // Each type's home in rank space: the rungs stacked in order, lowest levels first, each
+        // type at its rung's middle; on the first rung the interior type farthest from the coast
+        // and the coastal one nearest it.
+        double[] rungShare = new double[def.rungs];
+        for (int t : stable)
+            if (def.types[t].allowed()) rungShare[def.rungOf[t]] += target[t] / stableArea;
         double[] home = new double[def.types.length], coastHome = new double[def.types.length];
-        home[def.coastal] = home[def.interior] = low / 2;
-        home[def.top] = 1 - topShare / 2;
-        home[def.rest] = (low + 1 - topShare) / 2;
+        double below = 0;
+        for (int k = 0; k < def.rungs; k++) {
+            for (int t : stable) if (def.rungOf[t] == k) home[t] = below + rungShare[k] / 2;
+            below += rungShare[k];
+            if (k < def.rungs - 1) rungCut[k] = quantile(rest, rank, 0, below);
+        }
         coastHome[def.coastal] = 0;
         coastHome[def.interior] = 1;
-        lowCut = quantile(rest, rank, 0, low);
-        topCut = quantile(rest, rank, 0, 1 - topShare);
+        // The rungs' spans of the level field, between the cuts and the stable extremes.
+        double lowest = Double.POSITIVE_INFINITY, highest = Double.NEGATIVE_INFINITY;
+        for (Facts f : rest) {
+            lowest = Math.min(lowest, f.level);
+            highest = Math.max(highest, f.level);
+        }
+        rungEdge[0] = lowest;
+        rungEdge[def.rungs] = highest;
+        for (int k = 0; k < def.rungs - 1; k++)
+            rungEdge[k + 1] = Math.max(lowest, Math.min(highest, rungCut[k]));
         // Every (cell, type) pair by how near the cell lies to the type's home; each cell takes its
         // nearest type with room, first up to the type's target share, then up to its maximum, so
         // no type passes its maximum (but for its first province).
@@ -611,7 +670,7 @@ public final class ProvinceMap {
             double[] r = rank.get(key(rest.get(k).i, rest.get(k).j));
             for (int s : stable) {
                 if (!def.types[s].allowed()) continue;
-                boolean lowType = s == def.coastal || s == def.interior;
+                boolean lowType = def.rungOf[s] == 0;
                 double d =
                         Math.abs(r[0] - home[s])
                                 + (lowType ? Math.abs(r[1] - coastHome[s]) / 2 : 0);
@@ -762,9 +821,11 @@ public final class ProvinceMap {
         if (def.types[def.foreland].allowed()
                 && besideDistance(f, assigned, java.util.Collections.emptySet())
                         <= def.forelandReach * size) return def.types[def.foreland];
-        if (f.level <= lowCut)
+        if (f.level <= rungCut[0])
             return def.types[f.coast >= interiorCut ? def.interior : def.coastal];
-        return def.types[f.level >= topCut ? def.top : def.rest];
+        for (int k = 1; k < def.rungs - 1; k++)
+            if (f.level <= rungCut[k]) return def.types[def.stable[k + 1]];
+        return def.types[def.top];
     }
 
     private Cell cellAt(int i, int j) {
@@ -786,8 +847,16 @@ public final class ProvinceMap {
         double celsius = def.maritimePull * seaward * (def.mildCelsius - f.celsius);
         moisture = Math.max(-def.maxMoisture, Math.min(def.maxMoisture, moisture));
         celsius = Math.max(-def.maxCelsius, Math.min(def.maxCelsius, celsius));
-        // The land face's level inside its band: a pure draw from the cell's grid key.
+        // The land face's level inside its band: a stable type's follows its place in its rung's
+        // span of the level field (levelOrder of it), so neighbouring provinces step together,
+        // and the rest is a pure draw from the cell's grid key; other types draw it whole.
         double u = SeededNoise.unit(SeededNoise.mix(seed ^ 0x47524f554e44L ^ key(f.i, f.j)));
+        int rung = def.rungOf[land.index];
+        if (rung >= 0) {
+            double lo = rungEdge[rung], hi = rungEdge[rung + 1];
+            double place = hi > lo ? Math.max(0, Math.min(1, (f.level - lo) / (hi - lo))) : .5;
+            if (Double.isFinite(place)) u = def.levelOrder * place + (1 - def.levelOrder) * u;
+        }
         double ground = land.bandLow + (land.bandHigh - land.bandLow) * u;
         return new Cell(land, ocean, celsius, moisture, ground);
     }

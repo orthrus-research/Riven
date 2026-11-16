@@ -115,10 +115,11 @@ over every province's land:
    provinces within 700 blocks of a divergent plate boundary give rift the same way.
 2. **Foreland:** provinces within 1.25 cells of a range take foreland next, nearest first, up to
    its share, so mountains step down through foothills.
-3. **Stable types:** the rest are placed by a seeded level field and their distance to the coast.
-   One capacitated assignment gives each its nearest type with room: plain (low, coastal), basin
-   (low, interior), upland (high) or tableland (highest). It fills each type first to its target
-   share, the middle of its range scaled to the land left, then to its maximum.
+3. **Stable types:** the rest climb a ladder of rungs (`stable.ladder`, terrain-v142) by a
+   seeded level field, and the first rung splits by distance to the coast: plain (lowest,
+   coastal), basin (lowest, interior), downs, upland, then tableland (highest). One capacitated
+   assignment gives each province its nearest type with room, filling each type first to its
+   target share, the middle of its range scaled to the land left, then to its maximum.
 
 The ocean face takes a class by sea floor and climate: warm or cold, shelf or deep, or frozen.
 
@@ -159,16 +160,20 @@ reader sees effective climate.
   atlas's pixels, through stages that read climate.
 
 **Ground (S4, terrain-v126).** Every land type has a band of ground heights above sea and a
-relief recipe in `riven-provinces.json`: plain 5-35 blocks, basin 2-25, upland 60-130, tableland
-90-170, range 50-110, rift 10-50 and foreland 30-90, with a relief height and ridged and
-terraced shares. Each province draws one level inside its band; levels, relief and shares blend
+relief recipe in `riven-provinces.json`: plain 5-35 blocks, basin 2-25, downs 30-70, upland
+60-130, tableland 90-170, range 50-110, rift 10-50 and foreland 30-90, with a relief height and
+ridged and terraced shares. Each province takes one level inside its band. A stable province's
+level follows its place in its rung's span of the level field for three quarters of it
+(`levelOrder`, terrain-v142) and a draw from its cell key for the rest, so neighbouring
+provinces step up together from the coast to the highlands instead of drawing apart; range, rift
+and foreland draw theirs whole. Levels, relief and shares blend
 across the 500-block edge with smooth weights. `ProvinceGround` holds these fields as a bounded
 regional plan: a Catmull-Rom raster at a fifth of the edge width, with exact derivatives.
 
 **Landform classes (terrain-v129).** Every land column carries one class from the ground model,
 with its strength, for biomes to key on (`Terrain.Landform`, `landforms` in `riven-terrain.json`):
 MOUNTAIN where the spine weight passes 0.4 (strength rising from 0.25 to 0.55), PLATEAU on a cap,
-SCARP on its edge, else its province type's class: basin BASIN, plain PLAIN, upland HILLS,
+SCARP on its edge, else its province type's class: basin BASIN, plain PLAIN, downs and upland HILLS,
 foreland FOOTHILLS, rift RIFT (a tableland off its cap reads HILLS, a range off its spine
 FOOTHILLS). Selector character follows the class (FLOOR, PLAIN, HILLS, PLATEAU, RIDGE; DUNES
 where hot and dry), and `Fit.PLATEAU` reads the cap and scarp. Over 16 worlds at 32 km: foothills
