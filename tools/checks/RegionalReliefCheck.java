@@ -125,6 +125,29 @@ public final class RegionalReliefCheck {
         }
     }
 
+    /**
+     * The contour jitter's warp at (x, z): its displacement, and the determinant of x + w(x)'s
+     * Jacobian by central differences, which must stay well above zero (fold-free).
+     */
+    private static double[] jitter(BaseTerrainMap map, double x, double z) {
+        BaseTerrainMap.Sample s = new BaseTerrainMap.Sample();
+        double h = .015625;
+        double[] w = new double[6];
+        map.sample(x, z, s);
+        double wx = s.jitterX(), wz = s.jitterZ();
+        map.sample(x + h, z, s);
+        double xxp = s.jitterX(), zxp = s.jitterZ();
+        map.sample(x - h, z, s);
+        double mxx = 1 + (xxp - s.jitterX()) / (2 * h), mzx = (zxp - s.jitterZ()) / (2 * h);
+        map.sample(x, z + h, s);
+        double xzp = s.jitterX(), zzp = s.jitterZ();
+        map.sample(x, z - h, s);
+        double mxz = (xzp - s.jitterX()) / (2 * h), mzz = 1 + (zzp - s.jitterZ()) / (2 * h);
+        w[0] = Math.hypot(wx, wz);
+        w[1] = mxx * mzz - mxz * mzx;
+        return w;
+    }
+
     private static double field(Object object, String name) throws Exception {
         Field f = object.getClass().getDeclaredField(name);
         f.setAccessible(true);
@@ -187,6 +210,8 @@ public final class RegionalReliefCheck {
     public static void main(String[] args) throws Exception {
         TerrainHeightReference heights = TerrainHeightReference.DEFAULT;
         int observed = 0;
+        List<Double> shift = new ArrayList<>();
+        double leastDet = Double.POSITIVE_INFINITY;
         for (long seed : new long[] {8675309, 7, -918273645}) {
             GenerationMaps maps = new GenerationMaps(seed);
             RegionalProfileMap regions = new RegionalProfileMap(seed, heights);
@@ -207,7 +232,12 @@ public final class RegionalReliefCheck {
                         "Height inside the allocation");
                 require(sample.amplitude() >= 0, "Negative relief amplitude");
                 expected.add(snapshot(sample));
-                if ((i & 15) == 0) gradients(map, x, z);
+                // The jitter turns over in 15-40 blocks: check gradients at a quarter of the points
+                // and its warp, displaced from the coarse survey lattice, at every one.
+                if ((i & 3) == 0) gradients(map, x, z);
+                double[] j = jitter(map, x + 13.37 * (i % 7), z - 7.91 * (i % 5));
+                shift.add(j[0]);
+                leastDet = Math.min(leastDet, j[1]);
                 observed++;
             }
             for (int i = 1023; i >= 0; i--) {
@@ -262,6 +292,19 @@ public final class RegionalReliefCheck {
             }
         }
         invalidDefinitions();
+        java.util.Collections.sort(shift);
+        double meanShift = 0;
+        for (double v : shift) meanShift += v / shift.size();
+        require(leastDet > .15, "Contour jitter folds: Jacobian determinant " + leastDet);
+        System.out.printf(
+                java.util.Locale.ROOT,
+                "Contour jitter: |w| mean %.2f, p50 %.2f, p90 %.2f, max %.2f blocks; least Jacobian"
+                        + " determinant %.3f%n",
+                meanShift,
+                shift.get(shift.size() / 2),
+                shift.get(shift.size() * 9 / 10),
+                shift.get(shift.size() - 1),
+                leastDet);
         System.out.println(
                 "Regional partition/elevation envelope/gradients/seams/scratch/coordinates/concurrency=PASS; points="
                         + observed);

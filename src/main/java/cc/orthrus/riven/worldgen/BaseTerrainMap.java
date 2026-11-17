@@ -52,6 +52,9 @@ public final class BaseTerrainMap {
     /** The soft ceiling: heights above the start bend toward the allocation's top. */
     private final double ceilingStart, ceiling;
 
+    /** Contour jitter (terrain-v147): the province ground and noise fields read at x + w(x). */
+    private final ContourJitter jitter;
+
     private final SeededNoise character,
             ridge1,
             ridge2,
@@ -148,6 +151,7 @@ public final class BaseTerrainMap {
         terraceRiser = Rules.number(t, "riserShare", .05, .9);
         ceiling = heights.highestSurface - Rules.number(j, "ceilingMarginBlocks", 0, 64);
         ceilingStart = ceiling - Rules.number(j, "ceilingSoftBlocks", 1, 128);
+        jitter = new ContourJitter(seed);
         character = new SeededNoise(SeededNoise.mix(seed ^ 0x4348415241435452L));
         ridge1 = new SeededNoise(SeededNoise.mix(seed ^ 0x5249444745303131L));
         ridge2 = new SeededNoise(SeededNoise.mix(seed ^ 0x5249444745303232L));
@@ -181,12 +185,31 @@ public final class BaseTerrainMap {
 
     /** Caller-owned scratch. Its local derivatives are not footprint or later-terrain bounds. */
     public static final class Sample {
+        /** A planner's sample: read the unjittered ground (see {@link #planning}). */
+        private boolean planning;
+
+        /** Scratch for the unjittered ground the jitter's fade reads; null in that scratch. */
+        private final Sample plain;
+
+        public Sample() {
+            plain = new Sample(false);
+        }
+
+        private Sample(boolean outer) {
+            plain = null;
+        }
+
+        /** Whether this sample serves a planner, which reads the ground without contour jitter. */
+        public void planning(boolean planning) {
+            this.planning = planning;
+        }
+
         private final BaseElevationMap.Sample elevation = new BaseElevationMap.Sample();
         private final HeightSample body = new HeightSample(),
                 detail = new HeightSample(),
                 wide = new HeightSample();
         private final RegionalProfileMap.Sample region = new RegionalProfileMap.Sample();
-        private double height, dx, dz, broadDx, broadDz;
+        private double height, dx, dz, broadDx, broadDz, steerDx, steerDz;
         private double amplitude, noise, coarseHeight, fineContribution;
 
         /**
@@ -217,6 +240,17 @@ public final class BaseTerrainMap {
                 landA = new HeightSample(),
                 landB = new HeightSample();
 
+        /** The contour jitter here: where the province ground and noise fields were read. */
+        private final ContourJitter.Warp jitter = new ContourJitter.Warp();
+
+        public double jitterX() {
+            return jitter.x;
+        }
+
+        public double jitterZ() {
+            return jitter.z;
+        }
+
         public double ground() {
             return ground;
         }
@@ -244,6 +278,19 @@ public final class BaseTerrainMap {
 
         public double dz() {
             return dz;
+        }
+
+        /**
+         * The unjittered ground's gradient here: what erosion steers its gullies by, so they keep
+         * the course they had without the contour jitter while the ground beneath them wanders.
+         * The jitter's turns stay in dx and dz, exact at x.
+         */
+        public double steerDx() {
+            return steerDx;
+        }
+
+        public double steerDz() {
+            return steerDz;
         }
 
         public double broadDx() {
@@ -341,13 +388,87 @@ public final class BaseTerrainMap {
     public void sample(double x, double z, Sample out) {
         Rules.coordinates(x, z);
         if (out == null) throw new NullPointerException("out");
+        ContourJitter.Warp warp = out.jitter;
+        // Planners (water, landmarks, carvers, coasts) read the unjittered ground, so plans and
+        // reservations stand where they did without the jitter; columns read it jittered.
+        if (out.planning || out.plain == null) {
+            if (out.plain != null) clear(out.plain);
+            warp.clear();
+            shaped(x, z, out, warp);
+            out.steerDx = out.dx;
+            out.steerDz = out.dz;
+            return;
+        }
+        // Contour jitter (terrain-v147): the warp fades as the unjittered ground's broad slope
+        // nears a block per block, k(x) = fade(|grad h_broad|); grad k comes from a 1/1000-block
+        // forward difference of that analytic slope, taken only where the fade is turning.
+        Sample plain = out.plain;
+        ContourJitter.Warp none = plain.jitter;
+        double slope = slopeAt(x, z, plain, none);
+        double k = jitter.fade(slope), turning = jitter.fadeSlope(slope), kx = 0, kz = 0;
+        double steerX = plain.dx, steerZ = plain.dz;
+        // What classifies the ground (its broad slope, landform position, province level, spine
+        // and cap) stays unjittered, so landform and formation boundaries keep their courses.
+        double broadX = plain.broadDx, broadZ = plain.broadDz, coarse = plain.coarseHeight;
+        double position = plain.position, level = plain.ground;
+        double spine = plain.spine, cap = plain.plateau;
+        if (turning != 0) {
+            double e = 1e-3;
+            kx = turning * (slopeAt(x + e, z, plain, none) - slope) / e;
+            kz = turning * (slopeAt(x, z + e, plain, none) - slope) / e;
+        }
+        jitter.sample(x, z, warp);
+        warp.fade(k, kx, kz);
+        shaped(x, z, out, warp);
+        out.steerDx = steerX;
+        out.steerDz = steerZ;
+        out.broadDx = broadX;
+        out.broadDz = broadZ;
+        out.coarseHeight = coarse;
+        out.position = position;
+        out.ground = level;
+        out.spine = spine;
+        out.plateau = cap;
+    }
+
+    /**
+     * The unjittered ground's broad slope at (x, z), sampled into scratch: the slope of its coarse
+     * terms, which turns as slowly as they do, so the fade it drives never folds the warp.
+     */
+    private double slopeAt(double x, double z, Sample scratch, ContourJitter.Warp none) {
+        none.clear();
+        shaped(x, z, scratch, none);
+        return Rules.hypot(scratch.broadDx, scratch.broadDz);
+    }
+
+    /**
+     * The ground at (x, z) with its fields read at p = x + w (warp): the province ground and every
+     * noise field below, so a contour line wanders by w while the height moves by about
+     * grad(h) . w. Derivatives below are taken with respect to p and carried back to x at the end
+     * by the chain rule, grad_x = (I + Jw)^T grad_p; the regional shares, read at x, enter through
+     * the inverse.
+     */
+    private void shaped(double x, double z, Sample out, ContourJitter.Warp warp) {
         elevation.sample(x, z, out.elevation);
+        profiles.sample(x, z, out.region);
+        double mxx = warp.mxx, mxz = warp.mxz, mzx = warp.mzx, mzz = warp.mzz;
+        x += warp.x;
+        z += warp.z;
+        // x and z are p from here on. (rx, rz) at x is (mxx rpx + mzx rpz, mxz rpx + mzz rpz).
+        double det = warp.determinant();
+        double amplitudePx =
+                inverseX(out.region.amplitudeDx(), out.region.amplitudeDz(), mzx, mzz, det);
+        double amplitudePz =
+                inverseZ(out.region.amplitudeDx(), out.region.amplitudeDz(), mxx, mxz, det);
+        double widePx = inverseX(out.region.wideDx(), out.region.wideDz(), mzx, mzz, det);
+        double widePz = inverseZ(out.region.wideDx(), out.region.wideDz(), mxx, mxz, det);
+        double finePx = inverseX(out.region.fineDx(), out.region.fineDz(), mzx, mzz, det);
+        double finePz = inverseZ(out.region.fineDx(), out.region.fineDz(), mxx, mxz, det);
         BaseElevationMap.Sample e = out.elevation;
         body.sample(x / bodyScale + 0.19, z / bodyScale + 0.73, out.body);
         detail.sample(x / detailScale + 0.43, z / detailScale + 0.29, out.detail);
         out.minimumY = seaLevel + 1;
         out.maximumY = ceiling;
-        profiles.sample(x, z, out.region);
         wide.sample(x / wideScale + .53, z / wideScale + .17, out.wide);
         // S4: the province bands set the level; their characters shape it. Every term below
         // carries its exact derivative.
@@ -469,8 +590,8 @@ public final class BaseTerrainMap {
                                         - f[1] * strength * f[fz + 2]);
         double fraction = out.region.amplitudeFraction();
         double amplitude = envelope * fraction;
-        double amplitudeDx = envelopeDx * fraction + envelope * out.region.amplitudeDx();
-        double amplitudeDz = envelopeDz * fraction + envelope * out.region.amplitudeDz();
+        double amplitudeDx = envelopeDx * fraction + envelope * amplitudePx;
+        double amplitudeDz = envelopeDz * fraction + envelope * amplitudePz;
         // A plateau's cap is calm: it keeps a share of the ground's amplitude.
         if (cap > 0) {
             double flat = 1 - plateauFlatten * cap;
@@ -485,21 +606,15 @@ public final class BaseTerrainMap {
         double coarseDx =
                 w * out.wide.dx / wideScale
                         + c * out.body.dx / bodyScale
-                        + out.region.wideDx() * (out.wide.height - out.body.height)
-                        - out.region.fineDx() * out.body.height;
+                        + widePx * (out.wide.height - out.body.height)
+                        - finePx * out.body.height;
         double coarseDz =
                 w * out.wide.dz / wideScale
                         + c * out.body.dz / bodyScale
-                        + out.region.wideDz() * (out.wide.height - out.body.height)
-                        - out.region.fineDz() * out.body.height;
-        double nx =
-                coarseDx
-                        + fineShare * out.detail.dx / detailScale
-                        + out.region.fineDx() * out.detail.height;
-        double nz =
-                coarseDz
-                        + fineShare * out.detail.dz / detailScale
-                        + out.region.fineDz() * out.detail.height;
+                        + widePz * (out.wide.height - out.body.height)
+                        - finePz * out.body.height;
+        double nx = coarseDx + fineShare * out.detail.dx / detailScale + finePx * out.detail.height;
+        double nz = coarseDz + fineShare * out.detail.dz / detailScale + finePz * out.detail.height;
         double meanDx = groundDx;
         double meanDz = groundDz;
         out.amplitude = amplitude;
@@ -668,11 +783,13 @@ public final class BaseTerrainMap {
             dx *= k;
             dz *= k;
         }
+        double broadDx = meanDx + amplitudeDx * coarse + amplitude * coarseDx + ridgesDx;
+        double broadDz = meanDz + amplitudeDz * coarse + amplitude * coarseDz + ridgesDz;
         out.height = height;
-        out.dx = dx;
-        out.dz = dz;
-        out.broadDx = meanDx + amplitudeDx * coarse + amplitude * coarseDx + ridgesDx;
-        out.broadDz = meanDz + amplitudeDz * coarse + amplitude * coarseDz + ridgesDz;
+        out.dx = mxx * dx + mzx * dz;
+        out.dz = mxz * dx + mzz * dz;
+        out.broadDx = mxx * broadDx + mzx * broadDz;
+        out.broadDz = mxz * broadDx + mzz * broadDz;
     }
 
     /**
@@ -695,6 +812,16 @@ public final class BaseTerrainMap {
         out.dz = (-nx * s + nz * c) / scale;
     }
 
+    /** The p-space x derivative of a field whose x and z derivatives are (rx, rz). */
+    private static double inverseX(double rx, double rz, double mzx, double mzz, double det) {
+        return (mzz * rx - mzx * rz) / det;
+    }
+
+    /** The p-space z derivative of a field whose x and z derivatives are (rx, rz). */
+    private static double inverseZ(double rx, double rz, double mxx, double mxz, double det) {
+        return (mxx * rz - mxz * rx) / det;
+    }
+
     /** One ridged octave, (1 - |n|)^2, and its slope with respect to n. */
     private static double ridged(double n) {
         double v = 1 - Math.abs(n);
@@ -712,8 +839,10 @@ public final class BaseTerrainMap {
 
     /** Clears private inland observations when the composing stage instead owns a marine column. */
     void clear(Sample out) {
-        out.height = out.dx = out.dz = out.broadDx = out.broadDz = 0;
+        out.height = out.dx = out.dz = out.broadDx = out.broadDz = out.steerDx = out.steerDz = 0;
         out.amplitude = out.noise = out.coarseHeight = out.fineContribution = 0;
+        out.jitter.clear();
+        if (out.plain != null) clear(out.plain);
         out.ground = 0;
         out.position = -1;
         out.spine = out.plateau = 0;

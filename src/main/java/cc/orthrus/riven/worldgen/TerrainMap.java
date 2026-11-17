@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 146;
+    public static final int VERSION = 147;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -59,7 +59,19 @@ public final class TerrainMap {
         this.continents = continents;
         this.climate = climate;
         types = new Terrain(seed, heights);
-        shores = new Shore(seed, heights, world, this::intentBeforeShore);
+        shores =
+                new Shore(
+                        seed,
+                        heights,
+                        world,
+                        (x, z, o) -> {
+                            o.base.planning(true);
+                            try {
+                                intentBeforeShore(x, z, o);
+                            } finally {
+                                o.base.planning(false);
+                            }
+                        });
         passes = new RegionalTerrainPasses(seed, heights);
         drylands = new DrylandTerrain(seed, heights, substrate);
         landmarks = new RegionalLandmarks(seed, heights, types.sites);
@@ -75,7 +87,17 @@ public final class TerrainMap {
         maximumSurfaceY = heights.highestSurface;
         erosion = new ErosionFilter(seed, heights);
         groundwater = new Head(seed, heights);
-        intentSampler = this::intent;
+        // Planners read the ground without contour jitter (v147): their plans and reservations
+        // stand where the unjittered ground puts them, and columns shape around them.
+        intentSampler =
+                (x, z, o) -> {
+                    o.base.planning(true);
+                    try {
+                        intent(x, z, o);
+                    } finally {
+                        o.base.planning(false);
+                    }
+                };
         hydro =
                 new Hydro(
                         seed,
@@ -423,8 +445,9 @@ public final class TerrainMap {
         erosion.apply(
                 x / scale,
                 z / scale,
-                out.baseDx * scale,
-                out.baseDz * scale,
+                // Gullies steer by the unjittered ground (v147), so they keep their courses.
+                out.base.steerDx() * scale,
+                out.base.steerDz() * scale,
                 out.base.noise(),
                 Math.min(out.baseHeight - out.minimumY, out.maximumY - out.baseHeight),
                 erosionSlopeLimit(out.base.spine()) * scale,
@@ -442,7 +465,9 @@ public final class TerrainMap {
                 out.land,
                 out.originalHeight,
                 fine,
-                Rules.hypot(out.baseDx, out.baseDz),
+                // The unjittered slope (v147): it turns as slowly as the ground, so bench risers
+                // sized from it do not narrow and widen with the contour jitter.
+                Rules.hypot(out.base.steerDx(), out.base.steerDz()),
                 out.minimumY,
                 out.maximumY,
                 out.passes);

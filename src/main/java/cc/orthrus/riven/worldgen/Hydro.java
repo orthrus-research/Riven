@@ -56,10 +56,18 @@ public final class Hydro
 
         public double channelHead, channelBeyond, channelBank;
 
+        /** The contour jitter a valley side here takes (terrain-v147), in blocks. */
+        public double channelJitter;
+
+        private final HeightSample jitterScratch = new HeightSample();
+
         /** The highest water beside a dry column within Drainage.LEVEE of a bed. */
         public double channelLevee;
 
-        /** A drainage lake's level a dry column near its shore must not stand below, or NaN. */
+        /**
+         * The water level a dry column near a drainage lake's shore, or within Drainage.LEVEE of a
+         * route's bed, must not stand below, or NaN.
+         */
         public double lakeHold = Double.NaN;
 
         /** A dry bar at a channel's water level (a braided bed's or a point bar), or null. */
@@ -102,7 +110,8 @@ public final class Hydro
             stream = channel = false;
             bar = null;
             spillY = Integer.MIN_VALUE;
-            channelHead = channelBeyond = channelBank = channelLevee = 0;
+            channelHead = channelBeyond = channelBank = channelLevee = channelJitter = 0;
+            jitterScratch.set(0, 0, 0);
             lakeHold = Double.NaN;
             aquiferMin = Integer.MAX_VALUE;
             aquiferMax = Integer.MIN_VALUE;
@@ -378,6 +387,7 @@ public final class Hydro
     private final double estuaryLength, estuaryFlare;
 
     private final double valleyRatio;
+    private final ContourJitter jitter;
     private final AtomicIntegerArray next;
 
     Hydro(
@@ -390,6 +400,7 @@ public final class Hydro
             WorldScale world,
             BuildPool pool) {
         this.seed = SeededNoise.mix(seed ^ Rules.seed(RULES.json, "variationSeed"));
+        jitter = new ContourJitter(seed);
         this.heights = heights;
         this.intent = intent;
         this.groundwater = groundwater;
@@ -1569,6 +1580,10 @@ public final class Hydro
             // Flush banks hold the highest water beside them.
             double beyond = (nearest - 1) * nearWidth;
             double head = beyond <= Drainage.LEVEE ? Math.max(riverHead, levee) : riverHead;
+            // The blocks touching a route's water hold it, as a channel's levee does: a bank's
+            // partial weight alone left them a block under the water where the ground fell away.
+            if (beyond <= Drainage.LEVEE)
+                out.lakeHold = Double.isNaN(out.lakeHold) ? head : Math.max(out.lakeHold, head);
             if (valleys == null) {
                 if (nearest < 1 + bankScale)
                     bank(out, id, head, 1 - Rules.smooth((nearest - 1) / bankScale));
@@ -1665,6 +1680,7 @@ public final class Hydro
         out.channelHead = hit.level;
         out.channelBeyond = Math.max(0, hit.distance - hit.radius);
         out.channelBank = 2 * hit.radius * bankScale;
+        out.channelJitter = jitter.along(x, z, out.jitterScratch);
         out.channelLevee = hit.levee;
         out.bar = hit.bar;
         return 0;
@@ -1701,11 +1717,15 @@ public final class Hydro
                         + Math.min(
                                 drainage.valleyCap,
                                 drainage.valleyRatio * Math.max(0, h - water.channelHead));
-        if (water.channelBeyond >= span) return h;
+        // Beyond the valley the ground still holds any water it touches (a route's bank).
+        if (water.channelBeyond >= span) return holding(h, water);
         // Flush banks: the ground beside the water stands level with its surface, which holds it.
         double bank = Math.floor(water.channelHead) + .5;
         // A valley never cuts into a network lake's or route's bank.
-        double w = (1 - side(water.channelBeyond / span, (h - bank) / span)) * (1 - water.weight);
+        // Contour jitter (v147): the side's distance wanders, never at the bank or valley edge.
+        double rise = (h - bank) / span;
+        double beyond = jitter.valley(water.channelBeyond, span, rise, water.channelJitter);
+        double w = (1 - side(beyond / span, rise)) * (1 - water.weight);
         h += (bank - h) * w;
         return holding(h, water);
     }

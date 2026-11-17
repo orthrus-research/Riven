@@ -248,6 +248,29 @@ varies hills and spurs by 0.6. Uplands carry hills 28 and spurs 8, foreland hill
 hill and lowland kernels (`HillTerrain`, `LowlandTerrain`, `RegionalFabricMap`), which at 32 km
 acted on 0% and 0.3% of land.
 
+**Contour jitter (terrain-v147).** Soil ground showed long, evenly spaced one-block contour lines:
+relief had nothing finer than 16 blocks. `ContourJitter` is one short-wave warp w(x) (gradient
+octave pairs at 40 and 18 blocks displacing 6 and 2; mean |w| 2.3 blocks, p90 4), defined in
+`riven-base-terrain.json` `contourJitter`. A column's base terrain reads its province ground and
+every noise field at x + k w(x), so contours wander while the height moves by about grad(h) . w,
+nothing on flat ground. k fades the warp from 1 to 0 as the unjittered ground's broad slope climbs
+from 0.3 to 0.9 blocks per block: a warp steepens ground as much as it turns contours. The warp is
+true, so derivatives stay exact by the chain rule, grad_x = (I + k Jw + w (x) grad k)^T grad_p (the
+regional shares, read at x, enter through the inverse; grad k is a 1/1000-block forward difference
+of the analytic broad slope); its blocks per wavelength sum to at most 0.3 and
+`RegionalReliefCheck` checks the Jacobian stays fold-free. Only the shape is jittered: what
+classifies ground (broad slope, landform position, province level, spine, cap) and what steers
+erosion and sizes the terrain passes (the unjittered gradient) stay where they were, so landform,
+formation and gully boundaries keep their courses, and planners (water, landmarks, carvers,
+coasts) read the unjittered ground, so plans and reservations stand as they did. A drainage
+valley's side moves its distance from the bank by 4u(1 - u) times the warp's x displacement (u the
+share of the valley's span), exactly zero at the flush bank and the valley's edge, eased on narrow
+valleys and gone where the side nears a block per block. The terrain passes' soft forms can take a
+share of the warp (`passesShare`, 0: their flanks have no slope cap, and any share added walls).
+`tools/checks/ContourRunCheck` measures unbroken contour runs on soil and credits the slope under
+them to each base term and stage: at v146 drainage valley sides made 58% of it and the passes 28%,
+base terms about 10% and erosion under 1%.
+
 Every term carries its exact derivative (`RegionalReliefCheck`). Elevation classes read the
 ground's landform position (`BaseElevationMap.position`), not intent. Plateau buttes
 (`PlateauTerrain`) were retired in v126; tableland provinces carry that ground.

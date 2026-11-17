@@ -31,6 +31,9 @@ public final class RegionalTerrainPasses {
     private final Profile[] profiles = new Profile[KINDS.length];
     private final double regionSpan, warpAmplitude, roughAmplitude, roughWave;
 
+    /** The base terrain's contour jitter (terrain-v147): shapes are read where base reads its. */
+    private final ContourJitter jitter;
+
     RegionalTerrainPasses(long worldSeed, TerrainHeightReference heights) {
         seed = SeededNoise.mix(worldSeed ^ DEFINITION.variationSeed);
         shapeA = noise(101);
@@ -52,6 +55,7 @@ public final class RegionalTerrainPasses {
         warpAmplitude = heights.feature("knoll").width.min * TerrainScale.HORIZONTAL;
         roughAmplitude = heights.feature("terrace").magnitude.targetAverage / 2;
         roughWave = heights.feature("knoll").width.min * TerrainScale.HORIZONTAL;
+        jitter = new ContourJitter(worldSeed);
     }
 
     private SeededNoise noise(long salt) {
@@ -74,6 +78,7 @@ public final class RegionalTerrainPasses {
         private final double[] admission = new double[KINDS.length];
         private double coarse, fine;
         private final HeightSample gradient = new HeightSample();
+        private final ContourJitter.Warp jitter = new ContourJitter.Warp();
 
         public void clear(double value) {
             formation =
@@ -87,6 +92,7 @@ public final class RegionalTerrainPasses {
             permutation = 0;
             Arrays.fill(weights, 0);
             gradient.set(0, 0, 0);
+            jitter.clear();
         }
     }
 
@@ -128,6 +134,12 @@ public final class RegionalTerrainPasses {
                 x + warpAmplitude * warpX.sample(x / (regionSpan * 1.5), z / (regionSpan * 1.5));
         double wz =
                 z + warpAmplitude * warpZ.sample(x / (regionSpan * 1.5), z / (regionSpan * 1.5));
+        // The soft forms (hummocks, knolls, dunes) take the contour jitter, faded with the slope
+        // as the base terrain's is, so their contours wander with the ground's; ridges and
+        // benches keep their creases and treads where they stood.
+        jitter.sample(x, z, out.jitter);
+        double soft = jitter.passesShare * jitter.fade(groundSlope);
+        double jx = out.jitter.x * soft, jz = out.jitter.z * soft;
         double largest = -1;
         for (int dz = 0; dz < 2; dz++)
             for (int dx = 0; dx < 2; dx++) {
@@ -141,6 +153,7 @@ public final class RegionalTerrainPasses {
                         c = StrictMath.cos(angle),
                         s = StrictMath.sin(angle);
                 double rx = wx * c - wz * s, rz = wx * s + wz * c;
+                double sx = (wx + jx) * c - (wz + jz) * s, sz = (wx + jx) * s + (wz + jz) * c;
                 double scale = 0.7 + 0.6 * SeededNoise.unit(third);
                 double strength = 0.7 + 0.6 * SeededNoise.unit(SeededNoise.mix(third));
                 double phase = SeededNoise.unit(SeededNoise.mix(key ^ 0x5048415345L)) * 31;
@@ -153,10 +166,14 @@ public final class RegionalTerrainPasses {
                                     * patchWeight;
                     cdf = next;
                     if (weight <= 0) continue;
+                    boolean jittered =
+                            KINDS[i] == Formation.HUMMOCKS
+                                    || KINDS[i] == Formation.KNOLLS
+                                    || KINDS[i] == Formation.DUNES;
                     shape(
                             KINDS[i],
-                            rx,
-                            rz,
+                            jittered ? sx : rx,
+                            jittered ? sz : rz,
                             scale,
                             strength,
                             phase,
@@ -220,6 +237,22 @@ public final class RegionalTerrainPasses {
     /** A bench riser's share of its step, and the steepest a widened riser climbs. */
     static final double RISER = 0.30, RISER_SLOPE = 1.0;
 
+    /** The steepest a yielding bench climbs where a full-width riser would be too steep. */
+    static final double BENCH_SLOPE = 0.9;
+
+    /**
+     * What a bench riser is sized to climb over the ground's own slope: under a block per block,
+     * so erosion's gullies and the ground's small turns beneath a riser do not lift it into a
+     * two-block step.
+     */
+    static final double BENCH_RISE = 0.85;
+
+    /**
+     * Slope a bench riser allows for beneath it beyond the ground's smooth slope (erosion gullies,
+     * the contour jitter's turns), so a narrow riser on gentle ground stays a one-block step.
+     */
+    static final double BENCH_MARGIN = 0.06;
+
     /** The steepest a ridge pass's flank or crease climbs, in blocks per block. */
     static final double RIDGE_SLOPE = 1.0;
 
@@ -259,7 +292,9 @@ public final class RegionalTerrainPasses {
                 out.coarse = amp * 1.8 * (sm - sn);
                 // A flank climbs about amp * 1.8 * 2 / wave where the noise turns fastest; a
                 // patch whose flanks would pass RIDGE_SLOPE blocks per block stands lower.
-                out.coarse *= Math.min(1, RIDGE_SLOPE * wave / (amp * 3.6));
+                // The ground's own slope counts: on a slope the flanks keep what is left of it.
+                out.coarse *=
+                        Math.min(1, Math.max(0, RIDGE_SLOPE - groundSlope) * wave / (amp * 3.6));
                 out.fine =
                         amp
                                 * p.fineGain
@@ -286,8 +321,16 @@ public final class RegionalTerrainPasses {
                 // A riser takes RISER of the step and so multiplies the ground's slope by up to
                 // 1.875 / RISER; on steep ground it widens until it climbs at most RISER_SLOPE
                 // blocks per block, and on ground too steep for that the treads are gone.
-                double riser = Math.max(RISER, Math.min(1, 1.875 * groundSlope / RISER_SLOPE));
+                double riser =
+                        Math.max(
+                                RISER,
+                                Math.min(1, 1.875 * (groundSlope + BENCH_MARGIN) / BENCH_RISE));
                 out.coarse = datum + step * (level + smooth((f - 0.5) / riser + 0.5)) - height;
+                // On ground too steep for a full-width riser to stay under BENCH_SLOPE (over about
+                // half a block per block) the treads yield: a share y of a full-width bench climbs
+                // groundSlope (1 + 0.875 y), held to BENCH_SLOPE, and steep ground keeps none.
+                if (groundSlope > 0)
+                    out.coarse *= Math.max(0, Math.min(1, (BENCH_SLOPE / groundSlope - 1) / 0.875));
                 out.fine = amp * p.fineGain * m;
                 break;
             default:
