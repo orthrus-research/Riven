@@ -314,6 +314,13 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   `/riven shaderprops` leaves alone. Excluded: Bliss, Photon, Rethinking Voxels and Super Duper
   Vanilla (no 1.12.2 release), Miniature and Lux (no DH programs), and MakeUp Ultra Fast 9.6 (its
   1.12 `block.properties` has no entry for flowers, saplings, vines, lily pads or glowing blocks).
+- **2026-11-17. Traversal.** Land should be walkable without building: outside ranges, no
+  generated form on its own climbs more than about a block per block (a step of two blocks stops a
+  walker), so risers, pass forms, dune slip faces (0.65, sand's angle of repose), valley sides and
+  erosion gullies are bounded by slope (terrain-v146). Ranges keep their walls for drama, and
+  carver ravines, landmark rims and coastal cliffs and headlands are intended obstacles.
+  `tools/checks/TraversalCheck` measures each change against the same windows on three seeds at
+  32 km.
 
 ## Adopted 2026-10-26
 

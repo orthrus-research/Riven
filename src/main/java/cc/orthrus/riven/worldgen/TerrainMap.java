@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 145;
+    public static final int VERSION = 146;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -427,6 +427,7 @@ public final class TerrainMap {
                 out.baseDz * scale,
                 out.base.noise(),
                 Math.min(out.baseHeight - out.minimumY, out.maximumY - out.baseHeight),
+                erosionSlopeLimit(out.base.spine()) * scale,
                 octaves,
                 out.erosion);
         out.originalHeight = out.baseHeight + out.erosion.displacement;
@@ -441,6 +442,7 @@ public final class TerrainMap {
                 out.land,
                 out.originalHeight,
                 fine,
+                Rules.hypot(out.baseDx, out.baseDz),
                 out.minimumY,
                 out.maximumY,
                 out.passes);
@@ -454,6 +456,18 @@ public final class TerrainMap {
         out.height = out.passes.height;
         out.rockyParentHeight = out.height;
         out.clearSkippedStages(out.height);
+    }
+
+    /**
+     * The steepest, in blocks per block, that ground and its erosion gullies may stand together
+     * before the gullies are shallowed (traversal, terrain-v146): steps of two blocks begin near
+     * 1.5. Ranges keep their full gullies, fading in with the spine weight.
+     */
+    static final double EROSION_SLOPE_LIMIT = 1.0;
+
+    private static double erosionSlopeLimit(double spine) {
+        double keep = Rules.smooth((spine - 0.25) / 0.5);
+        return keep >= 1 ? Double.POSITIVE_INFINITY : EROSION_SLOPE_LIMIT / (1 - keep);
     }
 
     private void seal(Sample out) {

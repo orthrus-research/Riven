@@ -46,6 +46,7 @@ public final class ErosionFilter {
             double gradientZ,
             double fadeTarget,
             double headroom,
+            double slopeLimit,
             int octaves,
             Result out) {
         out.displacement = 0;
@@ -61,6 +62,12 @@ public final class ErosionFilter {
         double requested = firstAmplitude * (2 - Math.scalb(1.0, 1 - octaves));
         double budget = Math.min(requested, headroom * 0.75) * admission;
         double amplitude = budget / (2 - Math.scalb(1.0, 1 - octaves));
+        // Each octave's gullies fall up to pi * amplitude / wave per unit, the same for every
+        // octave since both halve. Where the ground's own slope and the octaves together would
+        // pass slopeLimit, the gullies are shallowed to fit; ground already steeper keeps a
+        // quarter of them.
+        double gullies = octaves * Math.PI * amplitude / wavelength;
+        amplitude *= Math.max(0.25, Math.min(1, (slopeLimit - slope) / gullies));
         double gx = gradientX / slope * 0.4, gz = gradientZ / slope * 0.4;
         double mask = easeOut(slope * 2), ridgeMask = mask, ridgeFade = fadeTarget;
         double wave = wavelength;

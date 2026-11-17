@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 1,
+  "revision": 2,
   "variationSeed": "0x524956454e465031",
   "regionSpanInPlainWidths": 2.0,
   "roughening": {"minimumStrength": 0.3, "maximumStrength": 1.2},

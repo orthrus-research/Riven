@@ -188,7 +188,7 @@ exact derivatives:
 0.3, downs 0.15, others 0) steps its ground through three treads 36 blocks from lowest to
 highest (`riven-base-terrain.json` `benches`), centred on the level. The treads follow a bench
 driver carried on the raster (gradient noise at half a cell, stretched by 1.6), and each
-riser, a twentieth of the driver wide, sits where the driver, warped by 0.08 of the plateau
+riser, 0.08 of the driver wide (a twentieth until v146), sits where the driver, warped by 0.08 of the plateau
 edge field, crosses a tread boundary; benches yield to spines as caps do. A column pays one
 gradient read only where the bench share is above zero and no plateau already read the edge
 field, and every column reads two more raster fields.
@@ -230,7 +230,8 @@ from the spine cells carrying their half width.
   rotated by its own angle and read through a 450-block domain warp at 2,400 blocks, so crests
   curve and branch with no lattice axis. Smaller octaves ride on high first-octave crests.
   Ranges are never calm: they keep at least their ridged share of strength.
-- Terraces step the terraced share into 14-block treads with short risers.
+- Terraces step the terraced share into 14-block treads; each riser takes half its step (0.3
+  until v146, when risers multiplied a scarp's slope by up to six).
 - A soft ceiling eases the top 48 blocks below the highest legal surface.
 
 **Plateaus and palettes (terrain-v128).** A type's `plateau` share makes its level a cap: where
@@ -476,6 +477,9 @@ ground's landform position (`BaseElevationMap.position`), not intent. Plateau bu
 - **Broad intent** (`Terrain`, `riven-terrain.json`): low/middle/high level and ruggedness
   character, read by every selector.
 - **Erosion** (`ErosionFilter`, MPL-2.0): three directional octaves at 64, 32 and 16 blocks.
+  Their gullies keep the nominal depth at half the nominal width, so since v146 they are
+  shallowed where they and the ground would climb more than a block per block together (at least
+  a quarter kept), except on ranges, where the spine weight brings full gullies back.
 - **Substrate** (`SubstrateMap`, v30, `riven-substrate.json`): three material permissions, all
   0.9, read by drylands.
 
@@ -541,6 +545,10 @@ Shared rules for the land stages:
   `shoreReservationInCoastalPlainWidths` (0.5) coastal-plain widths in `riven-terrain.json`.
 - Drylands require hot dry climate and attenuate around earlier major relief. Dunes in regional
   passes need hot dry climate and fade on steep slopes; benches need dry warm or hot climate.
+  Since v146 no pass makes a ledge a walker cannot climb on its own: a dune's slip face falls at
+  most 0.65 blocks per block and runs out over the next stoss, a bench riser widens with the
+  ground's slope until it climbs at most a block per block, and a ridge patch whose flanks would
+  pass that stands lower.
 - Volcanoes follow tectonics in any climate ([DECISIONS.md](DECISIONS.md), Volcanoes; terrain-v130):
   the potential is the strongest of rift weight, arc weight along the ranges and a sparse hotspot
   field (`VolcanicTerrain.potential`, `riven-volcanic.json`). Climate changes what grows on and
@@ -618,7 +626,9 @@ Channels 6 blocks wide or more are rivers: they reserve bed, bank and valley (2.
 like any river, so landforms keep their skirts, and they mark river-mouth weights; narrower streams
 reserve nothing, so no landform site reads them, and they keep the land's biome. Every channel's
 bank and valley is cut at the hydrology constraint from the column's own height: the valley widens
-by 2.5 blocks per block the ground stands above the water (at most 48). A river on a shoaling coast
+by 2.5 blocks per block the ground stands above the water (at most 96 since v146, 48 before),
+and a capped side that would still climb faster than a block per block eases into a straight
+ramp with rounded ends. A river on a shoaling coast
 flares into a funnel estuary (up to 3.5 times its width over the last 320 blocks); since v140 every
 coast flares a river's mouth, a reflective one by 0.3 of the full flare. Channel form:
 

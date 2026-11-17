@@ -1705,9 +1705,29 @@ public final class Hydro
         // Flush banks: the ground beside the water stands level with its surface, which holds it.
         double bank = Math.floor(water.channelHead) + .5;
         // A valley never cuts into a network lake's or route's bank.
-        double w = (1 - Rules.smooth(water.channelBeyond / span)) * (1 - water.weight);
+        double w = (1 - side(water.channelBeyond / span, (h - bank) / span)) * (1 - water.weight);
         h += (bank - h) * w;
         return holding(h, water);
+    }
+
+    /**
+     * A valley side's rise at u of its span (0 at the bank, 1 at the valley's edge) for ground
+     * that stands rise spans above the bank. A smoothstep side's steepest point is 1.875 rises per
+     * span, which passes one block per block once the span is capped and the ground stands more
+     * than about half the span above the water; such sides blend into a straight ramp with
+     * rounded ends, which spends the span at a steady slope, its shoulders the share the slope
+     * leaves (at least 0.15 of the span at each end).
+     */
+    static double side(double u, double rise) {
+        double steep = Rules.smooth((1.875 * rise - 0.8) / 0.4);
+        double s = Rules.smooth(u);
+        if (steep == 0) return s;
+        double e = Math.max(0.15, Math.min(0.5, 1 - rise));
+        double t = Math.max(0, Math.min(1, u)), ramp;
+        if (t < e) ramp = t * t / (2 * e * (1 - e));
+        else if (t > 1 - e) ramp = 1 - (1 - t) * (1 - t) / (2 * e * (1 - e));
+        else ramp = (t - e / 2) / (1 - e);
+        return s + (ramp - s) * steep;
     }
 
     /**

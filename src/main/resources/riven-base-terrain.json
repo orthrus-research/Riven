@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 8,
+  "revision": 9,
   "bodySeed": "544552424f445931",
   "detailSeed": "5445524445544149",
   "wideSeed": "4241534557494431",
@@ -15,8 +15,8 @@
   "spine": {"liftBlocks": 170, "reliefBlocks": 110, "ridged": 0.85},
   "plateau": {"scarpWidth": 0.06, "edgeAmplitude": 0.3, "edgeWavelengthBlocks": 900, "flatten": 0.9, "scarpTerrace": 0.9, "spineYieldFrom": 0.25, "spineYieldFull": 0.55},
   "palette": {"hillWavelengthBlocks": 420, "spurWavelengthBlocks": 260, "swellWavelengthBlocks": 1600, "hollowWavelengthBlocks": 180, "variety": 0.6},
-  "benches": {"treads": 3, "riseBlocks": 36, "scarpWidth": 0.05, "edgeAmplitude": 0.08},
-  "terraces": {"stepBlocks": 14, "riserShare": 0.3},
+  "benches": {"treads": 3, "riseBlocks": 36, "scarpWidth": 0.08, "edgeAmplitude": 0.08},
+  "terraces": {"stepBlocks": 14, "riserShare": 0.5},
   "ceilingMarginBlocks": 4,
   "ceilingSoftBlocks": 48,
   "note": "Relief and spectral composition consume the earlier BaseElevationMap. Elevation settings now belong only to riven-base-elevation.json. The four RegionalProfileMap controls shape the province ground (S4). Spectral scales and phases are unchanged. Reference widths receive TerrainScale.HORIZONTAL once."

@@ -73,6 +73,7 @@ public final class RegionalTerrainPasses {
         public final double[] weights = new double[KINDS.length];
         private final double[] admission = new double[KINDS.length];
         private double coarse, fine;
+        private final HeightSample gradient = new HeightSample();
 
         public void clear(double value) {
             formation =
@@ -95,6 +96,7 @@ public final class RegionalTerrainPasses {
             Terrain.Sample land,
             double originalHeight,
             double originalFine,
+            double groundSlope,
             double minimumY,
             double maximumY,
             Result out) {
@@ -149,7 +151,16 @@ public final class RegionalTerrainPasses {
                                     * patchWeight;
                     cdf = next;
                     if (weight <= 0) continue;
-                    shape(KINDS[i], rx, rz, scale, strength, phase, originalHeight, out);
+                    shape(
+                            KINDS[i],
+                            rx,
+                            rz,
+                            scale,
+                            strength,
+                            phase,
+                            originalHeight,
+                            groundSlope,
+                            out);
                     out.formation += out.coarse * weight;
                     out.formationFine += out.fine * weight;
                     out.weights[i] += weight;
@@ -204,6 +215,15 @@ public final class RegionalTerrainPasses {
         out.appliedDisplacement = out.height - originalHeight;
     }
 
+    /** A bench riser's share of its step, and the steepest a widened riser climbs. */
+    static final double RISER = 0.30, RISER_SLOPE = 1.0;
+
+    /** The steepest a ridge pass's flank or crease climbs, in blocks per block. */
+    static final double RIDGE_SLOPE = 1.0;
+
+    /** Dry sand's angle of repose, about 33 degrees, in blocks per block. */
+    static final double LEE_SLOPE = 0.65;
+
     private void shape(
             Formation kind,
             double x,
@@ -212,11 +232,12 @@ public final class RegionalTerrainPasses {
             double strength,
             double phase,
             double height,
+            double groundSlope,
             Result out) {
         Profile p = profiles[kind.ordinal()];
         double wave = p.wave * scale, amp = p.amplitude * strength;
         double ux = x / wave + phase, uz = z / wave + phase * 0.37;
-        double n = shapeA.sample(ux, uz);
+        double n = shapeA.sample(ux, uz, out.gradient);
         double m =
                 kind == Formation.HUMMOCKS || kind == Formation.DUNES
                         ? 0
@@ -232,7 +253,11 @@ public final class RegionalTerrainPasses {
                 out.fine = amp * p.fineGain * shapeC.sample(ux * 2.5, uz * 2.5);
                 break;
             case RIDGES:
-                out.coarse = amp * 1.8 * (Math.sqrt(m * m + 0.0025) - Math.sqrt(n * n + 0.0025));
+                double sm = Math.sqrt(m * m + 0.0025), sn = Math.sqrt(n * n + 0.0025);
+                out.coarse = amp * 1.8 * (sm - sn);
+                // A flank climbs about amp * 1.8 * 2 / wave where the noise turns fastest; a
+                // patch whose flanks would pass RIDGE_SLOPE blocks per block stands lower.
+                out.coarse *= Math.min(1, RIDGE_SLOPE * wave / (amp * 3.6));
                 out.fine =
                         amp
                                 * p.fineGain
@@ -244,14 +269,23 @@ public final class RegionalTerrainPasses {
                 t -= Math.floor(t);
                 double crest = 0.62 + 0.20 * (phase / 31);
                 double dune = t < crest ? smooth(t / crest) : 1 - smooth((t - crest) / (1 - crest));
-                out.coarse = amp * 2 * (dune - 0.5);
+                // The slip face stands at sand's angle of repose: below the crest the lee never
+                // falls faster than LEE_SLOPE blocks per block, and runs out over the next stoss.
+                double perBlock =
+                        Rules.hypot(1 + 0.22 * out.gradient.dx, 0.22 * out.gradient.dz) / wave;
+                double fromCrest = (t >= crest ? t - crest : t + 1 - crest) / perBlock;
+                out.coarse = Math.max(amp * 2 * (dune - 0.5), amp - LEE_SLOPE * fromCrest);
                 out.fine = amp * p.fineGain * shapeC.sample(ux * 2.5, uz * 2.5);
                 break;
             case BENCHES:
                 double step = amp * 2,
                         datum = phase * step + step * 0.8 * shapeA.sample(ux / 8, uz / 8);
                 double q = (height - datum) / step, level = Math.floor(q), f = q - level;
-                out.coarse = datum + step * (level + smooth((f - 0.35) / 0.30)) - height;
+                // A riser takes RISER of the step and so multiplies the ground's slope by up to
+                // 1.875 / RISER; on steep ground it widens until it climbs at most RISER_SLOPE
+                // blocks per block, and on ground too steep for that the treads are gone.
+                double riser = Math.max(RISER, Math.min(1, 1.875 * groundSlope / RISER_SLOPE));
+                out.coarse = datum + step * (level + smooth((f - 0.5) / riser + 0.5)) - height;
                 out.fine = amp * p.fineGain * m;
                 break;
             default:
