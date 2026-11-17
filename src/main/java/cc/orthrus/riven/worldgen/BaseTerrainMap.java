@@ -2,6 +2,8 @@ package cc.orthrus.riven.worldgen;
 
 import com.google.gson.JsonObject;
 
+import java.util.Arrays;
+
 /** Earlier inland height potential. Marine ownership, water and later shaping remain downstream. */
 public final class BaseTerrainMap {
     private static final Rules RULES = Rules.load("riven-base-terrain.json", 1);
@@ -164,6 +166,19 @@ public final class BaseTerrainMap {
         wide = new SeededNoise(SeededNoise.mix(seed ^ Rules.seed(j, "wideSeed")));
     }
 
+    /**
+     * The terms {@link Sample#term} splits the height into: the sea and province level, the
+     * plateau scarp's lift, the spines' lift, benches, the rolling noise, ridges, the landform
+     * palettes, scarp terraces and the soft ceiling's bend.
+     */
+    public static final String[] TERM_NAMES = {
+        "level", "plateau", "spine", "benches", "noise", "ridges", "forms", "terraces", "ceiling"
+    };
+
+    static final int TERMS = TERM_NAMES.length;
+    private static final int LEVEL = 0, PLATEAU = 1, SPINE = 2, BENCHES = 3, NOISE = 4;
+    private static final int RIDGES = 5, FORMS = 6, TERRACES = 7, CEILING = 8;
+
     /** Caller-owned scratch. Its local derivatives are not footprint or later-terrain bounds. */
     public static final class Sample {
         private final BaseElevationMap.Sample elevation = new BaseElevationMap.Sample();
@@ -173,6 +188,12 @@ public final class BaseTerrainMap {
         private final RegionalProfileMap.Sample region = new RegionalProfileMap.Sample();
         private double height, dx, dz, broadDx, broadDz;
         private double amplitude, noise, coarseHeight, fineContribution;
+
+        /**
+         * Diagnostic split of {@link #height()}: each term's share in blocks, read by tools that
+         * credit a feature (a wall, a slope) to the term that made it. They sum to the height.
+         */
+        private final double[] terms = new double[TERMS];
 
         /** The province ground (blocks above the sea) and its landform position (0..3). */
         private double ground, position;
@@ -282,6 +303,11 @@ public final class BaseTerrainMap {
             return fineContribution;
         }
 
+        /** Term k's share of the height in blocks (see {@link #TERM_NAMES}). */
+        public double term(int k) {
+            return terms[k];
+        }
+
         public String firstLandform() {
             return elevation.firstLandform();
         }
@@ -326,6 +352,8 @@ public final class BaseTerrainMap {
         // S4: the province bands set the level; their characters shape it. Every term below
         // carries its exact derivative.
         double[] f = out.fields;
+        double[] terms = out.terms;
+        Arrays.fill(terms, 0);
         ground.sample(x, z, f);
         int fx = ProvinceGround.FIELDS, fz = 2 * ProvinceGround.FIELDS;
         // Plateaus: the level stands on the cap where the plateau share, warped by an edge
@@ -354,6 +382,7 @@ public final class BaseTerrainMap {
                 cap *= 1 - yieldW;
             }
             double gap = f[5] - f[6];
+            terms[PLATEAU] = f[6] + gap * cap - f[0];
             f[0] = f[6] + gap * cap;
             f[fx] = f[fx + 6] + (f[fx + 5] - f[fx + 6]) * cap + gap * capDx;
             f[fz] = f[fz + 6] + (f[fz + 5] - f[fz + 6]) * cap + gap * capDz;
@@ -369,6 +398,7 @@ public final class BaseTerrainMap {
         if (spine > 0) {
             double sx = f[fx + 4], sz = f[fz + 4];
             f[0] += spineLift * spine;
+            terms[SPINE] = spineLift * spine;
             f[fx] += spineLift * sx;
             f[fz] += spineLift * sz;
             for (int k = 1; k <= 2; k++) {
@@ -403,6 +433,7 @@ public final class BaseTerrainMap {
             double shareDz = f[fz + 11] * keep + f[11] * keepDz;
             double centred = steps - .5;
             f[0] += benchRise * share * centred;
+            terms[BENCHES] = benchRise * share * centred;
             f[fx] += benchRise * (shareDx * centred + share * stepsSlope * vx);
             f[fz] += benchRise * (shareDz * centred + share * stepsSlope * vz);
         }
@@ -601,6 +632,10 @@ public final class BaseTerrainMap {
         out.coarseHeight = mean + amplitude * coarse + ridges;
         out.fineContribution = amplitude * fineShare * out.detail.height;
         double height = mean + amplitude * n + ridges;
+        terms[LEVEL] = mean - terms[PLATEAU] - terms[SPINE] - terms[BENCHES];
+        terms[NOISE] = amplitude * n;
+        terms[RIDGES] = ridges - forms;
+        terms[FORMS] = forms;
         double dx = meanDx + amplitudeDx * n + amplitude * nx + ridgesDx;
         double dz = meanDz + amplitudeDz * n + amplitude * nz + ridgesDz;
         // Terraces: flat steps with short risers on a plateau's scarp, a broken escarpment.
@@ -619,6 +654,7 @@ public final class BaseTerrainMap {
             double k = 1 - steps + steps * slope;
             double gap = stepped - height;
             height = height + gap * steps;
+            terms[TERRACES] = gap * steps;
             dx = dx * k + gap * stepsDx;
             dz = dz * k + gap * stepsDz;
         }
@@ -626,6 +662,7 @@ public final class BaseTerrainMap {
         if (height > ceilingStart) {
             double span = ceiling - ceilingStart, u = (height - ceilingStart) / span;
             double bent = ceilingStart + span * StrictMath.tanh(u);
+            terms[CEILING] = bent - height;
             double k = 1 - StrictMath.tanh(u) * StrictMath.tanh(u);
             height = bent;
             dx *= k;

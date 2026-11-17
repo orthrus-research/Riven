@@ -21,6 +21,10 @@ Y69.
 
 Point samples can miss features narrower than `--step`. `--footprint n` also takes n x n samples
 per pixel and keeps each stage's largest change; `features.png` then uses those maxima.
+`--walls` also samples each pixel's neighbours one block east and south and keeps the largest step
+to them (`walls.u8`), at three times the sampling cost; the map site then offers a Walls
+projection, steps of 2 or more that a walker cannot climb (`tools/checks/TraversalCheck.java`
+measures them per window).
 
 ## Setup
 
@@ -84,11 +88,11 @@ and kept out of search indexes (`X-Robots-Tag`, `robots.txt`).
   every projection reads, and each stage's change (in sixteenths of a block) and reason. Level L
   takes every 2^L-th sample, so a coarser level is exactly what a coarser render samples there.
 - `tools/atlas/map/` is the page: the hamburger menu picks the render and the projection (relief,
-  hillshade, steepness, biomes, climate, temperature, moisture, rivers, water bodies, plates,
-  provinces, coast types, land level and character, selected features, and every stage's change
-  and reasons). Colours are computed in the browser from the fields, so switching projection
-  fetches nothing; tapping a column lists its sampled values. The URL keeps the render,
-  projection and view.
+  hillshade, steepness, walls (renders sampled with `--walls`), biomes, climate, temperature,
+  moisture, rivers, water bodies, plates, provinces, coast types, land level and character, selected
+  features, and every stage's change and reasons). Colours are computed in the browser from the
+  fields, so switching projection fetches nothing; tapping a column lists its sampled values. The
+  URL keeps the render, projection and view.
 - The site is built in `.local/map/site` and deployed as the assets-only Worker `orthrus-map`
   (`tools/atlas/map/wrangler.jsonc`, through the wrangler login). Renders are content-addressed
   (seed, version, window and digest) and tile URLs carry the tile format, so tiles are cached as

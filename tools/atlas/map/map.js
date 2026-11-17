@@ -320,6 +320,27 @@ function steepness(env, i, k) {
   ramp(STEEPNESS, env.slope[k], env.rgb);
 }
 
+// Walls: a dry column's largest step to its next column east or south (TerrainAtlas walls=true).
+const WALL_COLORS = [null, null, [245, 160, 40], [235, 90, 30], [200, 20, 20]];
+
+function walls(env, i, k) {
+  base(env, i, k);
+  const step = env.c.walls[i];
+  if (step >= 2) copy(WALL_COLORS[Math.min(4, step)], env.rgb);
+}
+
+function wallsLegend() {
+  return list(
+    [
+      { label: 'step of 2 (a walker cannot step up)', color: WALL_COLORS[2] },
+      { label: 'step of 3 (the largest safe drop)', color: WALL_COLORS[3] },
+      { label: 'step of 4 or more', color: WALL_COLORS[4] },
+      { label: 'water (darker = deeper)', color: [40, 90, 170] },
+    ],
+    'Each pixel’s column against its neighbours one block east and south; coarser levels show only the pixels they keep.',
+  );
+}
+
 function waterBodies(env, i, k) {
   const c = env.c;
   const g = 90 + 140 * env.sh[k];
@@ -437,6 +458,7 @@ function projections() {
     { id: 'relief', group: 'Terrain', name: 'Relief', paint: relief(), legend: reliefLegend },
     { id: 'shade', group: 'Terrain', name: 'Hillshade', paint: base, legend: shadeLegend },
     { id: 'steepness', group: 'Terrain', name: 'Steepness', paint: steepness, legend: () => rampLegend(STEEPNESS, '°') },
+    { id: 'walls', group: 'Terrain', name: 'Walls', needs: ['walls'], paint: walls, legend: wallsLegend },
     { id: 'biomes', group: 'Biomes and climate', name: 'Biomes', paint: categorical('habitat', 'habitat'), legend: () => categoryLegend('habitat') },
     { id: 'climate', group: 'Biomes and climate', name: 'Climate regions', paint: categorical('region', 'region', { water: true }), legend: () => categoryLegend('region') },
     { id: 'temperature', group: 'Biomes and climate', name: 'Temperature', paint: continuous('celsius', TEMPERATURE, 100), legend: () => rampLegend(TEMPERATURE, ' °C') },

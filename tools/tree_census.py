@@ -4,12 +4,13 @@
 
 Reads windows.csv, area.csv and sites.csv and writes report.md beside them, per biome or
 biome/variant key: dry-land area, stems per hectare by layer, height spread (mean, 10th, 50th and
-90th percentiles, coefficient of variation, distinct heights), species shares, crown spread and leaf
-volume, and two spatial measures of the canopy and emergent layers: the Clark-Evans ratio R of
-nearest-neighbour distances (below 1 clumped, about 1 random, above 1 regular) and the index of
-dispersion of stem counts in 32-block quadrats (variance over mean: about 1 random, above 1
-patchy). Per species it reports the heights drawn against the definition and how crown spread and
-leaves follow height (Pearson r).
+90th percentiles, coefficient of variation, distinct heights), species shares, crown spread and
+leaf volume, headroom (the share of dry ground a walker can stand on under the trees), and two
+spatial measures of the canopy and emergent layers: the Clark-Evans ratio R of nearest-neighbour
+distances (below 1 clumped, about 1 random, above 1 regular) and the index of dispersion of stem
+counts in 32-block quadrats (variance over mean: about 1 random, above 1 patchy). Per species it
+reports the heights drawn against the definition and how crown spread and leaves follow height
+(Pearson r).
 """
 
 from __future__ import annotations
@@ -102,9 +103,15 @@ def main() -> None:
     }
     area: dict[str, float] = defaultdict(float)
     window_area: dict[tuple[int, str], float] = {}
+    # Lattice columns and those with two clear blocks over the ground (censuses before the
+    # headroom column have none).
+    lattice: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     for r in csv.DictReader((d / "area.csv").open(encoding="utf-8")):
         blocks = int(r["columns"]) * int(r["lattice"]) ** 2
         area[r["key"]] += blocks
+        if r.get("clear") is not None:
+            lattice[r["key"]][0] += int(r["columns"])
+            lattice[r["key"]][1] += int(r["clear"])
         window_area[(int(r["window"]), r["key"])] = blocks
     sites: list[dict[str, Any]] = list(csv.DictReader((d / "sites.csv").open(encoding="utf-8")))
     for s in sites:
@@ -134,13 +141,15 @@ def main() -> None:
         f"{len(windows)} windows, {len(sites)} trees. Heights are whole trees (roots to crown top);",
         "R is Clark-Evans on canopy and emergent stems (below 1 clumped, 1 random, above 1 regular);",
         f"ID is the index of dispersion in {QUADRAT}-block quadrats (1 random, above 1 patchy).",
+        "Headroom is the share of dry ground with no tree block in the two blocks over it.",
         "",
         "## Biomes and variants",
         "",
         "| key | land ha | stems/ha | "
         + " | ".join(f"{name}/ha" for name in LAYERS)
-        + " | height mean | p10 | p50 | p90 | CV | distinct | spread | leaves | R | ID | species |",
-        "|" + "---|" * (3 + len(LAYERS) + 11),
+        + " | height mean | p10 | p50 | p90 | CV | distinct | spread | leaves | R | ID | headroom"
+        + " | species |",
+        "|" + "---|" * (3 + len(LAYERS) + 12),
     ]
     for key in sorted(area, key=lambda k: -area[k]):
         ha = area[key] / 1e4
@@ -181,12 +190,14 @@ def main() -> None:
             cells = ["-"] * 8
         ratio = f"{statistics.fmean(rs):.2f}" if rs else "-"
         dispersed = f"{statistics.fmean(ids):.2f}" if ids else "-"
+        columns, clear = lattice[key]
+        headroom = f"{100 * clear / columns:.0f}%" if columns else "-"
         lines.append(
             f"| {key} | {ha:.1f} | {len(trees) / ha:.0f} | "
             + " | ".join(f"{v:.0f}" for v in per_layer)
             + " | "
             + " | ".join(cells)
-            + f" | {ratio} | {dispersed} | {top or '-'} |"
+            + f" | {ratio} | {dispersed} | {headroom} | {top or '-'} |"
         )
 
     defined = json.loads(

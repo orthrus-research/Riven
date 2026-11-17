@@ -66,6 +66,7 @@ def window_options(args):
         "threads": args.threads or max(1, (os.cpu_count() or 2) // 2),
         "sites": "true" if args.sites else None,
         "scale": args.scale if args.scale != 1 else None,
+        "walls": "true" if getattr(args, "walls", False) else None,
     }
 
 
@@ -73,6 +74,7 @@ def render_dir(args, source: Source, seed=None):
     seed = args.seed if seed is None else seed
     fp = f"_f{args.footprint}" if args.footprint > 1 else ""
     fp += f"_x{args.scale:g}" if args.scale != 1 else ""
+    fp += "_w" if getattr(args, "walls", False) else ""
     name = f"{seed}_{args.center[0]}_{args.center[1]}_{args.size}_s{args.step}{fp}_{source.label}"
     return CACHE / "renders" / name
 
@@ -177,6 +179,11 @@ def add_window(p, size=8192, step=16):
         type=int,
         default=1,
         help="n: also take n x n samples per pixel and keep each stage's largest change",
+    )
+    p.add_argument(
+        "--walls",
+        action="store_true",
+        help="also sample each pixel's east and south neighbours for the map's walls (3x cost)",
     )
     p.add_argument("--threads", type=int, help="sampler threads (default: cores - 1)")
     p.add_argument("--threshold", type=float, default=1.0, help="feature change in blocks")

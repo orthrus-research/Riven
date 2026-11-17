@@ -91,6 +91,8 @@ def bundles(atlas: Atlas) -> dict[str, list[Field]]:
     ]
     core += [Field(n, "u8", f"{n}.u8", "u1") for n in CORE_BYTES]
     core += [Field("winner", "u8"), Field("feature", "u8")]
+    if atlas.has("walls.u8"):
+        core.append(Field("walls", "u8", "walls.u8", "u1"))
     stages = [
         Field(f"delta_{s}", "i16", f"{fp}delta_{s}.f32", "<f4", DELTA_UNITS) for s in atlas.stages
     ]

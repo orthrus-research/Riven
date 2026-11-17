@@ -43,7 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * <p>Arguments are {@code key=value}: {@code out seed cx cz width height step} for a raster, plus
  * optional {@code threads}, {@code order=forward|reverse}, {@code footprint=n} (n x n samples per
- * pixel for maxima), {@code sites=true}. {@code section=x1,z1,x2,z2} with {@code spacing} writes a
+ * pixel for maxima), {@code walls=true} (each pixel's largest step to its next column east and
+ * south, one block away, the traversal check's walls), {@code sites=true}. {@code section=x1,z1,x2,z2} with {@code spacing} writes a
  * cross-section instead. Raw layers are little-endian; {@code atlas.json} carries legends and a
  * SHA-256 digest of every deterministic layer, independent of threads and sampling order.
  * {@code repeat=true} times a second sampling pass over the built plans (output discarded).
@@ -234,6 +235,7 @@ public final class TerrainAtlas {
     /** Planar layers; index = row * width + column, row 0 at the minimum z. */
     private static final class Raster {
         final int width, height, footprint;
+        final byte[] walls;
         final short[] surface, water, plate, province, waterBody;
         final byte[] habitat,
                 variant,
@@ -254,11 +256,12 @@ public final class TerrainAtlas {
         final LongCodes plates = new LongCodes(), provinces = new LongCodes();
         final LongCodes waterBodies = new LongCodes();
 
-        Raster(int width, int height, int footprint) {
+        Raster(int width, int height, int footprint, boolean walls) {
             this.width = width;
             this.height = height;
             this.footprint = footprint;
             int n = width * height, k = STAGE_NAMES.length;
+            this.walls = walls ? new byte[n] : null;
             surface = new short[n];
             water = new short[n];
             plate = new short[n];
@@ -417,7 +420,8 @@ public final class TerrainAtlas {
         int minZ = integer(a, "cz", 0) - height * step / 2;
 
         List<String> habitats = new ArrayList<>(Habitats.paths());
-        Raster r = new Raster(width, height, footprint);
+        boolean walls = "true".equals(a.get("walls"));
+        Raster r = new Raster(width, height, footprint, walls);
         com.sun.management.OperatingSystemMXBean os =
                 (com.sun.management.OperatingSystemMXBean)
                         java.lang.management.ManagementFactory.getOperatingSystemMXBean();
@@ -435,7 +439,7 @@ public final class TerrainAtlas {
             sample(
                     maps,
                     habitats,
-                    new Raster(width, height, footprint),
+                    new Raster(width, height, footprint, walls),
                     minX,
                     minZ,
                     step,
@@ -490,6 +494,7 @@ public final class TerrainAtlas {
         j.addProperty("width", width);
         j.addProperty("height", height);
         j.addProperty("footprint", footprint);
+        if (walls) j.addProperty("walls", true);
         j.addProperty("threads", threads);
         j.addProperty("order", reverse ? "reverse" : "forward");
         j.addProperty("digest", hex(digest.digest()));
@@ -699,6 +704,7 @@ public final class TerrainAtlas {
             r.family[k][i] = (byte) (f == null ? 0 : f.ordinal() + 1);
             r.reason[k][i] = (byte) r.reasons[k].code(reason(s, k));
         }
+        if (r.walls != null) r.walls[i] = (byte) wall(maps, s, x, z, sub);
         if (r.footprint <= 1) return;
         // Integer block offsets across the pixel's footprint, including the representative.
         for (int k = 0; k < STAGE_NAMES.length; k++) {
@@ -951,6 +957,7 @@ public final class TerrainAtlas {
         bytes(out, "river.u8", r.river, digest);
         bytes(out, "mouth.u8", r.mouth, digest);
         bytes(out, "channel_beyond.u8", r.channelBeyond, digest);
+        if (r.walls != null) bytes(out, "walls.u8", r.walls, digest);
         for (int k = 0; k < STAGE_NAMES.length; k++) {
             String n = STAGE_NAMES[k];
             floats(out, "delta_" + n + ".f32", r.delta[k], digest);
@@ -963,6 +970,23 @@ public final class TerrainAtlas {
         }
         // Timing depends on threads, cache state and the host; it is excluded from the digest.
         floats(out, "micros.f32", r.micros, null);
+    }
+
+    /**
+     * The largest step from dry column (x, z), already in s, to its dry neighbours one block east
+     * and south, up to 255; 0 when the column or both neighbours are under water. Two or more is
+     * a wall a walker cannot step up (TraversalCheck).
+     */
+    private static int wall(
+            GenerationMaps maps, TerrainMap.Sample s, int x, int z, TerrainMap.Sample sub) {
+        if (s.ocean.marine || s.waterOverSurface()) return 0;
+        int y = s.blockY(), most = 0;
+        for (int k = 0; k < 2; k++) {
+            maps.terrain.sample(x + (k == 0 ? 1 : 0), z + (k == 0 ? 0 : 1), sub);
+            if (sub.ocean.marine || sub.waterOverSurface()) continue;
+            most = Math.max(most, Math.abs(sub.blockY() - y));
+        }
+        return Math.min(255, most);
     }
 
     private static void bytes(Path out, String name, byte[] values, MessageDigest digest)

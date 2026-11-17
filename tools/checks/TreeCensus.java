@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -37,7 +38,8 @@ import java.util.stream.IntStream;
  * and variant on a 1024-block grid, takes up to the given number of windows per biome or variant
  * (chosen by hash, so the selection is a pure function of the seed), and in each window records
  * every valid tree site of every layer with its drawn shape (height, crown spread, leaves, logs,
- * roots), plus each biome and variant's dry-land area on a 4-block lattice. Writes windows.csv,
+ * roots), plus each biome and variant's dry-land area on a 4-block lattice and how much of it
+ * leaves a walker two clear blocks under the trees (headroom). Writes windows.csv,
  * area.csv and sites.csv; tools/tree_census.py reports them.
  */
 public final class TreeCensus {
@@ -141,17 +143,20 @@ public final class TreeCensus {
                                             .parallel()
                                             .forEach(
                                                     w -> {
+                                                        List<TreeSites.Site> found =
+                                                                found(trees, windows.get(w), size);
                                                         area[w] =
                                                                 area(
                                                                         provider,
+                                                                        trees,
+                                                                        found,
                                                                         windows.get(w),
                                                                         size);
                                                         sites[w] =
                                                                 sites(
                                                                         provider,
-                                                                        trees,
-                                                                        windows.get(w),
-                                                                        size);
+                                                                        found,
+                                                                        windows.get(w));
                                                     }))
                     .get();
 
@@ -170,7 +175,7 @@ public final class TreeCensus {
             Files.writeString(out.resolve("windows.csv"), w, StandardCharsets.UTF_8);
             Files.writeString(
                     out.resolve("area.csv"),
-                    "window,key,columns,lattice\n" + String.join("", area),
+                    "window,key,columns,lattice,clear\n" + String.join("", area),
                     StandardCharsets.UTF_8);
             Files.writeString(
                     out.resolve("sites.csv"),
@@ -185,38 +190,77 @@ public final class TreeCensus {
                 (System.nanoTime() - started) / 1e9);
     }
 
-    /** Dry-land columns per biome and variant on the lattice inside a window. */
-    private static String area(ClimateBiomeProvider p, Window w, int size) {
-        Map<String, Integer> counts = new LinkedHashMap<>();
-        TerrainMap.Sample s = new TerrainMap.Sample();
+    /** Every valid tree site in a window. */
+    private static List<TreeSites.Site> found(TreeSites trees, Window w, int size) {
         int x0 = w.cx - size / 2, z0 = w.cz - size / 2;
+        List<TreeSites.Site> found = new ArrayList<>();
+        trees.sites(x0, z0, x0 + size, z0 + size, found::add);
+        return found;
+    }
+
+    /**
+     * Dry-land columns per biome and variant on the lattice inside a window, and how many of them
+     * leave a walker headroom: no tree block (leaves, log or standing root) in the two blocks over
+     * the ground. Trees whose site lies outside the window are not counted.
+     */
+    private static String area(
+            ClimateBiomeProvider p,
+            TreeSites trees,
+            List<TreeSites.Site> found,
+            Window w,
+            int size) {
+        int x0 = w.cx - size / 2, z0 = w.cz - size / 2, side = size / LATTICE;
+        // The heights of tree blocks in each lattice column.
+        Map<Integer, List<Integer>> heights = new HashMap<>();
+        for (TreeSites.Site site : found)
+            trees.blocks(
+                    site,
+                    (x, y, z, state, kind) -> {
+                        int i = x - x0 - LATTICE / 2, j = z - z0 - LATTICE / 2;
+                        if (i < 0 || j < 0 || i % LATTICE != 0 || j % LATTICE != 0) return;
+                        if (i / LATTICE >= side || j / LATTICE >= side) return;
+                        heights.computeIfAbsent(
+                                        j / LATTICE * side + i / LATTICE, k -> new ArrayList<>())
+                                .add(y);
+                    });
+        Map<String, int[]> counts = new LinkedHashMap<>();
+        TerrainMap.Sample s = new TerrainMap.Sample();
         for (int z = z0 + LATTICE / 2; z < z0 + size; z += LATTICE)
             for (int x = x0 + LATTICE / 2; x < x0 + size; x += LATTICE) {
                 p.maps.terrain.sample(x, z, s);
                 if (s.ocean.marine || s.waterOverSurface()) continue;
-                counts.merge(key(p, s, x, z), 1, Integer::sum);
+                int[] c = counts.computeIfAbsent(key(p, s, x, z), k -> new int[2]);
+                c[0]++;
+                int ground = s.blockY();
+                boolean clear = true;
+                List<Integer> ys =
+                        heights.get(
+                                (z - z0 - LATTICE / 2) / LATTICE * side
+                                        + (x - x0 - LATTICE / 2) / LATTICE);
+                if (ys != null)
+                    for (int y : ys) if (y == ground + 1 || y == ground + 2) clear = false;
+                if (clear) c[1]++;
             }
         StringBuilder b = new StringBuilder();
-        for (Map.Entry<String, Integer> e : new TreeMap<>(counts).entrySet())
+        for (Map.Entry<String, int[]> e : new TreeMap<>(counts).entrySet())
             b.append(w.id)
                     .append(',')
                     .append(e.getKey())
                     .append(',')
-                    .append(e.getValue())
+                    .append(e.getValue()[0])
                     .append(',')
                     .append(LATTICE)
+                    .append(',')
+                    .append(e.getValue()[1])
                     .append('\n');
         return b.toString();
     }
 
     /** Every valid site in a window with its drawn shape's measures. */
-    private static String sites(ClimateBiomeProvider p, TreeSites trees, Window w, int size) {
+    private static String sites(ClimateBiomeProvider p, List<TreeSites.Site> found, Window w) {
         StringBuilder b = new StringBuilder();
         TreeShapes.Shape shape = new TreeShapes.Shape();
         TerrainMap.Sample s = new TerrainMap.Sample();
-        int x0 = w.cx - size / 2, z0 = w.cz - size / 2;
-        List<TreeSites.Site> found = new ArrayList<>();
-        trees.sites(x0, z0, x0 + size, z0 + size, found::add);
         for (TreeSites.Site site : found) {
             TreeShapes.shape(site.species, site.id, site.height, shape);
             int leaves = 0, logs = 0, roots = 0;
