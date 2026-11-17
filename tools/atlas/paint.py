@@ -173,6 +173,28 @@ def reason_color(reason: str) -> Color:
     return hashed_color(reason)
 
 
+def cost_stats(micros) -> dict:
+    """Median, p95 and max per-column wall time in microseconds, with the column count."""
+    values = np.asarray(micros, np.float64).ravel()
+    if values.size == 0:
+        return {"columns": 0, "medianMicros": None, "p95Micros": None, "maxMicros": None}
+    return {
+        "columns": int(values.size),
+        "medianMicros": round(float(np.median(values)), 1),
+        "p95Micros": round(float(np.percentile(values, 95)), 1),
+        "maxMicros": round(float(values.max()), 1),
+    }
+
+
+def cost_groups(micros, codes, names, other: str) -> dict:
+    """cost_stats per category code; codes outside names (255) are reported as `other`."""
+    result = {}
+    for code in np.unique(codes):
+        label = names[code] if code < len(names) else other
+        result[label] = cost_stats(micros[codes == code])
+    return result
+
+
 def save(rgb, path: Path):
     Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8), "RGB").save(path, optimize=True)
 
@@ -393,6 +415,10 @@ class Painter:
             rgb = np.stack([t * 255, t * 120, 60 + t * 40], axis=-1)
         save(rgb, path)
         land = ~self.marine
+        meta = self.atlas.meta
+        # Marine columns keep landform 255; a column without a climate region keeps 255 too.
+        landforms = self.atlas.layer("landform.u8", np.uint8)
+        regions = self.atlas.layer("region.u8", np.uint8)
         return {
             "medianLandMicros": round(float(np.median(micros[land])), 1) if land.any() else None,
             "medianMarineMicros": round(float(np.median(micros[self.marine])), 1)
@@ -400,6 +426,9 @@ class Painter:
             else None,
             "p99Micros": round(float(np.percentile(micros, 99)), 1),
             "scale": [round(10**lo, 1), round(10**hi, 1)],
+            "overall": cost_stats(micros),
+            "byLandform": cost_groups(micros, landforms, meta["landforms"], "marine"),
+            "byRegion": cost_groups(micros, regions, meta["regions"], "none"),
         }
 
     def sites(self, path, scale=2):
@@ -529,6 +558,22 @@ def swatch(entry):
     return f"<li><i style='background:rgb({r},{g},{b})'></i>{html.escape(entry['label'])}{pct}</li>"
 
 
+def cost_table(cost) -> str:
+    """Per-column wall time (us) overall, by landform and by climate region."""
+    rows = [("all columns", cost["overall"])]
+    rows += [(f"landform {k.lower()}", v) for k, v in cost["byLandform"].items()]
+    rows += [(f"region {k.lower()}", v) for k, v in cost["byRegion"].items()]
+    body = "".join(
+        f"<tr><td>{html.escape(label)}</td><td>{s['columns']}</td><td>{s['medianMicros']}</td>"
+        f"<td>{s['p95Micros']}</td><td>{s['maxMicros']}</td></tr>"
+        for label, s in rows
+    )
+    return (
+        "<table><tr><th>columns</th><th>n</th><th>median us</th><th>p95 us</th><th>max us</th>"
+        f"</tr>{body}</table>"
+    )
+
+
 def write_index(out: Path, summary):
     b = summary["bounds"]
     title = f"Riven seed {summary['seed']} - terrain-v{summary['terrainVersion']}"
@@ -578,7 +623,7 @@ def write_index(out: Path, summary):
         f" (log scale {c['scale'][0]}-{c['scale'][1]} us). Median land {c['medianLandMicros']} us,"
         f" marine {c['medianMarineMicros']} us. Includes cold plan construction for whichever"
         " column touched an owner first; not deterministic and not part of the digest.</p>"
-        "<section><img src='cost.png' alt='cost'></section>"
+        f"<section><img src='cost.png' alt='cost'>{cost_table(c)}</section>"
     )
     parts.append("<h2>Stage height changes (red raises, blue lowers)</h2><div class=grid>")
     for s in summary["stages"]:

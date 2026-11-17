@@ -19,6 +19,14 @@ state, and fails unless the digests match. This was verified for the default 8 k
 excluded. The atlas at spawn column (1472, -1472) gave surface Y68; the game spawned the player at
 Y69.
 
+`render --progressive` levels are exact subsamples, not approximations. Each coarse step is a
+multiple of `--step` that divides `--size`, so every level has the same origin and coarse pixel k
+samples the same column as fine pixel k x (coarse step / `--step`): a coarse level takes exactly
+the samples a coarser render takes. Coarse levels sample with footprint 1. After the final level
+the command compares every deterministic layer of each coarse level with the final one taken
+every k-th sample (categorical codes by name, since each window numbers its own lists; footprint
+maxima and water body ids are not compared) and fails on any difference.
+
 Point samples can miss features narrower than `--step`. `--footprint n` also takes n x n samples
 per pixel and keeps each stage's largest change; `features.png` then uses those maxima.
 `--walls` also samples each pixel's neighbours one block east and south and keeps the largest step
@@ -44,10 +52,13 @@ Run with `.local/atlas-venv/Scripts/python tools/terrain_atlas.py <command>`:
 | Command | Purpose |
 | --- | --- |
 | `render [--verify] [--footprint n]` | One window: all maps, reason maps, sites, cost, summary and `viewer.html` |
+| `render --progressive [STEP ...]` | The same window at coarser steps first (default: the coarsest power-of-4 multiple of `--step` that still gives 32 pixels, then 4 x `--step`), each painted and announced as it lands, then `--step`; each level is a normal render with reusable raw samples |
 | `compare --vs-ref REF / --vs-set ...` | The same window from two sources: height change, changed features, stage activity and reasons |
-| `seeds --seeds 1 2 3` | One window per seed, with a contact sheet, `stats.csv` and means |
+| `seeds --seeds 1 2 3` | One window per seed, with a contact sheet, `stats.csv` (with overall cost per column), `cost.csv` (cost by landform and climate region) and means |
 | `sweep --param FILE:PATH --values a b c` | One definition value across settings, with a contact sheet |
+| `sweep --param A --values ... --param B --values ... [--metric PATH]` | Two values as a grid: `sheet.png` (rows A, columns B), `heatmap.png` and `grid.csv` of one `summary.json` number (default `landPct`; `stages.<name>` is that stage's active land share), each cell's statistics under `cells/` |
 | `section --line X1 Z1 X2 Z2` | Height after every stage along a line, with the largest-change stage underneath |
+| `query --render DIR --where EXPR [--csv FILE]` | Columns of a render where a boolean expression holds: prints the count and share, writes `query.png` (matches over hillshade) and `query.json` to `DIR/query/<hash>/`, and the matches' `x,z` to `--csv`. Names: every raster in `raw/` by file stem, flag bits (`marine`, `supplied`, `deepOcean`, `wet`), `slope` (rise per block), `x`, `z`, and `stage.<name>.delta` / `.reason`; categorical rasters compare with names, e.g. `landform == "MOUNTAIN" and slope > 1` or `stage.cut.reason in ("ACCEPTED", "NO_SITE")`. Operators: `and or not`, comparisons (chained), `in`, `+ - * / %`, `abs()`; the expression is parsed and checked against that whitelist, never evaluated as Python |
 | `map [--deploy] [--note TEXT]`, `map --remove ID`, `map --redeploy` | One window cut into tiles for the map site, https://map.orthrus.cc; `--remove` drops a render, `--redeploy` publishes the site as it stands (below) |
 
 Window options: `--seed`, `--center X Z`, `--size` (blocks), `--step` (blocks/pixel), `--threads`
@@ -70,7 +81,7 @@ Outputs live under `.local/terrain-atlas/{renders,compare,seeds,sweeps,sections}
 | `sites.png` | Every raw `Sites` anchor: vetoed, marine, built or rejected (with the stage reason at the anchor) |
 | `stages/<stage>.png`, `stages/<stage>_reasons.png` | Signed height change and recorded reasons per stage |
 | `elevation.png`, `biomes.png`, `variants.png`, `climate.png`, `water.png`, `cost.png` | Context layers; `terranes.png` paints geology's terrane inputs (volcanic potential red, craton green, spine weight blue; rasters `geo_*.f32`); `variants.png` colours biome variants over faded biomes (raster `variant.u8`, 0 = none, names in the metadata's `variants`); `cost.png` is the per-column wall time |
-| `summary.json`, `raw/` | Coverage, activity, reasons, sites, fingerprints, digest; little-endian layers plus `atlas.json` |
+| `summary.json`, `raw/` | Coverage, activity, reasons, sites, cost, fingerprints, digest; little-endian layers plus `atlas.json`. `cost` gives per-column wall time (median, p95, max, columns) overall, `byLandform` (marine columns as `marine`) and `byRegion`; maxima include cold plan construction |
 
 To browse renders in a browser, serve the folder locally:
 `python -m http.server 8737 --bind 127.0.0.1 --directory .local/terrain-atlas`.
@@ -98,21 +109,17 @@ and kept out of search indexes (`X-Robots-Tag`, `robots.txt`).
   (seed, version, window and digest) and tile URLs carry the tile format, so tiles are cached as
   immutable; the catalogue and manifests revalidate.
 
-## Findings (seed 8675309, terrain-v36, 2026-10-21)
+## Findings (terrain-v148, 2026-11-17)
 
-- Land is 14% of the default 8 km square, and the origin is open ocean. Across seeds 8675309, 101,
-  -991, 7, 42 and 1234, land in a 4 km square ranges from 0% to 16%.
-- About 90% of raw site anchors are vetoed by `Sites.admits` neighbor competition (mountains
-  116/122, hills 185/206, carvers 110/121). Most survivors are marine.
-- In the major stages, 86% of land columns record shore protection (`COLUMN_PROTECTED`,
-  `PROTECTED_SHORE` or `SHORE_RESERVED`). The shared predicate rejects columns within
-  `1.5 x coastal_plain` width (768 blocks) of the coast; this seed's landmasses are a few kilometres
-  across. The few admitted land sites are rejected there, and one landmark is built.
-- Volcanic, cold, mountain, hill, general-cut, dryland, rocky and sediment stages change
-  no sampled land column. Regional passes and shore shaping are the active stages.
-- Raising `sites.anchorProbability` to 1.0 changes 0.016% of feature pixels. Raising
-  `minimumSeparationInCells` from 1.8 to 3.5 cuts admitted sites from 15 to 5 with no terrain
-  change. Both are consistent with the shore reservation and marine placement being the binding
-  limits.
-- Terrain-v26 has the same feature picture; height differs on 3.5% of pixels
-  after the v31-v36 relief/elevation refactors.
+From `seeds` with its default seeds (8675309, 101, -991, 7, 42, 1234) over the 4 km square at the
+origin, 32 blocks per pixel:
+
+- Land is 21% to 66% of the square (seed 101 lowest, 8675309 highest); median land surface is
+  Y97 to Y156.
+- `Sites.admits` neighbour competition vetoes 91-92% of raw site anchors on every seed (8675309:
+  1097 of 1207). Cold anchors are almost all vetoed (396-397 of 400 per seed). Of the 99-110
+  admitted sites per seed, 28-63 stand on land and 12-29 change terrain at their anchor.
+- Passes (43-71% of land), mountains (14-29%) and shore shaping (17-38%) are the active stages.
+  Cold changes no sampled land column in this square on any seed (8675309's land reasons:
+  `SHARED_BUDGET` 64%, `WARM_COLUMN` 28%), volcanic at most 0.08%, and the other stages 3.2% or
+  less.

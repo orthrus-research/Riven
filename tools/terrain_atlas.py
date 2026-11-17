@@ -14,18 +14,22 @@ Commands (run with .local/atlas-venv/Scripts/python):
   render   one window: maps, reason maps, sites, cost, summary and an interactive viewer
   compare  the same window from two sources (git refs and/or --set overrides)
   seeds    the same window for several seeds, with a contact sheet and statistics
-  sweep    one definition value across several settings, with a contact sheet
+  sweep    one definition value across several settings, with a contact sheet; two give a grid
   section  heights after every stage along a line
+  query    columns of a render where a boolean expression over its rasters holds
   map      one window cut into tiles for the map site, map.orthrus.cc (--deploy publishes it)
 
 Examples:
   tools/terrain_atlas.py render --seed 8675309 --verify
   tools/terrain_atlas.py render --center 1472 -1472 --size 2048 --step 4 --footprint 2
+  tools/terrain_atlas.py render --size 8192 --step 1 --progressive
   tools/terrain_atlas.py compare --ref HEAD~1 --vs-ref HEAD
   tools/terrain_atlas.py compare --vs-set riven-terrain.json:sites.anchorProbability=0.9
   tools/terrain_atlas.py seeds --seeds 8675309 101 -991 7 42 --size 4096 --step 32
   tools/terrain_atlas.py sweep --param riven-continents.json:scale --values 0.5 1 2
+  tools/terrain_atlas.py sweep --param A.json:x --values 1 2 --param B.json:y --values 3 4
   tools/terrain_atlas.py section --line -4000 -2000 4000 -2000
+  tools/terrain_atlas.py query --render DIR --where 'slope > 1 and not marine'
   tools/terrain_atlas.py map --seed 101 --deploy
 """
 
@@ -40,7 +44,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from atlas.batch import compare, contact_sheet, plot_section  # noqa: E402
+from atlas import query  # noqa: E402
+from atlas.batch import compare, contact_sheet, grid_sheet, plot_section, subsample_mismatches  # noqa: E402
 from atlas.build import CACHE, Source, prepare, run_sampler  # noqa: E402
 from atlas.paint import Atlas, paint  # noqa: E402
 from atlas.tiles import publish, remove  # noqa: E402
@@ -120,6 +125,49 @@ def render(args, source: Source, seed=None, out=None, viewer=True):
     return out
 
 
+def progressive_steps(size: int, step: int, requested: list[int]) -> list[int]:
+    """Coarse steps before the requested one, coarsest first. Each must be a multiple of the
+    step that divides the window, so every level shares the window's origin and sample lattice.
+    With none given: the coarsest 4^k multiple of the step that still gives 32 pixels a side,
+    then 4 times the step."""
+    if requested:
+        for s in requested:
+            if s <= step or s % step or size % s:
+                sys.exit(
+                    f"--progressive {s}: needs a multiple of --step {step} that divides {size}"
+                )
+        return sorted(set(requested), reverse=True)
+    levels, s = [], step * 4
+    while size % s == 0 and size // s >= 32:
+        levels.append(s)
+        s *= 4
+    return sorted({levels[-1], levels[0]}, reverse=True) if levels else []
+
+
+def render_progressive(args, source: Source):
+    """Coarse levels first, each painted and announced as it lands, then the requested step;
+    every level is a normal render with its own reusable raw samples."""
+    steps = progressive_steps(args.size, args.step, args.progressive)
+    final_step, footprint, verify_final = args.step, args.footprint, args.verify
+    coarse = []
+    for n, s in enumerate(steps, 1):
+        # Coarse levels are previews: point samples only, never verified.
+        args.step, args.footprint, args.verify = s, 1, False
+        print(f"level {n}/{len(steps) + 1}: step {s} ({args.size // s} pixels a side)")
+        coarse.append(render(args, source))
+    args.step, args.footprint, args.verify = final_step, footprint, verify_final
+    print(f"level {len(steps) + 1}/{len(steps) + 1}: step {final_step} (requested)")
+    out = render(args, source, out=args.out)
+    fine = Atlas(out / "raw")
+    for directory in coarse:
+        compared, differ = subsample_mismatches(Atlas(directory / "raw"), fine)
+        level = directory.name
+        if differ:
+            sys.exit(f"{level}: not an exact subsample of the final level: {', '.join(differ)}")
+        print(f"{level}: exact subsample of the final level ({compared} layers)")
+    return out
+
+
 def publish_map(args, source: Source):
     """Tile one window into the map site (.local/map/site) and optionally deploy it."""
     site = MAP_SITE
@@ -139,6 +187,38 @@ def publish_map(args, source: Source):
             sys.exit("npx not found: install Node.js to deploy the map site")
         command = [npx, "--yes", f"wrangler@{WRANGLER}", "deploy", "--config"]
         subprocess.run(command + [str(MAP_SOURCE / "wrangler.jsonc")], check=True)
+
+
+def sweep(args, base: Source):
+    """One parameter: a contact sheet. Two: a labelled grid and a heatmap of --metric."""
+    params, values = args.param, args.values
+    if len(params) == 1:
+        param, entries = params[0], []
+        for value in values[0]:
+            source = Source(base.ref, base.sets + (f"{param}={value}",))
+            entries.append((f"{param.split(':')[1]}={value}", render(args, source)))
+        key = hashlib.sha256(" ".join(values[0]).encode()).hexdigest()[:8]
+        out = CACHE / "sweeps" / f"{args.seed}_{param.replace(':', '_')}_{key}"
+        contact_sheet(entries, out, f"Sweep {param} (seed {args.seed})")
+        return out
+    (pa, pb), (va, vb) = params, values
+    if pa == pb:
+        sys.exit("sweep: the two --param must differ")
+    cells, entries = {}, []
+    for i, a in enumerate(va):
+        for j, b in enumerate(vb):
+            source = Source(base.ref, base.sets + (f"{pa}={a}", f"{pb}={b}"))
+            cells[(i, j)] = render(args, source)
+            entries.append((f"{a} / {b}", cells[(i, j)]))
+    spec = "\n".join([pa, *va, pb, *vb])
+    key = hashlib.sha256(spec.encode()).hexdigest()[:8]
+    name = f"{args.seed}_{pa.replace(':', '_')}_x_{pb.replace(':', '_')}_{key}"
+    out = CACHE / "sweeps" / name
+    title = f"Sweep {pa} x {pb} (seed {args.seed})"
+    contact_sheet(entries, out / "cells", title)
+    rows, cols = (pa.split(":")[1], va), (pb.split(":")[1], vb)
+    grid_sheet(rows, cols, cells, out, title, args.metric)
+    return out
 
 
 def paint_index_link(out):
@@ -185,7 +265,7 @@ def add_window(p, size=8192, step=16):
         action="store_true",
         help="also sample each pixel's east and south neighbours for the map's walls (3x cost)",
     )
-    p.add_argument("--threads", type=int, help="sampler threads (default: cores - 1)")
+    p.add_argument("--threads", type=int, help="sampler threads (default: half the logical cores)")
     p.add_argument("--threshold", type=float, default=1.0, help="feature change in blocks")
     p.add_argument("--no-sites", dest="sites", action="store_false", help="skip site overlay")
     p.add_argument("--resample", action="store_true", help="ignore reusable raw samples")
@@ -219,6 +299,13 @@ def main():
     add_source(p)
     p.add_argument("--verify", action="store_true", help="prove thread/order independence")
     p.add_argument("--out", type=Path)
+    p.add_argument(
+        "--progressive",
+        type=int,
+        nargs="*",
+        metavar="STEP",
+        help="render coarser steps first (default: picked from the window), then --step",
+    )
 
     p = sub.add_parser("compare", help="two sources over the same window")
     add_window(p)
@@ -230,11 +317,22 @@ def main():
     add_source(p)
     p.add_argument("--seeds", type=int, nargs="+", default=[8675309, 101, -991, 7, 42, 1234])
 
-    p = sub.add_parser("sweep", help="one definition value across settings")
+    p = sub.add_parser("sweep", help="one or two definition values across settings")
     add_window(p, size=4096, step=32)
     add_source(p)
-    p.add_argument("--param", required=True, metavar="FILE:PATH")
-    p.add_argument("--values", required=True, nargs="+", metavar="JSON")
+    p.add_argument(
+        "--param",
+        required=True,
+        action="append",
+        metavar="FILE:PATH",
+        help="give twice, each with its own --values, for a grid (rows = first, columns = second)",
+    )
+    p.add_argument("--values", required=True, action="append", nargs="+", metavar="JSON")
+    p.add_argument(
+        "--metric",
+        default="landPct",
+        help="two-parameter heatmap: summary.json path, or stages.<name> (landPct)",
+    )
 
     p = sub.add_parser("map", help="tile one window into the map site (map.orthrus.cc)")
     add_window(p, size=8192, step=1)
@@ -244,15 +342,32 @@ def main():
     p.add_argument("--deploy", action="store_true", help="deploy the site with wrangler")
     p.add_argument("--redeploy", action="store_true", help="deploy the site without rendering")
 
+    p = sub.add_parser("query", help="columns of a render where an expression holds")
+    p.add_argument("--render", type=Path, required=True, metavar="DIR", help="a render directory")
+    p.add_argument(
+        "--where",
+        required=True,
+        metavar="EXPR",
+        help='e.g. landform == "MOUNTAIN" and slope > 1 (names: tools/atlas/query.py)',
+    )
+    p.add_argument("--csv", type=Path, help="also write the matching columns' x,z here")
+    p.add_argument("--out", type=Path, help="output directory (default DIR/query/<hash>)")
+    p.set_defaults(run=query.run)
+
     p = sub.add_parser("section", help="heights after every stage along a line")
     p.add_argument("--seed", type=int, default=8675309)
     p.add_argument("--line", type=float, nargs=4, required=True, metavar=("X1", "Z1", "X2", "Z2"))
     p.add_argument("--spacing", type=int, default=2, help="blocks between columns (2)")
     add_source(p)
     args = parser.parse_args()
+    if getattr(args, "run", None):
+        return args.run(args)
 
     if args.command == "render":
-        render(args, source_of(args), out=args.out)
+        if args.progressive is not None:
+            render_progressive(args, source_of(args))
+        else:
+            render(args, source_of(args), out=args.out)
     elif args.command == "compare":
         a, b = source_of(args), source_of(args, "vs_")
         if a == b:
@@ -274,15 +389,9 @@ def main():
     elif args.command == "map":
         publish_map(args, source_of(args))
     elif args.command == "sweep":
-        base = source_of(args)
-        entries = []
-        for value in args.values:
-            source = Source(base.ref, base.sets + (f"{args.param}={value}",))
-            entries.append((f"{args.param.split(':')[1]}={value}", render(args, source)))
-        key = hashlib.sha256(" ".join(args.values).encode()).hexdigest()[:8]
-        out = CACHE / "sweeps" / f"{args.seed}_{args.param.replace(':', '_')}_{key}"
-        contact_sheet(entries, out, f"Sweep {args.param} (seed {args.seed})")
-        print(out / "index.html")
+        if len(args.param) != len(args.values) or len(args.param) > 2:
+            parser.error("sweep takes one or two --param, each followed by its own --values")
+        print(sweep(args, source_of(args)) / "index.html")
     else:
         source = source_of(args)
         x1, z1, x2, z2 = args.line

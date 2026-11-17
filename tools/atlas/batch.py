@@ -127,7 +127,7 @@ def contact_sheet(entries, out: Path, title: str, thumb=256):
     rows_n = (len(entries) + cols - 1) // cols
     sheet = Image.new("RGB", (cols * thumb, rows_n * (thumb + 20)), (17, 17, 17))
     draw = ImageDraw.Draw(sheet)
-    records = []
+    records, cost_rows = [], []
     for i, (label, directory) in enumerate(entries):
         summary = json.loads((directory / "summary.json").read_text(encoding="utf-8"))
         img = Image.open(directory / "features.png").convert("RGB")
@@ -150,9 +150,21 @@ def contact_sheet(entries, out: Path, title: str, thumb=256):
             record["sitesOnLand"] = sum(
                 s["raw"] - s["vetoed"] - s["marine"] for s in summary["sites"]
             )
+        cost = summary["cost"]["overall"]
+        record["costMedianUs"] = cost["medianMicros"]
+        record["costP95Us"] = cost["p95Micros"]
+        record["costMaxUs"] = cost["maxMicros"]
+        for group in ("byLandform", "byRegion"):
+            for name, s in summary["cost"][group].items():
+                cost_rows.append({"label": label, "group": group[2:].lower(), "name": name} | s)
         record["index"] = (directory / "index.html").as_uri()
         records.append(record)
     sheet.save(out / "sheet.png", optimize=True)
+    with (out / "cost.csv").open("w", newline="", encoding="utf-8") as stream:
+        fields = ["label", "group", "name", "columns", "medianMicros", "p95Micros", "maxMicros"]
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(cost_rows)
     keys = [k for k in records[0] if k != "index"]
     with (out / "stats.csv").open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=keys, extrasaction="ignore")
@@ -183,6 +195,169 @@ def contact_sheet(entries, out: Path, title: str, thumb=256):
     ]
     (out / "index.html").write_text("\n".join(page), encoding="utf-8")
     return records
+
+
+# Categorical layers whose codes index a per-window name list in atlas.json; compared by name.
+CODED_LAYERS = {
+    "habitat.u8": "habitats",
+    "variant.u8": "variants",
+    "region.u8": "regions",
+    "level.u8": "levels",
+    "character.u8": "characters",
+    "landform.u8": "landforms",
+    "water_kind.u8": "waterKinds",
+    "province_type.u8": "provinceTypes",
+    "coast.u8": "coastTypes",
+    "plate.u16": "plates",
+    "province.u16": "provinceCells",
+}
+# Per-column timing is not deterministic; water body codes have no name list to compare by.
+UNCOMPARED = {"micros.f32", "water_body.u16"}
+DTYPES = {".u8": np.uint8, ".i16": "<i2", ".u16": "<u2", ".f32": "<f4"}
+
+
+def subsample_mismatches(coarse: Atlas, fine: Atlas) -> tuple[int, list[str]]:
+    """Check that `coarse` is `fine` taken every k-th column and row: (layers compared, names of
+    the layers that differ). Footprint maxima (fp_*) span a pixel and are not compared."""
+    k, rest = divmod(coarse.step, fine.step)
+    if rest or coarse.meta["minX"] != fine.meta["minX"] or coarse.meta["minZ"] != fine.meta["minZ"]:
+        raise SystemExit("progressive: levels do not share a sample lattice")
+    compared, differ = 0, []
+    for path in sorted(coarse.raw.iterdir()):
+        dtype = DTYPES.get(path.suffix)
+        name = path.name
+        if dtype is None or name in UNCOMPARED or name.startswith("fp_"):
+            continue
+        a = coarse.layer(name, dtype)
+        b = fine.layer(name, dtype)[::k, ::k]
+        if name in CODED_LAYERS:
+            key = CODED_LAYERS[name]
+            a, b = names_of(a, coarse.meta[key]), names_of(b, fine.meta[key])
+        elif name.startswith("reason_"):
+            # Each window lists only the reasons it recorded, so codes are per window.
+            stage = name[len("reason_") : -len(".u8")]
+            a = names_of(a, coarse.stage_meta(stage)["reasons"])
+            b = names_of(b, fine.stage_meta(stage)["reasons"])
+        compared += 1
+        if a.shape != b.shape or not np.array_equal(a, b):
+            differ.append(name)
+    return compared, differ
+
+
+def names_of(codes, names):
+    """Codes as their names; codes past the list (255 = none, marine) keep their number."""
+    codes = codes.astype(np.int64)
+    top = int(codes.max(initial=0)) + 1
+    labels = np.array([*names, *(f"#{c}" for c in range(len(names), top))], dtype=object)
+    return labels[codes]
+
+
+def metric_value(summary: dict, path: str) -> float | None:
+    """A number from summary.json by dotted path (`landPct`, `surfaceY.p50Land`,
+    `cost.overall.medianMicros`); `stages.<name>` is that stage's active share of land."""
+    keys = path.split(".")
+    if keys[0] == "stages" and len(keys) == 2:
+        for stage in summary["stages"]:
+            if stage["name"] == keys[1]:
+                return stage["activeLandPct"]
+        raise SystemExit(f"--metric: no stage {keys[1]!r}")
+    node = summary
+    for key in keys:
+        if not isinstance(node, dict) or key not in node:
+            raise SystemExit(f"--metric: summary.json has no {path!r}")
+        node = node[key]
+    if node is not None and not isinstance(node, (int, float)):
+        raise SystemExit(f"--metric: {path!r} is not a number")
+    return node
+
+
+def grid_sheet(rows, cols, cells, out: Path, title: str, metric: str, thumb=192):
+    """Two-parameter sweep: feature thumbnails with rows = A values and columns = B values,
+    a heatmap of one summary metric and grid.csv; cells[(i, j)] = render dir."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    out.mkdir(parents=True, exist_ok=True)
+    (row_name, row_values), (col_name, col_values) = rows, cols
+    left, top, gap = 150, 40, 4
+    sheet = Image.new(
+        "RGB",
+        (left + len(col_values) * (thumb + gap), top + len(row_values) * (thumb + gap)),
+        (17, 17, 17),
+    )
+    draw = ImageDraw.Draw(sheet)
+    draw.text((4, 4), f"rows {row_name}, columns {col_name}", fill=(230, 230, 230))
+    grid = np.full((len(row_values), len(col_values)), np.nan)
+    records = []
+    for j, value in enumerate(col_values):
+        draw.text((left + j * (thumb + gap) + 4, top - 16), str(value), fill=(230, 230, 230))
+    for i, row_value in enumerate(row_values):
+        y = top + i * (thumb + gap)
+        draw.text((4, y + thumb // 2 - 6), str(row_value), fill=(230, 230, 230))
+        for j, col_value in enumerate(col_values):
+            directory = cells[(i, j)]
+            summary = json.loads((directory / "summary.json").read_text(encoding="utf-8"))
+            img = Image.open(directory / "features.png").convert("RGB")
+            sheet.paste(
+                img.resize((thumb, thumb), Image.Resampling.NEAREST),
+                (left + j * (thumb + gap), y),
+            )
+            value = metric_value(summary, metric)
+            grid[i, j] = np.nan if value is None else value
+            records.append(
+                {
+                    row_name: row_value,
+                    col_name: col_value,
+                    metric: value,
+                    "digest": (summary.get("digest") or "")[:16],
+                    "index": (directory / "index.html").as_uri(),
+                }
+            )
+    sheet.save(out / "sheet.png", optimize=True)
+    with (out / "grid.csv").open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=[row_name, col_name, metric, "digest"])
+        writer.writeheader()
+        writer.writerows([{k: v for k, v in r.items() if k != "index"} for r in records])
+
+    size = (1.6 + 1.1 * len(col_values), 1.4 + 0.8 * len(row_values))
+    fig, ax = plt.subplots(figsize=size, constrained_layout=True)
+    image = ax.imshow(grid, cmap="viridis", aspect="auto")
+    ax.set_xticks(range(len(col_values)), [str(v) for v in col_values])
+    ax.set_yticks(range(len(row_values)), [str(v) for v in row_values])
+    ax.set_xlabel(col_name)
+    ax.set_ylabel(row_name)
+    ax.set_title(metric, fontsize=10)
+    finite = grid[np.isfinite(grid)]
+    middle = float(finite.mean()) if finite.size else 0.0
+    for (i, j), v in np.ndenumerate(grid):
+        if np.isfinite(v):
+            color = "black" if v > middle else "white"
+            ax.text(j, i, f"{v:g}", ha="center", va="center", color=color, fontsize=8)
+    fig.colorbar(image, ax=ax)
+    fig.savefig(out / "heatmap.png", dpi=110)
+    plt.close(fig)
+
+    head = "".join(f"<th>{html.escape(str(v))}</th>" for v in col_values)
+    body = ""
+    for i, row_value in enumerate(row_values):
+        cells_html = "".join(
+            f"<td><a href='{r['index']}'>{html.escape(str(r[metric]))}</a></td>"
+            for r in records[i * len(col_values) : (i + 1) * len(col_values)]
+        )
+        body += f"<tr><th>{html.escape(str(row_value))}</th>{cells_html}</tr>"
+    page = [
+        f"<!doctype html><meta charset=utf-8><title>{html.escape(title)}</title>{STYLE}",
+        f"<h1>{html.escape(title)}</h1>",
+        f"<p>Rows {html.escape(row_name)}, columns {html.escape(col_name)}; thumbnails are"
+        " features.png. Cells link to each render.</p><img src='sheet.png'>",
+        f"<h2>{html.escape(metric)}</h2><img src='heatmap.png'>",
+        f"<table><tr><th>{html.escape(row_name)} \\ {html.escape(col_name)}</th>{head}</tr>"
+        f"{body}</table><p><a href='cells/index.html'>Every cell's statistics</a></p>",
+    ]
+    (out / "index.html").write_text("\n".join(page), encoding="utf-8")
+    return grid
 
 
 def plot_section(out: Path):
