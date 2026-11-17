@@ -11,7 +11,7 @@ state idle|waiting|running, waiting_since, a heartbeat (updatedUtc, refreshed ev
 process that wrote it) and that process's pid.
 
 `turn` does the whole rule in one process: it queues, waits until the lease has been free for the
-cooldown (180 s) and no live lane is running or waiting from an earlier time (a waiter ahead that
+cooldown (15 s) and no live lane is running or waiting from an earlier time (a waiter ahead that
 has not moved for 10 minutes of free lease is passed), takes the lease, and keeps it for the whole
 turn: COMMAND and every launcher under it that takes the lease (runtime.py play,
 measure_pipeline.py, pregenerate_map.py) join the held lease through CUBIC_LAB_TURN_LEASE instead
@@ -70,7 +70,9 @@ QUEUE = LAB / "coordination"
 TOKEN_ENV = "CUBIC_LAB_TURN_LEASE"
 LANE_ENV = "GPU_QUEUE_LANE"
 
-COOLDOWN = 180  # seconds the lease stays free after a release before anyone takes it
+# Seconds the lease stays free after a release before anyone takes it: three polls, so a waiter
+# always sees the free lease before it is taken. The GPU idles for this long at every handover.
+COOLDOWN = 15
 PASS_AFTER = 600  # free that long with the waiter ahead not moving: the next waiter goes
 STALE = 300  # a heartbeat older than this is a lane nobody is behind
 HEARTBEAT = 30

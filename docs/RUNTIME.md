@@ -299,7 +299,7 @@ python tools/gpu_queue.py leave --lane <lane>
 
 Each lane (one line of work) publishes `.local/coordination/<lane>.json` with its state (`idle`,
 `waiting`, `running`), `waiting_since`, its writer's `pid` and a heartbeat (`updatedUtc`, every
-30 s). `turn` queues, waits until the lease has been free for 3 minutes and no live lane is
+30 s). `turn` queues, waits until the lease has been free for 15 s and no live lane is
 running or has waited longer (a waiter ahead that has not moved for 10 minutes of free lease is
 passed), then holds the lease for the whole command: launchers under it join that lease through
 `CUBIC_LAB_TURN_LEASE` instead of taking it per run, so nothing starts between a turn's runs. A
