@@ -185,7 +185,7 @@ def add_window(p, size=8192, step=16):
         action="store_true",
         help="also sample each pixel's east and south neighbours for the map's walls (3x cost)",
     )
-    p.add_argument("--threads", type=int, help="sampler threads (default: cores - 1)")
+    p.add_argument("--threads", type=int, help="sampler threads (default: half the logical cores)")
     p.add_argument("--threshold", type=float, default=1.0, help="feature change in blocks")
     p.add_argument("--no-sites", dest="sites", action="store_false", help="skip site overlay")
     p.add_argument("--resample", action="store_true", help="ignore reusable raw samples")
