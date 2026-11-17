@@ -16,6 +16,7 @@ Commands (run with .local/atlas-venv/Scripts/python):
   seeds    the same window for several seeds, with a contact sheet and statistics
   sweep    one definition value across several settings, with a contact sheet; two give a grid
   section  heights after every stage along a line
+  query    columns of a render where a boolean expression over its rasters holds
   map      one window cut into tiles for the map site, map.orthrus.cc (--deploy publishes it)
 
 Examples:
@@ -28,6 +29,7 @@ Examples:
   tools/terrain_atlas.py sweep --param riven-continents.json:scale --values 0.5 1 2
   tools/terrain_atlas.py sweep --param A.json:x --values 1 2 --param B.json:y --values 3 4
   tools/terrain_atlas.py section --line -4000 -2000 4000 -2000
+  tools/terrain_atlas.py query --render DIR --where 'slope > 1 and not marine'
   tools/terrain_atlas.py map --seed 101 --deploy
 """
 
@@ -42,6 +44,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from atlas import query  # noqa: E402
 from atlas.batch import compare, contact_sheet, grid_sheet, plot_section, subsample_mismatches  # noqa: E402
 from atlas.build import CACHE, Source, prepare, run_sampler  # noqa: E402
 from atlas.paint import Atlas, paint  # noqa: E402
@@ -339,12 +342,26 @@ def main():
     p.add_argument("--deploy", action="store_true", help="deploy the site with wrangler")
     p.add_argument("--redeploy", action="store_true", help="deploy the site without rendering")
 
+    p = sub.add_parser("query", help="columns of a render where an expression holds")
+    p.add_argument("--render", type=Path, required=True, metavar="DIR", help="a render directory")
+    p.add_argument(
+        "--where",
+        required=True,
+        metavar="EXPR",
+        help='e.g. landform == "MOUNTAIN" and slope > 1 (names: tools/atlas/query.py)',
+    )
+    p.add_argument("--csv", type=Path, help="also write the matching columns' x,z here")
+    p.add_argument("--out", type=Path, help="output directory (default DIR/query/<hash>)")
+    p.set_defaults(run=query.run)
+
     p = sub.add_parser("section", help="heights after every stage along a line")
     p.add_argument("--seed", type=int, default=8675309)
     p.add_argument("--line", type=float, nargs=4, required=True, metavar=("X1", "Z1", "X2", "Z2"))
     p.add_argument("--spacing", type=int, default=2, help="blocks between columns (2)")
     add_source(p)
     args = parser.parse_args()
+    if getattr(args, "run", None):
+        return args.run(args)
 
     if args.command == "render":
         if args.progressive is not None:
