@@ -236,7 +236,9 @@ public final class MountainTerrain {
         // clearance exceeds it, and the massif fades over the wider massifSkirt so its relief
         // eases down to rivers instead of standing as a gorge wall.
         double clearance = waterClearance.surfaceClearance(x, z, massifSkirt);
-        double preservation = 1 - Rules.smooth(clearance / waterSkirt);
+        // Rules.smooth can round a hair above 1 near the end of its ramp; without the floor the
+        // weight lands at about -1e-15 and the kernels reject it. Only those columns change.
+        double preservation = Math.max(0, 1 - Rules.smooth(clearance / waterSkirt));
         double massifKeep = Rules.smooth(clearance / massifSkirt);
         // Massif relief covers the crest band under the mountain ceiling and keeps water; kernel
         // peaks below combine with it by maximum, never adding peak budgets.
