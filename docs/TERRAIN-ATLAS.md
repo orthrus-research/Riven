@@ -117,8 +117,19 @@ and kept out of search indexes (`X-Robots-Tag`, `robots.txt`).
   client's recorded positions (each scenario's spectator flight observations, about one a second);
   a world's `level.dat`, or a world or instance directory holding one, gives its spawn. Items take
   the seed of their capture's workload, their world or their tour file's name (`<name>-<seed>`),
-  and the page leaves out items of another seed; adding a source again replaces its items. The
+  and the page leaves out items of another seed; adding a source again replaces its items. Labels
+  are published, so they keep only the capture's, world's or tour's short name, never a path. The
   atlas itself does not compute spawn: the game picks it (`RivenSpawn`) when it creates a world.
+- `map --world` renders the whole canonical world: seed 2485331 (or `--seed`), layout scale 4,
+  32768 blocks about the origin, 32 blocks per pixel (or `--step 64`). On a 16-thread desktop it
+  took 21 s and 7.2 MiB (42 files) at 32 blocks per pixel, 18 s and 2.0 MiB (10 files) at 64.
+  Finer renders of the same seed, terrain version and layout scale whose window lies inside a
+  coarser one are listed under "Fine layers" and drawn over it inside their windows (dashed), at
+  the zoom levels their own pyramid reaches; zoomed further out the coarse render alone shows, and
+  the inspector reads the finest layer under the tap. All candidates are on unless the link says
+  otherwise (`f=` lists the ones on). Both sample the same columns where their grids meet: a
+  4 km window at 2 blocks per pixel (46 s, 17.6 MiB) matched the 32-block world on all 16384
+  shared samples.
 - The site is built in `.local/map/site` and deployed as the assets-only Worker `orthrus-map`
   (`tools/atlas/map/wrangler.jsonc`, through the wrangler login). Renders are content-addressed
   (seed, version, window and digest) and tile URLs carry the tile format, so tiles are cached as

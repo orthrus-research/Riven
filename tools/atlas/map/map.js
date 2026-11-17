@@ -29,6 +29,7 @@ const state = {
   curated: [], // the open render's pins.json, marked curated
   overlay: { points: [], paths: [] }, // the open render's overlay.json, this seed's items
   hidden: new Set(), // overlay kinds switched off
+  fine: [], // finer renders layered into the open one, coarsest first
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -155,7 +156,7 @@ class Tile {
 const queue = [];
 let inflight = 0;
 let frame = 0;
-const layers = () => [state.a, state.b].filter(Boolean);
+const layers = () => [state.a, state.b, ...state.fine].filter(Boolean);
 
 function request(t, bundle) {
   if (t[bundle] || t.pending[bundle] || t.failed) return;
@@ -665,8 +666,11 @@ function draw() {
   const b = state.b;
   if (p.diff && b) drawLayer(state.a, p.id, wanted, { pair: b });
   else if (b && state.compare.mode === 'toggle') drawLayer(state.compare.showB ? b : state.a, p.id, wanted);
-  else {
-    drawLayer(state.a, p.id, wanted, { right: b ? snap(state.compare.split * w) : w });
+  else if (!b) {
+    drawLayer(state.a, p.id, wanted);
+    drawFine(wanted, p.id);
+  } else {
+    drawLayer(state.a, p.id, wanted, { right: snap(state.compare.split * w) });
     if (b) {
       const x = snap(state.compare.split * w);
       ctx.save();
@@ -1126,12 +1130,13 @@ function compareRows(add, rule, at) {
 }
 
 function showInspector() {
-  const m = state.m;
-  const at = state.inspect && columnAt(state.a, state.inspect.x, state.inspect.z);
+  const layer = state.inspect ? layerAt(state.inspect.x, state.inspect.z) : state.a;
+  const m = layer.m;
+  const at = state.inspect && columnAt(layer, state.inspect.x, state.inspect.z);
   const panel = $('inspector');
   if (!at) {
     // Nothing loaded there yet (a toggle showing B loads only B's tiles): fetch A's tile.
-    if (state.inspect && wantColumn(state.a, state.inspect.x, state.inspect.z)) return;
+    if (state.inspect && wantColumn(layer, state.inspect.x, state.inspect.z)) return;
     panel.hidden = true;
     return;
   }
@@ -1145,16 +1150,16 @@ function showInspector() {
   add('sample', `${at.x}, ${at.z}${L ? ` (every ${m.step << L})` : ''}`);
   add('surface', `Y${c.surface[i]}`);
   add('water', c.water[i] > -32768 && wet(c, i) ? `Y${c.water[i]}, ${c.water[i] - c.surface[i]} deep` : '—');
-  add('biome', name('habitat', c.habitat[i]));
-  add('climate', name('region', c.region[i]));
+  add('biome', name('habitat', c.habitat[i], m));
+  add('climate', name('region', c.region[i], m));
   add('°C', (c.celsius[i] / 100).toFixed(2));
   add('moisture', (c.moisture[i] / 10000).toFixed(3));
-  add('level', name('level', c.level[i]));
-  add('character', name('character', c.character[i]));
+  add('level', name('level', c.level[i], m));
+  add('character', name('character', c.character[i], m));
   const f = c.flags[i];
   add('ocean', [f & 1 && 'marine', f & 2 && 'supplied', f & 4 && 'deep', f & 8 && 'wet'].filter(Boolean).join(', ') || '—');
   rule();
-  add('water kind', name('water_kind', c.water_kind[i]).toLowerCase());
+  add('water kind', name('water_kind', c.water_kind[i], m).toLowerCase());
   if (c.river) {
     const r = c.river[i];
     const beyond = c.channel_beyond?.[i];
@@ -1166,9 +1171,9 @@ function showInspector() {
   if (c.water_body) add('water id', c.water_body[i] ? `#${c.water_body[i]}` : '—');
   rule();
   if (c.plate) add('plate', `#${c.plate[i]}`);
-  if (c.province_type) add('province', name('province_type', c.province_type[i]));
+  if (c.province_type) add('province', name('province_type', c.province_type[i], m));
   if (c.province) add('cell', cellOf(m.provinceCells[c.province[i]]) || '—');
-  if (c.coast) add('coast', name('coast', c.coast[i]));
+  if (c.coast) add('coast', name('coast', c.coast[i], m));
   const w = c.winner[i];
   add('feature', featureName(m, w, c.feature[i]));
   if (state.b) compareRows(add, rule, at);
@@ -1268,6 +1273,7 @@ function writeHash() {
   }
   for (const pin of state.pins) p.append('pin', `${pin.x},${pin.z},${pin.note}`);
   if (state.hidden.size) p.set('oh', [...state.hidden].sort().join(','));
+  if (fineCandidates().length) p.set('f', state.fine.map((l) => l.m.id).join(','));
   history.replaceState(null, '', `#${p}`);
 }
 
@@ -1285,6 +1291,7 @@ function readHash() {
     cb: p.get('cb') === '1',
     pins: p.getAll('pin').map(parsePin).filter(Boolean),
     hidden: (p.get('oh') ?? '').split(',').filter((k) => OVERLAY_KINDS.some((o) => o.kind === k)),
+    fine: p.has('f') ? p.get('f').split(',').filter(Boolean) : null,
   };
 }
 
@@ -1677,6 +1684,111 @@ function markAt(px, py) {
   return best;
 }
 
+// ---------------------------------------------------------------------------------------------
+// Fine layers: finer renders of the same seed, terrain version and layout scale whose window lies
+// inside the open render (typically the whole world at 32 or 64 blocks per pixel). Both share
+// block coordinates; a fine layer draws over the open render inside its own window at the zoom
+// levels its pyramid covers, and the open render shows everywhere else.
+
+const sameFrame = (a, b) =>
+  a.seed === b.seed && a.terrainVersion === b.terrainVersion && (a.scale ?? 1) === (b.scale ?? 1);
+
+function fineCandidates() {
+  const here = state.catalogue.find((e) => e.id === state.m?.id);
+  if (!here) return [];
+  const half = here.size / 2;
+  const inside = (e) =>
+    e.centerX - e.size / 2 >= here.centerX - half &&
+    e.centerX + e.size / 2 <= here.centerX + half &&
+    e.centerZ - e.size / 2 >= here.centerZ - half &&
+    e.centerZ + e.size / 2 <= here.centerZ + half;
+  return state.catalogue.filter((e) => e.id !== here.id && e.step < here.step && sameFrame(e, here) && inside(e));
+}
+
+// ids: the fine renders to layer; null takes every candidate (a link that names none).
+async function setFine(ids) {
+  for (const l of state.fine) l.dead = true;
+  state.fine = [];
+  const wanted = fineCandidates().filter((e) => ids == null || ids.includes(e.id));
+  const opened = state.m;
+  const manifests = await Promise.all(wanted.map((e) => manifest(e.id).catch(() => null)));
+  if (state.m !== opened) return;
+  // Coarser layers first, so finer ones draw over them where windows overlap.
+  state.fine = manifests
+    .filter((m) => m && sameFrame(m, state.m))
+    .sort((a, b) => b.step - a.step)
+    .map((m) => new Layer(m));
+  buildFineMenu();
+  changed();
+}
+
+function buildFineMenu() {
+  const candidates = fineCandidates();
+  $('fine-section').hidden = !candidates.length;
+  const on = new Set(state.fine.map((l) => l.m.id));
+  $('fine').replaceChildren(
+    ...candidates.map((e) => {
+      const row = document.createElement('label');
+      row.className = 'check';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.checked = on.has(e.id);
+      input.addEventListener('change', () => {
+        const ids = [...document.querySelectorAll('#fine input')]
+          .map((box, i) => (box.checked ? candidates[i].id : null))
+          .filter(Boolean);
+        setFine(ids);
+      });
+      row.append(input, `${e.size.toLocaleString('en-US')} blocks @${e.step} around ${e.centerX}, ${e.centerZ}${e.note ? ` · ${e.note}` : ''}`);
+      return row;
+    }),
+  );
+}
+
+// A fine layer is drawn while its pyramid reaches the view's detail and is finer than the open
+// render's level there; zoomed further out, the open render alone shows.
+function covers(layer) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const ideal = Math.round(Math.log2(1 / (state.scale * dpr * layer.m.step)));
+  return ideal <= layer.top() && layer.m.step << levelFor(layer) < state.m.step << levelFor(state.a);
+}
+
+const windowOf = (m) => [m.minX, m.minZ, m.minX + m.width * m.step, m.minZ + m.height * m.step];
+
+function drawFine(wanted, id) {
+  for (const layer of state.fine) {
+    if (!covers(layer)) continue;
+    const [x0, z0, x1, z1] = windowOf(layer.m);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(screenX(x0), screenZ(z0), (x1 - x0) * state.scale, (z1 - z0) * state.scale);
+    ctx.clip();
+    drawLayer(layer, id, wanted);
+    ctx.restore();
+  }
+  // Each fine window's edge, dashed, at every zoom.
+  ctx.save();
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 1;
+  for (const layer of state.fine) {
+    const [x0, z0, x1, z1] = windowOf(layer.m);
+    ctx.strokeRect(Math.round(screenX(x0)) + 0.5, Math.round(screenZ(z0)) + 0.5, Math.round((x1 - x0) * state.scale), Math.round((z1 - z0) * state.scale));
+  }
+  ctx.restore();
+}
+
+// The layer whose samples the inspector and the cursor read at a point: the finest drawn there.
+function layerAt(x, z) {
+  if (state.b) return state.a;
+  let best = state.a;
+  for (const layer of state.fine) {
+    const [x0, z0, x1, z1] = windowOf(layer.m);
+    if (x >= x0 && z >= z0 && x < x1 && z < z1 && covers(layer) && layer.m.step < best.m.step) best = layer;
+  }
+  return best;
+}
+
 $('pin-form').addEventListener('submit', (e) => {
   e.preventDefault();
   addPin($('pin-text').value);
@@ -1687,9 +1799,9 @@ $('pin-remove').addEventListener('click', removePin);
 function hover(px, py) {
   if (!state.m) return;
   const b = blockAt(px, py);
-  const at = columnAt(state.a, b.x, b.z);
+  const at = columnAt(layerAt(b.x, b.z), b.x, b.z);
   let text = `X ${Math.floor(b.x)}  Z ${Math.floor(b.z)}`;
-  if (at) text += `  Y${at.t.core.surface[at.i]}  ${name('habitat', at.t.core.habitat[at.i])}`;
+  if (at) text += `  Y${at.t.core.surface[at.i]}  ${name('habitat', at.t.core.habitat[at.i], at.t.layer.m)}`;
   $('cursor').textContent = text;
 }
 
@@ -1861,6 +1973,7 @@ async function open(id, view) {
   showLegend();
   loadCurated(id).catch((error) => console.warn(error));
   loadOverlay(id).catch((error) => console.warn(error));
+  setFine(view?.fine ?? null).catch((error) => console.warn(error));
   const inside = (x, z) =>
     x >= m.minX && z >= m.minZ && x < m.minX + m.width * m.step && z < m.minZ + m.height * m.step;
   if (view && view.x != null && view.s) {

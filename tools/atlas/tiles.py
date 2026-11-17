@@ -332,7 +332,7 @@ def write_index(site: Path, index: list[dict]):
     path.write_text(json.dumps(index, indent=1), encoding="utf-8")
 
 
-def publish(atlas: Atlas, site: Path, threshold: float, note: str | None = None):
+def publish(atlas: Atlas, site: Path, threshold: float, note: str | None = None, extra=None):
     """Export one render into site/renders/<id>/ and list it in site/renders/index.json."""
     meta = atlas.meta
     rid = render_id(meta)
@@ -346,7 +346,10 @@ def publish(atlas: Atlas, site: Path, threshold: float, note: str | None = None)
     for name, data in kept.items():
         (out / name).write_bytes(data)
     created = time.strftime("%Y-%m-%d %H:%M", time.gmtime())
-    manifest = exporter.manifest(rid, levels, {"created": created, "note": note or ""})
+    # extra: the layout scale (renders share a coordinate frame only at one scale) and
+    # whether the render is a whole world, which fine renders may be layered into.
+    extra = {"scale": 1.0, "world": False} | (extra or {})
+    manifest = exporter.manifest(rid, levels, {"created": created, "note": note or ""} | extra)
     (out / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     old = {e["id"]: e for e in read_index(site)}.get(rid, {})
     index = [e for e in read_index(site) if e["id"] != rid]
@@ -362,6 +365,8 @@ def publish(atlas: Atlas, site: Path, threshold: float, note: str | None = None)
             "landPct": manifest["landPct"],
             "created": created,
             "note": note or "",
+            "scale": extra["scale"],
+            **({"world": True} if extra["world"] else {}),
             **{k: old[k] for k, name in CURATED.items() if k in old and name in kept},
         }
     )

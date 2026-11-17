@@ -9,19 +9,43 @@
     point carrying the world's seed;
   - an overlay file of this module's own shape ({"points": [...], "paths": [...]}).
 Items from one source replace that source's earlier items. The page draws an item only when it
-has no seed or the render's seed.
+has no seed or the render's seed. Labels and sources are published, so they keep only a short name
+(a capture's, world's or tour's directory or file name), never a path.
 """
 
 import gzip
 import json
+import re
 import struct
 from pathlib import Path
 
 KINDS = ("spawn", "tour", "flight")
+FIELDS = {"kind", "x", "z", "y", "yaw", "label", "seed", "source", "points"}
+NAME_LIMIT = 80
+
+
+def short(text) -> str:
+    """A published name: the last part of anything path-like, without a drive, whitespace folded."""
+    name = re.split(r"[\\/]", str(text).strip().rstrip("\\/"))[-1]
+    name = re.sub(r"^[A-Za-z]:", "", name)
+    return " ".join(name.split())[:NAME_LIMIT]
+
+
+def published(item: dict) -> dict:
+    """Only the fields the page reads, with short names."""
+    out = {k: v for k, v in item.items() if k in FIELDS}
+    out["label"] = short(out["label"]) or out["kind"]
+    out["source"] = short(out["source"]) or out["kind"]
+    return out
 
 
 def read_source(path: Path) -> dict:
     """The overlay items one source gives, as {"points": [...], "paths": [...]}."""
+    found = gather(path)
+    return {key: [published(i) for i in found[key]] for key in ("points", "paths")}
+
+
+def gather(path: Path) -> dict:
     if path.is_dir():
         found: dict[str, list[dict]] = {"points": [], "paths": []}
         for level in level_files(path):

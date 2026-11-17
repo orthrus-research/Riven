@@ -187,6 +187,27 @@ class OverlayTests(unittest.TestCase):
         merged = merge(merge(merge({}, a), b), again)
         self.assertEqual([p["label"] for p in merged["points"]], ["s", "a2"])
 
+    def test_no_input_path_reaches_the_published_overlay(self):
+        # Absolute Windows paths in every source kind, and as labels in an overlay file.
+        instance = self.root.resolve() / "fly-04"
+        nbt_level(instance / "server/world/level.dat")
+        capture(instance, [[0, 100, 0], [10, 100, 0]])
+        tour = self.root.resolve() / "coasts-2485331.json"
+        tour.write_text(json.dumps([{"label": "cliff", "x": 1, "y": 2, "z": 3}]), "utf-8")
+        own = self.root.resolve() / "mine.json"
+        point = {"kind": "tour", "x": 0, "z": 0, "label": r"D:\data\private\views\ridge"}
+        own.write_text(
+            json.dumps({"points": [point | {"note": r"D:\data\private\notes.txt"}], "paths": []}),
+            "utf-8",
+        )
+        found = [read_source(path) for path in (instance, tour, own)]
+        text = json.dumps(found)
+        root = self.root.resolve()
+        for part in (str(root), root.drive or "/", root.parent.name, "D:", "private", "\\"):
+            self.assertNotIn(part, text)
+        self.assertEqual(found[2]["points"][0]["label"], "ridge")
+        self.assertEqual(found[0]["paths"][0]["source"], "capture fly-04")
+
     def test_set_overlay_counts_the_items_in_the_catalogue(self):
         site = Site(self.root / "site")
         added = read_source(capture(self.root / "fly-03", [[0, 1, 0], [9, 1, 0]]))
