@@ -40,7 +40,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from atlas import history  # noqa: E402
+from atlas import history, hunt  # noqa: E402
 from atlas.batch import compare, contact_sheet, plot_section  # noqa: E402
 from atlas.build import CACHE, Source, prepare, run_sampler  # noqa: E402
 from atlas.paint import Atlas, paint  # noqa: E402
@@ -251,6 +251,7 @@ def main():
     p.add_argument("--spacing", type=int, default=2, help="blocks between columns (2)")
     add_source(p)
     history.add_parser(sub)
+    hunt.add_parser(sub)
     args = parser.parse_args()
     if getattr(args, "run", None):
         return args.run(args)
