@@ -42,8 +42,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from atlas.batch import compare, contact_sheet, plot_section  # noqa: E402
 from atlas.build import CACHE, Source, prepare, run_sampler  # noqa: E402
+from atlas.overlay import read_source  # noqa: E402
 from atlas.paint import Atlas, paint  # noqa: E402
-from atlas.tiles import publish, read_pins, remove, set_pins  # noqa: E402
+from atlas.tiles import publish, read_pins, remove, set_overlay, set_pins  # noqa: E402
 from atlas.viewer import write_viewer  # noqa: E402
 
 MAP_SOURCE = Path(__file__).resolve().parent / "atlas/map"
@@ -121,8 +122,8 @@ def render(args, source: Source, seed=None, out=None, viewer=True):
 
 
 def publish_map(args, source: Source):
-    """Tile one window into the map site (.local/map/site), curate a render's pins, and
-    optionally deploy the site."""
+    """Tile one window into the map site (.local/map/site), curate a render's pins and
+    overlays, and optionally deploy the site."""
     site = MAP_SITE
     for name in MAP_FILES:
         (site / name).parent.mkdir(parents=True, exist_ok=True)
@@ -135,12 +136,26 @@ def publish_map(args, source: Source):
         out, atlas, _ = sample(args, source)
         rid, files, size, seconds = publish(atlas, site, args.threshold, args.note)
         print(f"{rid}: {files} files, {size / 2**20:.1f} MiB in {seconds}s -> {site}")
+    if args.render and not (args.pin or args.pins or args.overlay):
+        sys.exit("--render needs --pin, --pins or --overlay")
     if rid and (args.pins or args.pin):
         if args.pins:
             pins = set_pins(site, rid, read_pins(args.pins), replace=True)
         if args.pin:
             pins = set_pins(site, rid, [{"x": x, "z": z, "note": n} for x, z, n in args.pin])
         print(f"{rid}: {len(pins)} pins")
+    if rid and args.overlay:
+        added: dict = {"points": [], "paths": []}
+        for origin in args.overlay:
+            try:
+                found = read_source(origin)
+            except (OSError, ValueError, KeyError) as error:
+                sys.exit(f"--overlay {origin}: {error}")
+            for key in added:
+                added[key] += found[key]
+            print(f"{origin}: {len(found['points'])} points, {len(found['paths'])} paths")
+        overlay = set_overlay(site, rid, added)
+        print(f"{rid}: overlay of {len(overlay['points'])} points, {len(overlay['paths'])} paths")
     if args.deploy or args.redeploy:
         npx = shutil.which("npx")
         if npx is None:
@@ -261,6 +276,14 @@ def main():
     )
     p.add_argument(
         "--pins", type=Path, metavar="FILE", help="replace the curated pins (JSON [{x, z, note}])"
+    )
+    p.add_argument(
+        "--overlay",
+        type=Path,
+        action="append",
+        metavar="SOURCE",
+        help="add game overlays: a tour file, a capture's result.json, a level.dat, or a world"
+        " or instance directory (atlas/overlay.py)",
     )
     p.add_argument("--remove", metavar="ID", help="drop a published render instead")
     p.add_argument("--deploy", action="store_true", help="deploy the site with wrangler")

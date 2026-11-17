@@ -17,6 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
+from atlas.overlay import merge
 from atlas.paint import (
     BIOME_COLORS,
     ELEVATION_STOPS,
@@ -315,7 +316,7 @@ def render_id(meta):
 
 # Curated per-render files, by catalogue key. They survive a re-publish of the same render, and the
 # catalogue entry counts each file's items so the page fetches only files that exist.
-CURATED = {"pins": "pins.json"}
+CURATED = {"pins": "pins.json", "overlay": "overlay.json"}
 NOTE_LIMIT = 200
 
 
@@ -403,6 +404,21 @@ def set_pins(site: Path, rid: str, pins: list[dict], replace: bool = False) -> l
     else:
         path.unlink(missing_ok=True)
         entry.pop("pins", None)
+    write_index(site, index)
+    return result
+
+
+def set_overlay(site: Path, rid: str, added: dict) -> dict:
+    """Merge overlay items (atlas.overlay) into a published render's overlay.json; returns it."""
+    index = read_index(site)
+    entry = next((e for e in index if e["id"] == rid), None)
+    if entry is None:
+        raise SystemExit(f"no render {rid} in {site / 'renders/index.json'}")
+    path = site / "renders" / rid / CURATED["overlay"]
+    current = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    result = merge(current, added)
+    path.write_text(json.dumps(result, separators=(",", ":")), encoding="utf-8")
+    entry["overlay"] = len(result["points"]) + len(result["paths"])
     write_index(site, index)
     return result
 

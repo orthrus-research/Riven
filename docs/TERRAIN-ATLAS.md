@@ -108,6 +108,17 @@ and kept out of search indexes (`X-Robots-Tag`, `robots.txt`).
   `--render` the pins go to the render the same command publishes. Re-publishing a render keeps
   its pins, and the catalogue counts them so the page fetches only files that exist. Tapping a
   pin, or picking it from the drawer's list, opens its note, its coordinates and the `/tp` copy.
+- Game overlays draw the world spawn (a star), tour views (a dot and a stroke where the view
+  looks) and recorded flight paths (a line from a ring to an arrowhead) over any projection; the
+  drawer switches each kind (the URL keeps the switched-off ones as `oh=`), and tapping an item
+  names it. `map --render ID --overlay SOURCE` (repeatable) adds them to the render's
+  `overlay.json` (`tools/atlas/overlay.py`): a tour file under `tools/tours` gives its views; a
+  capture's `result.json`, or an instance directory holding `runs/*/result.json`, gives the
+  client's recorded positions (each scenario's spectator flight observations, about one a second);
+  a world's `level.dat`, or a world or instance directory holding one, gives its spawn. Items take
+  the seed of their capture's workload, their world or their tour file's name (`<name>-<seed>`),
+  and the page leaves out items of another seed; adding a source again replaces its items. The
+  atlas itself does not compute spawn: the game picks it (`RivenSpawn`) when it creates a world.
 - The site is built in `.local/map/site` and deployed as the assets-only Worker `orthrus-map`
   (`tools/atlas/map/wrangler.jsonc`, through the wrangler login). Renders are content-addressed
   (seed, version, window and digest) and tile URLs carry the tile format, so tiles are cached as

@@ -27,6 +27,8 @@ const state = {
   inspect: null, // {x, z, pin?} of the inspected column
   pins: [], // the link's own pins: {x, z, note}
   curated: [], // the open render's pins.json, marked curated
+  overlay: { points: [], paths: [] }, // the open render's overlay.json, this seed's items
+  hidden: new Set(), // overlay kinds switched off
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -690,6 +692,7 @@ function draw() {
   );
   if (state.grid) drawGrid(w, h);
   if (state.inspect && !state.inspect.pin) drawMarker();
+  drawOverlay();
   drawPins();
   drawScale();
   showCompareChrome();
@@ -1264,6 +1267,7 @@ function writeHash() {
     else if (state.compare.showB) p.set('cb', '1');
   }
   for (const pin of state.pins) p.append('pin', `${pin.x},${pin.z},${pin.note}`);
+  if (state.hidden.size) p.set('oh', [...state.hidden].sort().join(','));
   history.replaceState(null, '', `#${p}`);
 }
 
@@ -1280,6 +1284,7 @@ function readHash() {
     cs: p.has('cs') ? clamp(Number(p.get('cs')) || 0.5, 0, 1) : 0.5,
     cb: p.get('cb') === '1',
     pins: p.getAll('pin').map(parsePin).filter(Boolean),
+    hidden: (p.get('oh') ?? '').split(',').filter((k) => OVERLAY_KINDS.some((o) => o.kind === k)),
   };
 }
 
@@ -1360,6 +1365,13 @@ function inspect(px, py) {
   if (!state.m) return;
   const hit = pinAt(px, py);
   if (hit) return openPin(hit);
+  const mark = markAt(px, py);
+  if (mark) {
+    state.inspect = { x: mark.x, z: mark.z, mark };
+    showInspector();
+    schedule();
+    return;
+  }
   const b = blockAt(px, py);
   state.inspect = { x: b.x, z: b.z };
   showInspector();
@@ -1417,9 +1429,11 @@ function drawPins() {
 // The inspector's pin row: the note, whose pin it is, and the controls to add or drop one.
 function showPinControls() {
   const p = state.inspect?.pin;
+  const mark = state.inspect?.mark;
   const note = $('inspector-note');
-  note.hidden = !p;
+  note.hidden = !p && !mark;
   if (p) note.textContent = `${p.note}${p.curated ? '  · curated' : ''}`;
+  else if (mark) note.textContent = mark.text;
   $('pin-form').hidden = Boolean(p);
   $('pin-remove').hidden = !p || p.curated;
 }
@@ -1489,6 +1503,178 @@ function parsePin(text) {
   if (!m) return null;
   const note = m[3].replace(/\s+/g, ' ').trim().slice(0, PIN_NOTE);
   return note ? { x: Number(m[1]), z: Number(m[2]), note } : null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Game overlays: world spawn, tour views and recorded flight paths from the render's overlay.json
+// (tools/atlas/overlay.py). Items carrying another seed than the render's are left out.
+
+const OVERLAY_KINDS = [
+  { kind: 'spawn', name: 'World spawn', color: '#7dff6a' },
+  { kind: 'tour', name: 'Tour views', color: '#ff7ad9' },
+  { kind: 'flight', name: 'Flight paths', color: '#2fe6ff' },
+];
+const OVERLAY_COLOR = Object.fromEntries(OVERLAY_KINDS.map((k) => [k.kind, k.color]));
+const MARK_HIT = 14; // CSS pixels
+
+async function loadOverlay(id) {
+  state.overlay = { points: [], paths: [] };
+  const entry = state.catalogue.find((e) => e.id === id);
+  if (entry?.overlay) {
+    const response = await fetch(`renders/${id}/overlay.json`, { cache: 'no-cache' });
+    const data = response.ok ? await response.json() : {};
+    const m = state.m;
+    if (m?.id !== id) return;
+    const ours = (item) => item.seed == null || item.seed === m.seed;
+    state.overlay = {
+      points: (data.points ?? []).filter(ours),
+      paths: (data.paths ?? []).filter((p) => ours(p) && p.points?.length >= 2),
+    };
+  }
+  buildOverlayMenu();
+  schedule();
+}
+
+const shown = (kind) => !state.hidden.has(kind);
+
+function buildOverlayMenu() {
+  const box = $('overlays');
+  const rows = [];
+  for (const { kind, name, color } of OVERLAY_KINDS) {
+    const n = state.overlay.points.filter((p) => p.kind === kind).length + state.overlay.paths.filter((p) => p.kind === kind).length;
+    if (!n) continue;
+    const label = document.createElement('label');
+    label.className = 'check';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = shown(kind);
+    input.addEventListener('change', () => {
+      if (input.checked) state.hidden.delete(kind);
+      else state.hidden.add(kind);
+      changed();
+    });
+    const swatch = document.createElement('span');
+    swatch.className = 'swatch';
+    swatch.style.background = color;
+    label.append(input, swatch, `${name} (${n})`);
+    rows.push(label);
+  }
+  box.replaceChildren(...rows);
+}
+
+function drawOverlay() {
+  const { points, paths } = state.overlay;
+  ctx.lineJoin = 'round';
+  for (const path of paths) {
+    if (!shown(path.kind)) continue;
+    const xy = path.points.map(([x, z]) => [screenX(x), screenZ(z)]);
+    ctx.beginPath();
+    xy.forEach(([x, z], i) => (i ? ctx.lineTo(x, z) : ctx.moveTo(x, z)));
+    ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.strokeStyle = OVERLAY_COLOR[path.kind];
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    // A ring where the recording starts, an arrowhead where it ends.
+    const [sx, sz] = xy[0];
+    ring(sx, sz, 5, OVERLAY_COLOR[path.kind]);
+    const [ax, az] = xy[xy.length - 2];
+    const [ex, ez] = xy[xy.length - 1];
+    const angle = Math.atan2(ez - az, ex - ax);
+    ctx.beginPath();
+    ctx.moveTo(ex + 9 * Math.cos(angle), ez + 9 * Math.sin(angle));
+    ctx.lineTo(ex + 9 * Math.cos(angle + 2.5), ez + 9 * Math.sin(angle + 2.5));
+    ctx.lineTo(ex + 9 * Math.cos(angle - 2.5), ez + 9 * Math.sin(angle - 2.5));
+    ctx.closePath();
+    ctx.fillStyle = OVERLAY_COLOR[path.kind];
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.font = '11px ui-monospace, Consolas, monospace';
+  for (const p of points) {
+    if (!shown(p.kind)) continue;
+    const x = screenX(p.x);
+    const z = screenZ(p.z);
+    const color = OVERLAY_COLOR[p.kind];
+    if (p.kind === 'tour') {
+      // Minecraft yaw: 0 faces south (+Z), 90 west; the stroke shows where the view looks.
+      const yaw = ((p.yaw ?? 0) * Math.PI) / 180;
+      ctx.beginPath();
+      ctx.moveTo(x, z);
+      ctx.lineTo(x - 16 * Math.sin(yaw), z + 16 * Math.cos(yaw));
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ring(x, z, 4.5, color);
+    } else {
+      ctx.beginPath();
+      for (let k = 0; k < 10; k++) {
+        const r = k % 2 ? 4 : 9;
+        const a = (k * Math.PI) / 5 - Math.PI / 2;
+        ctx.lineTo(x + r * Math.cos(a), z + r * Math.sin(a));
+      }
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+    if (p.kind === 'spawn' || state.scale >= 0.25) caption(p.kind === 'spawn' ? 'spawn' : p.label, x + 9, z - 7);
+  }
+}
+
+function ring(x, z, r, color) {
+  ctx.beginPath();
+  ctx.arc(x, z, r, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+function caption(text, x, z) {
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+  ctx.strokeText(text, x, z);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(text, x, z);
+}
+
+const KIND_NAME = { spawn: 'World spawn', tour: 'Tour view', flight: 'Flight' };
+
+// The overlay item under a tap: a point, or the nearest recorded position on a path.
+function markAt(px, py) {
+  let best = null;
+  let bestD = MARK_HIT;
+  for (const p of state.overlay.points) {
+    if (!shown(p.kind)) continue;
+    const d = Math.hypot(screenX(p.x) - px, screenZ(p.z) - py);
+    if (d <= bestD) {
+      bestD = d;
+      const y = p.y != null ? ` · Y${p.y}` : '';
+      best = { x: p.x, z: p.z, text: `${KIND_NAME[p.kind]}: ${p.label}${y} · ${p.source}` };
+    }
+  }
+  for (const path of state.overlay.paths) {
+    if (!shown(path.kind)) continue;
+    path.points.forEach(([x, z, y], i) => {
+      const d = Math.hypot(screenX(x) - px, screenZ(z) - py);
+      if (d <= bestD) {
+        bestD = d;
+        const at = y != null ? ` · Y${y}` : '';
+        best = { x, z, text: `${KIND_NAME[path.kind]}: ${path.label} · recorded position ${i + 1} of ${path.points.length}${at}` };
+      }
+    });
+  }
+  return best;
 }
 
 $('pin-form').addEventListener('submit', (e) => {
@@ -1674,6 +1860,7 @@ async function open(id, view) {
   buildCompareMenu();
   showLegend();
   loadCurated(id).catch((error) => console.warn(error));
+  loadOverlay(id).catch((error) => console.warn(error));
   const inside = (x, z) =>
     x >= m.minX && z >= m.minZ && x < m.minX + m.width * m.step && z < m.minZ + m.height * m.step;
   if (view && view.x != null && view.s) {
@@ -1837,6 +2024,7 @@ async function start() {
   const id = state.catalogue.some((e) => e.id === hash.r) ? hash.r : state.catalogue[0].id;
   state.compare = { mode: hash.cm, split: hash.cs, showB: hash.cb };
   state.pins = hash.pins;
+  state.hidden = new Set(hash.hidden);
   await open(id, hash);
   if (hash.c && hash.c !== id && state.catalogue.some((e) => e.id === hash.c)) {
     // A difference projection exists only once B is open.

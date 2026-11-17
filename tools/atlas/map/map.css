@@ -442,6 +442,16 @@ details .choice {
   color: #444;
 }
 
+.overlays {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.overlays:empty {
+  display: none;
+}
+
 /* Zoom buttons and scale bar. */
 .zoom {
   position: fixed;
