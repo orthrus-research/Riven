@@ -107,6 +107,43 @@ and kept out of search indexes (`X-Robots-Tag`, `robots.txt`).
   features, and every stage's change and reasons). Colours are computed in the browser from the
   fields, so switching projection fetches nothing; tapping a column lists its sampled values. The
   URL keeps the render, projection and view.
+- Compare (drawer, "Compare with (B)") opens a second published render of the same window and
+  grid (origin, step, size) over the open one (A): a swipe, whose divider shows B to its right, or
+  a toggle (the chip or `T` flips A and B). Four difference projections read both renders' tiles
+  pixel for pixel: height change (B minus A), and changed biome, feature and water (gained, lost,
+  level moved). Biomes, stages and families are matched by name, so renders of different terrain
+  versions compare; the inspector adds B's values. Nothing new is published for it, and the URL
+  keeps B, the mode, the divider and the toggle's side.
+- Pins mark a column with a short note (up to 200 characters). Tapping a column offers "Pin" in
+  the inspector; such pins live in the link (`pin=X,Z,note`, repeated), so sharing the link shares
+  them. A render can also carry curated pins in its `pins.json`, drawn white (the link's are
+  amber): `map --render ID --pin X Z "note"` adds one (a pin on the same column replaces it), and
+  `map --render ID --pins FILE` replaces them all from a JSON list of `{x, z, note}`; without
+  `--render` the pins go to the render the same command publishes. Re-publishing a render keeps
+  its pins, and the catalogue counts them so the page fetches only files that exist. Tapping a
+  pin, or picking it from the drawer's list, opens its note, its coordinates and the `/tp` copy.
+- Game overlays draw the world spawn (a star), tour views (a dot and a stroke where the view
+  looks) and recorded flight paths (a line from a ring to an arrowhead) over any projection; the
+  drawer switches each kind (the URL keeps the switched-off ones as `oh=`), and tapping an item
+  names it. `map --render ID --overlay SOURCE` (repeatable) adds them to the render's
+  `overlay.json` (`tools/atlas/overlay.py`): a tour file under `tools/tours` gives its views; a
+  capture's `result.json`, or an instance directory holding `runs/*/result.json`, gives the
+  client's recorded positions (each scenario's spectator flight observations, about one a second);
+  a world's `level.dat`, or a world or instance directory holding one, gives its spawn. Items take
+  the seed of their capture's workload, their world or their tour file's name (`<name>-<seed>`),
+  and the page leaves out items of another seed; adding a source again replaces its items. Labels
+  are published, so they keep only the capture's, world's or tour's short name, never a path. The
+  atlas itself does not compute spawn: the game picks it (`RivenSpawn`) when it creates a world.
+- `map --world` renders the whole canonical world: seed 2485331 (or `--seed`), layout scale 4,
+  32768 blocks about the origin, 32 blocks per pixel (or `--step 64`). On a 16-thread desktop it
+  took 21 s and 7.2 MiB (42 files) at 32 blocks per pixel, 18 s and 2.0 MiB (10 files) at 64.
+  Finer renders of the same seed, terrain version and layout scale whose window lies inside a
+  coarser one are listed under "Fine layers" and drawn over it inside their windows (dashed), at
+  the zoom levels their own pyramid reaches; zoomed further out the coarse render alone shows, and
+  the inspector reads the finest layer under the tap. All candidates are on unless the link says
+  otherwise (`f=` lists the ones on). Both sample the same columns where their grids meet: a
+  4 km window at 2 blocks per pixel (46 s, 17.6 MiB) matched the 32-block world on all 16384
+  shared samples.
 - The site is built in `.local/map/site` and deployed as the assets-only Worker `orthrus-map`
   (`tools/atlas/map/wrangler.jsonc`, through the wrangler login). Renders are content-addressed
   (seed, version, window and digest) and tile URLs carry the tile format, so tiles are cached as

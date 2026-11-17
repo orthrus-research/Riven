@@ -40,6 +40,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -47,14 +48,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from atlas import history, hunt, query  # noqa: E402
 from atlas.batch import compare, contact_sheet, grid_sheet, plot_section, subsample_mismatches  # noqa: E402
 from atlas.build import CACHE, Source, prepare, run_sampler  # noqa: E402
+from atlas.overlay import read_source  # noqa: E402
 from atlas.paint import Atlas, paint  # noqa: E402
-from atlas.tiles import publish, remove  # noqa: E402
+from atlas.tiles import publish, read_pins, remove, set_overlay, set_pins  # noqa: E402
 from atlas.viewer import write_viewer  # noqa: E402
 
 MAP_SOURCE = Path(__file__).resolve().parent / "atlas/map"
 MAP_SITE = CACHE.parent / "map/site"
 MAP_FILES = ("index.html", "map.js", "map.css", "_headers", "robots.txt")
 WRANGLER = "4.154.0"
+# The canonical world: seed 2485331 at layout scale 4, 32 km on a side about the origin.
+WORLD = {"seed": 2485331, "scale": 4.0, "size": 32768, "step": 32}
 
 
 def window_options(args):
@@ -169,18 +173,43 @@ def render_progressive(args, source: Source):
 
 
 def publish_map(args, source: Source):
-    """Tile one window into the map site (.local/map/site) and optionally deploy it."""
+    """Tile one window into the map site (.local/map/site), curate a render's pins and
+    overlays, and optionally deploy the site."""
     site = MAP_SITE
     for name in MAP_FILES:
         (site / name).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(MAP_SOURCE / name, site / name)
+    rid = args.render
     if args.remove:
         remove(site, args.remove)
         print(f"removed {args.remove}")
-    elif not args.redeploy:
+    elif not args.redeploy and not rid:
+        started = time.monotonic()
         out, atlas, _ = sample(args, source)
-        rid, files, size, seconds = publish(atlas, site, args.threshold, args.note)
+        extra = {"scale": args.scale, "world": args.world}
+        rid, files, size, seconds = publish(atlas, site, args.threshold, args.note, extra)
         print(f"{rid}: {files} files, {size / 2**20:.1f} MiB in {seconds}s -> {site}")
+        print(f"sampled and tiled in {time.monotonic() - started:.1f}s")
+    if args.render and not (args.pin or args.pins or args.overlay):
+        sys.exit("--render needs --pin, --pins or --overlay")
+    if rid and (args.pins or args.pin):
+        if args.pins:
+            pins = set_pins(site, rid, read_pins(args.pins), replace=True)
+        if args.pin:
+            pins = set_pins(site, rid, [{"x": x, "z": z, "note": n} for x, z, n in args.pin])
+        print(f"{rid}: {len(pins)} pins")
+    if rid and args.overlay:
+        added: dict = {"points": [], "paths": []}
+        for origin in args.overlay:
+            try:
+                found = read_source(origin)
+            except (OSError, ValueError, KeyError) as error:
+                sys.exit(f"--overlay {origin}: {error}")
+            for key in added:
+                added[key] += found[key]
+            print(f"{origin}: {len(found['points'])} points, {len(found['paths'])} paths")
+        overlay = set_overlay(site, rid, added)
+        print(f"{rid}: overlay of {len(overlay['points'])} points, {len(overlay['paths'])} paths")
     if args.deploy or args.redeploy:
         npx = shutil.which("npx")
         if npx is None:
@@ -337,7 +366,37 @@ def main():
     p = sub.add_parser("map", help="tile one window into the map site (map.orthrus.cc)")
     add_window(p, size=8192, step=1)
     add_source(p)
+    # Unset until resolved below, so --world can tell a given --seed or --step from the default.
+    p.set_defaults(seed=None, step=None)
+    p.add_argument(
+        "--world",
+        action="store_true",
+        help="the whole canonical world: seed 2485331 (or --seed), layout scale 4, 32768 blocks"
+        " about the origin, 32 blocks per pixel (or --step, e.g. 64)",
+    )
     p.add_argument("--note", help="a short label shown with the render on the site")
+    p.add_argument(
+        "--render", metavar="ID", help="curate this published render instead of rendering one"
+    )
+    p.add_argument(
+        "--pin",
+        nargs=3,
+        action="append",
+        metavar=("X", "Z", "NOTE"),
+        type=str,
+        help="add a curated pin with a short note (a pin at the same column is replaced)",
+    )
+    p.add_argument(
+        "--pins", type=Path, metavar="FILE", help="replace the curated pins (JSON [{x, z, note}])"
+    )
+    p.add_argument(
+        "--overlay",
+        type=Path,
+        action="append",
+        metavar="SOURCE",
+        help="add game overlays: a tour file, a capture's result.json, a level.dat, or a world"
+        " or instance directory (atlas/overlay.py)",
+    )
     p.add_argument("--remove", metavar="ID", help="drop a published render instead")
     p.add_argument("--deploy", action="store_true", help="deploy the site with wrangler")
     p.add_argument("--redeploy", action="store_true", help="deploy the site without rendering")
@@ -389,6 +448,13 @@ def main():
         contact_sheet(entries, out, f"Seeds over {args.size} blocks ({source.label})")
         print(out / "index.html")
     elif args.command == "map":
+        if args.world:
+            args.center, args.size, args.scale = (0, 0), WORLD["size"], WORLD["scale"]
+        args.seed = args.seed if args.seed is not None else WORLD["seed"] if args.world else 8675309
+        args.step = args.step if args.step is not None else WORLD["step"] if args.world else 1
+        for x, z, _ in args.pin or []:
+            if not (x.lstrip("-").isdigit() and z.lstrip("-").isdigit()):
+                parser.error(f"--pin needs integer block coordinates, not {x} {z}")
         publish_map(args, source_of(args))
     elif args.command == "sweep":
         if len(args.param) != len(args.values) or len(args.param) > 2:

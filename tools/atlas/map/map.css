@@ -391,6 +391,67 @@ details .choice {
   margin: 4px 0;
 }
 
+/* Pins: the note above the inspected values, the add form and the drawer's list. */
+.pin-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.pin-form {
+  display: flex;
+  border-top: 1px solid var(--rule);
+}
+
+.pin-form input {
+  flex: 1;
+  min-width: 0;
+  background: #000;
+  border: none;
+  padding: 8px 10px;
+  font-size: 16px; /* 16px keeps phones from zooming into the field */
+}
+
+.pin-form button {
+  border: none;
+  border-left: 1px solid var(--rule);
+  padding: 0 14px;
+}
+
+.pin-remove {
+  border: none;
+  border-top: 1px solid var(--rule);
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.pin-choice {
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.pin-choice .dim {
+  font: 11px var(--mono);
+}
+
+.choice[aria-pressed='true'] .dim {
+  color: #444;
+}
+
+.overlays {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.overlays:empty {
+  display: none;
+}
+
 /* Zoom buttons and scale bar. */
 .zoom {
   position: fixed;
@@ -438,6 +499,82 @@ details .choice {
   display: none;
 }
 
+/* Compare: the swipe divider (B shows right of it) and the A/B chip under the top bar. */
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 8px;
+}
+
+.segmented .choice {
+  text-align: center;
+  margin: 0 -1px 0 0;
+}
+
+.choice:disabled,
+select:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.swipe {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px solid var(--ink);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.swipe__tag {
+  position: absolute;
+  top: calc(max(10px, env(safe-area-inset-top)) + 100px);
+  padding: 1px 6px;
+  font: 600 11px var(--mono);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+}
+
+.swipe__tag--a {
+  right: 6px;
+}
+
+.swipe__tag--b {
+  left: 6px;
+}
+
+.swipe__handle {
+  position: absolute;
+  top: 50%;
+  left: -22px;
+  width: 44px;
+  height: 44px;
+  transform: translateY(-50%);
+  pointer-events: auto;
+  touch-action: none;
+  cursor: ew-resize;
+  font-size: 18px;
+}
+
+.chip {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(max(10px, env(safe-area-inset-top)) + 54px);
+  padding: 5px 10px;
+  font: 12px var(--mono);
+  white-space: nowrap;
+  max-width: calc(100vw - 2 * var(--gutter) - 110px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
 /* Phones: the scale bar rises above the legend and inspector, which take the full width. */
 @media (max-width: 640px) {
   .scale {
@@ -450,6 +587,15 @@ details .choice {
 
   .bar__cursor {
     display: none;
+  }
+
+  /* Below the risen scale bar. */
+  .chip {
+    top: calc(max(10px, env(safe-area-inset-top)) + 88px);
+  }
+
+  .swipe__tag {
+    top: calc(max(10px, env(safe-area-inset-top)) + 124px);
   }
 
   .inspector {
