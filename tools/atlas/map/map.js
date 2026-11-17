@@ -15,14 +15,16 @@ const BYTES = { i16: 2, u16: 2, u8: 1 };
 
 const state = {
   catalogue: [],
-  m: null, // the open render's manifest
+  m: null, // the open render's manifest (state.a.m)
+  a: null, // the open render's layer
+  b: null, // the compared render's layer: same window and grid as a
+  compare: { mode: 'swipe', split: 0.5, showB: false },
   projection: 'relief',
   cx: 0,
   cz: 0,
   scale: 1, // CSS pixels per block
   grid: false,
   inspect: null, // {x, z} of the inspected column
-  generation: 0,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -105,33 +107,51 @@ const RIVER_COLORS = {
 // ---------------------------------------------------------------------------------------------
 // Tiles
 
+// One published render: its manifest, its projections and the tiles loaded from it. Every layer
+// shares the view's block coordinates, so a compared render draws over the same ground.
+class Layer {
+  constructor(m) {
+    this.m = m;
+    this.tiles = new Map();
+    this.dead = false; // set when the layer leaves the view; its loads are dropped
+    this.projections = projections(m);
+  }
+
+  top() {
+    return this.m.levels.length - 1;
+  }
+
+  tileAt(level, tx, tz) {
+    const k = `${level}/${tx}/${tz}`;
+    let t = this.tiles.get(k);
+    if (!t) {
+      t = new Tile(this, level, tx, tz);
+      this.tiles.set(k, t);
+    }
+    return t;
+  }
+
+  projection(id) {
+    return this.projections.find((p) => p.id === id);
+  }
+}
+
 class Tile {
-  constructor(level, tx, tz) {
-    Object.assign(this, { level, tx, tz, core: null, stages: null, failed: false });
+  constructor(layer, level, tx, tz) {
+    Object.assign(this, { layer, level, tx, tz, core: null, stages: null, failed: false });
     this.pending = { core: false, stages: false };
     this.image = null;
     this.imageKey = '';
     this.shade = null;
     this.slope = null;
     this.used = 0;
-    this.generation = state.generation;
   }
 }
 
-const tiles = new Map();
 const queue = [];
 let inflight = 0;
 let frame = 0;
-
-function tileAt(level, tx, tz) {
-  const k = `${level}/${tx}/${tz}`;
-  let t = tiles.get(k);
-  if (!t) {
-    t = new Tile(level, tx, tz);
-    tiles.set(k, t);
-  }
-  return t;
-}
+const layers = () => [state.a, state.b].filter(Boolean);
 
 function request(t, bundle) {
   if (t[bundle] || t.pending[bundle] || t.failed) return;
@@ -143,14 +163,14 @@ function pump() {
   while (inflight < PARALLEL && queue.length) {
     const { t, bundle } = queue.shift();
     // Tiles the last frame no longer wanted wait until a view asks for them again.
-    if (t.generation !== state.generation || t.used < frame - 1) {
+    if (t.layer.dead || t.used < frame - 1) {
       t.pending[bundle] = false;
       continue;
     }
     inflight++;
     load(t, bundle)
       .then((data) => {
-        if (t.generation !== state.generation) return;
+        if (t.layer.dead) return;
         t[bundle] = data;
         t.imageKey = '';
         schedule();
@@ -169,7 +189,7 @@ function pump() {
 }
 
 async function load(t, bundle) {
-  const m = state.m;
+  const m = t.layer.m;
   const url = `renders/${m.id}/${t.level}/${t.tx}_${t.tz}.${bundle}.rvt?f=${m.format ?? 0}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`${response.status} ${url}`);
@@ -187,19 +207,19 @@ async function load(t, bundle) {
   return out;
 }
 
+// One budget for every layer's tiles; each layer keeps its single top tile.
 function evict() {
-  if (tiles.size <= CACHE_TILES) return;
-  const old = [...tiles.entries()].filter(([, t]) => t.used < frame && t.level < topLevel());
+  const all = layers().flatMap((l) => [...l.tiles.entries()].map(([k, t]) => [k, t]));
+  if (all.length <= CACHE_TILES) return;
+  const old = all.filter(([, t]) => t.used < frame && t.level < t.layer.top());
   old.sort((a, b) => a[1].used - b[1].used);
-  for (const [k] of old.slice(0, tiles.size - CACHE_TILES)) tiles.delete(k);
+  for (const [k, t] of old.slice(0, all.length - CACHE_TILES)) t.layer.tiles.delete(k);
 }
-
-const topLevel = () => state.m.levels.length - 1;
 
 // Hillshade and slope from the tile's surface and its apron, as tools/atlas/paint.py shades.
 function terrain(t) {
   if (t.shade) return t;
-  const m = state.m;
+  const m = t.layer.m;
   const T = m.tile;
   const A = m.apron;
   const S = T + 2 * A;
@@ -230,8 +250,9 @@ function terrain(t) {
 // ---------------------------------------------------------------------------------------------
 // Projections: each fills a tile's pixels from its fields.
 
-function fill(t, paint) {
-  const m = state.m;
+// other: the compared render's tile over the same pixels, for the difference projections.
+function fill(t, paint, other = null) {
+  const m = t.layer.m;
   const T = m.tile;
   const A = m.apron;
   const S = T + 2 * A;
@@ -239,7 +260,7 @@ function fill(t, paint) {
   const img = new ImageData(T, T);
   const px = img.data;
   const rgb = [0, 0, 0];
-  const env = { m, c: t.core, st: t.stages, sh: t.shade, slope: t.slope, rgb, S, sea: m.waterTopY };
+  const env = { m, c: t.core, st: t.stages, sh: t.shade, slope: t.slope, rgb, S, sea: m.waterTopY, b: other?.core };
   for (let r = 0; r < T; r++) {
     for (let col = 0; col < T; col++) {
       const k = r * T + col;
@@ -283,18 +304,18 @@ function mix(env, color, t) {
 }
 
 const GREY = [128, 128, 128];
-const palette = (name) => state.m.legends[name]?.colors ?? [];
+const palette = (env, name) => env.m.legends[name]?.colors ?? [];
 
 function categorical(field, legendName, { shade = [0.6, 0.5], water = false, landOnly = false } = {}) {
   return (env, i, k) => {
     if ((water && wet(env.c, i)) || (landOnly && marine(env.c, i))) return base(env, i, k);
-    const color = palette(legendName)[env.c[field][i]] ?? GREY;
+    const color = palette(env, legendName)[env.c[field][i]] ?? GREY;
     tint(env, color, shade[0] + shade[1] * env.sh[k]);
   };
 }
 
-function relief() {
-  const stops = state.m.elevationStops.map(([rise, c]) => [state.m.waterTopY + rise, c]);
+function relief(m) {
+  const stops = m.elevationStops.map(([rise, c]) => [m.waterTopY + rise, c]);
   return (env, i, k) => {
     if (wet(env.c, i)) return waterColor(env, i);
     ramp(stops, env.c.surface[i], env.rgb);
@@ -347,7 +368,7 @@ function waterBodies(env, i, k) {
   env.rgb[0] = env.rgb[1] = env.rgb[2] = g;
   if (marine(c, i)) copy((c.flags[i] & 2) !== 0 ? [25, 45, 110] : [200, 60, 60], env.rgb);
   const kind = c.water_kind[i];
-  if (kind) copy(palette('water_kind')[kind] ?? GREY, env.rgb);
+  if (kind) copy(palette(env, 'water_kind')[kind] ?? GREY, env.rgb);
 }
 
 function rivers(env, i, k) {
@@ -392,7 +413,7 @@ const provinceBorder = border('province');
 
 function plates(env, i, k) {
   if (plateBorder(env, i)) return copy([0, 0, 0], env.rgb);
-  const color = palette('plate')[env.c.plate[i]] ?? GREY;
+  const color = palette(env, 'plate')[env.c.plate[i]] ?? GREY;
   tint(env, color, (0.55 + 0.5 * env.sh[k]) * (marine(env.c, i) ? 0.7 : 1));
 }
 
@@ -401,7 +422,7 @@ function provinces(env, i, k) {
   if (provinceBorder(env, i)) return copy([18, 18, 18], env.rgb);
   const type = c.province_type[i];
   if (!type) return base(env, i, k);
-  tint(env, palette('province_type')[type] ?? GREY, (0.6 + 0.5 * env.sh[k]) * (marine(c, i) ? 0.75 : 1));
+  tint(env, palette(env, 'province_type')[type] ?? GREY, (0.6 + 0.5 * env.sh[k]) * (marine(c, i) ? 0.75 : 1));
 }
 
 function coasts(env, i, k) {
@@ -409,7 +430,7 @@ function coasts(env, i, k) {
   base(env, i, k);
   const type = c.coast[i];
   if (!type) return tint(env, env.rgb.slice(), 0.75);
-  const color = palette('coast')[type] ?? GREY;
+  const color = palette(env, 'coast')[type] ?? GREY;
   if (wet(c, i)) return mix(env, color, 0.45);
   tint(env, color, 0.6 + 0.5 * env.sh[k]);
 }
@@ -419,12 +440,12 @@ function features(env, i, k) {
   base(env, i, k);
   const w = c.winner[i];
   if (!w) return;
-  const color = state.m.stages[w - 1].familyColors[c.feature[i]] ?? GREY;
+  const color = env.m.stages[w - 1].familyColors[c.feature[i]] ?? GREY;
   tint(env, color, 0.55 + 0.6 * env.sh[k]);
 }
 
-function stageDelta(stage) {
-  const units = state.m.deltaUnits;
+function stageDelta(m, stage) {
+  const units = m.deltaUnits;
   return (env, i, k) => {
     if (wet(env.c, i)) {
       waterColor(env, i);
@@ -452,10 +473,9 @@ function stageReason(stage) {
 }
 
 // Each projection: id, group, name, needs (fields), paint (built per render), legend.
-function projections() {
-  const m = state.m;
+function projections(m) {
   const list = [
-    { id: 'relief', group: 'Terrain', name: 'Relief', paint: relief(), legend: reliefLegend },
+    { id: 'relief', group: 'Terrain', name: 'Relief', paint: relief(m), legend: reliefLegend },
     { id: 'shade', group: 'Terrain', name: 'Hillshade', paint: base, legend: shadeLegend },
     { id: 'steepness', group: 'Terrain', name: 'Steepness', paint: steepness, legend: () => rampLegend(STEEPNESS, '°') },
     { id: 'walls', group: 'Terrain', name: 'Walls', needs: ['walls'], paint: walls, legend: wallsLegend },
@@ -474,7 +494,7 @@ function projections() {
     { id: 'features', group: 'Features', name: 'Selected features', paint: features, legend: featureLegend },
   ];
   for (const stage of m.stages) {
-    list.push({ id: `delta:${stage.name}`, group: 'delta', name: stage.name, stages: true, paint: stageDelta(stage), legend: () => deltaLegend(stage), stage });
+    list.push({ id: `delta:${stage.name}`, group: 'delta', name: stage.name, stages: true, paint: stageDelta(m, stage), legend: () => deltaLegend(stage), stage });
     if (stage.reasons.length > 1)
       list.push({ id: `reason:${stage.name}`, group: 'reason', name: stage.name, stages: true, paint: stageReason(stage), legend: () => reasonLegend(stage), stage });
   }
@@ -482,21 +502,108 @@ function projections() {
   return list.filter((p) => (p.needs ?? []).every((n) => fields.has(n)));
 }
 
-let PROJECTIONS = [];
-const projection = () => PROJECTIONS.find((p) => p.id === state.projection) ?? PROJECTIONS[0];
+// ---------------------------------------------------------------------------------------------
+// Difference projections: the compared render (B) against the open one (A), pixel for pixel.
+// Both renders share the window and grid, so tile L/tx/tz covers the same samples in each.
 
-function imageOf(t) {
-  const p = projection();
-  // A stage projection shows hillshade until the tile's stage bundle arrives.
-  const usable = !p.stages || t.stages ? p : PROJECTIONS[1];
-  if (t.imageKey === usable.id && t.image) return t.image;
-  const img = fill(t, usable.paint);
+const DIFF_RANGE = 32; // blocks of height change at full colour (square-root ramp below it)
+const DIFF = {
+  gained: [40, 120, 255],
+  lost: [240, 140, 30],
+  moved: [120, 230, 240],
+  removed: [230, 60, 200],
+};
+
+// Code translations from B's legends to A's, since two terrain versions may order names apart.
+function diffTables(a, b) {
+  const translate = (name) => {
+    const index = new Map((a.legends[name]?.names ?? []).map((n, i) => [n, i]));
+    return Int32Array.from(b.legends[name]?.names ?? [], (n) => index.get(n) ?? -1);
+  };
+  const keys = new Map();
+  const featureKeys = (m) => {
+    const out = new Int32Array((m.stages.length + 1) * 256);
+    m.stages.forEach((s, w) =>
+      s.families.forEach((f, k) => {
+        const key = `${s.name}/${f}`;
+        if (!keys.has(key)) keys.set(key, keys.size + 1);
+        out[(w + 1) * 256 + k] = keys.get(key);
+      }),
+    );
+    return out;
+  };
+  return { habitat: translate('habitat'), featureA: featureKeys(a), featureB: featureKeys(b) };
+}
+
+function unchanged(env, k) {
+  const g = 70 + 90 * env.sh[k];
+  env.rgb[0] = env.rgb[1] = env.rgb[2] = g;
+}
+
+function diffHeight(env, i, k) {
+  const d = env.b.surface[i] - env.c.surface[i];
+  if (d === 0) return unchanged(env, k);
+  const t = Math.min(1, Math.sqrt(Math.abs(d) / DIFF_RANGE));
+  const g = 90 + 140 * env.sh[k];
+  const target = d > 0 ? [200, 40, 30] : [30, 80, 210];
+  env.rgb[0] = g * (1 - t) + target[0] * t;
+  env.rgb[1] = g * (1 - t) + target[1] * t;
+  env.rgb[2] = g * (1 - t) + target[2] * t;
+}
+
+function diffBiome(env, i, k) {
+  const hb = env.b.habitat[i];
+  if (state.diff.habitat[hb] === env.c.habitat[i]) return unchanged(env, k);
+  tint(env, state.b.m.legends.habitat.colors[hb] ?? GREY, 0.6 + 0.5 * env.sh[k]);
+}
+
+function diffFeature(env, i, k) {
+  const a = state.diff.featureA[env.c.winner[i] * 256 + env.c.feature[i]];
+  const wb = env.b.winner[i];
+  const fb = env.b.feature[i];
+  if (state.diff.featureB[wb * 256 + fb] === a) return unchanged(env, k);
+  if (!wb) return tint(env, DIFF.removed, 0.6 + 0.5 * env.sh[k]);
+  tint(env, state.b.m.stages[wb - 1].familyColors[fb] ?? GREY, 0.55 + 0.6 * env.sh[k]);
+}
+
+function diffWater(env, i, k) {
+  const wa = wet(env.c, i);
+  const wb = wet(env.b, i);
+  if (wa !== wb) return copy(wb ? DIFF.gained : DIFF.lost, env.rgb);
+  if (wa && env.c.water[i] !== env.b.water[i]) return copy(DIFF.moved, env.rgb);
+  unchanged(env, k);
+  if (wa) mix(env, [20, 40, 90], 0.6);
+}
+
+function diffProjections() {
+  const group = 'Compare: B against A';
+  return [
+    { id: 'diff:height', group, name: 'Height change', diff: true, paint: diffHeight, legend: diffHeightLegend },
+    { id: 'diff:biome', group, name: 'Changed biome', diff: true, paint: diffBiome, legend: diffBiomeLegend },
+    { id: 'diff:feature', group, name: 'Changed feature', diff: true, paint: diffFeature, legend: diffFeatureLegend },
+    { id: 'diff:water', group, name: 'Changed water', diff: true, paint: diffWater, legend: diffWaterLegend },
+  ];
+}
+
+const DIFFS = diffProjections();
+const allProjections = () => (state.a ? state.a.projections : []).concat(state.b ? DIFFS : []);
+const projection = () => allProjections().find((p) => p.id === state.projection) ?? allProjections()[0];
+
+// id: the view's projection. A layer without it (or a stage projection whose stage bundle has not
+// arrived) shows hillshade. other: the compared tile a difference projection reads.
+function imageOf(t, id, other = null) {
+  const layer = t.layer;
+  let p = other ? DIFFS.find((d) => d.id === id) : layer.projection(id);
+  if (!p || (p.stages && !t.stages)) p = layer.projection('shade');
+  const key = other ? `${p.id}|${other.layer.m.id}` : p.id;
+  if (t.imageKey === key && t.image) return t.image;
+  const img = fill(t, p.paint, other);
   if (!t.image) {
     t.image = document.createElement('canvas');
-    t.image.width = t.image.height = state.m.tile;
+    t.image.width = t.image.height = layer.m.tile;
   }
   t.image.getContext('2d').putImageData(img, 0, 0);
-  t.imageKey = usable.id;
+  t.imageKey = key;
   return t.image;
 }
 
@@ -517,11 +624,10 @@ function schedule() {
   setTimeout(run, 40);
 }
 
-function levelFor() {
-  const m = state.m;
+function levelFor(layer) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const l = Math.round(Math.log2(1 / (state.scale * dpr * m.step)));
-  return clamp(l, 0, topLevel());
+  const l = Math.round(Math.log2(1 / (state.scale * dpr * layer.m.step)));
+  return clamp(l, 0, layer.top());
 }
 
 function screenX(x) {
@@ -531,6 +637,8 @@ function screenX(x) {
 function screenZ(z) {
   return (z - state.cz) * state.scale + canvas.clientHeight / 2;
 }
+
+const snapper = (dpr) => (v) => Math.round(v * dpr) / dpr;
 
 function draw() {
   const w = canvas.clientWidth;
@@ -547,27 +655,25 @@ function draw() {
   if (!m) return;
   frame++;
   ctx.imageSmoothingEnabled = false;
-  const snap = (v) => Math.round(v * dpr) / dpr;
-  const L = levelFor();
+  const snap = snapper(dpr);
   const p = projection();
-  const top = tileAt(topLevel(), 0, 0);
-  top.used = frame;
-  request(top, 'core');
-
   const wanted = [];
-  for (const { t, vw, vh, x0, z0, x1, z1 } of visible(L)) {
-    t.used = frame;
-    if (t.core) {
-      if (p.stages) request(t, 'stages');
-      paintTile(t, vw, vh, snap(x0), snap(z0), snap(x1), snap(z1));
-    } else {
-      wanted.push(t);
-      fallback(t, snap(x0), snap(z0), snap(x1), snap(z1));
+  const b = state.b;
+  if (p.diff && b) drawLayer(state.a, p.id, wanted, { pair: b });
+  else if (b && state.compare.mode === 'toggle') drawLayer(state.compare.showB ? b : state.a, p.id, wanted);
+  else {
+    drawLayer(state.a, p.id, wanted, { right: b ? snap(state.compare.split * w) : w });
+    if (b) {
+      const x = snap(state.compare.split * w);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, 0, w - x, h);
+      ctx.clip();
+      drawLayer(b, p.id, wanted, { left: x });
+      ctx.restore();
     }
   }
-  const cx = w / 2;
-  const cz = h / 2;
-  wanted.sort((a, b) => distance(a, cx, cz) - distance(b, cx, cz));
+  wanted.sort((s, t) => distance(s, w / 2, h / 2) - distance(t, w / 2, h / 2));
   for (const t of wanted) request(t, 'core');
   pump();
 
@@ -583,24 +689,52 @@ function draw() {
   if (state.grid) drawGrid(w, h);
   if (state.inspect) drawMarker();
   drawScale();
+  showCompareChrome();
   evict();
 }
 
+// Paints one layer's visible tiles; tiles still loading go on wanted. left/right bound the screen
+// columns this layer shows (the swipe), pair is the compared layer a difference projection reads.
+function drawLayer(layer, id, wanted, { left = 0, right = canvas.clientWidth, pair = null } = {}) {
+  const snap = snapper(window.devicePixelRatio || 1);
+  const p = layer.projection(id) ?? DIFFS.find((d) => d.id === id);
+  const L = levelFor(layer);
+  for (const l of pair ? [layer, pair] : [layer]) {
+    const top = l.tileAt(l.top(), 0, 0);
+    top.used = frame;
+    request(top, 'core');
+  }
+  for (const { t, vw, vh, x0, z0, x1, z1 } of visible(layer, L, left, right)) {
+    t.used = frame;
+    const other = pair && pair.tileAt(t.level, t.tx, t.tz);
+    if (other) other.used = frame;
+    const box = [snap(x0), snap(z0), snap(x1), snap(z1)];
+    if (t.core && (!other || other.core)) {
+      if (p?.stages) request(t, 'stages');
+      paintTile(imageOf(t, id, other), vw, vh, ...box);
+    } else {
+      if (!t.core) wanted.push(t);
+      if (other && !other.core) wanted.push(other);
+      fallback(t, id, pair, ...box);
+    }
+  }
+}
+
 function distance(t, cx, cz) {
-  const span = state.m.step * (1 << t.level) * state.m.tile;
-  const x = screenX(state.m.minX + (t.tx + 0.5) * span);
-  const z = screenZ(state.m.minZ + (t.tz + 0.5) * span);
+  const m = t.layer.m;
+  const span = m.step * (1 << t.level) * m.tile;
+  const x = screenX(m.minX + (t.tx + 0.5) * span);
+  const z = screenZ(m.minZ + (t.tz + 0.5) * span);
   return Math.hypot(x - cx, z - cz);
 }
 
-function* visible(L) {
-  const m = state.m;
+function* visible(layer, L, left = 0, right = canvas.clientWidth) {
+  const m = layer.m;
   const lv = m.levels[L];
   const span = m.step * (1 << L) * m.tile;
-  const w = canvas.clientWidth;
   const h = canvas.clientHeight;
-  const bx0 = state.cx - w / 2 / state.scale;
-  const bx1 = state.cx + w / 2 / state.scale;
+  const bx0 = state.cx + (left - canvas.clientWidth / 2) / state.scale;
+  const bx1 = state.cx + (right - canvas.clientWidth / 2) / state.scale;
   const bz0 = state.cz - h / 2 / state.scale;
   const bz1 = state.cz + h / 2 / state.scale;
   const tx0 = Math.max(0, Math.floor((bx0 - m.minX) / span));
@@ -615,7 +749,7 @@ function* visible(L) {
       const x0 = screenX(m.minX + tx * span);
       const z0 = screenZ(m.minZ + tz * span);
       yield {
-        t: tileAt(L, tx, tz),
+        t: layer.tileAt(L, tx, tz),
         vw,
         vh,
         x0,
@@ -629,17 +763,20 @@ function* visible(L) {
 
 // vw x vh is the tile's own pixel count; recomputing it from snapped screen edges can ask for a
 // column past the image, which shrinks the drawn tile and opens a gap at its edge.
-function paintTile(t, vw, vh, x0, z0, x1, z1) {
-  ctx.drawImage(imageOf(t), 0, 0, vw, vh, x0, z0, x1 - x0, z1 - z0);
+function paintTile(image, vw, vh, x0, z0, x1, z1) {
+  ctx.drawImage(image, 0, 0, vw, vh, x0, z0, x1 - x0, z1 - z0);
 }
 
 // Until a tile arrives, its loaded ancestor covers the same ground at a coarser level.
-function fallback(t, x0, z0, x1, z1) {
-  const m = state.m;
-  for (let p = t.level + 1; p <= topLevel(); p++) {
+function fallback(t, id, pair, x0, z0, x1, z1) {
+  const layer = t.layer;
+  const m = layer.m;
+  for (let p = t.level + 1; p <= layer.top(); p++) {
     const d = p - t.level;
-    const a = tiles.get(`${p}/${t.tx >> d}/${t.tz >> d}`);
-    if (!a?.core) continue;
+    const k = `${p}/${t.tx >> d}/${t.tz >> d}`;
+    const a = layer.tiles.get(k);
+    const other = pair && pair.tiles.get(k);
+    if (!a?.core || (pair && !other?.core)) continue;
     const lv = m.levels[p];
     const span = m.step * (1 << p) * m.tile;
     const ax0 = screenX(m.minX + a.tx * span);
@@ -652,7 +789,8 @@ function fallback(t, x0, z0, x1, z1) {
     ctx.rect(x0, z0, x1 - x0, z1 - z0);
     ctx.clip();
     a.used = frame;
-    ctx.drawImage(imageOf(a), 0, 0, vw, vh, ax0, az0, vw * pixel, vh * pixel);
+    if (other) other.used = frame;
+    ctx.drawImage(imageOf(a, id, other), 0, 0, vw, vh, ax0, az0, vw * pixel, vh * pixel);
     ctx.restore();
     return;
   }
@@ -853,6 +991,55 @@ function reasonLegend(stage) {
   return list(rows, 'The stage’s own recorded reason. Shares are of land.');
 }
 
+function compareNote() {
+  const a = state.a.m;
+  const b = state.b.m;
+  return `B is v${b.terrainVersion} (${b.digest.slice(0, 8)}), A is v${a.terrainVersion} (${a.digest.slice(0, 8)}).`;
+}
+
+function diffHeightLegend() {
+  const box = rampLegend(
+    [
+      [-DIFF_RANGE, [30, 80, 210]],
+      [0, [160, 160, 160]],
+      [DIFF_RANGE, [200, 40, 30]],
+    ],
+    '',
+  );
+  box.append(noteEl(`Surface of B minus A. Red is higher in B, blue lower; colour grows with the square root of the change, full at ±${DIFF_RANGE} blocks. Unchanged columns are grey. ${compareNote()}`));
+  return box;
+}
+
+function diffBiomeLegend() {
+  return list(
+    [{ label: 'unchanged', color: [130, 130, 130] }],
+    `Changed columns take B’s biome colour (the Biomes legend of B). ${compareNote()}`,
+  );
+}
+
+function diffFeatureLegend() {
+  return list(
+    [
+      { label: 'unchanged', color: [130, 130, 130] },
+      { label: 'A’s feature gone in B', color: DIFF.removed },
+    ],
+    `Other changed columns take B’s feature colour (stage and family, matched by name). ${compareNote()}`,
+  );
+}
+
+function diffWaterLegend() {
+  return list(
+    [
+      { label: 'wet in B, dry in A', color: DIFF.gained },
+      { label: 'dry in B, wet in A', color: DIFF.lost },
+      { label: 'water level moved', color: DIFF.moved },
+      { label: 'unchanged water', color: [45, 60, 95] },
+      { label: 'unchanged dry ground', color: [130, 130, 130] },
+    ],
+    compareNote(),
+  );
+}
+
 function showLegend() {
   const p = projection();
   const body = $('legend-body');
@@ -865,15 +1052,15 @@ function showLegend() {
 // ---------------------------------------------------------------------------------------------
 // Inspector
 
-function columnAt(x, z) {
-  const m = state.m;
+function columnAt(layer, x, z) {
+  const m = layer.m;
   const c0 = Math.floor((x - m.minX) / m.step);
   const r0 = Math.floor((z - m.minZ) / m.step);
   if (c0 < 0 || r0 < 0 || c0 >= m.width || r0 >= m.height) return null;
-  for (let L = 0; L <= topLevel(); L++) {
+  for (let L = 0; L <= layer.top(); L++) {
     const c = c0 >> L;
     const r = r0 >> L;
-    const t = tiles.get(`${L}/${Math.floor(c / m.tile)}/${Math.floor(r / m.tile)}`);
+    const t = layer.tiles.get(`${L}/${Math.floor(c / m.tile)}/${Math.floor(r / m.tile)}`);
     if (!t?.core) continue;
     const S = m.tile + 2 * m.apron;
     const i = ((r % m.tile) + m.apron) * S + (c % m.tile) + m.apron;
@@ -888,16 +1075,57 @@ function cellOf(id) {
   return `${BigInt.asIntN(32, v >> 32n)}, ${BigInt.asIntN(32, v)}`;
 }
 
-function name(legendName, code) {
-  const n = state.m.legends[legendName]?.names[code];
+function name(legendName, code, m = state.m) {
+  const n = m.legends[legendName]?.names[code];
   return n == null || n === '' ? '—' : n;
+}
+
+// Requests the tile holding a column at the view's level; false outside the render.
+function wantColumn(layer, x, z) {
+  const m = layer.m;
+  const c = Math.floor((x - m.minX) / m.step);
+  const r = Math.floor((z - m.minZ) / m.step);
+  if (c < 0 || r < 0 || c >= m.width || r >= m.height) return false;
+  const L = levelFor(layer);
+  const t = layer.tileAt(L, Math.floor((c >> L) / m.tile), Math.floor((r >> L) / m.tile));
+  t.used = frame;
+  request(t, 'core');
+  pump();
+  return true;
+}
+
+function featureName(m, w, f) {
+  return w ? `${m.stages[w - 1].name}: ${m.stages[w - 1].families[f].toLowerCase()}` : '—';
+}
+
+// The compared render's column at the same sample, when its tile has arrived.
+function compareRows(add, rule, at) {
+  const b = state.b;
+  const t = b.tileAt(at.L, at.t.tx, at.t.tz);
+  rule();
+  if (!t.core) {
+    t.used = frame;
+    request(t, 'core');
+    pump();
+    return add('B', 'loading…');
+  }
+  const a = at.t.core;
+  const c = t.core;
+  const i = at.i;
+  const d = c.surface[i] - a.surface[i];
+  add('B surface', `Y${c.surface[i]} (${d > 0 ? '+' : ''}${d})`);
+  add('B water', wet(c, i) ? `Y${c.water[i]}, ${c.water[i] - c.surface[i]} deep` : '—');
+  add('B biome', name('habitat', c.habitat[i], b.m));
+  add('B feature', featureName(b.m, c.winner[i], c.feature[i]));
 }
 
 function showInspector() {
   const m = state.m;
-  const at = state.inspect && columnAt(state.inspect.x, state.inspect.z);
+  const at = state.inspect && columnAt(state.a, state.inspect.x, state.inspect.z);
   const panel = $('inspector');
   if (!at) {
+    // Nothing loaded there yet (a toggle showing B loads only B's tiles): fetch A's tile.
+    if (state.inspect && wantColumn(state.a, state.inspect.x, state.inspect.z)) return;
     panel.hidden = true;
     return;
   }
@@ -936,7 +1164,8 @@ function showInspector() {
   if (c.province) add('cell', cellOf(m.provinceCells[c.province[i]]) || '—');
   if (c.coast) add('coast', name('coast', c.coast[i]));
   const w = c.winner[i];
-  add('feature', w ? `${m.stages[w - 1].name}: ${m.stages[w - 1].families[c.feature[i]].toLowerCase()}` : '—');
+  add('feature', featureName(m, w, c.feature[i]));
+  if (state.b) compareRows(add, rule, at);
   if (t.stages) {
     rule();
     for (const s of m.stages) {
@@ -1023,6 +1252,13 @@ function writeHash() {
     z: Math.round(state.cz),
     s: state.scale.toPrecision(4),
   });
+  if (state.b) {
+    // The comparison: B's id, the view mode, the swipe divider and the toggle's side.
+    p.set('c', state.b.m.id);
+    p.set('cm', state.compare.mode);
+    if (state.compare.mode === 'swipe') p.set('cs', state.compare.split.toFixed(3));
+    else if (state.compare.showB) p.set('cb', '1');
+  }
   history.replaceState(null, '', `#${p}`);
 }
 
@@ -1034,6 +1270,10 @@ function readHash() {
     x: p.has('x') ? Number(p.get('x')) : null,
     z: p.has('z') ? Number(p.get('z')) : null,
     s: p.has('s') ? Number(p.get('s')) : null,
+    c: p.get('c'),
+    cm: p.get('cm') === 'toggle' ? 'toggle' : 'swipe',
+    cs: p.has('cs') ? clamp(Number(p.get('cs')) || 0.5, 0, 1) : 0.5,
+    cb: p.get('cb') === '1',
   };
 }
 
@@ -1121,7 +1361,7 @@ function inspect(px, py) {
 function hover(px, py) {
   if (!state.m) return;
   const b = blockAt(px, py);
-  const at = columnAt(b.x, b.z);
+  const at = columnAt(state.a, b.x, b.z);
   let text = `X ${Math.floor(b.x)}  Z ${Math.floor(b.z)}`;
   if (at) text += `  Y${at.t.core.surface[at.i]}  ${name('habitat', at.t.core.habitat[at.i])}`;
   $('cursor').textContent = text;
@@ -1140,6 +1380,7 @@ window.addEventListener('keydown', (e) => {
     '+': () => zoomAbout(w / 2, h / 2, 1.5),
     '=': () => zoomAbout(w / 2, h / 2, 1.5),
     '-': () => zoomAbout(w / 2, h / 2, 1 / 1.5),
+    t: () => flipCompare(),
     Escape: () => {
       setDrawer(false);
       closeInspector();
@@ -1202,7 +1443,7 @@ function buildMenu() {
   box.replaceChildren();
   let group = '';
   const groups = { delta: null, reason: null };
-  for (const p of PROJECTIONS) {
+  for (const p of allProjections()) {
     const button = document.createElement('button');
     button.className = 'choice';
     button.dataset.id = p.id;
@@ -1236,7 +1477,7 @@ function buildMenu() {
 
 function choose(id) {
   state.projection = id;
-  for (const b of document.querySelectorAll('.choice')) b.setAttribute('aria-pressed', String(b.dataset.id === id));
+  for (const b of document.querySelectorAll('#projections .choice')) b.setAttribute('aria-pressed', String(b.dataset.id === id));
   showLegend();
   changed();
   if (phone()) setDrawer(false);
@@ -1260,26 +1501,36 @@ function label(e) {
   return `seed ${e.seed} · v${e.terrainVersion} · ${e.size} @${e.step} · ${e.created.slice(0, 10)}${note}`;
 }
 
+async function manifest(id) {
+  const response = await fetch(`renders/${id}/manifest.json`, { cache: 'no-cache' });
+  if (!response.ok) throw new Error(`Could not load render ${id}`);
+  return response.json();
+}
+
 async function open(id, view) {
   $('status').textContent = 'Loading…';
-  const response = await fetch(`renders/${id}/manifest.json`, { cache: 'no-cache' });
-  if (!response.ok) {
-    $('status').textContent = `Could not load render ${id}`;
+  let m;
+  try {
+    m = await manifest(id);
+  } catch (error) {
+    $('status').textContent = error.message;
     return;
   }
-  const m = await response.json();
   const previous = state.m;
+  if (state.a) state.a.dead = true;
+  state.a = new Layer(m);
   state.m = m;
-  state.generation++;
-  tiles.clear();
   queue.length = 0;
-  PROJECTIONS = projections();
-  if (!PROJECTIONS.some((p) => p.id === state.projection)) state.projection = 'relief';
+  // A comparison survives a change of A only while both still share the window and grid.
+  if (state.b && (state.b.m.id === id || !sameGrid(m, state.b.m))) dropCompare();
+  else if (state.b) state.diff = diffTables(m, state.b.m);
+  if (!allProjections().some((p) => p.id === state.projection)) state.projection = 'relief';
   $('render').value = id;
   $('render-name').textContent = `seed ${m.seed} · terrain-v${m.terrainVersion} · ${m.step} b/px`;
   $('render-facts').textContent = facts(m);
   $('status').textContent = '';
   buildMenu();
+  buildCompareMenu();
   showLegend();
   const inside = (x, z) =>
     x >= m.minX && z >= m.minZ && x < m.minX + m.width * m.step && z < m.minZ + m.height * m.step;
@@ -1295,6 +1546,134 @@ async function open(id, view) {
   } else fit();
   if (state.inspect) showInspector();
 }
+
+// ---------------------------------------------------------------------------------------------
+// Compare: a second render of the same window and grid, as a swipe, a toggle or a difference.
+
+const GRID_KEYS = ['minX', 'minZ', 'step', 'width', 'height', 'tile', 'apron'];
+const sameGrid = (a, b) => GRID_KEYS.every((k) => a[k] === b[k]);
+// The catalogue's window fields; the manifests settle the rest when B opens.
+const sameWindow = (a, b) => ['centerX', 'centerZ', 'size', 'step'].every((k) => a[k] === b[k]);
+
+function buildCompareMenu() {
+  const select = $('compare');
+  const here = state.catalogue.find((e) => e.id === state.m.id);
+  const others = here ? state.catalogue.filter((e) => e.id !== here.id && sameWindow(e, here)) : [];
+  const none = document.createElement('option');
+  none.value = '';
+  none.textContent = others.length ? 'none' : 'no other render of this window and grid';
+  select.replaceChildren(none);
+  for (const e of others) {
+    const option = document.createElement('option');
+    option.value = e.id;
+    option.textContent = label(e);
+    select.append(option);
+  }
+  select.disabled = !others.length;
+  select.value = state.b ? state.b.m.id : '';
+  for (const b of document.querySelectorAll('[data-compare-mode]')) {
+    b.setAttribute('aria-pressed', String(b.dataset.compareMode === state.compare.mode));
+    b.disabled = !state.b;
+  }
+}
+
+async function setCompare(id) {
+  if (!id) {
+    dropCompare();
+  } else {
+    let m;
+    try {
+      m = await manifest(id);
+    } catch (error) {
+      $('status').textContent = error.message;
+      return;
+    }
+    if (!sameGrid(m, state.m)) {
+      $('status').textContent = 'That render samples another window or grid; it cannot be compared.';
+      setTimeout(() => ($('status').textContent = ''), 3000);
+      buildCompareMenu();
+      return;
+    }
+    if (state.b) state.b.dead = true;
+    state.b = new Layer(m);
+    state.diff = diffTables(state.m, m);
+  }
+  if (!allProjections().some((p) => p.id === state.projection)) state.projection = 'relief';
+  buildMenu();
+  buildCompareMenu();
+  showLegend();
+  if (state.inspect) showInspector();
+  changed();
+}
+
+function dropCompare() {
+  if (state.b) state.b.dead = true;
+  state.b = null;
+  state.diff = null;
+}
+
+function setCompareMode(mode) {
+  state.compare.mode = mode;
+  buildCompareMenu();
+  changed();
+}
+
+function flipCompare() {
+  if (!state.b || state.compare.mode !== 'toggle') return;
+  state.compare.showB = !state.compare.showB;
+  changed();
+}
+
+// The divider and the A/B chip follow the comparison's mode; drawn with every frame.
+function showCompareChrome() {
+  const swipe = $('swipe');
+  const chip = $('compare-chip');
+  const b = state.b;
+  const mode = !b ? '' : projection().diff ? 'diff' : state.compare.mode;
+  swipe.hidden = mode !== 'swipe';
+  chip.hidden = !mode;
+  if (!mode) return;
+  const v = (m) => `v${m.terrainVersion} ${(m.digest || '').slice(0, 6)}`;
+  const a = state.a.m;
+  if (mode === 'swipe') {
+    swipe.style.left = `${Math.round(state.compare.split * canvas.clientWidth)}px`;
+    chip.textContent = `A ${v(a)} ◂ ▸ B ${v(b.m)}`;
+  } else if (mode === 'toggle') {
+    chip.textContent = state.compare.showB ? `Showing B · ${v(b.m)} ⇄` : `Showing A · ${v(a)} ⇄`;
+  } else chip.textContent = `B ${v(b.m)} against A ${v(a)}`;
+  chip.disabled = mode !== 'toggle';
+}
+
+$('compare').addEventListener('change', (e) => setCompare(e.target.value));
+for (const b of document.querySelectorAll('[data-compare-mode]'))
+  b.addEventListener('click', () => setCompareMode(b.dataset.compareMode));
+$('compare-chip').addEventListener('click', flipCompare);
+
+// Dragging the divider's handle moves the swipe; the map under it does not pan.
+const handle = $('swipe-handle');
+handle.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+  try {
+    handle.setPointerCapture(e.pointerId);
+  } catch {
+    // As on the canvas: synthetic pointers cannot be captured.
+  }
+  handle.dataset.dragging = 'true';
+});
+handle.addEventListener('pointermove', (e) => {
+  if (handle.dataset.dragging !== 'true') return;
+  state.compare.split = clamp(e.clientX / canvas.clientWidth, 0, 1);
+  changed();
+});
+for (const type of ['pointerup', 'pointercancel']) handle.addEventListener(type, () => delete handle.dataset.dragging);
+handle.addEventListener('keydown', (e) => {
+  const move = { ArrowLeft: -0.02, ArrowRight: 0.02 }[e.key];
+  if (!move) return;
+  e.preventDefault();
+  e.stopPropagation();
+  state.compare.split = clamp(state.compare.split + move, 0, 1);
+  changed();
+});
 
 async function start() {
   if (phone()) $('legend').classList.add('collapsed');
@@ -1314,7 +1693,13 @@ async function start() {
   const hash = readHash();
   if (hash.p) state.projection = hash.p;
   const id = state.catalogue.some((e) => e.id === hash.r) ? hash.r : state.catalogue[0].id;
+  state.compare = { mode: hash.cm, split: hash.cs, showB: hash.cb };
   await open(id, hash);
+  if (hash.c && hash.c !== id && state.catalogue.some((e) => e.id === hash.c)) {
+    // A difference projection exists only once B is open.
+    await setCompare(hash.c);
+    if (hash.p && allProjections().some((p) => p.id === hash.p)) choose(hash.p);
+  }
 }
 
 start().catch((error) => {

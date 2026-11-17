@@ -93,6 +93,13 @@ and kept out of search indexes (`X-Robots-Tag`, `robots.txt`).
   features, and every stage's change and reasons). Colours are computed in the browser from the
   fields, so switching projection fetches nothing; tapping a column lists its sampled values. The
   URL keeps the render, projection and view.
+- Compare (drawer, "Compare with (B)") opens a second published render of the same window and
+  grid (origin, step, size) over the open one (A): a swipe, whose divider shows B to its right, or
+  a toggle (the chip or `T` flips A and B). Four difference projections read both renders' tiles
+  pixel for pixel: height change (B minus A), and changed biome, feature and water (gained, lost,
+  level moved). Biomes, stages and families are matched by name, so renders of different terrain
+  versions compare; the inspector adds B's values. Nothing new is published for it, and the URL
+  keeps B, the mode, the divider and the toggle's side.
 - The site is built in `.local/map/site` and deployed as the assets-only Worker `orthrus-map`
   (`tools/atlas/map/wrangler.jsonc`, through the wrangler login). Renders are content-addressed
   (seed, version, window and digest) and tile URLs carry the tile format, so tiles are cached as

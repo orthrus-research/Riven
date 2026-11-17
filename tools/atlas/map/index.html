@@ -12,6 +12,13 @@
   <body>
     <canvas id="map" aria-label="Atlas map: drag to pan, scroll or pinch to zoom, tap to inspect"></canvas>
 
+    <div id="swipe" class="swipe" hidden>
+      <span class="swipe__tag swipe__tag--a" aria-hidden="true">A</span>
+      <span class="swipe__tag swipe__tag--b" aria-hidden="true">B</span>
+      <button id="swipe-handle" class="swipe__handle" aria-label="Move the divider between A and B (arrow keys)">&#x2194;</button>
+    </div>
+    <button id="compare-chip" class="chip" hidden aria-label="Switch between A and B (T)"></button>
+
     <header class="bar">
       <button id="menu-open" class="icon" aria-label="Open the atlas menu" aria-controls="drawer" aria-expanded="false">
         <span class="burger" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -32,6 +39,15 @@
         <label class="caption" for="render">Render</label>
         <select id="render"></select>
         <p id="render-facts" class="facts"></p>
+      </section>
+      <section class="drawer__section">
+        <label class="caption" for="compare">Compare with (B)</label>
+        <select id="compare"></select>
+        <div class="segmented" role="group" aria-label="Compare view">
+          <button class="choice" data-compare-mode="swipe" aria-pressed="true">Swipe</button>
+          <button class="choice" data-compare-mode="toggle" aria-pressed="false">Toggle</button>
+        </div>
+        <p class="facts">Same window and grid only. The difference projections appear under Projection.</p>
       </section>
       <section class="drawer__section">
         <h2 class="caption">Projection</h2>
