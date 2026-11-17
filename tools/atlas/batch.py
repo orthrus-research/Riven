@@ -127,7 +127,7 @@ def contact_sheet(entries, out: Path, title: str, thumb=256):
     rows_n = (len(entries) + cols - 1) // cols
     sheet = Image.new("RGB", (cols * thumb, rows_n * (thumb + 20)), (17, 17, 17))
     draw = ImageDraw.Draw(sheet)
-    records = []
+    records, cost_rows = [], []
     for i, (label, directory) in enumerate(entries):
         summary = json.loads((directory / "summary.json").read_text(encoding="utf-8"))
         img = Image.open(directory / "features.png").convert("RGB")
@@ -150,9 +150,21 @@ def contact_sheet(entries, out: Path, title: str, thumb=256):
             record["sitesOnLand"] = sum(
                 s["raw"] - s["vetoed"] - s["marine"] for s in summary["sites"]
             )
+        cost = summary["cost"]["overall"]
+        record["costMedianUs"] = cost["medianMicros"]
+        record["costP95Us"] = cost["p95Micros"]
+        record["costMaxUs"] = cost["maxMicros"]
+        for group in ("byLandform", "byRegion"):
+            for name, s in summary["cost"][group].items():
+                cost_rows.append({"label": label, "group": group[2:].lower(), "name": name} | s)
         record["index"] = (directory / "index.html").as_uri()
         records.append(record)
     sheet.save(out / "sheet.png", optimize=True)
+    with (out / "cost.csv").open("w", newline="", encoding="utf-8") as stream:
+        fields = ["label", "group", "name", "columns", "medianMicros", "p95Micros", "maxMicros"]
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(cost_rows)
     keys = [k for k in records[0] if k != "index"]
     with (out / "stats.csv").open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=keys, extrasaction="ignore")

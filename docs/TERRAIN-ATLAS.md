@@ -45,7 +45,7 @@ Run with `.local/atlas-venv/Scripts/python tools/terrain_atlas.py <command>`:
 | --- | --- |
 | `render [--verify] [--footprint n]` | One window: all maps, reason maps, sites, cost, summary and `viewer.html` |
 | `compare --vs-ref REF / --vs-set ...` | The same window from two sources: height change, changed features, stage activity and reasons |
-| `seeds --seeds 1 2 3` | One window per seed, with a contact sheet, `stats.csv` and means |
+| `seeds --seeds 1 2 3` | One window per seed, with a contact sheet, `stats.csv` (with overall cost per column), `cost.csv` (cost by landform and climate region) and means |
 | `sweep --param FILE:PATH --values a b c` | One definition value across settings, with a contact sheet |
 | `section --line X1 Z1 X2 Z2` | Height after every stage along a line, with the largest-change stage underneath |
 | `map [--deploy] [--note TEXT]`, `map --remove ID`, `map --redeploy` | One window cut into tiles for the map site, https://map.orthrus.cc; `--remove` drops a render, `--redeploy` publishes the site as it stands (below) |
@@ -70,7 +70,7 @@ Outputs live under `.local/terrain-atlas/{renders,compare,seeds,sweeps,sections}
 | `sites.png` | Every raw `Sites` anchor: vetoed, marine, built or rejected (with the stage reason at the anchor) |
 | `stages/<stage>.png`, `stages/<stage>_reasons.png` | Signed height change and recorded reasons per stage |
 | `elevation.png`, `biomes.png`, `variants.png`, `climate.png`, `water.png`, `cost.png` | Context layers; `terranes.png` paints geology's terrane inputs (volcanic potential red, craton green, spine weight blue; rasters `geo_*.f32`); `variants.png` colours biome variants over faded biomes (raster `variant.u8`, 0 = none, names in the metadata's `variants`); `cost.png` is the per-column wall time |
-| `summary.json`, `raw/` | Coverage, activity, reasons, sites, fingerprints, digest; little-endian layers plus `atlas.json` |
+| `summary.json`, `raw/` | Coverage, activity, reasons, sites, cost, fingerprints, digest; little-endian layers plus `atlas.json`. `cost` gives per-column wall time (median, p95, max, columns) overall, `byLandform` (marine columns as `marine`) and `byRegion`; maxima include cold plan construction |
 
 To browse renders in a browser, serve the folder locally:
 `python -m http.server 8737 --bind 127.0.0.1 --directory .local/terrain-atlas`.
