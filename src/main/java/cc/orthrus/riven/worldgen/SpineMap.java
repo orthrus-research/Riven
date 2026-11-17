@@ -37,8 +37,8 @@ public final class SpineMap {
     private final SharedBuild<Tile> builds = new SharedBuild<>();
 
     /**
-     * One tile of nodes and its own coordinates (a hash collision is rebuilt, not misread): the
-     * range weight, the smoothed coast distance in blocks (capped) and the range apron.
+     * One tile of nodes and its own coordinates: the range weight, the smoothed coast distance in
+     * blocks (capped) and the range apron.
      */
     private static final class Tile {
         final long i, j;
@@ -196,7 +196,10 @@ public final class SpineMap {
     }
 
     private Tile tile(long ti, long tj) {
-        long key = SeededNoise.mix(ti * 0x9E3779B97F4A7C15L ^ tj ^ 0x5350494e45L);
+        // The tile's own coordinates, packed exactly: the single-flight build hands a waiting
+        // thread whatever the flight under its key built, so two tiles must never share a key.
+        // (A hash did: (2, -2) and (-2, 2) collided, and a concurrent miss read the other tile.)
+        long key = (ti << 32) ^ (tj & 0xffffffffL);
         Tile t = tiles.get(key);
         if (t != null && t.i == ti && t.j == tj) return t;
         return builds.get(
