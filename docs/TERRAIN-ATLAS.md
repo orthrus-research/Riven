@@ -98,21 +98,17 @@ and kept out of search indexes (`X-Robots-Tag`, `robots.txt`).
   (seed, version, window and digest) and tile URLs carry the tile format, so tiles are cached as
   immutable; the catalogue and manifests revalidate.
 
-## Findings (seed 8675309, terrain-v36, 2026-10-21)
+## Findings (terrain-v148, 2026-11-17)
 
-- Land is 14% of the default 8 km square, and the origin is open ocean. Across seeds 8675309, 101,
-  -991, 7, 42 and 1234, land in a 4 km square ranges from 0% to 16%.
-- About 90% of raw site anchors are vetoed by `Sites.admits` neighbor competition (mountains
-  116/122, hills 185/206, carvers 110/121). Most survivors are marine.
-- In the major stages, 86% of land columns record shore protection (`COLUMN_PROTECTED`,
-  `PROTECTED_SHORE` or `SHORE_RESERVED`). The shared predicate rejects columns within
-  `1.5 x coastal_plain` width (768 blocks) of the coast; this seed's landmasses are a few kilometres
-  across. The few admitted land sites are rejected there, and one landmark is built.
-- Volcanic, cold, mountain, hill, general-cut, dryland, rocky and sediment stages change
-  no sampled land column. Regional passes and shore shaping are the active stages.
-- Raising `sites.anchorProbability` to 1.0 changes 0.016% of feature pixels. Raising
-  `minimumSeparationInCells` from 1.8 to 3.5 cuts admitted sites from 15 to 5 with no terrain
-  change. Both are consistent with the shore reservation and marine placement being the binding
-  limits.
-- Terrain-v26 has the same feature picture; height differs on 3.5% of pixels
-  after the v31-v36 relief/elevation refactors.
+From `seeds` with its default seeds (8675309, 101, -991, 7, 42, 1234) over the 4 km square at the
+origin, 32 blocks per pixel:
+
+- Land is 21% to 66% of the square (seed 101 lowest, 8675309 highest); median land surface is
+  Y97 to Y156.
+- `Sites.admits` neighbour competition vetoes 91-92% of raw site anchors on every seed (8675309:
+  1097 of 1207). Cold anchors are almost all vetoed (396-397 of 400 per seed). Of the 99-110
+  admitted sites per seed, 28-63 stand on land and 12-29 change terrain at their anchor.
+- Passes (43-71% of land), mountains (14-29%) and shore shaping (17-38%) are the active stages.
+  Cold changes no sampled land column in this square on any seed (8675309's land reasons:
+  `SHARED_BUDGET` 64%, `WARM_COLUMN` 28%), volcanic at most 0.08%, and the other stages 3.2% or
+  less.
