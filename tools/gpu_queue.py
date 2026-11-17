@@ -158,7 +158,7 @@ def lease_occupied(path: Path = LOCK) -> bool:
     except OSError:
         return False
     with stream:
-        if os.name == "nt":
+        if sys.platform == "win32":
             try:
                 stream.read(1)
                 return False
@@ -195,7 +195,7 @@ class Lease:
             if os.path.getsize(path) == 0:
                 self.stream.write(b" ")
             self.stream.seek(0)
-            if os.name == "nt":
+            if sys.platform == "win32":
                 import msvcrt
 
                 msvcrt.locking(self.stream.fileno(), msvcrt.LK_NBLCK, 1)
@@ -223,7 +223,7 @@ class Lease:
             pass
         self.stream.seek(0)
         try:
-            if os.name == "nt":
+            if sys.platform == "win32":
                 import msvcrt
 
                 msvcrt.locking(self.stream.fileno(), msvcrt.LK_UNLCK, 1)
@@ -408,23 +408,24 @@ def detach(argv: list[str], queue: Queue, lane: str) -> dict:
             | subprocess.CREATE_NO_WINDOW
         )
     with open(log, "w", encoding="utf-8") as stream:
-        kwargs = dict(
-            stdin=subprocess.DEVNULL,
-            stdout=stream,
-            stderr=subprocess.STDOUT,
-            cwd=str(ROOT),
-            close_fds=True,
-        )
+
+        def launch(creationflags: int) -> subprocess.Popen:
+            return subprocess.Popen(
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=stream,
+                stderr=subprocess.STDOUT,
+                cwd=str(ROOT),
+                close_fds=True,
+                creationflags=creationflags,
+            )
+
         try:
             # Outside the launching shell's job, so closing that shell or the app does not end the turn.
-            process = subprocess.Popen(
-                command,
-                creationflags=flags | getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0),
-                **kwargs,
-            )
+            process = launch(flags | getattr(subprocess, "CREATE_BREAKAWAY_FROM_JOB", 0))
             breakaway = os.name == "nt"
         except OSError:
-            process = subprocess.Popen(command, creationflags=flags, **kwargs)
+            process = launch(flags)
             breakaway = False
     return {"detached": process.pid, "log": str(log), "leftJob": breakaway}
 

@@ -77,7 +77,7 @@ class QueueTest(unittest.TestCase):
         lease = gq.Lease(self.queue.lock, {"name": "holder", "turnToken": "x"})
         try:
             self.assertTrue(gq.lease_occupied(self.queue.lock))
-            self.assertEqual(gq.lease_owner(self.queue.lock)["name"], "holder")
+            self.assertEqual((gq.lease_owner(self.queue.lock) or {}).get("name"), "holder")
             with self.assertRaises(OSError):
                 gq.Lease(self.queue.lock, {"name": "second"})
         finally:
@@ -111,7 +111,7 @@ class QueueTest(unittest.TestCase):
     def test_a_turn_waits_for_the_holder_and_keeps_its_place(self):
         self.write("near-terrain", {"state": "waiting", "waiting_since": "2026-11-17T01:58:13Z"})
         holder = gq.Lease(self.queue.lock, {"name": "shader-matrix"})
-        done = {}
+        done: dict[str, int] = {}
         worker = threading.Thread(
             target=lambda: done.setdefault(
                 "code",
