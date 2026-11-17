@@ -54,6 +54,11 @@
         <div id="projections"></div>
       </section>
       <section class="drawer__section">
+        <h2 class="caption">Pins</h2>
+        <div id="pins"></div>
+        <p id="pins-empty" class="facts">No pins. Tap a column and add a note to pin it; the link carries your pins.</p>
+      </section>
+      <section class="drawer__section">
         <h2 class="caption">Overlay</h2>
         <label class="check"><input type="checkbox" id="opt-grid" /> Grid</label>
       </section>
@@ -70,7 +75,13 @@
         <button id="inspector-tp" class="text" aria-label="Copy a teleport command for this column">/tp</button>
         <button id="inspector-close" class="icon small" aria-label="Close the inspector">&#x2715;</button>
       </div>
+      <p id="inspector-note" class="pin-note" hidden></p>
       <dl id="inspector-body" class="panel__body"></dl>
+      <form id="pin-form" class="pin-form">
+        <input id="pin-text" maxlength="200" placeholder="Note for a pin here" aria-label="Note for a pin on this column" />
+        <button type="submit">Pin</button>
+      </form>
+      <button id="pin-remove" class="pin-remove" hidden>Remove this pin from the link</button>
     </aside>
 
     <div class="zoom" role="group" aria-label="Zoom">

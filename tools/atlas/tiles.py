@@ -313,22 +313,42 @@ def render_id(meta):
     return f"{meta['seed']}-v{meta['terrainVersion']}-{cx}_{cz}-{size}-s{meta['step']}-{digest}"
 
 
+# Curated per-render files, by catalogue key. They survive a re-publish of the same render, and the
+# catalogue entry counts each file's items so the page fetches only files that exist.
+CURATED = {"pins": "pins.json"}
+NOTE_LIMIT = 200
+
+
+def read_index(site: Path) -> list[dict]:
+    path = site / "renders" / "index.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+
+
+def write_index(site: Path, index: list[dict]):
+    index.sort(key=lambda e: (e["created"], e["id"]), reverse=True)
+    path = site / "renders" / "index.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(index, indent=1), encoding="utf-8")
+
+
 def publish(atlas: Atlas, site: Path, threshold: float, note: str | None = None):
     """Export one render into site/renders/<id>/ and list it in site/renders/index.json."""
     meta = atlas.meta
     rid = render_id(meta)
     out = site / "renders" / rid
+    kept = {name: (out / name).read_bytes() for name in CURATED.values() if (out / name).exists()}
     if out.exists():
         shutil.rmtree(out)
     started = time.monotonic()
     exporter = Exporter(atlas, threshold)
     levels, files, size = exporter.export(out)
+    for name, data in kept.items():
+        (out / name).write_bytes(data)
     created = time.strftime("%Y-%m-%d %H:%M", time.gmtime())
     manifest = exporter.manifest(rid, levels, {"created": created, "note": note or ""})
     (out / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
-    index_path = site / "renders" / "index.json"
-    index = json.loads(index_path.read_text(encoding="utf-8")) if index_path.exists() else []
-    index = [e for e in index if e["id"] != rid]
+    old = {e["id"]: e for e in read_index(site)}.get(rid, {})
+    index = [e for e in read_index(site) if e["id"] != rid]
     index.append(
         {
             "id": rid,
@@ -341,19 +361,56 @@ def publish(atlas: Atlas, site: Path, threshold: float, note: str | None = None)
             "landPct": manifest["landPct"],
             "created": created,
             "note": note or "",
+            **{k: old[k] for k, name in CURATED.items() if k in old and name in kept},
         }
     )
-    index.sort(key=lambda e: (e["created"], e["id"]), reverse=True)
-    index_path.write_text(json.dumps(index, indent=1), encoding="utf-8")
+    write_index(site, index)
     return rid, files, size, round(time.monotonic() - started, 1)
+
+
+def pin(x, z, note) -> dict:
+    """One curated pin: an integer column and a short note."""
+    text = " ".join(str(note).split())
+    if not text:
+        raise ValueError(f"pin {x} {z} needs a note")
+    if len(text) > NOTE_LIMIT:
+        raise ValueError(f"pin {x} {z}: note longer than {NOTE_LIMIT} characters")
+    return {"x": int(x), "z": int(z), "note": text}
+
+
+def read_pins(path: Path) -> list[dict]:
+    """A pins file: a JSON list of {"x", "z", "note"}."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, list):
+        raise ValueError(f"{path}: expected a JSON list of pins")
+    return [pin(e["x"], e["z"], e["note"]) for e in data]
+
+
+def set_pins(site: Path, rid: str, pins: list[dict], replace: bool = False) -> list[dict]:
+    """Add pins to a published render (a pin at the same column replaces its note), or replace
+    them all; returns the render's pins. The catalogue entry records how many there are."""
+    index = read_index(site)
+    entry = next((e for e in index if e["id"] == rid), None)
+    if entry is None:
+        raise SystemExit(f"no render {rid} in {site / 'renders/index.json'}")
+    path = site / "renders" / rid / CURATED["pins"]
+    current = [] if replace or not path.exists() else read_pins(path)
+    merged = {(p["x"], p["z"]): p for p in current + [pin(**p) for p in pins]}
+    result = sorted(merged.values(), key=lambda p: (p["z"], p["x"]))
+    if result:
+        path.write_text(json.dumps(result, indent=1), encoding="utf-8")
+        entry["pins"] = len(result)
+    else:
+        path.unlink(missing_ok=True)
+        entry.pop("pins", None)
+    write_index(site, index)
+    return result
 
 
 def remove(site: Path, rid: str):
     """Drop one render from the site and its catalogue."""
-    index_path = site / "renders" / "index.json"
-    index = json.loads(index_path.read_text(encoding="utf-8")) if index_path.exists() else []
+    index = read_index(site)
     if not any(e["id"] == rid for e in index):
-        raise SystemExit(f"no render {rid} in {index_path}")
-    kept = [e for e in index if e["id"] != rid]
-    index_path.write_text(json.dumps(kept, indent=1), encoding="utf-8")
+        raise SystemExit(f"no render {rid} in {site / 'renders/index.json'}")
+    write_index(site, [e for e in index if e["id"] != rid])
     shutil.rmtree(site / "renders" / rid, ignore_errors=True)

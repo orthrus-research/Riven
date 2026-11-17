@@ -43,7 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from atlas.batch import compare, contact_sheet, plot_section  # noqa: E402
 from atlas.build import CACHE, Source, prepare, run_sampler  # noqa: E402
 from atlas.paint import Atlas, paint  # noqa: E402
-from atlas.tiles import publish, remove  # noqa: E402
+from atlas.tiles import publish, read_pins, remove, set_pins  # noqa: E402
 from atlas.viewer import write_viewer  # noqa: E402
 
 MAP_SOURCE = Path(__file__).resolve().parent / "atlas/map"
@@ -121,18 +121,26 @@ def render(args, source: Source, seed=None, out=None, viewer=True):
 
 
 def publish_map(args, source: Source):
-    """Tile one window into the map site (.local/map/site) and optionally deploy it."""
+    """Tile one window into the map site (.local/map/site), curate a render's pins, and
+    optionally deploy the site."""
     site = MAP_SITE
     for name in MAP_FILES:
         (site / name).parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(MAP_SOURCE / name, site / name)
+    rid = args.render
     if args.remove:
         remove(site, args.remove)
         print(f"removed {args.remove}")
-    elif not args.redeploy:
+    elif not args.redeploy and not rid:
         out, atlas, _ = sample(args, source)
         rid, files, size, seconds = publish(atlas, site, args.threshold, args.note)
         print(f"{rid}: {files} files, {size / 2**20:.1f} MiB in {seconds}s -> {site}")
+    if rid and (args.pins or args.pin):
+        if args.pins:
+            pins = set_pins(site, rid, read_pins(args.pins), replace=True)
+        if args.pin:
+            pins = set_pins(site, rid, [{"x": x, "z": z, "note": n} for x, z, n in args.pin])
+        print(f"{rid}: {len(pins)} pins")
     if args.deploy or args.redeploy:
         npx = shutil.which("npx")
         if npx is None:
@@ -240,6 +248,20 @@ def main():
     add_window(p, size=8192, step=1)
     add_source(p)
     p.add_argument("--note", help="a short label shown with the render on the site")
+    p.add_argument(
+        "--render", metavar="ID", help="curate this published render instead of rendering one"
+    )
+    p.add_argument(
+        "--pin",
+        nargs=3,
+        action="append",
+        metavar=("X", "Z", "NOTE"),
+        type=str,
+        help="add a curated pin with a short note (a pin at the same column is replaced)",
+    )
+    p.add_argument(
+        "--pins", type=Path, metavar="FILE", help="replace the curated pins (JSON [{x, z, note}])"
+    )
     p.add_argument("--remove", metavar="ID", help="drop a published render instead")
     p.add_argument("--deploy", action="store_true", help="deploy the site with wrangler")
     p.add_argument("--redeploy", action="store_true", help="deploy the site without rendering")
@@ -272,6 +294,9 @@ def main():
         contact_sheet(entries, out, f"Seeds over {args.size} blocks ({source.label})")
         print(out / "index.html")
     elif args.command == "map":
+        for x, z, _ in args.pin or []:
+            if not (x.lstrip("-").isdigit() and z.lstrip("-").isdigit()):
+                parser.error(f"--pin needs integer block coordinates, not {x} {z}")
         publish_map(args, source_of(args))
     elif args.command == "sweep":
         base = source_of(args)

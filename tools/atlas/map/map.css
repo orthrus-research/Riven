@@ -391,6 +391,57 @@ details .choice {
   margin: 4px 0;
 }
 
+/* Pins: the note above the inspected values, the add form and the drawer's list. */
+.pin-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.pin-form {
+  display: flex;
+  border-top: 1px solid var(--rule);
+}
+
+.pin-form input {
+  flex: 1;
+  min-width: 0;
+  background: #000;
+  border: none;
+  padding: 8px 10px;
+  font-size: 16px; /* 16px keeps phones from zooming into the field */
+}
+
+.pin-form button {
+  border: none;
+  border-left: 1px solid var(--rule);
+  padding: 0 14px;
+}
+
+.pin-remove {
+  border: none;
+  border-top: 1px solid var(--rule);
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.pin-choice {
+  display: grid;
+  gap: 2px;
+  overflow-wrap: anywhere;
+}
+
+.pin-choice .dim {
+  font: 11px var(--mono);
+}
+
+.choice[aria-pressed='true'] .dim {
+  color: #444;
+}
+
 /* Zoom buttons and scale bar. */
 .zoom {
   position: fixed;

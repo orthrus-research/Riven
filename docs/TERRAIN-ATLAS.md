@@ -100,6 +100,14 @@ and kept out of search indexes (`X-Robots-Tag`, `robots.txt`).
   level moved). Biomes, stages and families are matched by name, so renders of different terrain
   versions compare; the inspector adds B's values. Nothing new is published for it, and the URL
   keeps B, the mode, the divider and the toggle's side.
+- Pins mark a column with a short note (up to 200 characters). Tapping a column offers "Pin" in
+  the inspector; such pins live in the link (`pin=X,Z,note`, repeated), so sharing the link shares
+  them. A render can also carry curated pins in its `pins.json`, drawn white (the link's are
+  amber): `map --render ID --pin X Z "note"` adds one (a pin on the same column replaces it), and
+  `map --render ID --pins FILE` replaces them all from a JSON list of `{x, z, note}`; without
+  `--render` the pins go to the render the same command publishes. Re-publishing a render keeps
+  its pins, and the catalogue counts them so the page fetches only files that exist. Tapping a
+  pin, or picking it from the drawer's list, opens its note, its coordinates and the `/tp` copy.
 - The site is built in `.local/map/site` and deployed as the assets-only Worker `orthrus-map`
   (`tools/atlas/map/wrangler.jsonc`, through the wrangler login). Renders are content-addressed
   (seed, version, window and digest) and tile URLs carry the tile format, so tiles are cached as

@@ -24,7 +24,9 @@ const state = {
   cz: 0,
   scale: 1, // CSS pixels per block
   grid: false,
-  inspect: null, // {x, z} of the inspected column
+  inspect: null, // {x, z, pin?} of the inspected column
+  pins: [], // the link's own pins: {x, z, note}
+  curated: [], // the open render's pins.json, marked curated
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -687,7 +689,8 @@ function draw() {
     snap(m.height * m.step * state.scale),
   );
   if (state.grid) drawGrid(w, h);
-  if (state.inspect) drawMarker();
+  if (state.inspect && !state.inspect.pin) drawMarker();
+  drawPins();
   drawScale();
   showCompareChrome();
   evict();
@@ -1194,6 +1197,7 @@ function showInspector() {
     }),
   );
   $('inspector-title').textContent = `X ${Math.floor(state.inspect.x)}  Z ${Math.floor(state.inspect.z)}`;
+  showPinControls();
   // Stand on the water where the column is wet, else one above its surface.
   const y = Math.max(c.surface[i], wet(c, i) ? c.water[i] : -32768) + 1;
   state.teleport = `/tp @p ${Math.floor(state.inspect.x)} ${y} ${Math.floor(state.inspect.z)}`;
@@ -1259,6 +1263,7 @@ function writeHash() {
     if (state.compare.mode === 'swipe') p.set('cs', state.compare.split.toFixed(3));
     else if (state.compare.showB) p.set('cb', '1');
   }
+  for (const pin of state.pins) p.append('pin', `${pin.x},${pin.z},${pin.note}`);
   history.replaceState(null, '', `#${p}`);
 }
 
@@ -1274,6 +1279,7 @@ function readHash() {
     cm: p.get('cm') === 'toggle' ? 'toggle' : 'swipe',
     cs: p.has('cs') ? clamp(Number(p.get('cs')) || 0.5, 0, 1) : 0.5,
     cb: p.get('cb') === '1',
+    pins: p.getAll('pin').map(parsePin).filter(Boolean),
   };
 }
 
@@ -1352,11 +1358,145 @@ canvas.addEventListener('dblclick', (e) => zoomAbout(e.clientX, e.clientY, 2));
 
 function inspect(px, py) {
   if (!state.m) return;
+  const hit = pinAt(px, py);
+  if (hit) return openPin(hit);
   const b = blockAt(px, py);
   state.inspect = { x: b.x, z: b.z };
   showInspector();
   schedule();
 }
+
+// ---------------------------------------------------------------------------------------------
+// Pins: curated ones from the render's pins.json, and the link's own (in the URL, editable here).
+
+const PIN_NOTE = 200; // characters, as tools/atlas/tiles.py allows
+const PIN_HIT = 16; // CSS pixels from a pin's centre that still pick it
+
+const allPins = () => state.curated.concat(state.pins);
+const pinKey = (p) => `${p.x},${p.z}`;
+
+function pinAt(px, py) {
+  let best = null;
+  let bestD = PIN_HIT;
+  for (const p of allPins()) {
+    const d = Math.hypot(screenX(p.x + 0.5) - px, screenZ(p.z + 0.5) - py);
+    if (d <= bestD) [best, bestD] = [p, d];
+  }
+  return best;
+}
+
+function openPin(p) {
+  state.inspect = { x: p.x + 0.5, z: p.z + 0.5, pin: p };
+  showInspector();
+  schedule();
+}
+
+function drawPins() {
+  const selected = state.inspect?.pin;
+  for (const p of allPins()) {
+    const x = Math.round(screenX(p.x + 0.5));
+    const z = Math.round(screenZ(p.z + 0.5));
+    if (x < -20 || z < -20 || x > canvas.clientWidth + 20 || z > canvas.clientHeight + 20) continue;
+    // A teardrop whose point stands on the column.
+    ctx.beginPath();
+    ctx.moveTo(x, z);
+    ctx.arc(x, z - 13, 6.5, Math.PI * 0.8, Math.PI * 0.2);
+    ctx.closePath();
+    ctx.fillStyle = p.curated ? '#fff' : '#ffb000';
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = p === selected ? 3 : 1.5;
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, z - 13, 2.2, 0, Math.PI * 2);
+    ctx.fillStyle = '#000';
+    ctx.fill();
+  }
+}
+
+// The inspector's pin row: the note, whose pin it is, and the controls to add or drop one.
+function showPinControls() {
+  const p = state.inspect?.pin;
+  const note = $('inspector-note');
+  note.hidden = !p;
+  if (p) note.textContent = `${p.note}${p.curated ? '  · curated' : ''}`;
+  $('pin-form').hidden = Boolean(p);
+  $('pin-remove').hidden = !p || p.curated;
+}
+
+function addPin(text) {
+  const note = text.replace(/\s+/g, ' ').trim().slice(0, PIN_NOTE);
+  if (!note || !state.inspect) return;
+  const p = { x: Math.floor(state.inspect.x), z: Math.floor(state.inspect.z), note };
+  state.pins = state.pins.filter((q) => pinKey(q) !== pinKey(p)).concat(p);
+  buildPinList();
+  openPin(p);
+  changed();
+}
+
+function removePin() {
+  const p = state.inspect?.pin;
+  if (!p || p.curated) return;
+  state.pins = state.pins.filter((q) => q !== p);
+  state.inspect = { x: state.inspect.x, z: state.inspect.z };
+  buildPinList();
+  showInspector();
+  changed();
+}
+
+// Curated pins come with the catalogue entry's count, so a render without them fetches nothing.
+async function loadCurated(id) {
+  state.curated = [];
+  const entry = state.catalogue.find((e) => e.id === id);
+  if (entry?.pins) {
+    const response = await fetch(`renders/${id}/pins.json`, { cache: 'no-cache' });
+    const list = response.ok ? await response.json() : [];
+    if (state.m?.id === id) state.curated = list.map((p) => ({ x: p.x, z: p.z, note: String(p.note), curated: true }));
+  }
+  buildPinList();
+  schedule();
+}
+
+function buildPinList() {
+  const box = $('pins');
+  const pins = allPins();
+  box.replaceChildren(
+    ...pins.map((p) => {
+      const button = document.createElement('button');
+      button.className = 'choice pin-choice';
+      const where = document.createElement('span');
+      where.className = 'dim';
+      where.textContent = `${p.x}, ${p.z}${p.curated ? ' · curated' : ''}`;
+      button.append(p.note, where);
+      button.addEventListener('click', () => {
+        state.scale = Math.max(state.scale, 1);
+        state.cx = p.x + 0.5;
+        // On phones the inspector takes the lower half, so the pin stands in the upper quarter.
+        state.cz = p.z + 0.5 + (phone() ? canvas.clientHeight / 4 / state.scale : 0);
+        openPin(p);
+        changed();
+        if (phone()) setDrawer(false);
+      });
+      return button;
+    }),
+  );
+  $('pins-empty').hidden = pins.length > 0;
+}
+
+// URL pins: pin=X,Z,note (repeated); the note may hold commas.
+function parsePin(text) {
+  const m = /^(-?\d+),(-?\d+),(.+)$/s.exec(text);
+  if (!m) return null;
+  const note = m[3].replace(/\s+/g, ' ').trim().slice(0, PIN_NOTE);
+  return note ? { x: Number(m[1]), z: Number(m[2]), note } : null;
+}
+
+$('pin-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  addPin($('pin-text').value);
+  $('pin-text').value = '';
+});
+$('pin-remove').addEventListener('click', removePin);
 
 function hover(px, py) {
   if (!state.m) return;
@@ -1423,6 +1563,7 @@ $('render').addEventListener('change', (e) => open(e.target.value, null));
 
 function closeInspector() {
   state.inspect = null;
+  $('pin-text').blur();
   $('inspector').hidden = true;
   schedule();
 }
@@ -1532,6 +1673,7 @@ async function open(id, view) {
   buildMenu();
   buildCompareMenu();
   showLegend();
+  loadCurated(id).catch((error) => console.warn(error));
   const inside = (x, z) =>
     x >= m.minX && z >= m.minZ && x < m.minX + m.width * m.step && z < m.minZ + m.height * m.step;
   if (view && view.x != null && view.s) {
@@ -1694,6 +1836,7 @@ async function start() {
   if (hash.p) state.projection = hash.p;
   const id = state.catalogue.some((e) => e.id === hash.r) ? hash.r : state.catalogue[0].id;
   state.compare = { mode: hash.cm, split: hash.cs, showB: hash.cb };
+  state.pins = hash.pins;
   await open(id, hash);
   if (hash.c && hash.c !== id && state.catalogue.some((e) => e.id === hash.c)) {
     // A difference projection exists only once B is open.
