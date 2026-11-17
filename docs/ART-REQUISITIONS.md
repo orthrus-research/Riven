@@ -216,3 +216,22 @@ and dark, so its bells may carry a faint cool tint but give no light.
 under living ground, crossed planes anchored at the top edge and fading out downward, fine root
 threads and a few thicker roots, in the family of Requisition 05's root threads and Requisition
 04's drowned roots.
+
+Requisition 10: drift layers. Minecraft 1.12 has partial-height ground only as snow layers, so a
+slope of sand or ash steps a full block every few blocks and a walker jumps up each one. Riven
+will top drifting ground with layer blocks one to eight eighths tall, read from the column's own
+height (traversal proposal T6, 2026-11-17), so slopes under about half a block per block walk
+without a jump. Snow uses vanilla's layers; these sets give sand and ash the same. Drawn in Survey
+Plate under the same tests as Requisition 08.
+
+### 60. Sediment layers
+
+`riven:blocks/terrain/drift_<kind>_top` and `riven:blocks/terrain/drift_<kind>_side`, main and
+alternate each, for three kinds: `sand` (matching vanilla sand as Requisition 47 redraws it),
+`red_sand` (matching red sand) and `ash` (matching Riven's `volcanic_ash`). A layer block
+crops its faces as vanilla's snow layer does: the top face tiles at every height, and the side is
+cut from its bottom edge upward to the layer's height, so the side must read at two pixels tall
+as well as at sixteen. A layer resting on a full block of its own kind shows no seam: the top
+matches the full block's top, and the side continues the full block's side, with no rim or
+outline at its upper edge. No inventory icon beyond vanilla's snow-layer form is needed. Riven registers the
+blocks; the art arrives by the pack.
