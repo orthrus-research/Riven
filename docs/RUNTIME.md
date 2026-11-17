@@ -276,6 +276,38 @@ Cubature checkout must be present. `prepare` writes the local runtime identity t
 Java 26 named in `.local/settings.json` and the hashes of its critical files. A Java 26 other than
 the reviewed build is noted, not refused.
 
+### The measurement lease and the GPU queue
+
+One native game runs at a time per workspace. `play`, `measure_pipeline.py` and
+`pregenerate_map.py` take the measurement lease, an OS lock on byte 0 of
+`.local/cubic-lab/native-measurement.lock` (Cubature's `cubic_lab.native_measurement_lease`), and
+fail at once if it is held. The OS drops the lock when its holder exits, so a crashed run never
+keeps it. The JSON from byte 1 is the holder's record (`pid`, `name`, `startedUtc`), stamped with
+`releasedUtc` as it lets go; it stays after release, so it names the last holder, not a current
+one. To test the lease, read byte 0: the holder's lock makes it unreadable to every other handle.
+Never take the lock to test it, even for an instant, since a launch that starts at that moment
+fails.
+
+Work that shares the GPU goes through `tools/gpu_queue.py`:
+
+```powershell
+python tools/gpu_queue.py status
+python tools/gpu_queue.py turn --lane <lane> --note "<purpose>" [--session <name>] [--detach] -- <command> ...
+python tools/gpu_queue.py stuck
+python tools/gpu_queue.py leave --lane <lane>
+```
+
+Each lane (one line of work) publishes `.local/coordination/<lane>.json` with its state (`idle`,
+`waiting`, `running`), `waiting_since`, its writer's `pid` and a heartbeat (`updatedUtc`, every
+30 s). `turn` queues, waits until the lease has been free for 3 minutes and no live lane is
+running or has waited longer (a waiter ahead that has not moved for 10 minutes of free lease is
+passed), then holds the lease for the whole command: launchers under it join that lease through
+`CUBIC_LAB_TURN_LEASE` instead of taking it per run, so nothing starts between a turn's runs. A
+turn longer than an hour is stopped. An entry counts only while its heartbeat is under 5 minutes
+old and its process runs, so a request whose writer has gone holds nobody back; `stuck` names
+such entries and exits 1. From a linked worktree the tool uses the main checkout's lease and
+queue.
+
 ## Building and local actions
 
 `tools/actions.py` runs the workflows in `tools/actions.toml`, with a log per step under
