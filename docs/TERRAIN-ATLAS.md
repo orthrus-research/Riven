@@ -47,6 +47,7 @@ Run with `.local/atlas-venv/Scripts/python tools/terrain_atlas.py <command>`:
 | `compare --vs-ref REF / --vs-set ...` | The same window from two sources: height change, changed features, stage activity and reasons |
 | `seeds --seeds 1 2 3` | One window per seed, with a contact sheet, `stats.csv` (with overall cost per column), `cost.csv` (cost by landform and climate region) and means |
 | `sweep --param FILE:PATH --values a b c` | One definition value across settings, with a contact sheet |
+| `sweep --param A --values ... --param B --values ... [--metric PATH]` | Two values as a grid: `sheet.png` (rows A, columns B), `heatmap.png` and `grid.csv` of one `summary.json` number (default `landPct`; `stages.<name>` is that stage's active land share), each cell's statistics under `cells/` |
 | `section --line X1 Z1 X2 Z2` | Height after every stage along a line, with the largest-change stage underneath |
 | `map [--deploy] [--note TEXT]`, `map --remove ID`, `map --redeploy` | One window cut into tiles for the map site, https://map.orthrus.cc; `--remove` drops a render, `--redeploy` publishes the site as it stands (below) |
 

@@ -197,6 +197,114 @@ def contact_sheet(entries, out: Path, title: str, thumb=256):
     return records
 
 
+def metric_value(summary: dict, path: str) -> float | None:
+    """A number from summary.json by dotted path (`landPct`, `surfaceY.p50Land`,
+    `cost.overall.medianMicros`); `stages.<name>` is that stage's active share of land."""
+    keys = path.split(".")
+    if keys[0] == "stages" and len(keys) == 2:
+        for stage in summary["stages"]:
+            if stage["name"] == keys[1]:
+                return stage["activeLandPct"]
+        raise SystemExit(f"--metric: no stage {keys[1]!r}")
+    node = summary
+    for key in keys:
+        if not isinstance(node, dict) or key not in node:
+            raise SystemExit(f"--metric: summary.json has no {path!r}")
+        node = node[key]
+    if node is not None and not isinstance(node, (int, float)):
+        raise SystemExit(f"--metric: {path!r} is not a number")
+    return node
+
+
+def grid_sheet(rows, cols, cells, out: Path, title: str, metric: str, thumb=192):
+    """Two-parameter sweep: feature thumbnails with rows = A values and columns = B values,
+    a heatmap of one summary metric and grid.csv; cells[(i, j)] = render dir."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    out.mkdir(parents=True, exist_ok=True)
+    (row_name, row_values), (col_name, col_values) = rows, cols
+    left, top, gap = 150, 40, 4
+    sheet = Image.new(
+        "RGB",
+        (left + len(col_values) * (thumb + gap), top + len(row_values) * (thumb + gap)),
+        (17, 17, 17),
+    )
+    draw = ImageDraw.Draw(sheet)
+    draw.text((4, 4), f"rows {row_name}, columns {col_name}", fill=(230, 230, 230))
+    grid = np.full((len(row_values), len(col_values)), np.nan)
+    records = []
+    for j, value in enumerate(col_values):
+        draw.text((left + j * (thumb + gap) + 4, top - 16), str(value), fill=(230, 230, 230))
+    for i, row_value in enumerate(row_values):
+        y = top + i * (thumb + gap)
+        draw.text((4, y + thumb // 2 - 6), str(row_value), fill=(230, 230, 230))
+        for j, col_value in enumerate(col_values):
+            directory = cells[(i, j)]
+            summary = json.loads((directory / "summary.json").read_text(encoding="utf-8"))
+            img = Image.open(directory / "features.png").convert("RGB")
+            sheet.paste(
+                img.resize((thumb, thumb), Image.Resampling.NEAREST),
+                (left + j * (thumb + gap), y),
+            )
+            value = metric_value(summary, metric)
+            grid[i, j] = np.nan if value is None else value
+            records.append(
+                {
+                    row_name: row_value,
+                    col_name: col_value,
+                    metric: value,
+                    "digest": (summary.get("digest") or "")[:16],
+                    "index": (directory / "index.html").as_uri(),
+                }
+            )
+    sheet.save(out / "sheet.png", optimize=True)
+    with (out / "grid.csv").open("w", newline="", encoding="utf-8") as stream:
+        writer = csv.DictWriter(stream, fieldnames=[row_name, col_name, metric, "digest"])
+        writer.writeheader()
+        writer.writerows([{k: v for k, v in r.items() if k != "index"} for r in records])
+
+    size = (1.6 + 1.1 * len(col_values), 1.4 + 0.8 * len(row_values))
+    fig, ax = plt.subplots(figsize=size, constrained_layout=True)
+    image = ax.imshow(grid, cmap="viridis", aspect="auto")
+    ax.set_xticks(range(len(col_values)), [str(v) for v in col_values])
+    ax.set_yticks(range(len(row_values)), [str(v) for v in row_values])
+    ax.set_xlabel(col_name)
+    ax.set_ylabel(row_name)
+    ax.set_title(metric, fontsize=10)
+    finite = grid[np.isfinite(grid)]
+    middle = float(finite.mean()) if finite.size else 0.0
+    for (i, j), v in np.ndenumerate(grid):
+        if np.isfinite(v):
+            color = "black" if v > middle else "white"
+            ax.text(j, i, f"{v:g}", ha="center", va="center", color=color, fontsize=8)
+    fig.colorbar(image, ax=ax)
+    fig.savefig(out / "heatmap.png", dpi=110)
+    plt.close(fig)
+
+    head = "".join(f"<th>{html.escape(str(v))}</th>" for v in col_values)
+    body = ""
+    for i, row_value in enumerate(row_values):
+        cells_html = "".join(
+            f"<td><a href='{r['index']}'>{html.escape(str(r[metric]))}</a></td>"
+            for r in records[i * len(col_values) : (i + 1) * len(col_values)]
+        )
+        body += f"<tr><th>{html.escape(str(row_value))}</th>{cells_html}</tr>"
+    page = [
+        f"<!doctype html><meta charset=utf-8><title>{html.escape(title)}</title>{STYLE}",
+        f"<h1>{html.escape(title)}</h1>",
+        f"<p>Rows {html.escape(row_name)}, columns {html.escape(col_name)}; thumbnails are"
+        " features.png. Cells link to each render.</p><img src='sheet.png'>",
+        f"<h2>{html.escape(metric)}</h2><img src='heatmap.png'>",
+        f"<table><tr><th>{html.escape(row_name)} \\ {html.escape(col_name)}</th>{head}</tr>"
+        f"{body}</table><p><a href='cells/index.html'>Every cell's statistics</a></p>",
+    ]
+    (out / "index.html").write_text("\n".join(page), encoding="utf-8")
+    return grid
+
+
 def plot_section(out: Path):
     """Height after every stage along the line, with the largest-change stage underneath."""
     import matplotlib
