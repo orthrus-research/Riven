@@ -718,6 +718,7 @@ public final class BaseTerrainMap {
         out.position = -1;
         out.spine = out.plateau = 0;
         out.minimumY = out.maximumY = 0;
+        Arrays.fill(out.terms, 0);
         elevation.clear(out.elevation);
         profiles.clear(out.region);
     }

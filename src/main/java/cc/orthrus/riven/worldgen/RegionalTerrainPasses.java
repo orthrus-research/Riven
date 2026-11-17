@@ -86,6 +86,7 @@ public final class RegionalTerrainPasses {
             dominant = null;
             permutation = 0;
             Arrays.fill(weights, 0);
+            gradient.set(0, 0, 0);
         }
     }
 
@@ -104,6 +105,7 @@ public final class RegionalTerrainPasses {
         out.formation = 0;
         out.formationFine = 0;
         out.permutation = 0;
+        out.gradient.set(0, 0, 0);
         double mountain = land.high, hill = land.middle + land.high;
         double steep = land.rugged;
         double dry = 1 - smooth((climate.moisture - 0.20) / (MoistureBand.DRY_LIMIT - 0.20));
