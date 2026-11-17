@@ -21,6 +21,7 @@ Commands (run with .local/atlas-venv/Scripts/python):
 Examples:
   tools/terrain_atlas.py render --seed 8675309 --verify
   tools/terrain_atlas.py render --center 1472 -1472 --size 2048 --step 4 --footprint 2
+  tools/terrain_atlas.py render --size 8192 --step 1 --progressive
   tools/terrain_atlas.py compare --ref HEAD~1 --vs-ref HEAD
   tools/terrain_atlas.py compare --vs-set riven-terrain.json:sites.anchorProbability=0.9
   tools/terrain_atlas.py seeds --seeds 8675309 101 -991 7 42 --size 4096 --step 32
@@ -41,7 +42,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from atlas.batch import compare, contact_sheet, grid_sheet, plot_section  # noqa: E402
+from atlas.batch import compare, contact_sheet, grid_sheet, plot_section, subsample_mismatches  # noqa: E402
 from atlas.build import CACHE, Source, prepare, run_sampler  # noqa: E402
 from atlas.paint import Atlas, paint  # noqa: E402
 from atlas.tiles import publish, remove  # noqa: E402
@@ -118,6 +119,49 @@ def render(args, source: Source, seed=None, out=None, viewer=True):
         f"seed {seed}: land {summary['landPct']}%, digest {summary['digest'][:16]},"
         f" sampling {summary['seconds']['sampling']}s -> {out / 'index.html'}"
     )
+    return out
+
+
+def progressive_steps(size: int, step: int, requested: list[int]) -> list[int]:
+    """Coarse steps before the requested one, coarsest first. Each must be a multiple of the
+    step that divides the window, so every level shares the window's origin and sample lattice.
+    With none given: the coarsest 4^k multiple of the step that still gives 32 pixels a side,
+    then 4 times the step."""
+    if requested:
+        for s in requested:
+            if s <= step or s % step or size % s:
+                sys.exit(
+                    f"--progressive {s}: needs a multiple of --step {step} that divides {size}"
+                )
+        return sorted(set(requested), reverse=True)
+    levels, s = [], step * 4
+    while size % s == 0 and size // s >= 32:
+        levels.append(s)
+        s *= 4
+    return sorted({levels[-1], levels[0]}, reverse=True) if levels else []
+
+
+def render_progressive(args, source: Source):
+    """Coarse levels first, each painted and announced as it lands, then the requested step;
+    every level is a normal render with its own reusable raw samples."""
+    steps = progressive_steps(args.size, args.step, args.progressive)
+    final_step, footprint, verify_final = args.step, args.footprint, args.verify
+    coarse = []
+    for n, s in enumerate(steps, 1):
+        # Coarse levels are previews: point samples only, never verified.
+        args.step, args.footprint, args.verify = s, 1, False
+        print(f"level {n}/{len(steps) + 1}: step {s} ({args.size // s} pixels a side)")
+        coarse.append(render(args, source))
+    args.step, args.footprint, args.verify = final_step, footprint, verify_final
+    print(f"level {len(steps) + 1}/{len(steps) + 1}: step {final_step} (requested)")
+    out = render(args, source, out=args.out)
+    fine = Atlas(out / "raw")
+    for directory in coarse:
+        compared, differ = subsample_mismatches(Atlas(directory / "raw"), fine)
+        level = directory.name
+        if differ:
+            sys.exit(f"{level}: not an exact subsample of the final level: {', '.join(differ)}")
+        print(f"{level}: exact subsample of the final level ({compared} layers)")
     return out
 
 
@@ -252,6 +296,13 @@ def main():
     add_source(p)
     p.add_argument("--verify", action="store_true", help="prove thread/order independence")
     p.add_argument("--out", type=Path)
+    p.add_argument(
+        "--progressive",
+        type=int,
+        nargs="*",
+        metavar="STEP",
+        help="render coarser steps first (default: picked from the window), then --step",
+    )
 
     p = sub.add_parser("compare", help="two sources over the same window")
     add_window(p)
@@ -296,7 +347,10 @@ def main():
     args = parser.parse_args()
 
     if args.command == "render":
-        render(args, source_of(args), out=args.out)
+        if args.progressive is not None:
+            render_progressive(args, source_of(args))
+        else:
+            render(args, source_of(args), out=args.out)
     elif args.command == "compare":
         a, b = source_of(args), source_of(args, "vs_")
         if a == b:

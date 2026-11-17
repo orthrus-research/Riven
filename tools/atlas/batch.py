@@ -197,6 +197,61 @@ def contact_sheet(entries, out: Path, title: str, thumb=256):
     return records
 
 
+# Categorical layers whose codes index a per-window name list in atlas.json; compared by name.
+CODED_LAYERS = {
+    "habitat.u8": "habitats",
+    "variant.u8": "variants",
+    "region.u8": "regions",
+    "level.u8": "levels",
+    "character.u8": "characters",
+    "landform.u8": "landforms",
+    "water_kind.u8": "waterKinds",
+    "province_type.u8": "provinceTypes",
+    "coast.u8": "coastTypes",
+    "plate.u16": "plates",
+    "province.u16": "provinceCells",
+}
+# Per-column timing is not deterministic; water body codes have no name list to compare by.
+UNCOMPARED = {"micros.f32", "water_body.u16"}
+DTYPES = {".u8": np.uint8, ".i16": "<i2", ".u16": "<u2", ".f32": "<f4"}
+
+
+def subsample_mismatches(coarse: Atlas, fine: Atlas) -> tuple[int, list[str]]:
+    """Check that `coarse` is `fine` taken every k-th column and row: (layers compared, names of
+    the layers that differ). Footprint maxima (fp_*) span a pixel and are not compared."""
+    k, rest = divmod(coarse.step, fine.step)
+    if rest or coarse.meta["minX"] != fine.meta["minX"] or coarse.meta["minZ"] != fine.meta["minZ"]:
+        raise SystemExit("progressive: levels do not share a sample lattice")
+    compared, differ = 0, []
+    for path in sorted(coarse.raw.iterdir()):
+        dtype = DTYPES.get(path.suffix)
+        name = path.name
+        if dtype is None or name in UNCOMPARED or name.startswith("fp_"):
+            continue
+        a = coarse.layer(name, dtype)
+        b = fine.layer(name, dtype)[::k, ::k]
+        if name in CODED_LAYERS:
+            key = CODED_LAYERS[name]
+            a, b = names_of(a, coarse.meta[key]), names_of(b, fine.meta[key])
+        elif name.startswith("reason_"):
+            # Each window lists only the reasons it recorded, so codes are per window.
+            stage = name[len("reason_") : -len(".u8")]
+            a = names_of(a, coarse.stage_meta(stage)["reasons"])
+            b = names_of(b, fine.stage_meta(stage)["reasons"])
+        compared += 1
+        if a.shape != b.shape or not np.array_equal(a, b):
+            differ.append(name)
+    return compared, differ
+
+
+def names_of(codes, names):
+    """Codes as their names; codes past the list (255 = none, marine) keep their number."""
+    codes = codes.astype(np.int64)
+    top = int(codes.max(initial=0)) + 1
+    labels = np.array([*names, *(f"#{c}" for c in range(len(names), top))], dtype=object)
+    return labels[codes]
+
+
 def metric_value(summary: dict, path: str) -> float | None:
     """A number from summary.json by dotted path (`landPct`, `surfaceY.p50Land`,
     `cost.overall.medianMicros`); `stages.<name>` is that stage's active share of land."""

@@ -19,6 +19,14 @@ state, and fails unless the digests match. This was verified for the default 8 k
 excluded. The atlas at spawn column (1472, -1472) gave surface Y68; the game spawned the player at
 Y69.
 
+`render --progressive` levels are exact subsamples, not approximations. Each coarse step is a
+multiple of `--step` that divides `--size`, so every level has the same origin and coarse pixel k
+samples the same column as fine pixel k x (coarse step / `--step`): a coarse level takes exactly
+the samples a coarser render takes. Coarse levels sample with footprint 1. After the final level
+the command compares every deterministic layer of each coarse level with the final one taken
+every k-th sample (categorical codes by name, since each window numbers its own lists; footprint
+maxima and water body ids are not compared) and fails on any difference.
+
 Point samples can miss features narrower than `--step`. `--footprint n` also takes n x n samples
 per pixel and keeps each stage's largest change; `features.png` then uses those maxima.
 `--walls` also samples each pixel's neighbours one block east and south and keeps the largest step
@@ -44,6 +52,7 @@ Run with `.local/atlas-venv/Scripts/python tools/terrain_atlas.py <command>`:
 | Command | Purpose |
 | --- | --- |
 | `render [--verify] [--footprint n]` | One window: all maps, reason maps, sites, cost, summary and `viewer.html` |
+| `render --progressive [STEP ...]` | The same window at coarser steps first (default: the coarsest power-of-4 multiple of `--step` that still gives 32 pixels, then 4 x `--step`), each painted and announced as it lands, then `--step`; each level is a normal render with reusable raw samples |
 | `compare --vs-ref REF / --vs-set ...` | The same window from two sources: height change, changed features, stage activity and reasons |
 | `seeds --seeds 1 2 3` | One window per seed, with a contact sheet, `stats.csv` (with overall cost per column), `cost.csv` (cost by landform and climate region) and means |
 | `sweep --param FILE:PATH --values a b c` | One definition value across settings, with a contact sheet |
