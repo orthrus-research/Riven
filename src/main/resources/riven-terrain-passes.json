@@ -1,10 +1,11 @@
 {
   "schema": 1,
-  "revision": 2,
+  "revision": 3,
   "variationSeed": "0x524956454e465031",
   "regionSpanInPlainWidths": 2.0,
   "roughening": {"minimumStrength": 0.3, "maximumStrength": 1.2},
   "smoothing": {"minimumStrength": 0.15, "maximumStrength": 0.75},
+  "microRelief": {"octaves": [{"wavelengthBlocks": 6, "blocks": 0.6}, {"wavelengthBlocks": 11, "blocks": 0.6}], "gateFromSlope": 0.03, "gateToSlope": 0.1, "fadeFromSlope": 0.35, "fadeToSlope": 0.8},
   "profiles": {
     "HUMMOCKS": {"reference": "knoll", "amplitudeScale": 0.16, "wavelengthScale": 0.5, "fineGain": 0.25},
     "KNOLLS": {"reference": "knoll", "amplitudeScale": 0.65, "wavelengthScale": 1.0, "fineGain": 0.2},

@@ -34,6 +34,11 @@ public final class RegionalTerrainPasses {
     /** The base terrain's contour jitter (terrain-v147): shapes are read where base reads its. */
     private final ContourJitter jitter;
 
+    /** Micro-relief (terrain-v148): octave noises, wavelengths and amplitudes in blocks. */
+    private final SeededNoise[] micro;
+
+    private final double[] microWave, microBlocks;
+
     RegionalTerrainPasses(long worldSeed, TerrainHeightReference heights) {
         seed = SeededNoise.mix(worldSeed ^ DEFINITION.variationSeed);
         shapeA = noise(101);
@@ -56,6 +61,16 @@ public final class RegionalTerrainPasses {
         roughAmplitude = heights.feature("terrace").magnitude.targetAverage / 2;
         roughWave = heights.feature("knoll").width.min * TerrainScale.HORIZONTAL;
         jitter = new ContourJitter(worldSeed);
+        com.google.gson.JsonArray octaves = DEFINITION.micro.getAsJsonArray("octaves");
+        micro = new SeededNoise[octaves.size()];
+        microWave = new double[octaves.size()];
+        microBlocks = new double[octaves.size()];
+        for (int k = 0; k < micro.length; k++) {
+            JsonObject o = octaves.get(k).getAsJsonObject();
+            microWave[k] = positive(o, "wavelengthBlocks");
+            microBlocks[k] = nonnegative(o, "blocks");
+            micro[k] = noise(1111 + 111 * k);
+        }
     }
 
     private SeededNoise noise(long salt) {
@@ -70,7 +85,8 @@ public final class RegionalTerrainPasses {
                 rougheningFine,
                 smoothing,
                 smoothingStrength,
-                rougheningStrength;
+                rougheningStrength,
+                micro;
         public double afterFormation, afterRoughening, height, appliedDisplacement;
         public Formation dominant;
         public long permutation;
@@ -85,7 +101,9 @@ public final class RegionalTerrainPasses {
                     formationFine =
                             roughening =
                                     rougheningFine =
-                                            smoothing = smoothingStrength = rougheningStrength = 0;
+                                            smoothing =
+                                                    smoothingStrength =
+                                                            rougheningStrength = micro = 0;
             afterFormation = afterRoughening = height = value;
             appliedDisplacement = 0;
             dominant = null;
@@ -104,6 +122,7 @@ public final class RegionalTerrainPasses {
             double originalHeight,
             double originalFine,
             double groundSlope,
+            double dryShare,
             double minimumY,
             double maximumY,
             Result out) {
@@ -217,6 +236,10 @@ public final class RegionalTerrainPasses {
                         * (0.45 + 0.55 * climate.moisture)
                         * (1 - 0.4 * mountain);
         roughen(wx, wz, out);
+        // Bench risers already climb near a block per block: micro-relief stays off them.
+        double bench = 1 - Math.min(1, out.weights[Formation.BENCHES.ordinal()]);
+        out.micro =
+                micro(x, z, groundSlope, land.mountain, out.gradient) * dryShare * dryShare * bench;
         // The detail component is explicitly separated: broad terrain and primary shapes survive.
         out.smoothing =
                 smoothDetail(
@@ -228,7 +251,7 @@ public final class RegionalTerrainPasses {
         out.height =
                 bounded(
                         originalHeight,
-                        formed + out.roughening + out.smoothing,
+                        formed + out.roughening + out.smoothing + out.micro,
                         minimumY,
                         maximumY);
         out.appliedDisplacement = out.height - originalHeight;
@@ -285,16 +308,20 @@ public final class RegionalTerrainPasses {
             // Paired fields have matching marginal distributions, avoiding an authored upward bias.
             case KNOLLS:
                 out.coarse = amp * 1.5 * (n * n - m * m);
+                // A knoll's flank climbs up to about amp * 4.5 / wave; like a ridge's, it keeps
+                // only what the ground's own slope leaves under RIDGE_SLOPE.
+                out.coarse *=
+                        Math.min(1, Math.max(0, RIDGE_SLOPE - groundSlope) * wave / (amp * 4.5));
                 out.fine = amp * p.fineGain * shapeC.sample(ux * 2.5, uz * 2.5);
                 break;
             case RIDGES:
                 double sm = Math.sqrt(m * m + 0.0025), sn = Math.sqrt(n * n + 0.0025);
                 out.coarse = amp * 1.8 * (sm - sn);
-                // A flank climbs about amp * 1.8 * 2 / wave where the noise turns fastest; a
+                // A flank climbs up to about amp * 4.5 / wave where the noise turns fastest; a
                 // patch whose flanks would pass RIDGE_SLOPE blocks per block stands lower.
                 // The ground's own slope counts: on a slope the flanks keep what is left of it.
                 out.coarse *=
-                        Math.min(1, Math.max(0, RIDGE_SLOPE - groundSlope) * wave / (amp * 3.6));
+                        Math.min(1, Math.max(0, RIDGE_SLOPE - groundSlope) * wave / (amp * 4.5));
                 out.fine =
                         amp
                                 * p.fineGain
@@ -354,6 +381,35 @@ public final class RegionalTerrainPasses {
         out.roughening = low + out.rougheningFine;
     }
 
+    /**
+     * Micro-relief (terrain-v148): short gradient-noise relief that crosses whole-block heights
+     * back and forth, so a gentle soil slope's one-block contours break into islands and notches
+     * instead of running as printed lines. It needs a slope to break: nothing on flat ground
+     * (gated in from gateFrom to gateTo blocks per block, so plains get no pimples), fading out
+     * toward a block per block (fadeFrom to fadeTo) so it adds no two-block steps, and gone on
+     * ranges, whose rock takes its own texture. The slope is the unjittered ground's.
+     */
+    private double micro(double x, double z, double slope, double mountain, HeightSample scratch) {
+        double gate =
+                smooth(
+                                (slope - DEFINITION.microGateFrom)
+                                        / (DEFINITION.microGateTo - DEFINITION.microGateFrom))
+                        * (1
+                                - smooth(
+                                        (slope - DEFINITION.microFadeFrom)
+                                                / (DEFINITION.microFadeTo
+                                                        - DEFINITION.microFadeFrom)))
+                        * (1 - mountain);
+        if (gate <= 0) return 0;
+        double v = 0;
+        for (int k = 0; k < micro.length; k++) {
+            double w = microWave[k];
+            micro[k].gradient(x / w + .29 * k + .17, z / w + .61 - .13 * k, scratch);
+            v += microBlocks[k] * scratch.height;
+        }
+        return gate * v;
+    }
+
     /** Spectral attenuation of known detail components; this is not a neighbor-height blur. */
     public static double smoothDetail(double detail, double strength) {
         return -detail * strength;
@@ -392,7 +448,8 @@ public final class RegionalTerrainPasses {
         final String fingerprint;
         final long variationSeed;
         final double regionSpan, roughMin, roughMax, smoothMin, smoothMax;
-        final JsonObject profiles;
+        final double microGateFrom, microGateTo, microFadeFrom, microFadeTo;
+        final JsonObject profiles, micro;
 
         Definition(JsonObject json, String fingerprint) {
             if (json.get("schema").getAsInt() != 1)
@@ -411,6 +468,15 @@ public final class RegionalTerrainPasses {
             smoothMax = unit(smooth, "maximumStrength");
             if (roughMin > roughMax || smoothMin > smoothMax)
                 throw new IllegalStateException("Terrain pass strength range");
+            micro = json.getAsJsonObject("microRelief");
+            microGateFrom = nonnegative(micro, "gateFromSlope");
+            microGateTo = positive(micro, "gateToSlope");
+            microFadeFrom = positive(micro, "fadeFromSlope");
+            microFadeTo = positive(micro, "fadeToSlope");
+            if (!(microGateFrom < microGateTo
+                    && microGateTo <= microFadeFrom
+                    && microFadeFrom < microFadeTo))
+                throw new IllegalStateException("microRelief slopes must ascend");
         }
 
         static Definition load() {

@@ -479,7 +479,28 @@ public final class ContourRunCheck {
                 if (v >= 64) over64 += v;
             }
             Map<String, Object> m = new LinkedHashMap<>();
+            // Pimples: a dry soil column whose eight neighbours all stand one block lower (a bump)
+            // or higher (a pit); on ground with no slope to break they are noise, not relief.
+            long bumps = 0, pits = 0;
+            for (int r = 1; r + 1 < n; r++) {
+                for (int c = 1; c + 1 < n; c++) {
+                    int i = r * n + c;
+                    if (!soil[i]) continue;
+                    boolean up = true, down = true;
+                    for (int dr = -1; dr <= 1; dr++)
+                        for (int dc = -1; dc <= 1; dc++) {
+                            if (dr == 0 && dc == 0) continue;
+                            int j = i + dr * n + dc;
+                            if (!dry[j] || h[j] != h[i] - 1) up = false;
+                            if (!dry[j] || h[j] != h[i] + 1) down = false;
+                        }
+                    if (up) bumps++;
+                    if (down) pits++;
+                }
+            }
             m.put("soilColumns", soilCount);
+            m.put("bumps", bumps);
+            m.put("pits", pits);
             m.put("contourBlocks", totalLength);
             m.put("contourPerThousandSoil", 1000 * totalLength / Math.max(1, soilCount));
             m.put("runs", runs.size());
@@ -635,11 +656,13 @@ public final class ContourRunCheck {
             by.computeIfAbsent((String) r.get("class"), k -> new ArrayList<>()).add(r);
         by.put("ALL", rows);
         for (Map.Entry<String, List<Map<String, Object>>> e : by.entrySet()) {
-            double soil = 0, contour = 0, weighted = 0, s32 = 0, s64 = 0;
+            double soil = 0, contour = 0, weighted = 0, s32 = 0, s64 = 0, bumps = 0, pits = 0;
             double[] cl = new double[PARTS.length], ca = new double[PARTS.length];
             for (Map<String, Object> r : e.getValue()) {
                 double len = ((Number) r.get("contourBlocks")).doubleValue();
                 soil += ((Number) r.get("soilColumns")).doubleValue();
+                bumps += ((Number) r.get("bumps")).doubleValue();
+                pits += ((Number) r.get("pits")).doubleValue();
                 contour += len;
                 weighted += len * ((Number) r.get("weightedRun")).doubleValue();
                 s32 += len * ((Number) r.get("share32")).doubleValue();
@@ -654,6 +677,8 @@ public final class ContourRunCheck {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("windows", e.getValue().size());
             m.put("soilColumns", (long) soil);
+            m.put("bumps", (long) bumps);
+            m.put("pits", (long) pits);
             m.put("contourPerThousandSoil", 1000 * contour / Math.max(1, soil));
             m.put("weightedRun", weighted / Math.max(1e-9, contour));
             m.put("share32", s32 / Math.max(1e-9, contour));

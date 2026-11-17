@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 147;
+    public static final int VERSION = 148;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -468,6 +468,12 @@ public final class TerrainMap {
                 // The unjittered slope (v147): it turns as slowly as the ground, so bench risers
                 // sized from it do not narrow and widen with the contour jitter.
                 Rules.hypot(out.base.steerDx(), out.base.steerDz()),
+                // Micro-relief (v148) stays off a bank: the bank's blend keeps only its weight's
+                // complement of the ground, and the water's edge stays as it was.
+                (1 - out.water.weight)
+                        * (out.water.channel
+                                ? Rules.smooth(out.water.channelBeyond / MICRO_VALLEY)
+                                : 1),
                 out.minimumY,
                 out.maximumY,
                 out.passes);
@@ -489,6 +495,12 @@ public final class TerrainMap {
      * 1.5. Ranges keep their full gullies, fading in with the spine weight.
      */
     static final double EROSION_SLOPE_LIMIT = 1.0;
+
+    /**
+     * How far from a drainage channel's bank micro-relief (v148) eases in, in blocks: a valley's
+     * side is a ramp near a block per block, which any added relief would step.
+     */
+    static final double MICRO_VALLEY = 48;
 
     private static double erosionSlopeLimit(double spine) {
         double keep = Rules.smooth((spine - 0.25) / 0.5);

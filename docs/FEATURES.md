@@ -568,10 +568,22 @@ Shared rules for the land stages:
   `shoreReservationInCoastalPlainWidths` (0.5) coastal-plain widths in `riven-terrain.json`.
 - Drylands require hot dry climate and attenuate around earlier major relief. Dunes in regional
   passes need hot dry climate and fade on steep slopes; benches need dry warm or hot climate.
-  Since v146 no pass makes a ledge a walker cannot climb on its own: a dune's slip face falls at
-  most 0.65 blocks per block and runs out over the next stoss, a bench riser widens with the
-  ground's slope until it climbs at most a block per block, and a ridge patch whose flanks would
-  pass that stands lower.
+  No pass makes a ledge a walker cannot climb on its own: a dune's slip face falls at most 0.65
+  blocks per block and runs out over the next stoss; a bench riser widens with the ground's slope
+  (allowing 0.06 for what lies beneath) until it climbs 0.85 blocks per block, and on ground too
+  steep for that the treads yield; ridge and knoll patches whose flanks (about 4.5 amplitudes per
+  wavelength) would pass a block per block on top of the ground's own slope stand lower. All of
+  these read the unjittered ground's slope (see contour jitter).
+- **Micro-relief** (terrain-v148, `riven-terrain-passes.json` `microRelief`): printed contour lines
+  are where a smooth gradient crosses whole-block heights, so a warp only bends them. The passes
+  add short gradient-noise relief (6 and 11 blocks, 0.6 blocks each) that crosses whole blocks
+  back and forth, breaking a gentle soil slope's one-block contours into notches, islands and
+  broken treads. It is gated in from a slope of 0.03 to 0.1 (flat ground gets none), fades out
+  from 0.35 to 0.8, and stays off ranges (rock), bench risers, a bank (by the square of the bank
+  weight's complement) and the 48 blocks beside a drainage channel's bank. Classification,
+  planners and water never see it. ContourRunCheck, seed 2485331 at 32 km: soil contour length in
+  runs of 64+ blocks 6.9% to 6.4% (scarps 3.1% to 0.9%), single-column bumps and pits 35 to 107
+  in 2.4 million soil columns.
 - Volcanoes follow tectonics in any climate ([DECISIONS.md](DECISIONS.md), Volcanoes; terrain-v130):
   the potential is the strongest of rift weight, arc weight along the ranges and a sparse hotspot
   field (`VolcanicTerrain.potential`, `riven-volcanic.json`). Climate changes what grows on and
