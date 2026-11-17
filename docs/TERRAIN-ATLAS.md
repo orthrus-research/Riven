@@ -48,19 +48,21 @@ Run with `.local/atlas-venv/Scripts/python tools/terrain_atlas.py <command>`:
 | `seeds --seeds 1 2 3` | One window per seed, with a contact sheet, `stats.csv` and means |
 | `sweep --param FILE:PATH --values a b c` | One definition value across settings, with a contact sheet |
 | `section --line X1 Z1 X2 Z2` | Height after every stage along a line, with the largest-change stage underneath |
+| `history --refs REF ...` | The same window at each ref and the working tree: `history.csv`, a chart per summary metric and a contact sheet; a ref the sampler can't build is a skipped row with its reason |
 | `map [--deploy] [--note TEXT]`, `map --remove ID`, `map --redeploy` | One window cut into tiles for the map site, https://map.orthrus.cc; `--remove` drops a render, `--redeploy` publishes the site as it stands (below) |
 
 Window options: `--seed`, `--center X Z`, `--size` (blocks), `--step` (blocks/pixel), `--threads`
 (default half the logical cores, which sampled faster than all cores) and `--threshold` (blocks).
 Source options: `--ref` samples a commit from a cached `git archive`, compiled with the working
 tree's sampler, so it must share the current layout and stages (the sampler keeps no support
-for older trees). `--set
+for older trees). The sampler builds main commits back to e97352a (2026-11-11); older trees
+lack the geology rasters. `--set
 FILE.json:path.to.key=VALUE` patches a packaged definition for that render only. It must address
 an existing value, and the patched copy precedes the packaged one on the classpath. Values that are
 hard-coded in Java (for example the `1.5 x coastal_plain` shore reservation) need a reviewed move
 into their definition before they can be swept.
 
-Outputs live under `.local/terrain-atlas/{renders,compare,seeds,sweeps,sections}/`:
+Outputs live under `.local/terrain-atlas/{renders,compare,seeds,sweeps,sections,history}/`:
 
 | File | Shows |
 | --- | --- |
