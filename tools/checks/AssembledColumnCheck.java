@@ -27,7 +27,10 @@ import java.util.TreeMap;
  * band; carved space holds lava only at or below the lava horizon and water or ice only in an
  * aquifer's band under its level, a cave pool or a flood cell's band. Native chunk columns store
  * exactly the assembled columns (every cube, block and role), and a cache filled in reverse order
- * returns identical columns, ores and unstable floors included.
+ * returns identical columns, ores and unstable floors included. A chunk column on the chunk's
+ * border (and every 13th) equals the same column assembled alone, its ground's form read afresh
+ * from the height-only surface (TerrainMap.sampleSurface), which equals the full sample's
+ * height, ground and water.
  */
 public final class AssembledColumnCheck {
     private static void require(boolean value, String message) {
@@ -53,6 +56,9 @@ public final class AssembledColumnCheck {
         {"lava-river"},
         {"geode"}
     };
+
+    /** Chunk columns compared with the same column resolved alone. */
+    private static final long[] ALONE = {0};
 
     /** Carved blocks per sub-zone over every carved chunk column. */
     private static final TreeMap<String, Long> CARVED = new TreeMap<>();
@@ -125,6 +131,56 @@ public final class AssembledColumnCheck {
         }
     }
 
+    /**
+     * The preview's kept rows (PreviewRows) against fresh samples: the first {@code rows} rows of
+     * the aligned 64-cell tile of cells {@code width} wide around (x, z), walked as the preview
+     * walks them, assemble exactly as each cell sampled on its own. Returns the cells compared.
+     */
+    private static int preview(GenerationMaps maps, int x, int z, int width, int rows) {
+        GroundForm form = maps.columns.form();
+        Assembler<TerrainMap.Sample> crust = maps.columns.assembler();
+        int tile = 64 * width;
+        int x0 = Math.floorDiv(x, tile) * tile, z0 = Math.floorDiv(z, tile) * tile;
+        int[][] fresh = new int[rows * 64][];
+        TerrainMap.Sample plain = new TerrainMap.Sample();
+        AssembledColumn c = new AssembledColumn();
+        form.forget();
+        int was = form.spacing(width);
+        try {
+            for (int j = 0; j < rows; j++)
+                for (int i = 0; i < 64; i++) {
+                    maps.terrain.sample(
+                            x0 + i * width + width / 2, z0 + j * width + width / 2, plain);
+                    fresh[j * 64 + i] = snapshot(crust.assemble(plain, c));
+                }
+        } finally {
+            form.spacing(was);
+        }
+        form.forget();
+        PreviewRows kept = new PreviewRows(maps.terrain, form);
+        for (int j = 0; j < rows; j++)
+            for (int i = 0; i < 64; i++) {
+                int wx = x0 + i * width + width / 2, wz = z0 + j * width + width / 2;
+                try {
+                    crust.assemble(kept.begin(wx, wz, width), c);
+                } finally {
+                    kept.end();
+                }
+                require(
+                        Arrays.equals(fresh[j * 64 + i], snapshot(c)),
+                        "Preview cell from kept rows differs at "
+                                + wx
+                                + ","
+                                + wz
+                                + " width "
+                                + width);
+            }
+        require(
+                kept.kept() > 0,
+                "Preview rows kept no cell at " + x0 + "," + z0 + " width " + width);
+        return rows * 64;
+    }
+
     /** A column's runs as one comparable array. */
     private static int[] snapshot(AssembledColumn c) {
         int[] out = new int[3 * c.count() + 2];
@@ -173,8 +229,15 @@ public final class AssembledColumnCheck {
             Role role = c.runRole(i);
             if (!role.soil()) continue;
             require(row >= 0, "Soil without a floor at " + where);
+            int field = table.depth(row, SettingTable.SOIL);
+            if (field == SettingTable.FIELD) {
+                field = c.field();
+                require(
+                        field >= 0 && field <= table.fieldMaximum(),
+                        "Field soil depth " + field + " out of range at " + where);
+            }
             int top = table.depth(row, SettingTable.TOP),
-                    soil = top + table.depth(row, SettingTable.SOIL),
+                    soil = top + field,
                     subsoil = soil + table.depth(under, SettingTable.SUBSOIL);
             int lo = role == Role.TOP ? 0 : role == Role.SOIL ? top : soil,
                     hi = role == Role.TOP ? top : role == Role.SOIL ? soil : subsoil;
@@ -190,7 +253,7 @@ public final class AssembledColumnCheck {
         for (int i = 0; i < args.length; i++) seeds[i] = Long.parseLong(args[i]);
         TerrainHeightReference h = TerrainHeightReference.DEFAULT;
         TreeMap<String, Integer> coverage = new TreeMap<>(), settings = new TreeMap<>();
-        long columns = 0, chunkColumns = 0, runs = 0;
+        long columns = 0, chunkColumns = 0, previewCells = 0, runs = 0;
         int maximumRuns = 0, materialDepth = 0;
         AssembledColumn reused = new AssembledColumn();
         for (long seed : seeds) {
@@ -259,18 +322,32 @@ public final class AssembledColumnCheck {
                     }
             }
             chunkColumns += chunks(maps, h, seed, table);
+            for (CoastForms.View v : terrain.rocky.placed(-4096, -4096, 4096, 4096)) {
+                previewCells +=
+                        preview(maps, (int) Math.floor(v.cx), (int) Math.floor(v.cz), 1, 16);
+                previewCells +=
+                        preview(maps, (int) Math.floor(v.cx), (int) Math.floor(v.cz), 4, 64);
+                break;
+            }
         }
         System.out.println(
                 "PASS native chunk columns: carved columns well formed, families from their"
                         + " sub-zone's forms, roof band held but at entrances, fills by"
                         + " precedence; stored cubes, blocks and roles = assembled, cold = reused ="
-                        + " reverse order (ores and unstable floors too); chunkColumns="
+                        + " reverse order (ores and unstable floors too), chunk = alone (ground"
+                        + " form read afresh) on borders and every 13th column, preview rows kept"
+                        + " ahead = sampled afresh; chunkColumns="
                         + chunkColumns
+                        + " alone="
+                        + ALONE[0]
+                        + " previewCells="
+                        + previewCells
                         + " carved by sub-zone="
                         + CARVED);
         System.out.println(
                 "PASS assembled columns: cover the crust, at = runs, roles legal per pass, soil"
-                        + " only in its layer; materialDepth="
+                        + " only in its layer (field depths in range), height-only surface ="
+                        + " full sample; materialDepth="
                         + materialDepth
                         + " columns="
                         + columns
@@ -302,6 +379,16 @@ public final class AssembledColumnCheck {
             TreeMap<String, Integer> settings) {
         AssembledColumn c = crust.assemble(s, reused);
         wellFormed(c, h, table, where);
+        if (columns % 7 == 0) {
+            // The height-only surface the ground's form asks of neighbours is the full sample's.
+            TerrainMap.Sample surface = new TerrainMap.Sample();
+            maps.terrain.sampleSurface(s.x, s.z, surface);
+            require(
+                    surface.height == s.height
+                            && surface.blockY() == s.blockY()
+                            && surface.waterY() == s.waterY(),
+                    "Height-only surface differs from the full sample at " + where);
+        }
         if (columns % 61 == 0)
             require(
                     Arrays.equals(snapshot(c), snapshot(crust.assemble(s, new AssembledColumn()))),
@@ -345,6 +432,15 @@ public final class AssembledColumnCheck {
                 maps.terrain.sample(x, z, s);
                 Arrays.fill(families, (byte) 0);
                 maps.terrain.caves.carve(x, z, s, families);
+                // Border columns, and every 13th, are assembled as if alone: the ground's form
+                // reads every neighbour afresh from the height-only surface, never from the
+                // chunk build's lookahead, and the stored column must be the same.
+                int ix = index & 15, iz = index >> 4;
+                boolean alone = ix == 0 || ix == 15 || iz == 0 || iz == 15 || index % 13 == 0;
+                if (alone) {
+                    maps.columns.form().forget();
+                    ALONE[0]++;
+                }
                 AssembledColumn c = crust.assemble(s, reused);
                 String where = x + "," + z + " seed " + seed + " carved";
                 wellFormed(c, h, table, where);

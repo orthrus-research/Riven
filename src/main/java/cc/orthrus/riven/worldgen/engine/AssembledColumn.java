@@ -38,7 +38,7 @@ public final class AssembledColumn {
     Zone.Cavity cavity;
     int zoneBottom, zoneTop;
     private byte zone;
-    private int setting = -1, subsoilSetting = -1;
+    private int setting = -1, subsoilSetting = -1, field = -1;
 
     // Cave pools the shaper names: [poolLo, poolHi), frozen or not.
     private int pools;
@@ -142,6 +142,11 @@ public final class AssembledColumn {
         return subsoilSetting;
     }
 
+    /** The depth the floor's setting laid a field layer at (its soil), or -1 if it laid none. */
+    public int field() {
+        return field;
+    }
+
     /** Whether the column states a flag ({@link Flags}). */
     public boolean flag(int flag) {
         return (flags & (1 << flag)) != 0;
@@ -158,7 +163,7 @@ public final class AssembledColumn {
         this.cavity = cavity;
         zoneBottom = bottom;
         zoneTop = top;
-        setting = subsoilSetting = -1;
+        setting = subsoilSetting = field = -1;
         shaped = 1;
         shapedBottoms[0] = bottom;
         shapedBottoms[1] = top;
@@ -179,6 +184,10 @@ public final class AssembledColumn {
         poolLo[pools] = bottom;
         poolHi[pools] = top;
         poolFrozen[pools++] = frozen;
+    }
+
+    void field(int depth) {
+        field = depth;
     }
 
     void settings(int setting, int subsoilSetting) {

@@ -6,11 +6,14 @@ import com.google.gson.JsonObject;
 
 /**
  * The crust's setting classifier: which settings hold at the sky's floor, from facts the terrain
- * sample holds at its own column, with thresholds from riven-surface.json. The crust's setting
- * table (riven-surface.json tables.crust) orders them; each condition here stands on its own.
+ * sample holds at its own column and the ground's form around it (GroundForm), with thresholds
+ * from riven-surface.json and riven-surface-rules.json form. The crust's setting table
+ * (riven-surface.json tables.crust) orders them; each condition here stands on its own.
  */
 final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
     private final SurfaceRules rules;
+    private final GroundForm form;
+    private final GroundForm.Definition shape = GroundForm.definition();
     private final double shallowFrom, bar, green, reflective, cover, rough, steep, snowline, sea;
     private final double clayWavelength, clayThreshold;
     private final SeededNoise clay;
@@ -20,8 +23,10 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
     private final double siltCelsius, sandyMoisture, sandyCelsius, loamMoisture;
     private final double wetlandMud, mouthMud, mouthMudCelsius, redSandCelsius;
 
-    CrustSettings(JsonObject t, SurfaceRules rules, TerrainHeightReference heights) {
+    CrustSettings(
+            JsonObject t, SurfaceRules rules, GroundForm form, TerrainHeightReference heights) {
         this.rules = rules;
+        this.form = form;
         TerrainHeightReference.Feature shoal =
                 heights.feature(t.get("shallowFromReference").getAsString());
         if (shoal.elevationOffset == null)
@@ -92,14 +97,6 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
         // A volume's floor is the ground before it, with that ground's own cover policy.
         boolean bare =
                 volume ? rules.bareStoneBeforeRocky(s) : !s.ocean.marine && rules.bareStone(s);
-        if (bare) h |= Settings.bit(Settings.BARE_STONE);
-        // Above the snowline, the climate cooled to the floor's own height: snow over rock where
-        // the ground is bare, and snow over soil elsewhere.
-        boolean snowline =
-                !s.ocean.marine
-                        && s.waterY() <= floor
-                        && ClimateMap.celsiusAt(s.climate, floor - sea) < this.snowline;
-        if (snowline && bare) h |= Settings.bit(Settings.SNOWCAP);
         if (s.shore.sandy)
             h |=
                     Settings.bit(
@@ -112,14 +109,84 @@ final class CrustSettings implements Settings.Classifier<TerrainMap.Sample> {
         ClimateRegion region = s.climate.region;
         if (region != null && region.surface == ClimateRegion.Surface.SAND)
             h |= Settings.bit(Settings.CLIMATE_SAND);
-        if (snowline || region != null && region.surface == ClimateRegion.Surface.SNOW)
-            h |= Settings.bit(Settings.SNOW);
+        // Materials follow form on dry, soil-mantled land: a step's top lies on rock, a rock face
+        // (a steady steep slope, its edges dithered) or soil too thin to hold shows rock, and rock
+        // that weathers to grus shows gravel.
+        // Laid deposits, coast forms and sand keep their own material.
+        boolean dry = !s.ocean.marine && s.waterY() <= floor;
+        boolean frozen = region != null && region.surface == ClimateRegion.Surface.SNOW;
+        double celsius = ClimateMap.celsiusAt(s.climate, floor - sea);
+        boolean step = false, sloped = false;
+        double north = 0;
+        if (dry && !volume && (h & EARLIER) == 0) {
+            GroundForm.Facts f = form.facts(s);
+            north = f.north;
+            boolean sand = (h & SAND) != 0;
+            // Where it would be snowy, ground too steep to hold snow sheds it: a rock face from the
+            // shedding slope instead of the face slope, dithered the same way.
+            boolean cold = frozen || celsius < snowline(north);
+            boolean shed =
+                    cold
+                            && f.drop >= shape.faceFall
+                            && f.gradient >= shape.shedSlope * (1 + shape.ditherShare * f.dither);
+            if (!sand && (f.face || shed)) {
+                h |= Settings.bit(Settings.ROCK_FACE);
+                sloped = true;
+            }
+            step = !sand && f.drop >= shape.thinSlope;
+            if (!sand && f.soil < shape.bareBelow * (1 + shape.ditherShare * f.dither)) bare = true;
+            if (!sand && f.grus && f.soil < shape.grusBelow) h |= Settings.bit(Settings.GRUS);
+        }
+        if (bare) h |= Settings.bit(Settings.BARE_STONE);
+        // Above the snowline, the climate cooled to the floor's own height: snow over rock where
+        // the ground is bare or a step, none on a rock face, and snow over soil elsewhere. Ground
+        // facing north holds snow in a warmer climate.
+        boolean snowline = dry && !sloped && celsius < snowline(north);
+        if (snowline && (bare || step)) h |= Settings.bit(Settings.SNOWCAP);
+        if (snowline || frozen) h |= Settings.bit(Settings.SNOW);
         double slope = Rules.hypot(s.broadDx, s.broadDz);
         if (slope > steep) h |= Settings.bit(Settings.STEEP);
         if (slope > rough) h |= Settings.bit(Settings.ROUGH);
-        if (!s.ocean.marine && s.waterY() <= floor) h |= soils(s, floor, slope, h);
+        if (dry) h |= soils(s, floor, slope, h);
         return h;
     }
+
+    /** The temperature below which ground holding this northward rise is snowy. */
+    private double snowline(double north) {
+        return snowline + shape.northCelsius * Rules.smooth(north / shape.northFullSlope);
+    }
+
+    /** Settings whose rows lay their own material ahead of anything the ground's form decides. */
+    private static final long EARLIER =
+            Settings.bit(Settings.SEDIMENT)
+                    | Settings.bit(Settings.ROCKY)
+                    | Settings.bit(Settings.MUD)
+                    | Settings.bit(Settings.BAR_SAND)
+                    | Settings.bit(Settings.BAR_GRAVEL)
+                    | Settings.bit(Settings.GREEN);
+
+    /** Sand covers whose rows keep their sand on any slope. */
+    private static final long SAND =
+            Settings.bit(Settings.SHORE_REFLECTIVE)
+                    | Settings.bit(Settings.SHORE_SANDY)
+                    | Settings.bit(Settings.DRYLAND_PAVEMENT)
+                    | Settings.bit(Settings.DRYLAND_SAND)
+                    | Settings.bit(Settings.CLIMATE_SAND);
+
+    /**
+     * The soil under a dry floor's top, in blocks: none on a step (its top lies on rock), else the
+     * ground's soil depth less its top. Elsewhere (a coast form's floor) the field's usual depth.
+     */
+    @Override
+    public int field(TerrainMap.Sample s, int floor) {
+        if (s.ocean.marine || s.waterY() > floor || s.rocky.hasVolume()) return USUAL_SOIL;
+        GroundForm.Facts f = form.facts(s);
+        if (f.drop >= shape.thinSlope) return 0;
+        return (int) Math.max(0, Math.min(shape.soilLayersMaximum, Math.round(f.soil) - 1));
+    }
+
+    /** The soil layer the crust laid before soil depth (terrain-v146). */
+    private static final int USUAL_SOIL = 2;
 
     /**
      * The soils that hold on a dry land floor, from the climate at the floor's own height: peat on

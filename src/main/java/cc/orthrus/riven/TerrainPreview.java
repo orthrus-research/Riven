@@ -1,6 +1,7 @@
 package cc.orthrus.riven;
 
 import cc.orthrus.riven.worldgen.BuildPool;
+import cc.orthrus.riven.worldgen.PreviewRows;
 import cc.orthrus.riven.worldgen.RegionalIdentity;
 import cc.orthrus.riven.worldgen.Rules;
 import cc.orthrus.riven.worldgen.TerrainHeightReference;
@@ -41,6 +42,12 @@ final class TerrainPreview implements ICubicTerrainPreview {
     private final GroundCover cover;
 
     /**
+     * Each preview thread's kept cells (PreviewRows): one row and two cells of samples, about 2 MB.
+     * A thread's, not a sampler's: the host makes a sampler per tile.
+     */
+    private final ThreadLocal<PreviewRows> rows;
+
+    /**
      * Whether this preview's regional builds may be split over its maps' build pool. Only a
      * preview a client built for itself from its server's offer, and only where its host gave it
      * a pool: nothing else generates on those maps, so no other build waits for the helpers. The
@@ -73,6 +80,9 @@ final class TerrainPreview implements ICubicTerrainPreview {
             boolean buildsPooled) {
         this.buildsPooled = buildsPooled;
         this.biomes = biomes;
+        rows =
+                ThreadLocal.withInitial(
+                        () -> new PreviewRows(biomes.maps.terrain, biomes.maps.columns.form()));
         this.trees = trees;
         this.cover = cover;
         identity = identity(seed, scale, snapshot);
@@ -141,8 +151,7 @@ final class TerrainPreview implements ICubicTerrainPreview {
 
     @Override
     public Sampler createTerrainPreviewSampler() {
-        // The maps are immutable. Only this sampler's scratch sample and buffers are mutable.
-        TerrainMap.Sample sample = new TerrainMap.Sample();
+        // The maps are immutable. Only this sampler's buffers and its thread's rows are mutable.
         TerrainColumn.Scratch scratch = new TerrainColumn.Scratch();
         return new Sampler() {
             @Override
@@ -164,8 +173,12 @@ final class TerrainPreview implements ICubicTerrainPreview {
                 // (BuildPool.alone); a client's own may use its pool and leave the mark as it is.
                 boolean alone = !buildsPooled;
                 boolean was = alone && BuildPool.alone(true);
+                // A fine cell's materials read its one-block neighbours, as native cubes do; a
+                // coarser cell reads its neighbouring cells, at its own width. The cells ahead are
+                // sampled once, in full, and kept until the walk reaches them.
+                PreviewRows rows = TerrainPreview.this.rows.get();
                 try {
-                    biomes.maps.terrain.sample(x, z, sample);
+                    TerrainMap.Sample sample = rows.begin(x, z, Math.max(1, footprint));
                     TerrainColumn.preview(
                             sample,
                             biomes.biome(sample, x, z),
@@ -180,6 +193,7 @@ final class TerrainPreview implements ICubicTerrainPreview {
                             scratch,
                             consumer);
                 } finally {
+                    rows.end();
                     if (alone) BuildPool.alone(was);
                 }
             }

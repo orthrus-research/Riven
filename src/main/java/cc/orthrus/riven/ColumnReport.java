@@ -420,8 +420,12 @@ final class ColumnReport {
                 row < 0
                         ? 0
                         : table.depth(row, cc.orthrus.riven.worldgen.engine.SettingTable.TOP)
-                                + table.depth(
-                                        row, cc.orthrus.riven.worldgen.engine.SettingTable.SOIL);
+                                + (assembled.field() >= 0
+                                        ? assembled.field()
+                                        : table.depth(
+                                                row,
+                                                cc.orthrus.riven.worldgen.engine.SettingTable
+                                                        .SOIL));
         sender.sendMessage(
                 new TextComponentString(
                         String.format(

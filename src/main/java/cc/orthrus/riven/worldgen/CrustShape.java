@@ -20,9 +20,12 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
         void publish(int horizon, int y);
     }
 
-    /** The crust's assembler over packaged definitions, with these surface rules and heights. */
+    /**
+     * The crust's assembler over packaged definitions, with these surface rules, the ground's form
+     * and heights.
+     */
     static Assembler<TerrainMap.Sample> assembler(
-            SurfaceRules rules, TerrainHeightReference heights) {
+            SurfaceRules rules, GroundForm form, TerrainHeightReference heights) {
         Assembly assembly = Assembly.packaged();
         return new Assembler<>(
                 assembly,
@@ -32,7 +35,7 @@ final class CrustShape implements Assembler.Shaper<TerrainMap.Sample> {
                 heights.minimumY,
                 heights.worldMinimumY,
                 new CrustShape(),
-                new CrustSettings(assembly.thresholds("crust"), rules, heights),
+                new CrustSettings(assembly.thresholds("crust"), rules, form, heights),
                 new CrustStrata());
     }
 

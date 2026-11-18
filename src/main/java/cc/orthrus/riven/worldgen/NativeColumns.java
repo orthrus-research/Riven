@@ -255,6 +255,7 @@ public final class NativeColumns {
 
     private final TerrainMap terrain;
     private final Assembler<TerrainMap.Sample> crust;
+    private final GroundForm form;
     private final TerrainHeightReference heights;
     private final int sets, ways;
     private final AtomicReferenceArray<Entry> memo;
@@ -263,7 +264,8 @@ public final class NativeColumns {
 
     NativeColumns(TerrainMap terrain, SurfaceRules rules, TerrainHeightReference heights) {
         this.terrain = terrain;
-        crust = CrustShape.assembler(rules, heights);
+        form = new GroundForm(terrain, heights);
+        crust = CrustShape.assembler(rules, form, heights);
         this.heights = heights;
         JsonObject j = Terrain.nativeColumnCache();
         sets = integer(j, "sets", 16, 4096);
@@ -277,6 +279,11 @@ public final class NativeColumns {
     /** The crust's column assembler every native and preview column is built with. */
     public Assembler<TerrainMap.Sample> assembler() {
         return crust;
+    }
+
+    /** The ground's form every native and preview column's materials read (GroundForm). */
+    public GroundForm form() {
+        return form;
     }
 
     private static int integer(JsonObject j, String key, int min, int max) {
@@ -522,7 +529,16 @@ public final class NativeColumns {
         byte[] roles = new byte[bottoms.length];
         String[] keys = new String[256];
         AssembledColumn assembled = new AssembledColumn();
-        TerrainMap.Sample sample = new TerrainMap.Sample();
+        // A column's materials read its neighbours' surfaces (GroundForm), so each column is
+        // sampled, and its surface recorded, a row and a column ahead of its assembly. The halo
+        // around the chunk is answered by the same pure function a column resolved alone asks.
+        Lookahead ahead = lookahead.get();
+        boolean own = !ahead.busy;
+        if (own) ahead.busy = true;
+        TerrainMap.Sample[] ring = own ? ahead.ring : Lookahead.ring();
+        for (int index = 0; index < Lookahead.LAG; index++)
+            sampleAhead(chunkX, chunkZ, index, ring);
+        TerrainMap.Sample sample;
         OreMap.Bodies bodies = new OreMap.Bodies();
         int[] oreOffsets = new int[257],
                 oreLo = new int[256 * OreMap.maximumBodies()],
@@ -546,86 +562,93 @@ public final class NativeColumns {
                 (horizon, y) -> {
                     if (y != Horizons.ABSENT) rawTop[0] = Math.max(rawTop[0], (long) y + 1);
                 };
-        for (int z = 0; z < 16; z++)
-            for (int x = 0; x < 16; x++) {
-                int index = (z << 4) | x;
-                terrain.sample(chunkX * 16 + x, chunkZ * 16 + z, sample);
-                minimumRawBlockY = Math.min(minimumRawBlockY, sample.blockY());
-                rawTop[0] = (long) sample.blockY() + 1;
-                // Raw tree ground includes rocky volumes and cavity fills. Read their existing
-                // endpoints before full cave carving, without assembling a second column.
-                CrustShape.horizons(sample, rawBounds);
-                for (int i = 0; i < sample.rocky.runs(); i++)
-                    if (sample.rocky.edit(i) == Edit.SOLID)
-                        rawTop[0] = Math.max(rawTop[0], sample.rocky.top(i));
-                maximumRawTop = Math.max(maximumRawTop, rawTop[0]);
-                terrain.caves.carve(chunkX * 16 + x, chunkZ * 16 + z, sample);
-                terrain.ores.bodies(chunkX * 16 + x, chunkZ * 16 + z, sample, bodies);
-                AssembledColumn c = crust.assemble(sample, assembled);
-                // Ore replaces the bed's own rock only, never the cover its setting lays.
-                int bedrock = bedrockTop(c);
-                oreOffsets[index] = ores;
-                for (int i = 0; i < bodies.count(); i++) {
-                    int hi = Math.min(bodies.hi(i), bedrock);
-                    if (bodies.lo(i) >= hi) continue;
-                    oreLo[ores] = bodies.lo(i);
-                    oreHi[ores] = hi;
-                    oreDeposits[ores++] = (short) bodies.deposit(i);
-                }
-                CaveMap.Voids voids = sample.caves;
-                unstableOffsets[index] = unstables;
-                for (int i = 0; i < voids.unstables(); i++) {
-                    if (unstables == unstableLo.length) {
-                        unstableLo = java.util.Arrays.copyOf(unstableLo, 2 * unstables);
-                        unstableHi = java.util.Arrays.copyOf(unstableHi, 2 * unstables);
+        try {
+            for (int z = 0; z < 16; z++)
+                for (int x = 0; x < 16; x++) {
+                    int index = (z << 4) | x;
+                    if (index + Lookahead.LAG < 256)
+                        sampleAhead(chunkX, chunkZ, index + Lookahead.LAG, ring);
+                    sample = ring[index % Lookahead.SIZE];
+                    minimumRawBlockY = Math.min(minimumRawBlockY, sample.blockY());
+                    rawTop[0] = (long) sample.blockY() + 1;
+                    // Raw tree ground includes rocky volumes and cavity fills. Read their existing
+                    // endpoints before full cave carving, without assembling a second column.
+                    CrustShape.horizons(sample, rawBounds);
+                    for (int i = 0; i < sample.rocky.runs(); i++)
+                        if (sample.rocky.edit(i) == Edit.SOLID)
+                            rawTop[0] = Math.max(rawTop[0], sample.rocky.top(i));
+                    maximumRawTop = Math.max(maximumRawTop, rawTop[0]);
+                    terrain.caves.carve(chunkX * 16 + x, chunkZ * 16 + z, sample);
+                    terrain.ores.bodies(chunkX * 16 + x, chunkZ * 16 + z, sample, bodies);
+                    AssembledColumn c = crust.assemble(sample, assembled);
+                    // Ore replaces the bed's own rock only, never the cover its setting lays.
+                    int bedrock = bedrockTop(c);
+                    oreOffsets[index] = ores;
+                    for (int i = 0; i < bodies.count(); i++) {
+                        int hi = Math.min(bodies.hi(i), bedrock);
+                        if (bodies.lo(i) >= hi) continue;
+                        oreLo[ores] = bodies.lo(i);
+                        oreHi[ores] = hi;
+                        oreDeposits[ores++] = (short) bodies.deposit(i);
                     }
-                    unstableLo[unstables] = voids.unstableLo(i);
-                    unstableHi[unstables++] = voids.unstableHi(i);
-                }
-                int count = c.count();
-                if (n + count + 1 > bottoms.length) {
-                    int grown = Math.max(2 * bottoms.length, n + count + 1);
-                    bottoms = java.util.Arrays.copyOf(bottoms, grown);
-                    blocks = java.util.Arrays.copyOf(blocks, grown);
-                    roles = java.util.Arrays.copyOf(roles, grown);
-                }
-                offsets[index] = n;
-                TerrainBlock groundKind = TerrainBlock.AIR;
-                for (int i = 0; i < count; i++) {
-                    bottoms[n] = c.bottom(i);
-                    roles[n] = c.runRole(i).code();
-                    TerrainBlock block = c.runBlock(i);
-                    blocks[n++] = block;
-                    if (block != TerrainBlock.AIR) maximumTop = Math.max(maximumTop, c.top(i));
-                    if (block != TerrainBlock.AIR && !block.water() && block != TerrainBlock.LAVA)
-                        groundKind = block;
-                }
-                groundKindSeen[groundKind.index()] = true;
-                // The allocation top closes the column; it is never read as a run block.
-                bottoms[n] = c.topY();
-                roles[n] = Role.AIR.code();
-                blocks[n++] = TerrainBlock.AIR;
-                keys[index] = Habitats.key(sample);
-                int ground = ground(c);
-                minimumGround = Math.min(minimumGround, ground);
-                // Cell columns read their centre column (x and z of 2 within the cell).
-                if ((x & 3) == 2 && (z & 3) == 2) {
-                    cellOffsets[(z >> 2) * 4 + (x >> 2)] = cells;
-                    // Runs start where the code changes; before the first run it is 0.
-                    int previous = 0;
-                    for (int bottom = heights.minimumY; bottom < ground; bottom += 4) {
-                        int centre = bottom + 2,
-                                code =
-                                        ground - centre >= RealmMap.surfaceBand()
-                                                ? RealmMap.depth(centre, sample).index + 1
-                                                : 0;
-                        if (code == previous) continue;
-                        cellBottoms[cells] = bottom;
-                        cellDepths[cells++] = (byte) code;
-                        previous = code;
+                    CaveMap.Voids voids = sample.caves;
+                    unstableOffsets[index] = unstables;
+                    for (int i = 0; i < voids.unstables(); i++) {
+                        if (unstables == unstableLo.length) {
+                            unstableLo = java.util.Arrays.copyOf(unstableLo, 2 * unstables);
+                            unstableHi = java.util.Arrays.copyOf(unstableHi, 2 * unstables);
+                        }
+                        unstableLo[unstables] = voids.unstableLo(i);
+                        unstableHi[unstables++] = voids.unstableHi(i);
+                    }
+                    int count = c.count();
+                    if (n + count + 1 > bottoms.length) {
+                        int grown = Math.max(2 * bottoms.length, n + count + 1);
+                        bottoms = java.util.Arrays.copyOf(bottoms, grown);
+                        blocks = java.util.Arrays.copyOf(blocks, grown);
+                        roles = java.util.Arrays.copyOf(roles, grown);
+                    }
+                    offsets[index] = n;
+                    TerrainBlock groundKind = TerrainBlock.AIR;
+                    for (int i = 0; i < count; i++) {
+                        bottoms[n] = c.bottom(i);
+                        roles[n] = c.runRole(i).code();
+                        TerrainBlock block = c.runBlock(i);
+                        blocks[n++] = block;
+                        if (block != TerrainBlock.AIR) maximumTop = Math.max(maximumTop, c.top(i));
+                        if (block != TerrainBlock.AIR
+                                && !block.water()
+                                && block != TerrainBlock.LAVA) groundKind = block;
+                    }
+                    groundKindSeen[groundKind.index()] = true;
+                    // The allocation top closes the column; it is never read as a run block.
+                    bottoms[n] = c.topY();
+                    roles[n] = Role.AIR.code();
+                    blocks[n++] = TerrainBlock.AIR;
+                    keys[index] = Habitats.key(sample);
+                    int ground = ground(c);
+                    minimumGround = Math.min(minimumGround, ground);
+                    // Cell columns read their centre column (x and z of 2 within the cell).
+                    if ((x & 3) == 2 && (z & 3) == 2) {
+                        cellOffsets[(z >> 2) * 4 + (x >> 2)] = cells;
+                        // Runs start where the code changes; before the first run it is 0.
+                        int previous = 0;
+                        for (int bottom = heights.minimumY; bottom < ground; bottom += 4) {
+                            int centre = bottom + 2,
+                                    code =
+                                            ground - centre >= RealmMap.surfaceBand()
+                                                    ? RealmMap.depth(centre, sample).index + 1
+                                                    : 0;
+                            if (code == previous) continue;
+                            cellBottoms[cells] = bottom;
+                            cellDepths[cells++] = (byte) code;
+                            previous = code;
+                        }
                     }
                 }
-            }
+        } finally {
+            if (own) ahead.busy = false;
+        }
         offsets[256] = n;
         oreOffsets[256] = ores;
         cellOffsets[16] = cells;
@@ -654,6 +677,32 @@ public final class NativeColumns {
                 minimumRawBlockY,
                 maximumRawTop,
                 List.copyOf(groundKinds));
+    }
+
+    /**
+     * A thread's ring of samples for {@link #build}'s lookahead: a column is assembled once the
+     * column below and right of it (LAG columns on, in row order) is sampled, so a ring of SIZE
+     * samples holds every column between.
+     */
+    private static final class Lookahead {
+        static final int LAG = 17, SIZE = LAG + 1;
+        final TerrainMap.Sample[] ring = ring();
+        boolean busy;
+
+        static TerrainMap.Sample[] ring() {
+            TerrainMap.Sample[] ring = new TerrainMap.Sample[SIZE];
+            for (int i = 0; i < SIZE; i++) ring[i] = new TerrainMap.Sample();
+            return ring;
+        }
+    }
+
+    private final ThreadLocal<Lookahead> lookahead = ThreadLocal.withInitial(Lookahead::new);
+
+    /** Samples a chunk's column by index into its ring slot and records its surface. */
+    private void sampleAhead(int chunkX, int chunkZ, int index, TerrainMap.Sample[] ring) {
+        TerrainMap.Sample s = ring[index % Lookahead.SIZE];
+        terrain.sample(chunkX * 16 + (index & 15), chunkZ * 16 + (index >> 4), s);
+        form.record(s);
     }
 
     /** Fixed-frame horizons matter only when the loaded cavity actually references them. */

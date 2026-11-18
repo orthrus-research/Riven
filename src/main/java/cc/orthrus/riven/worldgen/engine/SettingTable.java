@@ -10,7 +10,8 @@ import java.util.Map;
 /**
  * One cavity's setting table (riven-surface.json tables): rows tried in order, each naming a
  * setting and the entries for its three layers counted down from the cavity floor: top, soil and
- * subsoil, with their depths. A layer may be "bed" (the zone's rock shows there). A row without a
+ * subsoil, with their depths. A layer may be "bed" (the zone's rock shows there), and a soil
+ * layer's depth may be "field": the classifier's per column, at most the table's fieldMaximum. A row without a
  * subsoil takes the subsoil of the next row that holds and names one, so a cover laid over the
  * ground (a bar, green margins, pavement, beach sand) keeps the ground's subsoil. The last row
  * must be {@code default}, which always holds and names every layer.
@@ -24,6 +25,9 @@ public final class SettingTable {
     /** A subsoil the row takes from the next holding row that names one. */
     static final short INHERIT = -2;
 
+    /** A layer depth the classifier gives per column ({@code "field"}): the ground's soil. */
+    public static final int FIELD = -1;
+
     private static final String[] LAYER_NAMES = {"top", "soil", "subsoil"};
     private static final Role[] LAYER_ROLES = {Role.TOP, Role.SOIL, Role.SUBSOIL};
 
@@ -31,10 +35,18 @@ public final class SettingTable {
     private final int[] settings;
     private final short[] entries;
     private final int[] depths;
-    private final int deepest;
+    private final int deepest, fieldMaximum;
 
     SettingTable(String id, JsonObject json) {
         this.id = id;
+        for (Map.Entry<String, JsonElement> e : json.entrySet())
+            if (!e.getKey().equals("depths")
+                    && !e.getKey().equals("rows")
+                    && !e.getKey().equals("fieldMaximum"))
+                throw new IllegalStateException(id + ": unknown table key " + e.getKey());
+        fieldMaximum = json.has("fieldMaximum") ? json.get("fieldMaximum").getAsInt() : 0;
+        if (fieldMaximum < 0 || fieldMaximum > 64)
+            throw new IllegalStateException(id + ": fieldMaximum range");
         int[] defaults = depths(json.getAsJsonObject("depths"), null, id);
         int rows = json.getAsJsonArray("rows").size();
         settings = new int[rows];
@@ -75,7 +87,9 @@ public final class SettingTable {
                 else value = (short) TerrainBlock.of(entry.getAsString()).index();
                 entries[r * LAYERS + layer] = value;
                 depths[r * LAYERS + layer] = d[layer];
-                total += d[layer];
+                if (d[layer] == FIELD && json.get("fieldMaximum") == null)
+                    throw new IllegalStateException(id + ": a field depth needs fieldMaximum");
+                total += d[layer] == FIELD ? fieldMaximum : d[layer];
             }
             deepest = Math.max(deepest, total);
         }
@@ -98,6 +112,13 @@ public final class SettingTable {
                 if (defaults == null)
                     throw new IllegalStateException(id + ": depths need " + LAYER_NAMES[layer]);
                 d[layer] = defaults[layer];
+                continue;
+            }
+            if (v.isJsonPrimitive() && v.getAsJsonPrimitive().isString()) {
+                if (!v.getAsString().equals("field") || layer != SOIL)
+                    throw new IllegalStateException(
+                            id + ": only the soil layer's depth may be field");
+                d[layer] = FIELD;
                 continue;
             }
             d[layer] = v.getAsInt();
@@ -142,8 +163,14 @@ public final class SettingTable {
         return entries[row * LAYERS + layer];
     }
 
+    /** A layer's depth, or {@link #FIELD} where the classifier gives it. */
     public int depth(int row, int layer) {
         return depths[row * LAYERS + layer];
+    }
+
+    /** The deepest a field depth may be. */
+    public int fieldMaximum() {
+        return fieldMaximum;
     }
 
     public static Role role(int layer) {

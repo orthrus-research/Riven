@@ -76,6 +76,13 @@ public final class Assembler<S> {
             for (int layer = 0; layer < SettingTable.LAYERS; layer++) {
                 int source = layer == SettingTable.SUBSOIL ? under : row;
                 int depth = table.depth(source, layer);
+                if (depth == SettingTable.FIELD) {
+                    depth =
+                            Math.max(
+                                    0,
+                                    Math.min(table.fieldMaximum(), settings.field(sample, floor)));
+                    out.field(depth);
+                }
                 short entry = table.entry(source, layer);
                 if (entry != SettingTable.BED)
                     out.shape.layer(y - depth, y, entry, SettingTable.role(layer));

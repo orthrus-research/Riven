@@ -1387,8 +1387,8 @@ turns the router off. `RivenClimate.at(world, pos)` gives any server-side caller
 biome at a block, for machines later; `/riven` prints them with the effects that apply.
 
 **Ground cover** (`riven-surface.json`, the column engine's crust settings): each column's ground
-takes the first of 32 settings that holds, in the crust table's order, and the table names its top
-(one block), soil (two) and subsoil (three). Sediment and a rocky shore's build-up lie over their
+takes the first of 34 settings that holds, in the crust table's order, and the table names its top
+(one block), soil (two, or the ground's soil depth on soil rows) and subsoil (three). Sediment and a rocky shore's build-up lie over their
 own deposits; a marsh's mud and its creeks' beds are three blocks of mud; marine and lagoon beds are sand down to the shoal level and gravel below; river and
 lake beds are sand, dirt, gravel or clay in patches; channel bars, mud in a wetland's core and at
 warm river mouths (above 20 C), green oasis and wetland margins,
@@ -1403,6 +1403,45 @@ loam where it is wet (from 0.6) and plain dirt between. Over `AssembledColumnChe
 loam, 1.4-2.1% podzol and 0.7-1.1% peat, and 15-16% of dryland and climate sand is red. Sand Riven places as soil
 rests on three blocks of sandstone, and covers over it (bars, green margins, pavement, beach sand)
 keep it. Rock comes from the geology (above).
+
+**Materials follow form** (`GroundForm`, `riven-surface-rules.json` form, terrain-v150): every dry
+land column reads its 8 neighbours (their ground, or the water over it) at its spacing: one block in
+native cubes and fine preview cells, a coarse preview cell's width there, so one slope threshold
+serves both. Its largest fall puts its top directly on rock from 2 blocks, so a riser shows rock
+under its top. Its slope over that 3 x 3 stencil (a Sobel gradient of the real heights, steady on
+a staircase whose single falls alternate) makes it part of a rock face, bare rock without snow
+(`rock-face`, ahead of the snowcap), where it falls at all and the slope reaches 2.5, the threshold
+moved by a fifth by a world-aligned value noise of 24 blocks (a third of it from a 7-block octave),
+so a steep face reads as one rock face with ragged edges, never a lattice. Sand covers, laid
+deposits, coast forms, bars and green margins keep their own rows. Its soil depth (blocks, counting
+the top) comes from the climate at its own height (1.4 blocks where cold or dry to 4.6 where warm
+and wet), less 1.1 per block of slope (the larger of the stencil slope and the broad slope), plus
+0.3 of its curvature on a world-aligned 16-block lattice (within 6 blocks; hollows gain, ridges
+lose), times its rock's factor (limestone 0.6, granite 0.85, basalt 1.15 and so on). Below 0.6
+blocks (dithered as the face) it is bare stone; on granite, gneiss and anorthosite below 1.6 it is
+grus (gravel over rock); the soil layer under the top is the depth less its top, rounded, 0 to 5
+blocks. Above the snowline a step or bare ground holds a snow block over rock, and ground facing
+north (rising toward +Z) is snowy up to 3 C warmer, in full from a rise of 0.6; where it would be
+snowy, ground steeper than 1.6 blocks per block (dithered as the face) sheds its snow and is a rock
+face, so a snowy staircase reads as one face, not snow on every tread. Later stages read
+the same facts (`GroundForm.facts`: fall, slope, face, dither, north, curvature, soil, grus).
+Columns read their neighbours through one pure function (`TerrainMap.sampleSurface`, the full
+sample's height and water); a chunk build samples a row and a column ahead and records each
+column's surface, and a bounded memo of 65,536 columns shared by every thread answers the halo and
+single columns. The preview walks a 64-cell tile row by row, so each thread keeps full samples of
+the cells ahead that a neighbour asked for, a row and two cells of them (`PreviewRows`, about 2 MB),
+until the walk reaches them: no cell is sampled twice and a preview cell costs what it did before
+materials read their neighbours. That retention is affordable because samples hold no continental
+scratch of their own (a thread's pool lends it per query, `ContinentalKernels.Scratch.take`), which
+took a sampled `TerrainMap.Sample` from about 400 KB to 33 KB. `AssembledColumnCheck` requires a
+chunk column on its border, and every 13th, to equal the same column assembled alone, the
+height-only surface to equal the full sample, and preview cells from kept rows to equal cells
+sampled afresh.
+`MaterialsMetrics` (visual study), seed 2485331 at 32 km over 160 land patches against v148: steps
+of 2 or more showing rock below their top rise from 65.4% to 93.1%, steps of 4 to 7 are 70% bare
+(38%) and of 8 or more 97% (61%), and bare land falls from 6.3% to 6.1%. Ground cover's `rock_skin` palette (lichen,
+moss, pebbles on stone and gravel) follows every land biome's own palettes, so their draws are
+unchanged.
 
 ## Riven content
 

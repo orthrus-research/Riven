@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Direct terrain composition. All samples are independent of loading order and neighboring worlds. */
 public final class TerrainMap {
-    public static final int VERSION = 149;
+    public static final int VERSION = 150;
     private final TerrainHeightReference heights;
     private final BaseTerrainMap baseTerrain;
     private final ErosionFilter erosion;
@@ -592,6 +592,16 @@ public final class TerrainMap {
         out.uplift = value.uplift();
         out.intentDx = value.intentDx();
         out.intentDz = value.intentDz();
+    }
+
+    /**
+     * A column's finished surface without the rock beneath it: {@link #sample} up to the water over
+     * its final ground, after every land, shore, hydrology and coast stage and the coast's
+     * deposits, so {@code out.height}, {@code out.blockY()} and {@code out.waterY()} are exactly
+     * the full sample's. What a column's neighbours ask of it (GroundForm).
+     */
+    public void sampleSurface(double x, double z, Sample out) {
+        sampleWater(x, z, out);
     }
 
     public int surfaceY(int x, int z) {

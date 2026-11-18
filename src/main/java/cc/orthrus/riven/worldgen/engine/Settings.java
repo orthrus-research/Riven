@@ -2,8 +2,10 @@ package cc.orthrus.riven.worldgen.engine;
 
 /**
  * The setting vocabulary: named conditions the engine computes per cavity floor, in Java, with
- * their thresholds in data (riven-surface.json). A setting reads facts at its own column only.
- * Each condition stands on its own; a setting table's row order decides which one a column takes.
+ * their thresholds in data (riven-surface.json, riven-surface-rules.json). A setting reads facts
+ * at its own column and, through the ground's form, a bounded set of world-aligned neighbours
+ * (a pure function of their coordinates). Each condition stands on its own; a setting table's row
+ * order decides which one a column takes.
  */
 public final class Settings {
     private static final String[] NAMES = {
@@ -38,7 +40,9 @@ public final class Settings {
         "sandy-loam",
         "loam",
         "wetland-mud",
-        "hot-sand"
+        "hot-sand",
+        "rock-face",
+        "grus"
     };
 
     public static final int SEDIMENT = 0,
@@ -72,7 +76,9 @@ public final class Settings {
             SANDY_LOAM = 28,
             LOAM = 29,
             WETLAND_MUD = 30,
-            HOT_SAND = 31;
+            HOT_SAND = 31,
+            ROCK_FACE = 32,
+            GRUS = 33;
 
     static {
         if (NAMES.length > 64) throw new IllegalStateException("Setting masks hold 64 settings");
@@ -87,6 +93,14 @@ public final class Settings {
      */
     public interface Classifier<S> {
         long holds(S sample, int floor);
+
+        /**
+         * The depth of a layer a row gives as {@code field}: the blocks of soil the column's
+         * ground holds under its top (riven-surface.json), at most the table's field maximum.
+         */
+        default int field(S sample, int floor) {
+            throw new IllegalStateException("This classifier gives no field depth");
+        }
     }
 
     public static long bit(int setting) {
