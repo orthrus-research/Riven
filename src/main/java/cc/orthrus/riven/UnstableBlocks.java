@@ -2,6 +2,7 @@ package cc.orthrus.riven;
 
 import cc.orthrus.riven.content.BlockUnstableStone;
 import cc.orthrus.riven.content.RivenContent;
+import cc.orthrus.riven.worldgen.GeologyMap;
 import cc.orthrus.riven.worldgen.NativeColumns;
 import cc.orthrus.riven.worldgen.TerrainBlock;
 
@@ -10,8 +11,9 @@ import net.minecraft.block.state.IBlockState;
 
 /**
  * Minecraft states for unstable floors ({@link NativeColumns.Column#unstable}): each host rock's
- * own unstable stone (riven-content.json unstable). Unstable stone replaces only its host rock;
- * any other block in an unstable floor stays.
+ * own unstable stone (riven-content.json unstable). Unstable stone replaces only its host rock (a
+ * bed colour or weathered face counts as its unit's rock); any other block in an unstable floor
+ * stays.
  */
 final class UnstableBlocks {
     private static volatile IBlockState[] table;
@@ -24,7 +26,7 @@ final class UnstableBlocks {
         if (!column.unstable(index, y)) return rock;
         IBlockState[] t = table;
         if (t == null) t = build();
-        IBlockState unstable = t[block.index()];
+        IBlockState unstable = t[GeologyMap.host(block).index()];
         return unstable != null ? unstable : rock;
     }
 

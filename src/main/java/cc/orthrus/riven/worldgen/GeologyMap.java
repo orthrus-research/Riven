@@ -53,6 +53,13 @@ public final class GeologyMap {
         final boolean volcanic;
         final long salt;
 
+        /**
+         * Where each bed begins, in blocks below the formation's top: beds vary about the nominal
+         * spacing by the bed variation, one fixed sequence per formation, so a bed keeps its
+         * thickness wherever it runs. Past the table, beds continue at the nominal spacing.
+         */
+        final double[] starts;
+
         Formation(JsonObject j, int index, long seed) {
             unit = unit(j.get("unit").getAsString());
             volcanic = j.has("volcanic") && j.get("volcanic").getAsBoolean();
@@ -66,6 +73,51 @@ public final class GeologyMap {
                 bed = share = 0;
             }
             salt = SeededNoise.mix(seed ^ (0x464f524d4154494fL + index * 0x9e3779b97f4a7c15L));
+            if (interbed == null) {
+                starts = new double[] {0};
+                return;
+            }
+            // Enough beds for the thickest the formation can be (scales are at most 4, plus the
+            // local variation).
+            int beds = (int) Math.ceil(thickness * 4 * 2 / (bed * (1 - BED_VARIATION))) + 2;
+            starts = new double[beds + 1];
+            for (int m = 0; m < beds; m++)
+                starts[m + 1] =
+                        starts[m]
+                                + bed
+                                        * (1
+                                                + BED_VARIATION
+                                                        * (2 * Sites.random(salt ^ BED_SALT, m)
+                                                                - 1));
+        }
+
+        /** Where bed m begins below the top. */
+        double start(long m) {
+            int n = starts.length - 1;
+            return m <= n ? starts[(int) m] : starts[n] + (m - n) * bed;
+        }
+
+        /** The bed index of block Y below a top at top (0 is the top bed; negative above it). */
+        long index(double top, long y) {
+            double d = top - y;
+            int n = starts.length - 1;
+            if (d < 0) return (long) Math.floor(d / bed);
+            if (d >= starts[n]) return n + (long) Math.floor((d - starts[n]) / bed);
+            int lo = 0, hi = n;
+            while (hi - lo > 1) {
+                int mid = (lo + hi) >>> 1;
+                if (starts[mid] <= d) lo = mid;
+                else hi = mid;
+            }
+            return lo;
+        }
+
+        /** The lowest Y whose bed index is below m: where bed m - 1 begins, counted upward. */
+        long plane(double top, long m) {
+            long y = (long) Math.floor(top - start(m)) + 1;
+            while (index(top, y - 1) < m) y--;
+            while (index(top, y) >= m) y++;
+            return y;
         }
     }
 
@@ -146,8 +198,37 @@ public final class GeologyMap {
             FEEDER_RADIUS,
             KIMBERLITE_TOP_RADIUS,
             KIMBERLITE_ROOT_RADIUS;
-    private static final int TINT_DEPTH, TINT_BAND;
-    private static final Map<ClimateRegion, Map<Unit, TerrainBlock[]>> TINTS = new HashMap<>();
+
+    /** Bed colours reach this deep below a column's top; weathering and streaks lie within it. */
+    private static final int TINT_DEPTH;
+
+    /** Per climate region, each unit's bed palette by unit index (null where it keeps its rock). */
+    private static final Map<ClimateRegion, TerrainBlock[][]> TINTS = new HashMap<>();
+
+    /** Each unit's weathered and stained states by unit index (null where it has none). */
+    private static final TerrainBlock[] WEATHERED = new TerrainBlock[64],
+            STAINED = new TerrainBlock[64];
+
+    /** Each face block (a bed colour or weathering state) and the unit rock it stands for. */
+    private static final Map<TerrainBlock, TerrainBlock> HOSTS = new HashMap<>();
+
+    private static final int RIND, STREAK_START, STREAK_TAPER_BLOCKS;
+    private static final double RIND_WAVELENGTH,
+            RIND_THRESHOLD,
+            STREAK_SHARE,
+            STREAK_TAPER,
+            STREAK_LENGTH_WAVELENGTH;
+    private static final double[] STREAK_LENGTH;
+
+    /** Salts for the streak columns and their broken ends. */
+    private static final long STREAK_SALT = 0x53545245414b5331L, TAPER_SALT = 0x5441504552454e44L;
+
+    /** Salt for a bed's pick from its unit's palette, and for its thickness. */
+    private static final long BED_SALT = 0x4245444f4c4f5552L;
+
+    /** Beds of a formation with interbeds vary by this share about their nominal spacing. */
+    private static final double BED_VARIATION =
+            Rules.number(RULES.json.getAsJsonObject("thickness"), "bedVariation", 0, 0.9);
 
     /** Upper bound on the run boundaries one column contributes. */
     public static final int MAXIMUM_BOUNDARIES;
@@ -281,22 +362,54 @@ public final class GeologyMap {
         UPPER_MIN = Rules.number(upper, "minimumScale", 0, 4);
         UPPER_MAX = Rules.number(upper, "maximumScale", UPPER_MIN, 4);
         JsonObject tint = j.getAsJsonObject("tint");
-        TINT_DEPTH = (int) Rules.number(tint, "depthBlocks", 0, 128);
-        TINT_BAND = (int) Rules.number(tint, "bandBlocks", 1, 64);
+        TINT_DEPTH = (int) Rules.number(tint, "depthBlocks", 0, 256);
         JsonObject palettes = tint.getAsJsonObject("palettes");
         for (Map.Entry<String, JsonElement> e : tint.getAsJsonObject("regions").entrySet()) {
             JsonObject palette = palettes.getAsJsonObject(e.getValue().getAsString());
             if (palette == null) throw new IllegalStateException("Tint palette " + e.getValue());
-            Map<Unit, TerrainBlock[]> byUnit = new HashMap<>();
+            TerrainBlock[][] byUnit = new TerrainBlock[UNITS.size()][];
             for (Map.Entry<String, JsonElement> p : palette.entrySet()) {
                 JsonArray a = p.getValue().getAsJsonArray();
                 TerrainBlock[] blocks = new TerrainBlock[a.size()];
                 for (int i = 0; i < blocks.length; i++)
                     blocks[i] = TerrainBlock.of(a.get(i).getAsString());
                 if (blocks.length == 0) throw new IllegalStateException("Empty tint " + p.getKey());
-                byUnit.put(unit(p.getKey()), blocks);
+                byUnit[unit(p.getKey()).index] = blocks;
             }
             TINTS.put(ClimateRegion.valueOf(e.getKey()), byUnit);
+        }
+        JsonObject weathering = tint.getAsJsonObject("weathering");
+        RIND = (int) Rules.number(weathering, "rindBlocks", 0, 16);
+        RIND_WAVELENGTH = Rules.number(weathering, "rindWavelengthBlocks", 2, 4096);
+        RIND_THRESHOLD = Rules.number(weathering, "rindThreshold", -2, 2);
+        STREAK_SHARE = Rules.number(weathering, "streakShare", 0, 0.5);
+        STREAK_START = (int) Rules.number(weathering, "streakStartBlocks", 0, 16);
+        STREAK_LENGTH = range(weathering, "streakLengthBlocks", STREAK_START + 1, TINT_DEPTH);
+        STREAK_TAPER = Rules.number(weathering, "streakTaperShare", 0, 1);
+        STREAK_TAPER_BLOCKS = (int) Math.ceil((STREAK_LENGTH[1] - STREAK_START) * STREAK_TAPER);
+        STREAK_LENGTH_WAVELENGTH =
+                Rules.number(weathering, "streakLengthWavelengthBlocks", 1, 4096);
+        for (Map.Entry<String, JsonElement> e : weathering.getAsJsonObject("units").entrySet()) {
+            JsonObject states = e.getValue().getAsJsonObject();
+            int index = unit(e.getKey()).index;
+            if (states.has("weathered"))
+                WEATHERED[index] = TerrainBlock.of(states.get("weathered").getAsString());
+            if (states.has("stained"))
+                STAINED[index] = TerrainBlock.of(states.get("stained").getAsString());
+        }
+        // Ore and every later phase read a face block as its unit's own rock: one unit per block.
+        for (Unit u : UNITS.values()) {
+            List<TerrainBlock> faces = new ArrayList<>();
+            for (TerrainBlock[][] byUnit : TINTS.values())
+                if (byUnit[u.index] != null) faces.addAll(java.util.Arrays.asList(byUnit[u.index]));
+            if (WEATHERED[u.index] != null) faces.add(WEATHERED[u.index]);
+            if (STAINED[u.index] != null) faces.add(STAINED[u.index]);
+            for (TerrainBlock f : faces) {
+                if (f == u.block) continue;
+                TerrainBlock was = HOSTS.put(f, u.block);
+                if (was != null && was != u.block)
+                    throw new IllegalStateException(f.id + " stands for two rocks");
+            }
         }
         CYCLE_TOPS = new double[UPPER.length + 1];
         double cycle = 0;
@@ -309,14 +422,15 @@ public final class GeologyMap {
         CYCLE = cycle;
         CYCLES = (int) Math.ceil(TerrainHeightReference.DEFAULT.highestSurface * 2.0 / CYCLE) + 2;
         // Two lower stacks (thrust sheet and footwall), the upper stack and its repeating cycles,
-        // four event surfaces and the tint bands.
+        // four event surfaces and the tint depth, weathering rind and streak planes.
         MAXIMUM_BOUNDARIES =
                 2 * stackBound(LOWER, THICKNESS_MAX * (1 + VARIATION))
                         + stackBound(UPPER, UPPER_MAX)
                         + CYCLES * stackBound(UPPER, 1)
                         + 12
                         + (int) Math.ceil(512 / LAYER_BLOCKS)
-                        + TINT_DEPTH / TINT_BAND
+                        + 4
+                        + STREAK_TAPER_BLOCKS
                         + 2;
     }
 
@@ -330,7 +444,8 @@ public final class GeologyMap {
     private static int stackBound(Formation[] stack, double scale) {
         int bound = stack.length + 1;
         for (Formation f : stack)
-            if (f.interbed != null) bound += (int) Math.ceil(f.thickness * scale / f.bed) + 1;
+            if (f.interbed != null)
+                bound += (int) Math.ceil(f.thickness * scale / (f.bed * (1 - BED_VARIATION))) + 1;
         return bound;
     }
 
@@ -402,7 +517,9 @@ public final class GeologyMap {
             upperErosionField,
             upperField,
             deepField,
-            layeredField;
+            layeredField,
+            rindField,
+            streakLengthField;
     private final SeededNoise[] variation = new SeededNoise[LOWER.length],
             folds = new SeededNoise[3];
     private final CellMemo<Fault[]> faultCells = new CellMemo<>(1024);
@@ -441,6 +558,8 @@ public final class GeologyMap {
         upperField = noise(0x5550504552544831L);
         deepField = noise(0x4445455053555231L);
         layeredField = noise(0x4c41594552454431L);
+        rindField = noise(0x52494e444d415031L);
+        streakLengthField = noise(0x5354524b4c454e31L);
         for (int i = 0; i < variation.length; i++)
             variation[i] = new SeededNoise(SeededNoise.mix(seed + 0x5641524941544531L * (i + 1)));
         for (int i = 0; i < folds.length; i++)
@@ -514,7 +633,17 @@ public final class GeologyMap {
 
         public boolean pluton, dike, layered, feeder;
         Unit basement = BASEMENT;
-        Map<Unit, TerrainBlock[]> tint;
+        TerrainBlock[][] tint;
+
+        /**
+         * Weathering at the column: rind blocks of weathered rock under its top (0 for fresh), and
+         * a stain hanging from streakStartBlocks below its top to streak blocks below it (0 for
+         * none). Both are functions of x and z only, so a stain runs straight down a face.
+         */
+        public int rind, streak;
+
+        /** The streak's key, for its broken lower end. */
+        long streakKey;
 
         /** The unit at block Y (tints aside). */
         public Unit unit(long y) {
@@ -552,19 +681,70 @@ public final class GeologyMap {
             return unit(y).block;
         }
 
-        /** The block at Y: the unit's own, or its climate tint in horizontal bands near the surface. */
+        /**
+         * The block at Y. Within the tint depth below the surface: a stain where the column's
+         * streak hangs, else the bed's colour from its unit's climate palette (each bed picks
+         * one, so bands follow the beds), else the weathered rind; otherwise the unit's own rock.
+         */
         public TerrainBlock block(long y, int surface) {
             Unit u = unit(y);
-            if (tint != null && y > surface - TINT_DEPTH && y <= surface) {
-                TerrainBlock[] palette = tint.get(u);
-                if (palette != null)
-                    return palette[
-                            (int)
-                                    Math.floorMod(
-                                            Math.floorDiv(y, (long) TINT_BAND),
-                                            (long) palette.length)];
-            }
+            long depth = surface - y;
+            if (depth < 0 || depth >= TINT_DEPTH) return u.block;
+            if (depth >= STREAK_START
+                    && depth < streak
+                    && STAINED[u.index] != null
+                    && stained(depth)) return STAINED[u.index];
+            TerrainBlock[] palette = tint == null ? null : tint[u.index];
+            if (palette != null)
+                return palette[
+                        (int)
+                                Math.floorMod(
+                                        SeededNoise.mix(bed(y) ^ BED_SALT), (long) palette.length)];
+            if (depth < rind && WEATHERED[u.index] != null) return WEATHERED[u.index];
             return u.block;
+        }
+
+        /**
+         * Whether the streak stains at this depth: whole above its lower end, then broken, ever
+         * more often toward its foot.
+         */
+        private boolean stained(long depth) {
+            int taper = (int) Math.ceil((streak - STREAK_START) * STREAK_TAPER);
+            long from = streak - taper;
+            if (depth < from) return true;
+            return Sites.random(streakKey, (int) depth) < (streak - depth) / (double) (taper + 1);
+        }
+
+        /**
+         * A key naming the bed at Y: its stack (the lower sequence, the upper sequence or one of
+         * its repeating cycles), formation and bed within it. A thrust sheet repeats the same beds,
+         * so they keep their keys. Rock outside the stacks has one key. Mirrors {@link #unit}.
+         */
+        private long bed(long y) {
+            if (y >= kimberliteY
+                    || (y > chamberBottom && y <= chamberTop)
+                    || (feeder && y > feederBottom)) return -1;
+            if (y > upper[0]) {
+                double base = cycleBase(y);
+                long c = Math.round((base - upper[0]) / CYCLE);
+                return stackBed(UPPER, CYCLE_TOPS, base, y, 2 + c);
+            }
+            if (y > upper[UPPER.length]) return stackBed(UPPER, upper, 0, y, 1);
+            if ((dike && y <= dikeTop) || (pluton && y <= plutonRoof)) return -1;
+            return stackBed(LOWER, lower, y > thrustY ? thrustShift : 0, y, 0);
+        }
+
+        private static long stackBed(
+                Formation[] stack, double[] tops, double offset, long y, long group) {
+            for (int k = 0; k < stack.length; k++) {
+                if (y <= tops[k + 1] + offset) continue;
+                Formation f = stack[k];
+                double top = tops[k] + offset;
+                long bed = f.interbed == null || y > top ? 0 : f.index(top, y);
+                return SeededNoise.mix(
+                        f.salt + group * 0x9e3779b97f4a7c15L + bed * 0x632be59bd9b4e019L);
+            }
+            return -1;
         }
 
         /**
@@ -602,12 +782,18 @@ public final class GeologyMap {
                 n = stackBoundaries(LOWER, lower, thrustShift, min, below, out, n);
             }
             n = stackBoundaries(LOWER, lower, 0, min, below, out, n);
-            if (tint != null && TINT_DEPTH > 0) {
-                int lo = surface - TINT_DEPTH;
-                n = add(lo + 1, min, hi, out, n);
-                for (long y = Math.floorDiv(lo, (long) TINT_BAND) * TINT_BAND + TINT_BAND;
-                        y <= hi;
-                        y += TINT_BAND) n = add(y, min, hi, out, n);
+            // Bed colours change only at the bed planes above; the tint depth, rind and streak
+            // count from the surface.
+            if (TINT_DEPTH > 0) {
+                n = add(surface - TINT_DEPTH + 1, min, hi, out, n);
+                if (rind > 0) n = add(surface - rind + 1, min, hi, out, n);
+                if (streak > 0) {
+                    n = add(surface - STREAK_START + 1, min, hi, out, n);
+                    // Every Y of the broken lower end, and the streak's foot.
+                    int taper = (int) Math.ceil((streak - STREAK_START) * STREAK_TAPER);
+                    for (int d = streak - taper; d <= streak; d++)
+                        n = add(surface - d + 1, min, hi, out, n);
+                }
             }
             return n;
         }
@@ -629,7 +815,7 @@ public final class GeologyMap {
                 Formation f = stack[k];
                 double top = tops[k] + offset;
                 if (f.interbed == null || !beds || y > top) return f.unit;
-                long bed = index(top, f.bed, y);
+                long bed = f.index(top, y);
                 return Sites.random(f.salt, (int) bed) < f.share ? f.interbed : f.unit;
             }
             return null;
@@ -649,9 +835,9 @@ public final class GeologyMap {
                 Formation f = stack[k];
                 if (f.interbed == null) continue;
                 double top = tops[k] + offset, bottom = tops[k + 1] + offset;
-                long first = Math.max(1, index(top, f.bed, Math.min(hi, (long) Math.floor(top))));
-                for (long m = first; top - m * f.bed > bottom; m++) {
-                    long y = plane(top, f.bed, m);
+                long first = Math.max(1, f.index(top, Math.min(hi, (long) Math.floor(top))));
+                for (long m = first; top - f.start(m) > bottom; m++) {
+                    long y = f.plane(top, m);
                     if (y <= min) break;
                     n = add(y, min, hi, out, n);
                 }
@@ -907,6 +1093,36 @@ public final class GeologyMap {
         double o = oldField.sample(x / OLD_WAVELENGTH, z / OLD_WAVELENGTH);
         out.basement = o > OLD_THRESHOLD ? OLD_GRANITE : b > BELT_THRESHOLD ? BELT : BASEMENT;
         out.tint = s.climate.region == null ? null : TINTS.get(s.climate.region);
+        out.rind =
+                rindField.sample(x / RIND_WAVELENGTH, z / RIND_WAVELENGTH) > RIND_THRESHOLD
+                        ? RIND
+                        : 0;
+        out.streak = 0;
+        out.streakKey = 0;
+        // Streaks are single columns: picked by a hash of the column, never beside another.
+        long ix = (long) Math.floor(x), iz = (long) Math.floor(z);
+        if (streakColumn(ix, iz) && !streakColumn(ix - 1, iz) && !streakColumn(ix, iz - 1)) {
+            double l =
+                    streakLengthField.sample(
+                            x / STREAK_LENGTH_WAVELENGTH, z / STREAK_LENGTH_WAVELENGTH);
+            out.streak =
+                    (int) Math.round(lerp(STREAK_LENGTH, Math.max(0, Math.min(1, (l + 1) / 2))));
+            out.streakKey = SeededNoise.cell(seed ^ TAPER_SALT, (int) ix, (int) iz);
+        }
+    }
+
+    private boolean streakColumn(long x, long z) {
+        return SeededNoise.unit(SeededNoise.cell(seed ^ STREAK_SALT, (int) x, (int) z))
+                < STREAK_SHARE;
+    }
+
+    /**
+     * The rock a block stands for: a face block's unit rock (its bed colour or weathering state),
+     * else the block itself. Ore takes its host from it, so coloured beds hold their unit's ores.
+     */
+    public static TerrainBlock host(TerrainBlock block) {
+        TerrainBlock h = HOSTS.get(block);
+        return h != null ? h : block;
     }
 
     /** A fault cell's faults, denser and stronger near plate boundaries. Pure per cell. */

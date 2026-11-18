@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "revision": 4,
+  "revision": 5,
   "about": "Riven's catalogue (catalogue-v1): every block the generator places, one entry each, with one id every definition can name. An id is its kind, or the kind, a dot and a name (rock.gabbro). block lists candidate block states (modid:block or modid:block[property=value,...]); the first that resolves wins, so later candidates are the stand-ins.",
   "kinds": {
     "air": "empty space",
@@ -25,7 +25,8 @@
     "frozen": "ice or snow",
     "karst": "from dissolved rock (dripstone)",
     "fungus": "a fungus",
-    "luminous": "gives light"
+    "luminous": "gives light",
+    "face": "a rock unit's face: a bed colour or a weathered or stained state (ore takes the unit's own rock)"
   },
   "entries": {
     "air": {
@@ -854,6 +855,384 @@
       "kind": "sediment",
       "block": [
         "minecraft:sand[variant=red_sand]"
+      ]
+    },
+    "rock.gneiss_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.gneiss_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=gray]"
+      ]
+    },
+    "rock.schist_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.schist_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=gray]"
+      ]
+    },
+    "rock.granite_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=pink]"
+      ]
+    },
+    "rock.granite_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=brown]"
+      ]
+    },
+    "rock.dolerite_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=brown]"
+      ]
+    },
+    "rock.dolerite_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=black]"
+      ]
+    },
+    "rock.limestone_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stone[variant=diorite]"
+      ]
+    },
+    "rock.limestone_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.dolostone_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=silver]"
+      ]
+    },
+    "rock.dolostone_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stone[variant=andesite]"
+      ]
+    },
+    "rock.shale_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=gray]"
+      ]
+    },
+    "rock.shale_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=black]"
+      ]
+    },
+    "rock.sandstone_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:sandstone[type=smooth_sandstone]"
+      ]
+    },
+    "rock.sandstone_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=brown]"
+      ]
+    },
+    "rock.redbeds_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:red_sandstone[type=smooth_red_sandstone]"
+      ]
+    },
+    "rock.redbeds_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=black]"
+      ]
+    },
+    "rock.ironstone_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=red]"
+      ]
+    },
+    "rock.ironstone_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=brown]"
+      ]
+    },
+    "rock.evaporite_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=white]"
+      ]
+    },
+    "rock.basalt_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=brown]"
+      ]
+    },
+    "rock.basalt_stained": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=black]"
+      ]
+    },
+    "rock.kimberlite_weathered": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=yellow]"
+      ]
+    },
+    "rock.shale_bed_plain": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:hardened_clay"
+      ]
+    },
+    "rock.shale_bed_orange": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=orange]"
+      ]
+    },
+    "rock.shale_bed_brown": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=brown]"
+      ]
+    },
+    "rock.shale_bed_white": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=white]"
+      ]
+    },
+    "rock.shale_bed_red": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=red]"
+      ]
+    },
+    "rock.shale_bed_yellow": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=yellow]"
+      ]
+    },
+    "rock.limestone_bed_white": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=white]"
+      ]
+    },
+    "rock.limestone_bed_yellow": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=yellow]"
+      ]
+    },
+    "rock.redbeds_bed_red": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=red]"
+      ]
+    },
+    "rock.redbeds_bed_orange": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=orange]"
+      ]
+    },
+    "rock.redbeds_bed_plain": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:hardened_clay"
+      ]
+    },
+    "rock.redbeds_bed_brown": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=brown]"
+      ]
+    },
+    "rock.redbeds_bed_white": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=white]"
+      ]
+    },
+    "rock.dolostone_bed_yellow": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=yellow]"
+      ]
+    },
+    "rock.dolostone_bed_plain": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:hardened_clay"
+      ]
+    },
+    "rock.evaporite_bed_white": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=white]"
+      ]
+    },
+    "rock.basalt_bed_black": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=black]"
+      ]
+    },
+    "rock.basalt_bed_gray": {
+      "kind": "rock",
+      "tags": [
+        "face"
+      ],
+      "block": [
+        "minecraft:stained_hardened_clay[color=gray]"
       ]
     }
   },

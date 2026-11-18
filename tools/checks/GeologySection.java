@@ -14,6 +14,17 @@ import javax.imageio.ImageIO;
  *     vertical slice along a line: one column per SPACING blocks, one row per block
  * GeologySection outcrop SEED CX CZ SIZE STEP OUT.png
  *     plan map of the first rock under the soil, hillshaded, water blue
+ * GeologySection blocks SEED LAYOUT X1 Z1 X2 Z2 YMIN YMAX OUT.png
+ *     vertical slice of the assembled blocks along a line, one column per block: rock faces as
+ *     the game shows them (bed colours, weathering and stains), soil brown, water blue
+ * GeologySection orelost SEED LAYOUT SIDE STRIDE
+ *     ore blocks within 128 blocks of the land surface whose rock is a terracotta or weathering
+ *     stand-in (no ore host), by climate kind
+ * GeologySection rockcost SEED LAYOUT ROUNDS X Z [X Z ...]
+ *     geology per chunk column as the crust bed source pays it: column, boundaries to the
+ *     surface and one block per run, fastest round of ROUNDS
+ * GeologySection costat SEED LAYOUT ROUNDS X Z [X Z ...]
+ *     native chunk-column build time near each point, warm regional tiles
  * </pre>
  */
 public final class GeologySection {
@@ -25,6 +36,10 @@ public final class GeologySection {
         else if (args[0].equals("outcrop")) outcrop(maps, args);
         else if (args[0].equals("stats")) stats(maps, args);
         else if (args[0].equals("cost")) cost(maps, Long.parseLong(args[1]));
+        else if (args[0].equals("costat")) costAt(args);
+        else if (args[0].equals("rockcost")) rockCost(args);
+        else if (args[0].equals("blocks")) blocks(args);
+        else if (args[0].equals("orelost")) oreLost(args);
         else if (args[0].equals("probe")) probe(maps, args);
         else if (args[0].equals("events")) events(maps);
         else if (args[0].equals("find")) find(maps);
@@ -143,6 +158,228 @@ public final class GeologySection {
                     rock / 1e6 / chunks,
                     100.0 * rock / build,
                     sink);
+        }
+    }
+
+    /**
+     * GeologySection blocks SEED LAYOUT X1 Z1 X2 Z2 YMIN YMAX OUT.png
+     *     vertical slice of the assembled blocks along a line, one column per block: rock faces as
+     *     the game shows them (bed colours, weathering and stains), soil brown, water blue
+     * GeologySection costat SEED LAYOUT ROUNDS X Z [X Z ...]: native chunk-column build time near each
+     * point. Even chunk columns of a 16 x 16 patch warm the regional tiles, then the odd ones are
+     * timed; ROUNDS repeats on fresh maps and reports each round's mean and the median.
+     */
+    private static void costAt(String[] a) {
+        long seed = Long.parseLong(a[1]);
+        double layout = Double.parseDouble(a[2]);
+        int rounds = Integer.parseInt(a[3]);
+        for (int i = 4; i + 1 < a.length; i += 2) {
+            int cx = Math.floorDiv(Integer.parseInt(a[i]), 16),
+                    cz = Math.floorDiv(Integer.parseInt(a[i + 1]), 16);
+            double[] means = new double[rounds];
+            for (int r = 0; r < rounds; r++) {
+                GenerationMaps maps =
+                        new GenerationMaps(
+                                seed, layout == 1 ? WorldScale.DEFAULT : new WorldScale(layout));
+                long total = 0;
+                int timed = 0;
+                for (int parity = 0; parity < 2; parity++)
+                    for (int dz = -8; dz < 8; dz++)
+                        for (int dx = -8; dx < 8; dx++) {
+                            if (((dx + dz) & 1) != parity) continue;
+                            long t0 = System.nanoTime();
+                            maps.columns.build(cx + dx, cz + dz);
+                            if (parity == 1) {
+                                total += System.nanoTime() - t0;
+                                timed++;
+                            }
+                        }
+                means[r] = total / 1e6 / timed;
+            }
+            double[] sorted = means.clone();
+            java.util.Arrays.sort(sorted);
+            System.out.printf(
+                    java.util.Locale.ROOT,
+                    "%s,%s: chunk column build ms per round %s, median %.3f%n",
+                    a[i],
+                    a[i + 1],
+                    java.util.Arrays.toString(means),
+                    sorted[rounds / 2]);
+        }
+    }
+
+    /** Approximate map colours of the vanilla stand-ins, by catalogue id. */
+    private static final java.util.Map<String, Integer> BLOCK_COLOURS = new java.util.HashMap<>();
+
+    static {
+        String[][] table = {
+            {"rock.terracotta", "985e43"},
+            {"rock.terracotta_orange", "a15325"},
+            {"rock.terracotta_yellow", "ba8523"},
+            {"rock.terracotta_brown", "4d3324"},
+            {"rock.terracotta_red", "8f3d2e"},
+            {"rock.terracotta_white", "d1b2a1"},
+            {"rock.terracotta_gray", "392a23"},
+            {"rock.terracotta_black", "251610"},
+            {"rock.sandstone", "d8cb9b"},
+            {"rock.red_sandstone", "b5621f"},
+            {"rock.granite", "9a6a59"},
+            {"rock.diorite", "bcbcbc"},
+            {"rock.andesite", "858585"},
+            {"rock.stone", "7d7d7d"}
+        };
+        for (String[] e : table) BLOCK_COLOURS.put(e[0], Integer.parseInt(e[1], 16));
+    }
+
+    private static void blocks(String[] a) throws Exception {
+        long seed = Long.parseLong(a[1]);
+        double layout = Double.parseDouble(a[2]);
+        double x1 = Double.parseDouble(a[3]), z1 = Double.parseDouble(a[4]);
+        double x2 = Double.parseDouble(a[5]), z2 = Double.parseDouble(a[6]);
+        int y0 = Integer.parseInt(a[7]), y1 = Integer.parseInt(a[8]);
+        GenerationMaps maps =
+                new GenerationMaps(seed, layout == 1 ? WorldScale.DEFAULT : new WorldScale(layout));
+        int width = (int) Math.max(1, Math.hypot(x2 - x1, z2 - z1)), height = y1 - y0 + 1;
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        TerrainMap.Sample s = new TerrainMap.Sample();
+        cc.orthrus.riven.worldgen.engine.AssembledColumn c =
+                new cc.orthrus.riven.worldgen.engine.AssembledColumn();
+        cc.orthrus.riven.worldgen.engine.Assembler<TerrainMap.Sample> crust =
+                maps.columns.assembler();
+        for (int i = 0; i < width; i++) {
+            double f = width == 1 ? 0 : i / (double) (width - 1);
+            maps.terrain.sample(Math.floor(x1 + (x2 - x1) * f), Math.floor(z1 + (z2 - z1) * f), s);
+            c = crust.assemble(s, c);
+            for (int y = y0; y <= y1; y++) {
+                TerrainBlock b = c.at(y);
+                int rgb;
+                if (b == TerrainBlock.AIR) rgb = SKY;
+                else if (b.kind.equals("fluid")) rgb = WATER;
+                else if (b.kind.equals("soil") || b.kind.equals("plant")) rgb = SOIL;
+                else if (b.kind.equals("sediment")) rgb = 0xe0d4a0;
+                else if (b.kind.equals("ice")) rgb = 0xf4f8fa;
+                else {
+                    Integer known = BLOCK_COLOURS.get(b.id);
+                    if (known != null) rgb = known;
+                    else if (b.id.endsWith("_weathered") || b.id.endsWith("_stained")) {
+                        // Stand-ins not in the table: lighter for weathered, darker for stains.
+                        int u = s.geology.unit(y).color;
+                        rgb = b.id.endsWith("_stained") ? darker(u) : lighter(u);
+                    } else rgb = s.geology.unit(y).color;
+                }
+                image.setRGB(i, y1 - y, rgb);
+            }
+        }
+        ImageIO.write(image, "png", new File(a[9]));
+        System.out.println("blocks " + width + "x" + height + " -> " + a[9]);
+    }
+
+    private static int darker(int rgb) {
+        return ((rgb >> 17 & 0x7f) << 16) | ((rgb >> 9 & 0x7f) << 8) | (rgb >> 1 & 0x7f);
+    }
+
+    private static int lighter(int rgb) {
+        int r = rgb >> 16 & 255, g = rgb >> 8 & 255, b = rgb & 255;
+        return ((r + 255) / 2 << 16) | ((g + 255) / 2 << 8) | (b + 255) / 2;
+    }
+
+    private static boolean stands(TerrainBlock at) {
+        try {
+            at =
+                    (TerrainBlock)
+                            GeologyMap.class.getMethod("host", TerrainBlock.class).invoke(null, at);
+        } catch (ReflectiveOperationException e) {
+            // A tree before face hosts: the block itself.
+        }
+        return at.tags.contains("terracotta") || at.tags.contains("face");
+    }
+
+    private static void oreLost(String[] a) {
+        long seed = Long.parseLong(a[1]);
+        double layout = Double.parseDouble(a[2]);
+        int side = Integer.parseInt(a[3]), stride = Integer.parseInt(a[4]);
+        GenerationMaps maps =
+                new GenerationMaps(seed, layout == 1 ? WorldScale.DEFAULT : new WorldScale(layout));
+        TerrainMap.Sample s = new TerrainMap.Sample();
+        OreMap.Bodies b = new OreMap.Bodies();
+        cc.orthrus.riven.worldgen.engine.AssembledColumn c =
+                new cc.orthrus.riven.worldgen.engine.AssembledColumn();
+        cc.orthrus.riven.worldgen.engine.Assembler<TerrainMap.Sample> crust =
+                maps.columns.assembler();
+        // [arid, other] x [ore blocks, ore in stand-in rock]
+        long[][] count = new long[2][2];
+        for (int z = -side / 2; z < side / 2; z += stride)
+            for (int x = -side / 2; x < side / 2; x += stride) {
+                maps.terrain.sample(x, z, s);
+                if (s.ocean.marine) continue;
+                maps.terrain.caves.carve(x, z, s);
+                maps.terrain.ores.bodies(x, z, s, b);
+                c = crust.assemble(s, c);
+                int kind =
+                        s.climate.region == ClimateRegion.HOT_DRY
+                                        || s.climate.region == ClimateRegion.WARM_DRY
+                                ? 0
+                                : 1;
+                for (int y = s.blockY(); y > s.blockY() - 128; y--) {
+                    if (maps.terrain.ores.mineral(x, y, z, b) < 0) continue;
+                    TerrainBlock at = c.at(y);
+                    if (!at.kind.equals("rock")) continue;
+                    count[kind][0]++;
+                    // Ore takes the host its face block stands for (OreBlocks); lost where that is
+                    // still a stand-in.
+                    if (stands(at)) count[kind][1]++;
+                }
+            }
+        String[] names = {"arid", "other"};
+        for (int k = 0; k < 2; k++)
+            System.out.printf(
+                    java.util.Locale.ROOT,
+                    "%s land: %d ore blocks within 128 of the surface, %d (%.1f%%) in stand-in rock%n",
+                    names[k],
+                    count[k][0],
+                    count[k][1],
+                    100.0 * count[k][1] / Math.max(1, count[k][0]));
+    }
+
+    private static void rockCost(String[] a) {
+        long seed = Long.parseLong(a[1]);
+        double layout = Double.parseDouble(a[2]);
+        int rounds = Integer.parseInt(a[3]);
+        GenerationMaps maps =
+                new GenerationMaps(seed, layout == 1 ? WorldScale.DEFAULT : new WorldScale(layout));
+        GeologyMap geology = maps.terrain.geology();
+        GeologyMap.Column column = new GeologyMap.Column();
+        int[] bounds = new int[GeologyMap.MAXIMUM_BOUNDARIES];
+        for (int i = 4; i + 1 < a.length; i += 2) {
+            int x0 = Integer.parseInt(a[i]), z0 = Integer.parseInt(a[i + 1]);
+            // Sample once; time only the geology the bed source runs.
+            TerrainMap.Sample[] samples = new TerrainMap.Sample[16 * 256];
+            for (int k = 0; k < samples.length; k++) {
+                samples[k] = new TerrainMap.Sample();
+                maps.terrain.sample(x0 + (k & 63), z0 + (k >> 6), samples[k]);
+            }
+            long best = Long.MAX_VALUE, sink = 0;
+            for (int r = 0; r < rounds; r++) {
+                long t0 = System.nanoTime();
+                for (int k = 0; k < samples.length; k++) {
+                    TerrainMap.Sample s = samples[k];
+                    double x = x0 + (k & 63), z = z0 + (k >> 6);
+                    geology.column(x, z, s, column);
+                    int top = s.blockY();
+                    int n = column.boundaries(-512, top, bounds, 0);
+                    java.util.Arrays.sort(bounds, 0, n);
+                    for (int j = 0; j < n; j++) sink += column.block(bounds[j], top).index();
+                }
+                best = Math.min(best, System.nanoTime() - t0);
+            }
+            System.out.printf(
+                    java.util.Locale.ROOT,
+                    "%s,%s: geology %.3f ms per chunk column (fastest of %d) [%d]%n",
+                    a[i],
+                    a[i + 1],
+                    best / 1e6 / 16,
+                    rounds,
+                    sink % 7);
         }
     }
 

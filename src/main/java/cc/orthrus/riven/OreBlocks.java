@@ -2,6 +2,7 @@ package cc.orthrus.riven;
 
 import cc.orthrus.riven.content.BlockRivenOre;
 import cc.orthrus.riven.content.RivenContent;
+import cc.orthrus.riven.worldgen.GeologyMap;
 import cc.orthrus.riven.worldgen.NativeColumns;
 import cc.orthrus.riven.worldgen.OreMap;
 import cc.orthrus.riven.worldgen.TerrainBlock;
@@ -39,12 +40,14 @@ final class OreBlocks {
             int z,
             TerrainBlock block,
             IBlockState rock) {
-        if (!host(block)) return rock;
+        // A bed colour or weathered face holds its unit's ores, as that unit's rock.
+        TerrainBlock host = GeologyMap.host(block);
+        if (!host(host)) return rock;
         int mineral = column.ore(index, x, y, z);
         if (mineral < 0) return rock;
         IBlockState[][] t = table;
         if (t == null) t = build();
-        IBlockState ore = t[mineral][block.index()];
+        IBlockState ore = t[mineral][host.index()];
         return ore != null ? ore : rock;
     }
 

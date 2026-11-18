@@ -192,6 +192,12 @@ final class TerrainColumn {
         for (TerrainBlock b : TerrainBlock.values())
             if (b.rockId() != null)
                 result[b.index()] = named("riven:" + b.rockId(), null, null, stone);
+        // Face blocks (bed colours and weathering states) have no legacy rule: the catalogue is
+        // their only definition.
+        for (TerrainBlock b : TerrainBlock.values())
+            if (b.tags.contains("face"))
+                for (int i = 0; i < b.candidates.size() && result[b.index()] == null; i++)
+                    result[b.index()] = Mappings.parse(b.candidates.get(i));
         for (IBlockState state : result)
             if (state == null) throw new IllegalStateException("Unmapped terrain block");
         return result;

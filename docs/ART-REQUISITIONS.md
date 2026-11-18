@@ -235,3 +235,43 @@ as well as at sixteen. A layer resting on a full block of its own kind shows no 
 matches the full block's top, and the side continues the full block's side, with no rim or
 outline at its upper edge. No inventory icon beyond vanilla's snow-layer form is needed. Riven registers the
 blocks; the art arrives by the pack.
+
+Requisition 11: rock faces. Riven colours each bed of a cliff from its rock unit, and gives every
+unit a weathered and a stained state (`riven-geology.json` tint weathering) that stand in with
+vanilla terracotta, smooth sandstone and stone until these sets arrive; boulders and the coming
+loose stones take the rock under them. Drawn in Survey Plate under the same tests as Requisition 08,
+each face matching the host stone it weathers from (Requisition 06, as 56 redraws it) so a fresh
+bed, its rind and its stain read as one rock.
+
+### 61. Weathering states
+
+`riven:blocks/rock/<unit>_weathered` and `riven:blocks/rock/<unit>_stained`, main and alternate
+each, for gneiss, mica schist, granite, dolerite, limestone, dolostone, shale, sandstone, red beds,
+banded ironstone and basalt, plus `evaporite_weathered` (salt crust) and `kimberlite_weathered`
+(the yellow ground of a weathered pipe). Weathered is the unit's skin a few blocks under the sun:
+paler, its grain opened and its edges softened (granite toward pinkish grus, shale toward flaky
+grey clay, basalt and dolerite toward rust brown, ironstone toward red). Stained is the same rock
+under a vertical streak of desert varnish or water staining: dark manganese or iron film running
+top to bottom, so stacked blocks join into one streak with no seam at the block edges; side faces
+only, the top as the weathered face. Stains hang one block wide, 4 to 20 blocks long, so the
+side face must read as a single streak and as its broken lower end. The arid bed colours
+(`<unit>_bed_<colour>`: shale in six, red beds in five, limestone, dolostone and basalt in two,
+evaporite in one) stand in with terracotta today; each wants its unit's grain in that colour,
+so a banded wall reads as shale or red beds rather than as clay.
+
+### 62. Dark rock faces
+
+`riven:blocks/rock/<unit>_face` for the eight layered host stones, main and alternate: the shadowed
+face of a sheer wall in that rock, darker than the side face by about one value step, with
+the bedding running horizontally and the joints vertical, so a wall tens of blocks tall reads as
+rock in shadow rather than a lit block repeated. It also stands for the fresh, unweathered
+surface of a cut or a fall.
+
+### 63. Loose stones and slabs
+
+`riven:blocks/decor/stones_<unit>_<0-3>` and `riven:blocks/decor/slab_<unit>_<0-1>` for the
+eleven units of request 61: four forms of a scatter of fist- to head-sized stones lying on the
+ground (a flat model one to three pixels tall, like Requisition 03's frost-heaved stones), and two
+forms of a thin flat slab of the same rock (half a block across, two to four pixels tall), each in
+its unit's weathered colours with darker undersides. They lie where soil is thin on stony ground,
+50 to 100 times as many as boulders, and on talus under the wall they came from.

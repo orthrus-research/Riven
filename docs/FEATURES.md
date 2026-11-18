@@ -1029,8 +1029,24 @@ lies above the smooth base elevation by the rock erosion removed. That depth var
 (0 to 230 blocks), grows with compression and with base elevation above Y140, so regions expose
 different levels and uplifted cores reach the basement. Folds from three blended orientations
 grow with compression; sequences thin under it. The base blends to Y100 across the coast, so beds
-continue under the sea. Within 24 blocks of the surface, arid climates recolour sedimentary units
-as terracotta bands. This retires the climate strata palettes.
+continue under the sea. Beds in formations with interbeds vary by half about their spacing, one
+fixed sequence per formation. Rock faces (terrain-v149, geology revision 7): within 96 blocks of a
+column's top, arid climates colour each bed of a sedimentary unit from its palette by a hash of the
+bed (formation, bed and stack, so a thrust repeats its colours), so bands dip with the folds, keep
+each bed's thickness and run down the full height of a wall; thin marker beds stay one band. Every
+unit has a weathered and a stained state (vanilla stand-ins until Requisition 11), and each bed
+colour is a catalogue entry of its own unit (tag `face`), so ore, unstable floors and later phases
+read every face block as its unit's rock (`GeologyMap.host`): coloured beds hold their unit's ores. About half of
+the columns take a two-block weathered rind where no palette colours the bed. One column in about
+twelve, never two side by side, hangs a stain from a block under its top (its lip) down 4 to 20
+blocks, broken ever more often over its lower 40%; it is picked from x and z only, so it runs
+straight down a face and never marks flat rock. Seed 2485331 at 32 km (`StrataFaceCheck`, every
+12th block): of arid palette rock on faces, bed colour or stain at 24-47 blocks deep 0% to 94%,
+at 48-95 blocks 0% to 90%; complete runs of one block on faces, 59% at exactly 4 blocks before,
+now 10% at 1, 33% at 2, 27% at 3, 16% at 4 and 14% at 5 to 20. Geology per chunk column costs
+0.04-0.06 ms more in humid and mountain ground and 0.15-0.26 ms more in arid ground
+(`GeologySection rockcost`, about 0.8 ms before). No ore within 128 blocks of the surface lies in
+rock that cannot hold it (`GeologySection orelost`; 14% of arid ore did at terrain-v146).
 Phase 1b breaks and covers the sequence. Steep faults come from 1.5 km cells, denser near plate
 boundaries, with bigger throws at rifts and sideways slip at transforms; each side moves half,
 tapering at the tips. Thrust sheets in compressed ground lift older beds over younger. Granite
