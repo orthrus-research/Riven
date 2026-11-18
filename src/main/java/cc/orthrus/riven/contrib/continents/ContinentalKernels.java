@@ -992,6 +992,30 @@ public final class ContinentalKernels {
             distance = new double[count];
             order = new int[count];
         }
+
+        private static final ThreadLocal<Pool> POOL = ThreadLocal.withInitial(Pool::new);
+
+        /**
+         * A scratch of this thread's pool, for samples that keep no scratch of their own; hand it
+         * back with {@link #release}. A query nested inside another takes a second one, so no two
+         * queries ever share one. Its cell cache is keyed by kernel and cell, so which scratch a
+         * query takes changes its speed, never its result.
+         */
+        public static Scratch take() {
+            Pool p = POOL.get();
+            return p.count > 0 ? p.free[--p.count] : new Scratch();
+        }
+
+        public static void release(Scratch work) {
+            Pool p = POOL.get();
+            if (p.count == p.free.length) p.free = java.util.Arrays.copyOf(p.free, 2 * p.count);
+            p.free[p.count++] = work;
+        }
+
+        private static final class Pool {
+            Scratch[] free = new Scratch[4];
+            int count;
+        }
     }
 
     public abstract static class Kernel {

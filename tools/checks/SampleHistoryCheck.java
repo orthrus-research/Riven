@@ -51,10 +51,11 @@ public final class SampleHistoryCheck {
         scratch("worldgen.DrylandTerrain$Result", "sample", "substrate");
         scratch("worldgen.MountainTerrain$Result", "sample", "nodes");
         scratch("worldgen.CoastSediment$Result", "geometry", "creek");
-        // Kernel work buffers and noise samples behind the published base facts; marine columns
-        // clear the facts and never read these. The continental kernel's own sample is written by
-        // every computed sample before it is read; a column memo hit leaves it as it was.
-        scratch("worldgen.ContinentalMap$Sample", "work", "probe", "value");
+        // Noise samples behind the published base facts; marine columns clear the facts and never
+        // read these. The continental kernel's own sample is written by every computed sample
+        // before it is read; a column memo hit leaves it as it was. (Its work buffers are a
+        // thread's pool's, not the sample's.)
+        scratch("worldgen.ContinentalMap$Sample", "probe", "value");
         scratch(
                 "worldgen.BaseTerrainMap$Sample",
                 "body",

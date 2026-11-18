@@ -278,7 +278,6 @@ public final class ContinentalOutlineMap {
     /** Reusable caller-owned observations. The score is not a signed distance or a water proof. */
     public static final class Sample {
         private final ContinentalKernels.Sample value = new ContinentalKernels.Sample();
-        private final ContinentalKernels.Scratch work = new ContinentalKernels.Scratch();
 
         public double coastCoordinate() {
             return value.score;
@@ -308,7 +307,12 @@ public final class ContinentalOutlineMap {
     public void sample(double x, double z, Sample out) {
         if (out == null) throw new NullPointerException("out");
         // This sample exposes no shelter, so it skips the owner's concavity probes.
-        sampleScore(x, z, out.value, out.work);
+        ContinentalKernels.Scratch work = ContinentalKernels.Scratch.take();
+        try {
+            sampleScore(x, z, out.value, work);
+        } finally {
+            ContinentalKernels.Scratch.release(work);
+        }
     }
 
     /** Full continental observations reuse their existing raw scratch without another point query. */

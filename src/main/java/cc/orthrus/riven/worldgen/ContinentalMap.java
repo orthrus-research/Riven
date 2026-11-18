@@ -216,7 +216,6 @@ public final class ContinentalMap {
         public Form form = Form.OPEN;
         private final ContinentalKernels.Sample value = new ContinentalKernels.Sample(),
                 probe = new ContinentalKernels.Sample();
-        private final ContinentalKernels.Scratch work = new ContinentalKernels.Scratch();
     }
 
     /** Caller-owned scratch and result of {@link #ownership}: marine and owner only. */
@@ -224,7 +223,6 @@ public final class ContinentalMap {
         public boolean marine;
         public long owner;
         private final ContinentalKernels.Sample value = new ContinentalKernels.Sample();
-        private final ContinentalKernels.Scratch work = new ContinentalKernels.Scratch();
     }
 
     /**
@@ -233,7 +231,12 @@ public final class ContinentalMap {
      * which candidates the kernel visits, never which one owns the column.
      */
     public void ownership(double x, double z, Ownership out) {
-        outline.sampleScore(x, z, out.value, out.work);
+        ContinentalKernels.Scratch work = ContinentalKernels.Scratch.take();
+        try {
+            outline.sampleScore(x, z, out.value, work);
+        } finally {
+            ContinentalKernels.Scratch.release(work);
+        }
         out.marine = out.value.marine;
         out.owner = out.value.owner;
     }
@@ -263,7 +266,17 @@ public final class ContinentalMap {
     }
 
     private void compute(double x, double z, Sample out) {
-        outline.sample(x, z, out.value, out.work);
+        // Samples keep no scratch: a retained sample (a row cache, a lookahead ring) stays small.
+        ContinentalKernels.Scratch work = ContinentalKernels.Scratch.take();
+        try {
+            compute(x, z, out, work);
+        } finally {
+            ContinentalKernels.Scratch.release(work);
+        }
+    }
+
+    private void compute(double x, double z, Sample out, ContinentalKernels.Scratch work) {
+        outline.sample(x, z, out.value, work);
         ContinentalKernels.Sample value = out.value;
         out.family = value.family;
         out.continentSize = value.size;
@@ -299,15 +312,15 @@ public final class ContinentalMap {
         double gx = 0, gz = 0;
         if (Math.abs(value.score) <= normalBand) {
             double low = Math.max(-30000000, x - .5), high = Math.min(30000000, x + .5);
-            outline.sampleScore(low, z, out.probe, out.work);
+            outline.sampleScore(low, z, out.probe, work);
             double a = out.probe.score;
-            outline.sampleScore(high, z, out.probe, out.work);
+            outline.sampleScore(high, z, out.probe, work);
             gx = (out.probe.score - a) / (high - low);
             low = Math.max(-30000000, z - .5);
             high = Math.min(30000000, z + .5);
-            outline.sampleScore(x, low, out.probe, out.work);
+            outline.sampleScore(x, low, out.probe, work);
             a = out.probe.score;
-            outline.sampleScore(x, high, out.probe, out.work);
+            outline.sampleScore(x, high, out.probe, work);
             gz = (out.probe.score - a) / (high - low);
         }
         double length = Rules.hypot(gx, gz);
