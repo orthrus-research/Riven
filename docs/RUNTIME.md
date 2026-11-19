@@ -422,8 +422,8 @@ records both JVMs with JFR's profile settings for attributing a phase further.
   message alone. With both, their identities and every level's digest must be equal, the identity
   must change with the seed, the scale and a recorded role, and the factory must decline a message
   whose seed is not its identity's. CI compiles this check; invoke its workload explicitly.
-- `CUBATURE_LAB_JVM=g1-ship8-nmt` prepares a capture on the shipping G1 profile with native memory
-  tracking. After every scenario it records each process's NMT summary, the JVM's tagged
+- `CUBATURE_LAB_JVM=zgc-fixed-nmt` prepares a capture on the shipping profile with native memory
+  tracking (`g1-ship8-nmt` on the former G1 profile). After every scenario it records each process's NMT summary, the JVM's tagged
   address-space map (`jcmd System.map`) and, with Sysinternals VMMap on PATH, VMMap's CSV, and joins
   them into `<scenario>-<side>-memory-account.json`: Java heap, other JVM reservations, JVM malloc,
   native malloc beyond it, native VirtualAlloc the JVM did not reserve, thread stacks and image pages,
@@ -538,8 +538,12 @@ batch, compression runs on reused deflaters and bounded workers, and empty cubes
 regenerable are not saved), the explicit post-flight save/purge/flush tick fell from 2.72 s to
 0.61 s and its blocking flush from 2.22 to 0.33 s; the run saved 52,610 cubes instead of 75,122
 and 31.8 MB of cube regions instead of 43.8 MB. Worst flight ticks varied from 110 to 176 ms across
-these captures. Newly prepared lab instances use the shipping G1 profile (8 GiB, 4 MB regions, a
-50 ms pause target, concurrent explicit collections). Against G1's defaults on the same heap it cut
+these captures. Newly prepared lab instances use ZGC on a fixed 8 GiB heap (`zgc-fixed`), server and
+client: with Quadrature's near terrain meshing on the client build pool at view distance 20 it took the
+client's longest collection pause from 179 ms to 0.07 ms and the server's from 140 ms to 0.03 ms, with no
+allocation stalls and the same meshing speed and client CPU (2026-11-18). Before it, the lab used a G1
+profile, still the variant `g1-ship8` (8 GiB, 4 MB regions, a 50 ms pause target, concurrent explicit
+collections). Against G1's defaults on the same heap that profile cut
 server young pauses from 43/63/76 ms (median/p95/max) to 29/44/48 ms and removed the 180-220 ms full
 collections; a 12 GiB heap with the same flags measured no better. The figures above flew a spectator,
 which exempts the server from random ticks and spawning; its flight tick p95 stayed near 35 ms under

@@ -192,8 +192,8 @@ def logs(phase):
 
 
 def reviewed_runtime(runtime):
-    """Java 26 on the 8 GiB floor, every collector bean from one reviewed family: the lab's ZGC profile or
-    its G1 profiles (the shipping default since Cubature 86452eea)."""
+    """Java 26 on the 8 GiB floor, every collector bean from one reviewed family: the lab's ZGC profiles (the
+    shipping default since Cubature 19f9961a) or its G1 profiles."""
     collectors = runtime.get("garbageCollectors") or []
     families = {name.split(" ", 1)[0] for name in collectors}
     return (
