@@ -2,9 +2,11 @@
 
 Steps, each skipped when already done: record the JDK 25 and Java 26 paths in
 .local/settings.json, clone Cubature where dev/cc.lock.json's checkout names (../Cubature),
-download every third-party pin named in runtime.lock.json (verified by SHA-256), build the
-Cubature artifacts that dev/cc.lock.json pins, and create the Python environments the local CI
-uses. --check reports without changing anything. The tooling targets Windows.
+download every third-party pin named in runtime.lock.json (verified by SHA-256), build every pin
+runtime.lock.json gives a build recipe from its source checkout at the pinned commit (kept only
+when it is the pinned bytes), build the Cubature artifacts that dev/cc.lock.json pins, and create
+the Python environments the local CI uses. --check reports without changing anything. The
+tooling targets Windows.
 """
 
 import argparse
@@ -19,7 +21,7 @@ import urllib.request
 import venv
 from pathlib import Path
 
-from checkouts import CUBATURE
+from checkouts import CUBATURE, main_checkout
 
 ROOT = Path(__file__).resolve().parents[1]
 SETTINGS = ROOT / ".local/settings.json"
@@ -143,6 +145,99 @@ def third_party_pins(args: argparse.Namespace) -> bool:
     return ready
 
 
+def git(checkout: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", "-C", str(checkout), *arguments], capture_output=True, text=True, check=False
+    )
+
+
+def drop_worktree(checkout: Path, work: Path) -> None:
+    """Remove a build worktree of checkout, and whatever a failed build left of it."""
+    if work.exists():
+        git(checkout, "worktree", "remove", "--force", str(work))
+    git(checkout, "worktree", "prune")
+    if work.exists():
+        shutil.rmtree(work)
+
+
+def build_command(recipe: dict, checkout: Path, java_home: Path, work: Path) -> list[str]:
+    """The Gradle command a recipe names, run in work; {checkout} in a property is the source
+    checkout, for an input the source keeps beside its own clone."""
+    wrapper = work / ("gradlew.bat" if os.name == "nt" else "gradlew")
+    properties = [
+        f"-P{name}={value.format(checkout=checkout)}"
+        for name, value in recipe.get("properties", {}).items()
+    ]
+    return [
+        str(wrapper),
+        *recipe["tasks"],
+        "--console=plain",
+        "--no-daemon",
+        f"-Dorg.gradle.java.installations.paths={java_home}",
+        *properties,
+    ]
+
+
+def build_source_pin(mod: dict, settings: dict) -> None:
+    """Build mod from its source checkout at sourceCommit, in a worktree of its own, and place
+    it only if it is the pinned bytes; otherwise dev/pins is left as it was."""
+    recipe, commit = mod["build"], mod["sourceCommit"]
+    checkout = (main_checkout(ROOT) / recipe["checkout"]).resolve()
+    if not (checkout / ".git").exists():
+        subprocess.run(["git", "clone", mod["source"], str(checkout)], check=True)
+    if git(checkout, "cat-file", "-e", f"{commit}^{{commit}}").returncode != 0:
+        subprocess.run(["git", "-C", str(checkout), "fetch", mod["source"], commit], check=True)
+    java = settings.get(f"java{recipe['java']}")
+    if not java:
+        raise SystemExit(f"{mod['file']}: no Java {recipe['java']} recorded in {SETTINGS}")
+    java_home = Path(java).parent.parent
+    work = ROOT / ".local/source-builds" / f"{Path(mod['file']).stem}-{commit[:12]}"
+    drop_worktree(checkout, work)
+    work.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["git", "-C", str(checkout), "worktree", "add", "--detach", str(work), commit], check=True
+    )
+    try:
+        environment = os.environ | {"JAVA_HOME": str(java_home)}
+        command = build_command(recipe, checkout, java_home, work)
+        if subprocess.run(command, cwd=work, env=environment).returncode != 0:
+            raise SystemExit(f"{mod['file']}: the build of {checkout.name} {commit[:12]} failed")
+        built = work / recipe["artifact"]
+        actual = sha256(built)
+        if actual != mod["sha256"]:
+            raise SystemExit(
+                f"{mod['file']}: {checkout.name} {commit[:12]} builds to SHA-256 {actual}, "
+                f"not the pinned {mod['sha256']}; dev/pins is unchanged"
+            )
+        target = ROOT / mod["file"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(built, target)
+    finally:
+        drop_worktree(checkout, work)
+
+
+def source_pins(args: argparse.Namespace) -> bool:
+    """The runtime.lock.json pins with a build recipe: present when dev/pins holds the pinned
+    bytes, else built from their source checkouts."""
+    settings = load(SETTINGS) if SETTINGS.is_file() else {}
+    ready = True
+    for mod in load(ROOT / "runtime.lock.json")["mods"]:
+        if "build" not in mod:
+            continue
+        target = ROOT / mod["file"]
+        commit = mod["sourceCommit"][:12]
+        if target.is_file() and sha256(target) == mod["sha256"]:
+            print(f"present  {mod['file']}")
+        elif args.check:
+            print(f"missing  {mod['file']}: run setup without --check to build it at {commit}")
+            ready = False
+        else:
+            print(f"building {mod['file']} from {mod['build']['checkout']} at {commit}", flush=True)
+            build_source_pin(mod, settings)
+            print(f"built    {mod['file']}")
+    return ready
+
+
 def cubature_pins() -> list[tuple[Path, str, str]]:
     """(pinned file, expected SHA-256, loader) for the Cleanroom binary and sources JARs."""
     pin = load(ROOT / "dev/cc.lock.json")
@@ -222,6 +317,7 @@ def main() -> None:
         raise SystemExit("Install the missing Java first; nothing else was changed.")
     ready &= clone_cubature(args)
     ready &= third_party_pins(args)
+    ready &= source_pins(args)
     ready &= build_cubature(args)
     ready &= environments(args)
     if not ready:

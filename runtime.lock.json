@@ -93,6 +93,14 @@
       "source": "https://github.com/orthrus-research/GTCEu-Reloaded",
       "sourceCommit": "8ca6b98c9a14531c4d49cb242ae28769766396c1",
       "distribution": "built-from-source",
+      "build": {
+        "checkout": "../GTCEuR",
+        "java": 26,
+        "tasks": [
+          "assemble"
+        ],
+        "artifact": "build/libs/gtceu-reloaded-3.0.0-reloaded.1-alpha.1.jar"
+      },
       "sides": [
         "server",
         "client"
@@ -106,6 +114,14 @@
       "source": "https://github.com/orthrus-research/OrthLib",
       "sourceCommit": "84a58e84e4dd2683ce8d0365a911f315771b7d21",
       "distribution": "built-from-source",
+      "build": {
+        "checkout": "../OrthLib",
+        "java": 26,
+        "tasks": [
+          "assemble"
+        ],
+        "artifact": "build/libs/orthlib-0.5.0-dev.jar"
+      },
       "sides": [
         "server",
         "client"
@@ -119,6 +135,17 @@
       "source": "https://github.com/orthrus-research/OrthLib",
       "sourceCommit": "94e973db5c9c1d73bbee97b8deb1bafe4ce9ae70",
       "distribution": "built-from-source",
+      "build": {
+        "checkout": "../OrthLib",
+        "java": 26,
+        "tasks": [
+          "reobfCubatureJar"
+        ],
+        "properties": {
+          "orthlibCubatureJar": "{checkout}/.local/owner-qualification/cubature-c3e240d/Cubature-cleanroom.jar"
+        },
+        "artifact": "build/libs/orthlib-0.5.0-dev-cubature.jar"
+      },
       "sides": [
         "server",
         "client"
