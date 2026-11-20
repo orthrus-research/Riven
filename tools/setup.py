@@ -156,6 +156,7 @@ def git(checkout: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
 
 
 SOURCE_BUILDS = ".local/source-builds"
+SOURCE_INPUTS = ".local/source-inputs"
 # One build and done: no daemon left running, and no file-system watching, whose open handles
 # would keep the worktree from being removed after the build.
 GRADLE_ONCE = ["--console=plain", "--no-daemon", "--no-watch-fs"]
@@ -187,21 +188,27 @@ def sweep_source_builds() -> None:
         shutil.rmtree(stale, ignore_errors=True)
 
 
-def build_command(recipe: dict, checkout: Path, java_home: Path, work: Path) -> list[str]:
-    """The Gradle command a recipe names, run in work; {checkout} in a property is the source
-    checkout, for an input the source keeps beside its own clone."""
+def build_command(
+    recipe: dict, properties: dict[str, str], java_home: Path, work: Path
+) -> list[str]:
+    """The Gradle command a recipe names, run in work, with its resolved properties."""
     wrapper = work / ("gradlew.bat" if os.name == "nt" else "gradlew")
-    properties = [
-        f"-P{name}={value.format(checkout=checkout)}"
-        for name, value in recipe.get("properties", {}).items()
-    ]
     return [
         str(wrapper),
         *recipe["tasks"],
         *GRADLE_ONCE,
         f"-Dorg.gradle.java.installations.paths={java_home}",
-        *properties,
+        *(f"-P{name}={value}" for name, value in properties.items()),
     ]
+
+
+def build_properties(recipe: dict, settings: dict) -> dict[str, str]:
+    """A recipe's Gradle properties: text as given, or a Cubature JAR the build compiles against,
+    named by commit and SHA-256 ({"cubature": commit, "sha256": hash}) and built for it."""
+    return {
+        name: str(cubature_input(value, settings)) if isinstance(value, dict) else value
+        for name, value in recipe.get("properties", {}).items()
+    }
 
 
 @contextlib.contextmanager
@@ -227,13 +234,13 @@ def source_worktree(checkout: Path, source: str, commit: str, name: str) -> Iter
 
 def place_pinned(built: list[tuple[Path, Path, str]], what: str) -> None:
     """Copy each built file to its pinned target, but only once every one is the pinned bytes;
-    otherwise dev/pins is left as it was."""
+    otherwise nothing is placed."""
     for source, target, expected in built:
         actual = sha256(source)
         if actual != expected:
             raise SystemExit(
                 f"{target.relative_to(ROOT)}: {what} builds to SHA-256 {actual}, not the pinned "
-                f"{expected}; dev/pins is unchanged"
+                f"{expected}; nothing was placed"
             )
     for source, target, _ in built:
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -254,9 +261,10 @@ def build_source_pin(mod: dict, settings: dict) -> None:
     checkout = (main_checkout(ROOT) / recipe["checkout"]).resolve()
     home = java_home(settings, recipe["java"], mod["file"])
     name = Path(mod["file"]).stem
+    properties = build_properties(recipe, settings)
     with source_worktree(checkout, mod["source"], commit, name) as work:
         environment = os.environ | {"JAVA_HOME": str(home)}
-        command = build_command(recipe, checkout, home, work)
+        command = build_command(recipe, properties, home, work)
         if subprocess.run(command, cwd=work, env=environment).returncode != 0:
             raise SystemExit(f"{mod['file']}: the build of {checkout.name} {commit[:12]} failed")
         built = [(work / recipe["artifact"], ROOT / mod["file"], mod["sha256"])]
@@ -307,6 +315,38 @@ def cubature_command(work: Path, java25: Path) -> list[str]:
     ]
 
 
+@contextlib.contextmanager
+def built_cubature(commit: str, repository: str, settings: dict) -> Iterator[Path]:
+    """The libs folder of Cubature's Cleanroom build at commit, made in a worktree of the Cubature
+    checkout with that commit's own compile-only inputs, and removed afterwards."""
+    java25 = java_home(settings, 25, "Cubature")
+    with source_worktree(CUBATURE, repository, commit, "cubature") as work:
+        # The commit's own compile-only inputs, fetched and checked by its own tool.
+        fetch = [sys.executable, "-B", str(work / "tools/fetch_build_inputs.py")]
+        subprocess.run(fetch, cwd=work, check=True)
+        environment = os.environ | {"JAVA_HOME": str(java25)}
+        environment.pop("RIVEN_WORKSPACE", None)
+        command = cubature_command(work, java25)
+        if subprocess.run(command, cwd=work / "cleanroom", env=environment).returncode != 0:
+            raise SystemExit(f"Cubature: the build of {commit[:12]} failed")
+        yield work / "cleanroom/build/cleanroom/libs"
+
+
+def cubature_input(spec: dict, settings: dict) -> Path:
+    """A Cubature JAR a source-built pin compiles against, named by commit and SHA-256: built at
+    that commit and kept under .local/source-inputs once it is those bytes."""
+    commit, expected = spec["cubature"], spec["sha256"]
+    target = ROOT / SOURCE_INPUTS / f"Cubature-{commit[:12]}-cleanroom.jar"
+    if target.is_file() and sha256(target) == expected:
+        return target
+    repository = load(ROOT / "dev/cc.lock.json")["repository"]
+    print(f"building Cubature at {commit[:12]} as a build input", flush=True)
+    with built_cubature(commit, repository, settings) as libs:
+        (found,) = libs.glob("Cubature-*-cleanroom.jar")
+        place_pinned([(found, target, expected)], f"Cubature {commit[:12]}")
+    return target
+
+
 def build_cubature(args: argparse.Namespace) -> bool:
     """The Cubature artifacts dev/cc.lock.json pins, built at its commit in a worktree of the
     Cubature checkout (whatever that checkout has out stays as it is)."""
@@ -321,23 +361,14 @@ def build_cubature(args: argparse.Namespace) -> bool:
         )
         return False
     settings = load(SETTINGS) if SETTINGS.is_file() else {}
-    java25 = java_home(settings, 25, "Cubature")
     commit = pin["commit"]
     print(f"building Cubature at {commit[:12]} from {CUBATURE}", flush=True)
-    with source_worktree(CUBATURE, pin["repository"], commit, "cubature") as work:
-        # The commit's own compile-only inputs, fetched and checked by its own tool.
-        fetch = [sys.executable, "-B", str(work / "tools/fetch_build_inputs.py")]
-        subprocess.run(fetch, cwd=work, check=True)
-        environment = os.environ | {"JAVA_HOME": str(java25)}
-        environment.pop("RIVEN_WORKSPACE", None)
-        command = cubature_command(work, java25)
-        if subprocess.run(command, cwd=work / "cleanroom", env=environment).returncode != 0:
-            raise SystemExit(f"Cubature: the build of {commit[:12]} failed")
+    with built_cubature(commit, pin["repository"], settings) as libs:
         built = []
         for path, expected, loader in pins:
             sources = path.name.endswith("-sources.jar")
             pattern = "Cubature-*-sources.jar" if sources else f"Cubature-*-{loader}.jar"
-            (found,) = (work / f"cleanroom/build/{loader}/libs").glob(pattern)
+            (found,) = libs.glob(pattern)
             built.append((found, path, expected))
         place_pinned(built, f"Cubature {commit[:12]}")
     print("built    Cubature artifacts (dev/cc.lock.json)")

@@ -142,7 +142,10 @@
           "reobfCubatureJar"
         ],
         "properties": {
-          "orthlibCubatureJar": "{checkout}/.local/owner-qualification/cubature-c3e240d/Cubature-cleanroom.jar"
+          "orthlibCubatureJar": {
+            "cubature": "c3e240d12da170d3e3df33fa0644828d40d0b6f5",
+            "sha256": "a8709af51acbd5f1b8d8d17f2e22e2563906d3ded190c6e9eeab54f4846bab18"
+          }
         },
         "artifact": "build/libs/orthlib-0.5.0-dev-cubature.jar"
       },

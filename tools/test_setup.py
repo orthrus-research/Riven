@@ -96,9 +96,9 @@ class SourcePinTest(unittest.TestCase):
         )
 
     def test_command_names_tasks_java_and_properties(self):
-        recipe = {"tasks": ["a", "b"], "properties": {"input": "{checkout}/x.jar"}}
-        checkout, home, work = Path("/s"), Path("/jdk"), Path("/w")
-        command = setup.build_command(recipe, checkout, home, work)
+        recipe = {"tasks": ["a", "b"]}
+        home, work = Path("/jdk"), Path("/w")
+        command = setup.build_command(recipe, {"input": "x.jar"}, home, work)
         self.assertEqual(Path(command[0]).name, "gradlew.bat" if os.name == "nt" else "gradlew")
         self.assertEqual(
             command[1:],
@@ -109,7 +109,7 @@ class SourcePinTest(unittest.TestCase):
                 "--no-daemon",
                 "--no-watch-fs",
                 f"-Dorg.gradle.java.installations.paths={home}",
-                f"-Pinput={checkout}/x.jar",
+                "-Pinput=x.jar",
             ],
         )
 
@@ -149,7 +149,7 @@ class SourcePinTest(unittest.TestCase):
         self.write_lock(self.mod(commit, digest(b"something else")))
         with self.assertRaises(SystemExit) as refused:
             setup.source_pins(argparse.Namespace(check=False))
-        self.assertIn("dev/pins is unchanged", str(refused.exception))
+        self.assertIn("nothing was placed", str(refused.exception))
         self.assertEqual(target.read_bytes(), b"previous")
         self.assertEqual(list((self.root / ".local/source-builds").iterdir()), [])
 
@@ -247,6 +247,20 @@ class CubaturePinTest(unittest.TestCase):
             (self.checkout / "cleanroom/binary.bin").read_bytes(), b"uncommitted change"
         )
         self.assertEqual(list((self.root / ".local/source-builds").iterdir()), [])
+
+    def test_a_cubature_input_is_built_once_and_kept(self):
+        self.lock(BINARY)
+        settings = json.loads(self.settings.read_text(encoding="utf-8"))
+        spec = {"cubature": self.commit, "sha256": digest(BINARY)}
+        built = setup.cubature_input(spec, settings)
+        self.assertEqual(built.read_bytes(), BINARY)
+        self.assertEqual(built.parent, self.root / ".local/source-inputs")
+        with mock.patch.object(setup, "built_cubature", side_effect=AssertionError("rebuilt")):
+            self.assertEqual(setup.cubature_input(spec, settings), built)
+        recipe = {"properties": {"jar": spec, "plain": "text"}}
+        self.assertEqual(
+            setup.build_properties(recipe, settings), {"jar": str(built), "plain": "text"}
+        )
 
     def test_other_bytes_place_neither_artifact(self):
         self.lock(b"another build")
