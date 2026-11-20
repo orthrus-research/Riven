@@ -51,7 +51,7 @@ def build():
     java26 = Path(settings["java26"]).parent.parent
     subprocess.run(
         [
-            str(ROOT / "gradlew.bat"),
+            str(ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")),
             "assemble",
             "--console=plain",
             "-PrivenJavaVersion=26",

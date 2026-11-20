@@ -34,10 +34,15 @@ ENVIRONMENTS = {
     "atlas-venv": "tools/requirements-atlas.txt",
     "observability-venv": "tools/observability/requirements.txt",
 }
-JDK_ROOTS = [
-    Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / vendor
-    for vendor in ("Eclipse Adoptium", "Java", "Microsoft", "Zulu", "Amazon Corretto")
-] + [ROOT / ".local/toolchains"]
+JAVA = "java.exe" if os.name == "nt" else "java"
+JDK_ROOTS = (
+    [
+        Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / vendor
+        for vendor in ("Eclipse Adoptium", "Java", "Microsoft", "Zulu", "Amazon Corretto")
+    ]
+    if os.name == "nt"
+    else [Path("/usr/lib/jvm"), Path("/opt/java"), Path.home() / ".jdks"]
+) + [ROOT / ".local/toolchains"]
 
 
 def sha256(path: Path) -> str:
@@ -66,10 +71,10 @@ def find_java(major: int, given: Path | None, recorded: str | None) -> Path | No
     if recorded:
         candidates.append(Path(recorded))
     if os.environ.get("JAVA_HOME"):
-        candidates.append(Path(os.environ["JAVA_HOME"]) / "bin/java.exe")
+        candidates.append(Path(os.environ["JAVA_HOME"]) / "bin" / JAVA)
     for root in JDK_ROOTS:
         if root.is_dir():
-            candidates += sorted(root.glob(f"*{major}*/bin/java.exe"), reverse=True)
+            candidates += sorted(root.glob(f"*{major}*/bin/{JAVA}"), reverse=True)
     for java in candidates:
         if java.is_file() and java_major(java) == major:
             return java.resolve()
@@ -84,7 +89,7 @@ def configure_java(args: argparse.Namespace) -> bool:
     for key, major, given in (("java25", 25, args.java25), ("java26", 26, args.java26)):
         java = find_java(major, given, settings.get(key))
         if java is None:
-            print(f"missing  Java {major}: install it and pass --{key} PATH to its java.exe")
+            print(f"missing  Java {major}: install it and pass --{key} PATH to its {JAVA}")
             ready = False
         elif settings.get(key) != str(java):
             print(f"set      {key} = {java}")
@@ -428,7 +433,9 @@ def build_cubature(args: argparse.Namespace) -> bool:
 def environments(args: argparse.Namespace) -> bool:
     ready = True
     for name, requirements in ENVIRONMENTS.items():
-        python = ROOT / ".local" / name / "Scripts/python.exe"
+        python = (
+            ROOT / ".local" / name / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+        )
         if python.is_file():
             print(f"present  .local/{name}")
             continue
@@ -446,8 +453,8 @@ def environments(args: argparse.Namespace) -> bool:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--java25", type=Path, help="java.exe of a JDK 25 (Gradle and checks)")
-    parser.add_argument("--java26", type=Path, help="java.exe of a Java 26 (tests and runtime)")
+    parser.add_argument("--java25", type=Path, help=f"{JAVA} of a JDK 25 (Gradle and checks)")
+    parser.add_argument("--java26", type=Path, help=f"{JAVA} of a Java 26 (tests and runtime)")
     parser.add_argument(
         "--cubature-url", help="clone Cubature from here instead of dev/cc.lock.json's repository"
     )
@@ -465,7 +472,11 @@ def main() -> None:
     ready &= environments(args)
     if not ready:
         raise SystemExit("Setup is incomplete; see the lines marked missing.")
-    print("Ready. Next: riven.ps1 build, then riven.ps1 ci.")
+    print(
+        "Ready. Next: riven.ps1 build, then riven.ps1 ci."
+        if os.name == "nt"
+        else "Ready. Next: python3 tools/runtime.py prepare and play (docs/RUNTIME.md, on Linux)."
+    )
 
 
 if __name__ == "__main__":

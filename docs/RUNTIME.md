@@ -187,6 +187,29 @@ Cubature checkout must be present. `prepare` writes the local runtime identity t
 Java 26 named in `.local/settings.json` and the hashes of its critical files. A Java 26 other than
 the reviewed build is noted, not refused.
 
+### On Linux
+
+`prepare` and `play` run on Linux as on Windows: the client takes the Linux natives of its
+libraries (`prepare` fetches them for the system it runs on) and Cleanroom's `unix_args.txt`, and
+the lease and the queue lock with `fcntl`. Checked 2026-11-20 on Ubuntu 26.04 with Temurin
+26.0.2.1+1 for Linux: a fresh instance prepared and a two-view tour played and captured. A machine
+that only runs, preparing with frozen jars (`--artifact`, `--cubic-artifact`, `--client-mod`) and
+building nothing, needs:
+
+- Python 3.14 and a Java 26 named as `java26` in `.local/settings.json`; Java 25, the
+  tools' virtual environments and a Cubature clone serve building and checking only.
+- `dev/pins` as `tools/setup.py` leaves it; its jars are the same on every system, so a set made
+  elsewhere may be copied.
+- Cubature's `tools` at the commit `dev/cc.lock.json` pins, as the sibling `../Cubature`.
+- A display with OpenGL 4.6 in the compatibility profile on the GPU. A machine with no monitor,
+  such as a rented GPU in a container, gets one from a virtual display (`Xvfb`) and VirtualGL's
+  EGL back end (`vglrun -d egl`), which renders on the GPU through the driver's EGL library.
+- Optionally the game's cache (`.local/cubic-lab/cache`): its assets, client jar and libraries are
+  the same on every system, so carrying them spares `prepare` thousands of downloads.
+
+`tools/setup.py` looks for Java under `/usr/lib/jvm`, `/opt/java` and `~/.jdks` there, and
+`--check` reports what a Linux machine lacks.
+
 ### The measurement lease and the GPU queue
 
 One native game runs at a time per workspace. `play`, `measure_pipeline.py` and
