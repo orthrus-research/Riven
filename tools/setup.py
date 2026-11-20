@@ -161,30 +161,43 @@ SOURCE_INPUTS = ".local/source-inputs"
 GRADLE_ONCE = ["--console=plain", "--no-daemon", "--no-watch-fs"]
 
 
+def remove_tree(path: Path) -> OSError | None:
+    """Remove a folder and everything in it; the error when something stays. On Windows the path
+    takes the extended form: a Gradle build's deepest files pass 260 characters, and long paths
+    are off unless the system enables them (git worktree remove gives up on them too)."""
+    text = os.path.abspath(path)
+    try:
+        shutil.rmtree("\\\\?\\" + text if os.name == "nt" and not text.startswith("\\\\") else text)
+    except FileNotFoundError:
+        pass
+    except OSError as error:
+        return error
+    return None
+
+
 def drop_worktree(checkout: Path, work: Path, attempts: int = 10) -> None:
     """Remove a build worktree of checkout. Windows can hold a just-built tree's files open for a
     while after the build returns, so removal is retried; a tree that still cannot go is reported
     and swept before a later build (each build has a folder of its own, so it blocks nothing)."""
     if work.exists():
         git(checkout, "worktree", "remove", "--force", str(work))
-    git(checkout, "worktree", "prune")
     for attempt in range(attempts):
-        if not work.exists():
-            return
-        try:
-            shutil.rmtree(work)
-        except OSError as error:
-            if attempt == attempts - 1:
-                print(f"note     could not remove {work} yet ({error}); a later build sweeps it")
-                return
-            time.sleep(1)
+        error = remove_tree(work)
+        if error is None:
+            break
+        if attempt == attempts - 1:
+            print(f"note     could not remove {work} yet ({error}); a later build sweeps it")
+            break
+        time.sleep(1)
+    git(checkout, "worktree", "prune")
 
 
 def sweep_source_builds() -> None:
     """Remove what earlier builds could not, where nothing holds it any more."""
     folder = ROOT / SOURCE_BUILDS
     for stale in folder.iterdir() if folder.is_dir() else []:
-        shutil.rmtree(stale, ignore_errors=True)
+        if error := remove_tree(stale):
+            print(f"note     {stale} is still held ({error})")
 
 
 def build_command(

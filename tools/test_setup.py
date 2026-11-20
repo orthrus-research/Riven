@@ -270,5 +270,19 @@ class CubaturePinTest(unittest.TestCase):
         self.assertFalse((self.root / "dev/pins/Cubature-cleanroom.jar").exists())
 
 
+class RemoveTreeTest(unittest.TestCase):
+    def test_a_tree_deeper_than_260_characters_is_removed(self):
+        with tempfile.TemporaryDirectory() as folder:
+            top = Path(folder) / "build"
+            deep = os.path.abspath(top / ("d" * 60) / ("e" * 60) / ("f" * 60) / ("g" * 60))
+            extended = "\\\\?\\" + deep if os.name == "nt" else deep
+            os.makedirs(extended)
+            with open(os.path.join(extended, "h" * 40 + ".class"), "w", encoding="utf-8") as out:
+                out.write("x")
+            self.assertGreater(len(deep), 260)
+            self.assertIsNone(setup.remove_tree(top))
+            self.assertFalse(top.exists())
+
+
 if __name__ == "__main__":
     unittest.main()
