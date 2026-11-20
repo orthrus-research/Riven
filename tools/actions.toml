@@ -1,7 +1,7 @@
-# Local actions for Riven and Cubature. Run with: python tools/actions.py <workflow|job> ...
+# Riven's local actions. Run with: python tools/actions.py <workflow|job> ...
 # Placeholders: {python} the runner's interpreter, {quality_python}, {atlas_python},
 # {observability_python}, {run_id} the run's identifier, {frozen} .local/frozen/{run_id},
-# {riven} Riven's root, {cubature} the Cubature checkout dev/cc.lock.json names.
+# {riven} Riven's root.
 #
 # Jobs run concurrently once the jobs they need have passed. A job claims `share` of the cores
 # (default 0.25), `memory` GiB (default 4) and its `locks`; jobs start, highest `priority` first,
@@ -25,13 +25,12 @@ full = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-
 profile = ["quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden-profile", "definitions", "sample-history", "variant-coverage"]
 
 [jobs.quality]
-description = "Formatting, lint, types, both-loader compile, content assets and the Riven and Cubature tool tests"
+description = "Formatting, lint, types, both-loader compile, content assets and the Riven tool tests"
 locks = ["riven-gradle"]
 steps = [
   { name = "code quality", run = ["{quality_python}", "tools/code_quality.py", "check"] },
   { name = "content assets", run = ["{quality_python}", "tools/content/build_content.py", "--check"] },
   { name = "riven tool tests", run = ["{observability_python}", "-B", "-m", "unittest", "discover", "-s", "tools", "-p", "test_*.py"] },
-  { name = "cubature tool tests", run = ["{observability_python}", "-B", "-m", "unittest", "discover", "-s", "{cubature}/tools", "-p", "test_*.py"] },
 ]
 
 [jobs.riven-build]
@@ -42,10 +41,10 @@ steps = [
 ]
 
 [jobs.cubature-build]
-description = "Build Cubature and the lab observer with Java 26 tests and freeze them"
+description = "Build the pinned Cubature at its commit with its Java 26 tests and the lab observer, check the pinned bytes and freeze them"
 priority = 5
 steps = [
-  { name = "build cubature", run = ["{python}", "{cubature}/tools/build_cubature.py", "--workspace", "{riven}", "--no-daemon", "--freeze", "{run_id}"] },
+  { name = "build pinned cubature", run = ["{python}", "tools/build_cubature_pin.py", "--freeze", "{run_id}"] },
 ]
 
 [jobs.atlas-golden]
@@ -160,7 +159,7 @@ steps = [
 
 [quick]
 # `actions.py quick` runs the ci jobs that the changes since HEAD can affect: Riven's working tree
-# against its HEAD and the Cubature checkout against its own. A changed path takes the jobs of the first
+# against its HEAD. A changed path takes the jobs of the first
 # rule it matches ("**" crosses folders, "*" does not); a path no rule matches takes every ci job.
 # A push still needs every ci job passed for its tree (tools/push_gate.py): ci --if-needed.
 riven = [
@@ -182,11 +181,6 @@ riven = [
     ], jobs = ["quality", "riven-build"] },
   { paths = ["tools/atlas/**", "tools/atlas_golden.py", "tools/terrain_atlas.py", "tools/run_check.py", "tools/checks/**", "tools/atlas-golden.json"], jobs = ["quality", "atlas-golden", "definitions", "sample-history", "variant-coverage"] },
   { paths = ["tools/build_riven.py"], jobs = ["quality", "riven-build"] },
+  { paths = ["tools/build_cubature_pin.py", "tools/setup.py"], jobs = ["quality", "cubature-build"] },
   { paths = ["tools/**/*.py", "tools/content/**", "tools/strict-math-baseline.json", "pyproject.toml"], jobs = ["quality"] },
-]
-# Riven builds against the pinned Cubature JARs, so a Cubature change reaches only its own build
-# and the tool tests and types in quality.
-cubature = [
-  { paths = ["docs/**"], jobs = [] },
-  { paths = ["**"], jobs = ["quality", "cubature-build"] },
 ]

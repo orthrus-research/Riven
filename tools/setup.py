@@ -301,34 +301,62 @@ def cubature_pins() -> list[tuple[Path, str, str]]:
     ]
 
 
-def cubature_command(work: Path, java25: Path) -> list[str]:
-    """Assemble the Cleanroom build of a Cubature worktree from the inputs fetched into it.
-    Naming the inputs folder keeps an older commit's build from reading Riven's dev/pins."""
+CUBATURE_LIBS = "cleanroom/build/cleanroom/libs"
+LAB_LIBS = "lab/build/cleanroom/libs"
+
+
+def cubature_command(work: Path, java_homes: list[Path], tests: bool = False) -> list[str]:
+    """The Cleanroom build of a Cubature worktree from the inputs fetched into it: assembled, or
+    built with its regression tests on Java 26. Naming the inputs folder keeps an older commit's
+    build from reading Riven's dev/pins."""
     wrapper = work / "cleanroom" / ("gradlew.bat" if os.name == "nt" else "gradlew")
     return [
         str(wrapper),
-        "assemble",
+        *(["-PcubicTestJava=26", "build"] if tests else ["assemble"]),
         *GRADLE_ONCE,
-        f"-Porg.gradle.java.installations.paths={java25}",
+        "-Porg.gradle.java.installations.paths=" + ",".join(str(home) for home in java_homes),
+        f"-PcubicBuildInputs={work / 'cleanroom/build-inputs'}",
+    ]
+
+
+def lab_command(work: Path, java_homes: list[Path], artifact: Path) -> list[str]:
+    """The lab observer's build and checks, against exactly the Cubature JAR just built."""
+    wrapper = work / "cleanroom" / ("gradlew.bat" if os.name == "nt" else "gradlew")
+    return [
+        str(wrapper),
+        "build",
+        *GRADLE_ONCE,
+        "-Porg.gradle.java.installations.paths=" + ",".join(str(home) for home in java_homes),
+        f"-PcubicArtifact={artifact}",
         f"-PcubicBuildInputs={work / 'cleanroom/build-inputs'}",
     ]
 
 
 @contextlib.contextmanager
-def built_cubature(commit: str, repository: str, settings: dict) -> Iterator[Path]:
-    """The libs folder of Cubature's Cleanroom build at commit, made in a worktree of the Cubature
-    checkout with that commit's own compile-only inputs, and removed afterwards."""
-    java25 = java_home(settings, 25, "Cubature")
+def built_cubature(
+    commit: str, repository: str, settings: dict, tests: bool = False, lab: bool = False
+) -> Iterator[Path]:
+    """A worktree of the Cubature checkout at commit, its Cleanroom build made (with its tests on
+    Java 26, and the lab observer built against it, when asked) from that commit's own compile-only
+    inputs; removed afterwards. The JARs are under CUBATURE_LIBS and LAB_LIBS."""
+    homes = [java_home(settings, 25, "Cubature")]
+    if tests or lab:
+        homes.append(java_home(settings, 26, "Cubature"))
     with source_worktree(CUBATURE, repository, commit, "cubature") as work:
         # The commit's own compile-only inputs, fetched and checked by its own tool.
         fetch = [sys.executable, "-B", str(work / "tools/fetch_build_inputs.py")]
         subprocess.run(fetch, cwd=work, check=True)
-        environment = os.environ | {"JAVA_HOME": str(java25)}
+        environment = os.environ | {"JAVA_HOME": str(homes[0])}
         environment.pop("RIVEN_WORKSPACE", None)
-        command = cubature_command(work, java25)
+        command = cubature_command(work, homes, tests)
         if subprocess.run(command, cwd=work / "cleanroom", env=environment).returncode != 0:
             raise SystemExit(f"Cubature: the build of {commit[:12]} failed")
-        yield work / "cleanroom/build/cleanroom/libs"
+        if lab:
+            (artifact,) = (work / CUBATURE_LIBS).glob("Cubature-*-cleanroom.jar")
+            command = lab_command(work, homes, artifact)
+            if subprocess.run(command, cwd=work / "lab", env=environment).returncode != 0:
+                raise SystemExit(f"Cubature: the lab build of {commit[:12]} failed")
+        yield work
 
 
 def cubature_input(spec: dict, settings: dict) -> Path:
@@ -340,10 +368,26 @@ def cubature_input(spec: dict, settings: dict) -> Path:
         return target
     repository = load(ROOT / "dev/cc.lock.json")["repository"]
     print(f"building Cubature at {commit[:12]} as a build input", flush=True)
-    with built_cubature(commit, repository, settings) as libs:
-        (found,) = libs.glob("Cubature-*-cleanroom.jar")
+    with built_cubature(commit, repository, settings) as work:
+        (found,) = (work / CUBATURE_LIBS).glob("Cubature-*-cleanroom.jar")
         place_pinned([(found, target, expected)], f"Cubature {commit[:12]}")
     return target
+
+
+def cubature_artifacts(
+    work: Path, pins: list[tuple[Path, str, str]]
+) -> list[tuple[Path, Path, str]]:
+    """(built file, pinned target, expected SHA-256) for each pinned Cubature JAR in a worktree."""
+    built = []
+    for path, expected, _ in pins:
+        pattern = (
+            "Cubature-*-sources.jar"
+            if path.name.endswith("-sources.jar")
+            else "Cubature-*-cleanroom.jar"
+        )
+        (found,) = (work / CUBATURE_LIBS).glob(pattern)
+        built.append((found, path, expected))
+    return built
 
 
 def build_cubature(args: argparse.Namespace) -> bool:
@@ -362,14 +406,8 @@ def build_cubature(args: argparse.Namespace) -> bool:
     settings = load(SETTINGS) if SETTINGS.is_file() else {}
     commit = pin["commit"]
     print(f"building Cubature at {commit[:12]} from {CUBATURE}", flush=True)
-    with built_cubature(commit, pin["repository"], settings) as libs:
-        built = []
-        for path, expected, loader in pins:
-            sources = path.name.endswith("-sources.jar")
-            pattern = "Cubature-*-sources.jar" if sources else f"Cubature-*-{loader}.jar"
-            (found,) = libs.glob(pattern)
-            built.append((found, path, expected))
-        place_pinned(built, f"Cubature {commit[:12]}")
+    with built_cubature(commit, pin["repository"], settings) as work:
+        place_pinned(cubature_artifacts(work, pins), f"Cubature {commit[:12]}")
     print("built    Cubature artifacts (dev/cc.lock.json)")
     return True
 

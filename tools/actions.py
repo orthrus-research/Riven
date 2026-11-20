@@ -1,4 +1,4 @@
-"""Run local build/test actions for Riven and Cubature, like a small local CI.
+"""Run Riven's local build/test actions, like a small local CI.
 
 Workflows and jobs are defined in `tools/actions.toml`. Jobs run concurrently within a core and
 memory budget, each after the jobs it needs (`--jobs 1` runs them one at a time); a job's steps
@@ -9,10 +9,13 @@ A job that lists `inputs` is a pure check: when the files they match, its steps 
 exactly those of an earlier pass, that pass stands (`.local/actions/cache`) and the job does not
 run. `--no-cache` runs it anyway.
 
-Each summary records the Riven and Cubature trees the run tested: the trees their working trees
-would commit, so a pass recorded before a commit names that commit's tree. `--if-needed` skips the
-jobs that already passed for the current trees; tools/push_gate.py reads the same record.
-`quick` stands for the ci jobs that the changes since HEAD can affect, by the [quick] rules.
+Each summary records the trees the run tested: Riven's as its working tree would commit it, so a
+pass recorded before a commit names that commit's tree, and Cubature's as the commit
+dev/cc.lock.json pins, which cubature-build builds in a worktree of its own (the Cubature
+checkout's own state plays no part). `--if-needed` skips the jobs that already passed for the
+current trees; tools/push_gate.py reads the same record. `quick` stands for the ci jobs that
+Riven's changes since HEAD can affect, by the [quick] rules. Cubature's own changes are checked by
+Cubature's CI, not here.
 
   python tools/actions.py --list
   python tools/actions.py ci                 # quality, builds, golden atlas digests
@@ -41,7 +44,6 @@ from checkouts import CUBATURE
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "tools/actions.toml"
 RUNS = ROOT / ".local/actions"
-REPOSITORIES = (("riven", ROOT), ("cubature", CUBATURE))
 # A hook exports these for its own repository; they would point git at it from the other one.
 GIT_LOCATION = {"GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_PREFIX"}
 
@@ -84,7 +86,6 @@ def placeholders(config, run_id):
         "run_id": run_id,
         "frozen": str(ROOT / ".local/frozen" / run_id),
         "riven": str(ROOT),
-        "cubature": str(CUBATURE),
     }
     for key, relative in config.get("interpreters", {}).items():
         values[key] = str(ROOT / relative)
@@ -164,15 +165,24 @@ def working_tree(repo: Path) -> str | None:
         return git(repo, "write-tree", index=scratch_index)
 
 
+def pinned_cubature_tree(riven: Path = ROOT, cubature: Path = CUBATURE) -> str | None:
+    """The tree of the Cubature commit Riven's working dev/cc.lock.json pins, read from the
+    Cubature checkout's history (not its working tree); None when that commit is not there."""
+    try:
+        pin = json.loads((riven / "dev/cc.lock.json").read_text(encoding="utf-8"))["commit"]
+        return git(cubature, "rev-parse", "--verify", f"{pin}^{{tree}}")
+    except OSError, ValueError, KeyError, subprocess.CalledProcessError:
+        return None
+
+
 def trees() -> dict[str, str | None]:
-    """The Riven and Cubature trees a run tests; None for one git could not read."""
-    result: dict[str, str | None] = {}
-    for name, repo in REPOSITORIES:
-        try:
-            result[name] = working_tree(repo)
-        except OSError, subprocess.CalledProcessError:
-            result[name] = None
-    return result
+    """The trees a run tests: Riven's working tree and the pinned Cubature commit's tree; None for
+    one git could not read."""
+    try:
+        riven = working_tree(ROOT)
+    except OSError, subprocess.CalledProcessError:
+        riven = None
+    return {"riven": riven, "cubature": pinned_cubature_tree()}
 
 
 def passed_jobs(runs: Path = RUNS) -> dict[tuple[str, str], set[str]]:
@@ -206,20 +216,16 @@ def affected(rules: list[dict[str, Any]], paths: list[str], everything: list[str
 
 
 def quick_jobs(config, tested: dict[str, str | None]) -> tuple[list[str], dict[str, int]]:
-    """The ci jobs that each repository's changes since its HEAD can affect, and how many paths
-    changed in each; every ci job when a tree could not be read."""
+    """The ci jobs that Riven's changes since its HEAD can affect, and how many paths changed;
+    every ci job when its tree could not be read. A moved Cubature pin is a change to
+    dev/cc.lock.json, which no rule matches, so it takes every job."""
     ci = config["workflows"]["ci"]
-    wanted: set[str] = set()
-    changed = {}
-    for name, repo in REPOSITORIES:
-        tree = tested[name]
-        if tree is None:
-            wanted.update(ci)
-            continue
-        paths = git(repo, "diff", "--no-renames", "--name-only", "HEAD^{tree}", tree).splitlines()
-        changed[name] = len(paths)
-        wanted |= affected(config["quick"][name], paths, ci)
-    return [job for job in ci if job in wanted], changed
+    tree = tested["riven"]
+    if tree is None:
+        return list(ci), {}
+    paths = git(ROOT, "diff", "--no-renames", "--name-only", "HEAD^{tree}", tree).splitlines()
+    wanted = affected(config["quick"]["riven"], paths, ci)
+    return [job for job in ci if job in wanted], {"riven": len(paths)}
 
 
 def physical_memory_gib() -> float:

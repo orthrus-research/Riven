@@ -1,4 +1,4 @@
-"""push_gate.py's decision for a pushed Riven or Cubature commit."""
+"""push_gate.py's decision for a pushed Riven commit."""
 
 import json
 import unittest
@@ -34,33 +34,27 @@ class RefusalTests(Scratch):
         git(self.riven, "commit", "-q", "--allow-empty", "-m", f"pin {pin[:8]}")
         return git(self.riven, "rev-parse", "HEAD")
 
-    def refusal(self, repository, commit, passed):
-        return push_gate.refusal(repository, commit, passed, CI, self.riven, self.cubature)
+    def refusal(self, commit, passed):
+        return push_gate.refusal(commit, passed, CI, self.riven, self.cubature)
 
     def test_a_riven_commit_needs_every_job_with_its_pinned_cubature_tree(self):
         pair = (self.riven_tree, self.cubature_tree)
-        self.assertIsNone(self.refusal("riven", self.commit, {pair: set(CI)}))
-        reason = self.refusal("riven", self.commit, {pair: {"quality"}})
+        self.assertIsNone(self.refusal(self.commit, {pair: set(CI)}))
+        reason = self.refusal(self.commit, {pair: {"quality"}})
         self.assertIn("has not passed riven-build, cubature-build", reason or "")
         other = {(self.riven_tree, "another-cubature-tree"): set(CI)}
-        self.assertIn("has not passed quality", self.refusal("riven", self.commit, other) or "")
+        self.assertIn("has not passed quality", self.refusal(self.commit, other) or "")
 
     def test_a_riven_commit_pinning_an_absent_cubature_commit_is_refused(self):
         commit = self.riven_commit("f" * 40)
         tree = git(self.riven, "rev-parse", "HEAD^{tree}")
-        reason = self.refusal("riven", commit, {(tree, self.cubature_tree): set(CI)})
+        reason = self.refusal(commit, {(tree, self.cubature_tree): set(CI)})
         self.assertEqual(reason, "its Cubature pin ffffffff is not in the Cubature checkout")
-
-    def test_a_cubature_commit_needs_every_job_with_one_riven_tree(self):
-        split = {("r1", self.cubature_tree): {"quality"}, ("r2", self.cubature_tree): set(CI[1:])}
-        self.assertIn("has not passed", self.refusal("cubature", self.pin, split) or "")
-        joined = {**split, ("r3", self.cubature_tree): set(CI)}
-        self.assertIsNone(self.refusal("cubature", self.pin, joined))
 
     def test_deleted_refs_and_other_lines_are_not_checked(self):
         zero = "0" * 40
         lines = [f"(delete) {zero} refs/heads/old {self.commit}\n", "\n"]
-        self.assertEqual(push_gate.check("riven", lines), 0)
+        self.assertEqual(push_gate.check(lines), 0)
 
 
 if __name__ == "__main__":

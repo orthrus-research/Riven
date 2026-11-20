@@ -65,6 +65,38 @@ class WorkingTreeTests(Scratch):
         self.assertIsNone(actions.working_tree(self.home))
 
 
+class PinnedCubatureTreeTests(Scratch):
+    def setUp(self):
+        super().setUp()
+        self.cubature = self.home / "cubature"
+        self.cubature.mkdir()
+        git(self.cubature, "init", "-q")
+        (self.cubature / "a.txt").write_text("a\n", encoding="utf-8")
+        git(self.cubature, "add", "--all")
+        git(self.cubature, "commit", "-q", "-m", "pinned")
+        self.pin = git(self.cubature, "rev-parse", "HEAD")
+        self.tree = git(self.cubature, "rev-parse", "HEAD^{tree}")
+        self.riven = self.home / "riven"
+        (self.riven / "dev").mkdir(parents=True)
+
+    def pinning(self, commit):
+        lock = {"commit": commit}
+        (self.riven / "dev/cc.lock.json").write_text(json.dumps(lock), encoding="utf-8")
+        return actions.pinned_cubature_tree(self.riven, self.cubature)
+
+    def test_the_pinned_commits_tree_whatever_the_checkout_has_out(self):
+        (self.cubature / "a.txt").write_text("changed\n", encoding="utf-8")
+        (self.cubature / "b.txt").write_text("b\n", encoding="utf-8")
+        git(self.cubature, "add", "--all")
+        git(self.cubature, "commit", "-q", "-m", "later")
+        self.assertEqual(self.pinning(self.pin), self.tree)
+
+    def test_an_absent_pin_or_lock_has_no_tree(self):
+        self.assertIsNone(self.pinning("f" * 40))
+        (self.riven / "dev/cc.lock.json").unlink()
+        self.assertIsNone(actions.pinned_cubature_tree(self.riven, self.cubature))
+
+
 class PassedJobsTests(Scratch):
     def run_summary(self, run_id, summary):
         path = self.home / run_id / "summary.json"
@@ -174,11 +206,13 @@ class QuickRuleTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.jobs("riven", path), expected)
 
-    def test_cubature_paths_reach_only_its_build_and_quality(self):
-        self.assertEqual(self.jobs("cubature", "docs/delivery.md"), [])
-        for path in ("src/main/java/a/B.java", "tools/lab_files.py", "build.gradle"):
+    def test_the_pinned_builds_tools_reach_its_build_and_quality(self):
+        for path in ("tools/build_cubature_pin.py", "tools/setup.py"):
             with self.subTest(path=path):
-                self.assertEqual(self.jobs("cubature", path), ["quality", "cubature-build"])
+                self.assertEqual(self.jobs("riven", path), ["quality", "cubature-build"])
+
+    def test_only_rivens_changes_have_rules(self):
+        self.assertEqual(set(self.config["quick"]), {"riven"})
 
     def test_a_change_takes_every_path_jobs(self):
         self.assertEqual(

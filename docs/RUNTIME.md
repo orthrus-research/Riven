@@ -237,24 +237,26 @@ everything. A job's inputs must list every file its verdict reads.
 writes `timing.md` beside the run's summary: when each job began and ended, each step, and for
 the golden windows the map building, sampling, plan building, site decisions and painting.
 
-Each `summary.json` records the Riven and Cubature trees the run tested, hashed as `git add --all`
-would commit them (through a scratch copy of the index; the real index is untouched), and whether
-either changed while it ran. A pass recorded before a commit therefore names that commit's tree.
+Each `summary.json` records the trees the run tested: Riven's, hashed as `git add --all` would
+commit it (through a scratch copy of the index; the real index is untouched), and the tree of the
+Cubature commit `dev/cc.lock.json` pins, which `cubature-build` builds in a worktree of its own
+(`tools/build_cubature_pin.py`), whatever the Cubature checkout has out; and whether either changed
+while it ran. A pass recorded before a commit therefore names that commit's tree.
 `--if-needed` skips the jobs that already passed for the current trees and keeps the jobs a
 remaining job needs. The record assumes the tool environments, `.local/settings.json` and the
 pinned JARs are unchanged between runs.
 
-`python tools/push_gate.py install` writes a pre-push hook into Riven and Cubature; it
-stays local, since git never commits `.git/hooks`. The hook refuses a push whose tip has not
-passed every `ci` job: a Riven commit on its own tree together with the tree of the Cubature
-commit its `dev/cc.lock.json` pins, a Cubature commit on its tree with one Riven tree. Running
-`ci --if-needed` with the pushed commits checked out and nothing uncommitted supplies the missing
-jobs; `git push --no-verify` skips the check.
+`python tools/push_gate.py install` writes Riven's pre-push hook; it stays local, since git never
+commits `.git/hooks`. The hook refuses a push whose tip has not passed every `ci` job on its own
+tree together with the tree of the Cubature commit its `dev/cc.lock.json` pins. Running
+`ci --if-needed` with the pushed commit checked out and nothing uncommitted supplies the missing
+jobs; `git push --no-verify` skips the check. Cubature's pushes are checked by Cubature's own CI
+and gate, so a Cubature change needs no Riven run until Riven moves its pin.
 
 | Command | Runs |
 | --- | --- |
 | `python tools/setup.py` (`riven.ps1 setup`) | Preparation of a clone, each step skipped when done: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports. A pin `runtime.lock.json` marks built from source carries a `build` recipe (the sibling checkout, Java version, Gradle tasks, artifact and any properties; a property may name a Cubature JAR by commit and SHA-256, which setup builds and keeps under `.local/source-inputs`); setup builds it at its `sourceCommit` in a worktree of that checkout under `.local/source-builds` and places it only if it is the pinned bytes. Moving such a pin is a new `sourceCommit` and `sha256`; setup builds the rest. The Cubature artifacts `dev/cc.lock.json` pins are built the same way at its `commit`, with that commit's own compile-only inputs, so the Cubature checkout's own state plays no part |
-| `riven.ps1 quick` | Before a commit: the `ci` jobs the changes since HEAD (Riven's and Cubature's) can affect, by the `[quick]` rules in `tools/actions.toml`; a path no rule matches takes every `ci` job |
+| `riven.ps1 quick` | Before a commit: the `ci` jobs Riven's changes since HEAD can affect, by the `[quick]` rules in `tools/actions.toml`; a path no rule matches takes every `ci` job, so a moved Cubature pin runs them all |
 | `riven.ps1 check` | `quality`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions` and `sample-history` |
 | `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history` |
 | `python tools/actions.py ci --if-needed` | The `ci` jobs that have not passed for the current trees |
@@ -287,9 +289,9 @@ records both JVMs with JFR's profile settings for attributing a phase further.
 
 - `tools/build_riven.py [--diagnostics] [--freeze LABEL]` builds Riven for Cleanroom and
   writes `.local/builds/riven-latest.json`.
-- `../Cubature/tools/build_cubature.py [--workspace RIVEN] [--skip-tests] [--no-lab] [--freeze LABEL]`
-  builds Cubature with its Java 26 tests, then the lab observer against that exact artifact, and
-  writes `.local/builds/cubature-latest.json` with test counts.
+- `tools/build_cubature_pin.py [--freeze LABEL]` builds the pinned Cubature at its commit in a
+  worktree of the Cubature checkout, with its Java 26 tests, then the lab observer against that exact
+  JAR, and fails unless the Cubature JARs are the pinned bytes (ci's `cubature-build`).
 - `--freeze LABEL` copies both projects' artifacts into `.local/frozen/LABEL/` with a shared
   `manifest.json`; action runs freeze under their run id.
 - `tools/atlas_golden.py check|update [--verify]` compares four fixed atlas windows
