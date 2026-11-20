@@ -205,19 +205,10 @@ def main(argv=None):
         help="The client draws only DH LODs (DH lodOnlyMode); a rendering diagnostic",
     )
     parser.add_argument(
-        "--shaders",
-        action="store_true",
-        help="Add the optional shader pins to the client, so Celeritas draws near terrain",
-    )
-    parser.add_argument(
         "--no-distant-horizons",
         action="store_false",
         dest="distant_horizons",
         help="Leave DH off both sides: near terrain only",
-    )
-    parser.add_argument(
-        "--shader-pack",
-        help="With --shaders: a pinned shader pack to install and enable (runtime.lock.json)",
     )
     parser.add_argument(
         "--client-mod",
@@ -225,8 +216,6 @@ def main(argv=None):
         help="An extra mod JAR for the client only; repeat for several",
     )
     args = parser.parse_args(argv)
-    if args.shader_pack and not args.shaders:
-        parser.error("--shader-pack needs --shaders")
     if not args.distant_horizons and (args.lod_trace or args.dh_visited_only or args.dh_lod_only):
         parser.error(
             "--no-distant-horizons excludes --lod-trace, --dh-visited-only and --dh-lod-only"
@@ -275,8 +264,6 @@ def main(argv=None):
             keep_fine_columns=not args.no_keep_fine_columns,
             # The config file selects the delivery mode; Cubature reads it as the server starts.
             cubature_delivery=args.delivery_experiment,
-            shaders=args.shaders,
-            shader_pack=[args.shader_pack] if args.shader_pack else None,
             distant_horizons=args.distant_horizons,
             client_mods=args.client_mod,
         )
@@ -294,8 +281,6 @@ def main(argv=None):
         for side in ["server", "client"]:
             configured = lab_profiles.configure_cube_experiments(Path(manifest[side]), policy)
         manifest["cubeExperiments"] = configured
-        # The shader pins bring Celeritas, which replaces the vanilla near-terrain renderer.
-        manifest["clientRenderer"] = "celeritas" if args.shaders else "vanilla"
         manifest["packetPolicyCapabilities"] = packet_capabilities
         for side in ["server", "client"]:
             home = Path(manifest[side])

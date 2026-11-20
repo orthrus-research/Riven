@@ -85,7 +85,7 @@ public final class RivenClient {
                         "Inspection view distances: client horizontal={} vertical={}",
                         mc.gameSettings.renderDistanceChunks,
                         CubicChunksConfig.verticalCubeLoadDistance);
-        // The F3 counters for this frame: sections (Celeritas reports visible/total), entities
+        // The F3 counters for this frame: sections, entities
         // rendered/total, the client's loaded cubes/columns, and heap in use.
         Runtime runtime = Runtime.getRuntime();
         LogManager.getLogger("Riven")

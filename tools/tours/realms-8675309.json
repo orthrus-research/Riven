@@ -7,5 +7,5 @@
   {"label": "boundary-arrive", "x": 0, "y": -1110, "z": 100, "yaw": 180, "pitch": 0},
   {"label": "boundary-shaft", "x": 0, "y": -1110, "z": 88, "yaw": 180, "pitch": 0, "commands": ["fill -3 -1150 40 3 -1065 90 minecraft:air"]},
   {"label": "nether-arrive", "x": 0, "y": -1400, "z": 70, "yaw": 180, "pitch": 0},
-  {"label": "nether-check", "x": 12, "y": -1400, "z": 70, "yaw": 180, "pitch": 0, "commands": ["execute {player} ~ ~ ~ riven", "riven shaderprops {player}"]}
+  {"label": "nether-check", "x": 12, "y": -1400, "z": 70, "yaw": 180, "pitch": 0, "commands": ["execute {player} ~ ~ ~ riven"]}
 ]

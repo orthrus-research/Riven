@@ -108,7 +108,7 @@ overlays with `--host` over each host the set names.
 ### 46. Calibration
 
 The calibration set ART-DIRECTION.md names, drawn first and taken through every test, wall,
-mixed-variant wall, contact sheet and both pinned shader packs. The production scales only when
+mixed-variant wall and contact sheet. The production scales only when
 it passes; limits move only here, recorded with their reasons.
 
 ### 47. Terrain and colormaps

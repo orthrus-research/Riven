@@ -133,7 +133,6 @@ def download(url: str, target: Path, expected: str) -> None:
 def third_party_pins(args: argparse.Namespace) -> bool:
     ready = True
     for mod in load(ROOT / "runtime.lock.json")["mods"]:
-        # Optional pins too: Cubature compiles against Demonica, a runtime option.
         if "download" not in mod:
             continue
         target = ROOT / mod["file"]

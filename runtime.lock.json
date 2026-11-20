@@ -154,44 +154,6 @@
         "client"
       ],
       "reason": "OrthLib's Cubature adapter (mod orthlib_cubature): drives OrthLib's random-tick participation through Cubature's ICubicRandomTickListener, binding a listener only while a participant is registered. The exact adapter artifact of OrthLib's T1 native qualification. Private, all rights reserved; local use only, never redistributed"
-    },
-    {
-      "file": "dev/pins/Demonica-0.9.0.jar",
-      "sha256": "241632b96fa241b670d7c5c29110d8e7c870bda9693d2967e680cf357e1a619d",
-      "download": "https://github.com/ndellagrotte/Demonica/releases/download/v0.9.0/Demonica-0.9.0.jar",
-      "sides": [
-        "client"
-      ],
-      "optional": "shaders",
-      "version": "0.9.0",
-      "source": "https://github.com/ndellagrotte/Demonica/releases/tag/v0.9.0",
-      "purpose": "Iris shader pipeline on Celeritas for Cleanroom 0.7.4+; binds DH 3.3.3's shader accessor. Installed only by runtime.py prepare --shaders."
-    }
-  ],
-  "shaderPacks": [
-    {
-      "name": "bsl",
-      "file": "dev/pins/shaderpacks/BSL_v10.1.8.zip",
-      "version": "10.1.8",
-      "sha256": "36b0a50ff7918bf10e9422c401d93779f9d0088a26acea975b435243f96930b5",
-      "source": "https://modrinth.com/shader/bsl-shaders/version/Y68yiql9",
-      "license": "All rights reserved; local use only, never redistributed"
-    },
-    {
-      "name": "complementary-reimagined",
-      "file": "dev/pins/shaderpacks/ComplementaryReimagined_r5.9.3.zip",
-      "version": "r5.9.3",
-      "sha256": "fed6c879e732cf7fc7bc6570ebb1def43235aa7e96f62859fbdbdbfa0b484b38",
-      "source": "https://modrinth.com/shader/complementary-reimagined/version/Bqen1mJX",
-      "license": "Complementary License Agreement 1.7; used unmodified, never redistributed"
-    },
-    {
-      "name": "complementary-unbound",
-      "file": "dev/pins/shaderpacks/ComplementaryUnbound_r5.9.3.zip",
-      "version": "r5.9.3",
-      "sha256": "98ac741dee294d2a3c82d153349148c3bb7fb688c30eb3b49c3b9ac37e968c5a",
-      "source": "https://modrinth.com/shader/complementary-unbound/version/B1kyfoUZ",
-      "license": "Complementary License Agreement 1.7; used unmodified, never redistributed"
     }
   ],
   "sourceMod": "riven",
