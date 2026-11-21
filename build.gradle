@@ -5,7 +5,7 @@ plugins {
 group = 'cc.orthrus.riven'
 version = mod_version
 // Cleanroom on Java 25 or 26 is the only target (docs/DECISIONS.md, 2026-10-30).
-def compilerJavaVersion = providers.gradleProperty('rivenJavaVersion').getOrElse('25').toInteger()
+def compilerJavaVersion = providers.gradleProperty('rivenJavaVersion').getOrElse('26').toInteger()
 def diagnosticGameSetting = providers.gradleProperty('rivenDiagnosticGameBootstrap').getOrElse('false')
 if (!(diagnosticGameSetting in ['true', 'false'])) {
     throw new GradleException('rivenDiagnosticGameBootstrap must be true or false')
@@ -65,8 +65,8 @@ java {
         languageVersion = JavaLanguageVersion.of(compilerJavaVersion)
     }
     // A qualification compiler must not silently change the development bytecode pin.
-    sourceCompatibility = JavaVersion.VERSION_25
-    targetCompatibility = JavaVersion.VERSION_25
+    sourceCompatibility = JavaVersion.VERSION_26
+    targetCompatibility = JavaVersion.VERSION_26
     withSourcesJar()
 }
 configurations {
@@ -122,8 +122,8 @@ tasks.named('compileDiagnosticsJava', JavaCompile) {
     javaCompiler = javaToolchains.compilerFor {
         languageVersion = JavaLanguageVersion.of(compilerJavaVersion)
     }
-    sourceCompatibility = JavaVersion.VERSION_25.toString()
-    targetCompatibility = JavaVersion.VERSION_25.toString()
+    sourceCompatibility = JavaVersion.VERSION_26.toString()
+    targetCompatibility = JavaVersion.VERSION_26.toString()
 }
 
 // Select an entry point with -PrivenDiagnosticMain and pass its arguments with --args.

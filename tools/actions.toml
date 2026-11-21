@@ -1,7 +1,11 @@
-# Riven's local actions. Run with: python tools/actions.py <workflow|job> ...
+# Riven's checks, in the shared actions format. Workbench runs them from a clean clone, with Cubature
+# at the commit dev/cc.lock.json pins (`wb run ci.run project=riven`), keeps the passes, and its
+# pre-push hook refuses a tip whose trees have not passed every ci job. Without Workbench:
+# `orthrus-tools actions run ci` in a checkout. `full` adds `smoke`, a native capture on a Windows
+# GPU host, which runs outside the container.
 # Placeholders: {python} the runner's interpreter, {quality_python}, {atlas_python},
-# {observability_python}, {run_id} the run's identifier, {frozen} .local/frozen/{run_id},
-# {riven} Riven's root.
+# {observability_python}, {run_id} the run's identifier, {run_dir} its folder, {frozen} the run's
+# frozen artifacts, {riven} Riven's root.
 #
 # Jobs run concurrently once the jobs they need have passed. A job claims `share` of the cores
 # (default 0.25), `memory` GiB (default 4) and its `locks`; jobs start, highest `priority` first,
@@ -11,10 +15,26 @@
 # `inputs` makes a job a pure check: globs of every file its verdict depends on, beside its steps
 # and the JDK. A job whose exact inputs passed before is not run again; list every file it reads.
 
+[settings]
+name = "riven"
+workflow = "ci"
+identity_files = ["{env.JAVA_HOME}/release"]
+
+# Cubature is built at the commit Riven pins (cubature-build); a push needs Riven's tree to have
+# passed together with that commit's tree.
+[repositories.cubature]
+path = "../Cubature"
+pin = { file = "dev/cc.lock.json", key = "commit" }
+
+[placeholders]
+frozen = "{run_dir}/frozen"
+
+# tools/setup.py makes these environments in a checkout; Workbench builds them from the same
+# requirements files for a clean clone.
 [interpreters]
-quality_python = ".local/quality-venv/Scripts/python.exe"
-atlas_python = ".local/atlas-venv/Scripts/python.exe"
-observability_python = ".local/observability-venv/Scripts/python.exe"
+quality_python = [".local/quality-venv/bin/python", ".local/quality-venv/Scripts/python.exe"]
+atlas_python = [".local/atlas-venv/bin/python", ".local/atlas-venv/Scripts/python.exe"]
+observability_python = [".local/observability-venv/bin/python", ".local/observability-venv/Scripts/python.exe"]
 
 [workflows]
 check = ["quality", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
@@ -95,7 +115,7 @@ gson = build.gson()
 fixtures.mkdir(parents=True, exist_ok=True)
 output = Path(tempfile.mkdtemp(prefix="helpers-", dir=fixtures))
 subprocess.run([
-    str(java.with_name("javac.exe")), "--release", "25", "-Xlint:all,-options", "-Werror",
+    str(build.javac()), "--release", "26", "-Xlint:all,-options", "-Werror",
     "-implicit:none", "-cp", os.pathsep.join(map(str, (base, gson))), "-d", str(output),
     *map(str, checks),
 ], check=True)
@@ -125,8 +145,8 @@ inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc
 memory = 8
 priority = 6
 steps = [
-  { name = "bake, scale 1", run = ["{atlas_python}", "tools/run_check.py", "RegionalBakeCheck", ".local/actions/{run_id}/regional-bake", "8675309", "1", "0", "0"] },
-  { name = "bake, scale 4", run = ["{atlas_python}", "tools/run_check.py", "RegionalBakeCheck", ".local/actions/{run_id}/regional-bake", "8675309", "4", "0", "0"] },
+  { name = "bake, scale 1", run = ["{atlas_python}", "tools/run_check.py", "RegionalBakeCheck", "{run_dir}/regional-bake", "8675309", "1", "0", "0"] },
+  { name = "bake, scale 4", run = ["{atlas_python}", "tools/run_check.py", "RegionalBakeCheck", "{run_dir}/regional-bake", "8675309", "4", "0", "0"] },
 ]
 
 [jobs.sample-history]
@@ -154,14 +174,14 @@ native = true
 steps = [
   { name = "doctor", run = ["{python}", "-B", "tools/riven_observe.py", "doctor", "--riven", "{frozen}/riven-cleanroom.jar", "--observer", "{frozen}/lab-cleanroom.jar"] },
   { name = "timing capture", run = ["{python}", "-B", "tools/riven_observe.py", "capture", "--name", "smoke-{run_id}", "--riven", "{frozen}/riven-cleanroom.jar", "--observer", "{frozen}/lab-cleanroom.jar", "--mode", "timing"] },
-  { name = "inspect", run = ["{observability_python}", "-B", "tools/riven_observe.py", "inspect", ".local/cubic-standalone/smoke-{run_id}", "--output", ".local/actions/{run_id}/smoke-inspect"] },
+  { name = "inspect", run = ["{observability_python}", "-B", "tools/riven_observe.py", "inspect", ".local/cubic-standalone/smoke-{run_id}", "--output", "{run_dir}/smoke-inspect"] },
 ]
 
 [quick]
-# `actions.py quick` runs the ci jobs that the changes since HEAD can affect: Riven's working tree
-# against its HEAD. A changed path takes the jobs of the first
+# `quick` runs the ci jobs that the changes since HEAD can affect: Riven's working tree against its
+# HEAD. A changed path takes the jobs of the first
 # rule it matches ("**" crosses folders, "*" does not); a path no rule matches takes every ci job.
-# A push still needs every ci job passed for its tree (tools/push_gate.py): ci --if-needed.
+# A push still needs every ci job passed for its tree (Workbench's ci.gate): ci.run first.
 riven = [
   { paths = ["docs/**", "tools/tours/**", ".github/**", "CONTRIBUTING.md", "THIRD-PARTY.md", ".editorconfig"], jobs = [] },
   { paths = ["CHANGELOG.md", "README.md"], jobs = ["definitions"] },

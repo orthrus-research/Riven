@@ -25,6 +25,7 @@ import venv
 from collections.abc import Iterator
 from pathlib import Path
 
+import jdks
 from checkouts import CUBATURE, main_checkout
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -265,10 +266,14 @@ def place_pinned(built: list[tuple[Path, Path, str]], what: str) -> None:
 
 
 def java_home(settings: dict, major: int, what: str) -> Path:
+    """A JDK for building ``what``: the one recorded in these settings, else what tools/jdks.py finds."""
     java = settings.get(f"java{major}")
-    if not java:
-        raise SystemExit(f"{what}: no Java {major} recorded in {SETTINGS}")
-    return Path(java).parent.parent
+    if java:
+        return Path(java).parent.parent
+    try:
+        return jdks.home(major)
+    except SystemExit:
+        raise SystemExit(f"{what}: no Java {major} recorded in {SETTINGS} or in the environment") from None
 
 
 def build_source_pin(mod: dict, settings: dict) -> None:

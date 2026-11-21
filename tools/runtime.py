@@ -15,6 +15,7 @@ import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 
+import jdks
 from checkouts import CUBATURE_TOOLS, LAB_OBSERVER
 from observability.profiles import sha
 
@@ -44,11 +45,9 @@ def target(name):
 
 
 def build():
-    settings = load_json(ROOT / ".local/settings.json")
     env = os.environ.copy()
-    env["JAVA_HOME"] = str(Path(settings["java25"]).parent.parent)
-    # As tools/build_riven.py: the Java 26 compiler reads GTCEu: Reloaded's Java 26 classes; bytecode stays 25.
-    java26 = Path(settings["java26"]).parent.parent
+    java26 = jdks.home(26)  # as tools/build_riven.py: Gradle and the compiler both run on Java 26
+    env["JAVA_HOME"] = str(java26)
     subprocess.run(
         [
             str(ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")),
@@ -65,9 +64,9 @@ def build():
 
 def native_runtime():
     """This machine's runtime identity: the pinned Cleanroom release (dev/native-runtime.json)
-    plus the Java 26 named in .local/settings.json, with the hashes of its critical files."""
+    plus the Java 26 tools/jdks.py finds, with the hashes of its critical files."""
     template = load_json(ROOT / "dev/native-runtime.json")
-    java = Path(load_json(ROOT / ".local/settings.json")["java26"]).resolve()
+    java = jdks.java(26).resolve()
     identity = lab_instance.inspect_java26(java)
     reviewed = template["javaRuntime"]["version"]
     if identity["version"] != reviewed:

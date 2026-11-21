@@ -20,20 +20,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+import jdks
+
 ROOT = Path(__file__).resolve().parents[1]
 # Cleanroom on Java 25 or 26 is the only target (docs/DECISIONS.md, 2026-10-30).
 ARTIFACTS = {"cleanroom": ROOT / "build/libs/riven-0.0.1-cleanroom.jar"}
-
-
-def settings() -> dict:
-    path = ROOT / ".local/settings.json"
-    if not path.is_file():
-        sys.exit("Configure .local/settings.json with java25 and java26 JDK executables")
-    data = json.loads(path.read_text(encoding="utf-8"))
-    for key in ("java25", "java26"):
-        if not Path(data.get(key, "")).is_file():
-            sys.exit(f"Missing local JDK executable in .local/settings.json: {key}")
-    return data
 
 
 def sha256(path: Path) -> str:
@@ -136,10 +127,9 @@ def main():
         "--no-daemon", action="store_true", help="leave no Gradle daemon (for native captures)"
     )
     args = parser.parse_args()
-    local = settings()
     environment = os.environ.copy()
-    environment["JAVA_HOME"] = str(Path(local["java25"]).parent.parent)
-    java26_home = Path(local["java26"]).parent.parent
+    java26_home = jdks.home(26)
+    environment["JAVA_HOME"] = str(java26_home)
     wrapper = ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")
     loaders = list(ARTIFACTS)
     started = time.monotonic()
