@@ -169,7 +169,9 @@ daylight and weather and teleports on first join; `--scale` sets Riven's layout 
 400 client ticks. `--spawn-animals` allows animals (off for terrain captures).
 `--no-distant-horizons` leaves Distant Horizons off both sides, so the client draws native cubes
 only; it excludes `--dh-lod-only` and `--lod-trace`. `--client-mod <jar>` (repeatable) adds
-an extra mod to the client only and records it with the instance. `/riven` in game
+an extra mod to the client only and records it with the instance. The client draws cubic worlds
+through Quadrature, which takes over the game's chunk system there: Cubature's client stops at
+loading without it, so a client that is to draw is prepared with `--client-mod <Quadrature jar>`. `/riven` in game
 prints climate, terrain, biome and feature diagnostics at the player's position. `/riven digest
 [radius [x z]]` hashes the world's blocks around a point by state name, one line per chunk column
 whose band (32 blocks under its lowest surface to 48 over its highest, from the generator's

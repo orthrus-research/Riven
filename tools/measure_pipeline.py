@@ -305,6 +305,10 @@ def main(argv=None):
             "cubiclab.fullViewRenderReady": str(args.render_ready).lower(),
             "cubiclab.threadCosts": "true",
         }
+        if not args.client_mod:
+            # Cubature's client stops at loading without Quadrature, which draws cubic worlds. A
+            # capture without it times the game's own renderer, which then draws heights 0 to 255.
+            manifest["labProperties"]["cubature.clientWithoutRenderer"] = "true"
         # The full-view observer reads JVM properties, independently of the
         # workload file. Supply both and check the observed pose below.
         manifest["labProperties"].update(

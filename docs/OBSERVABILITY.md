@@ -116,7 +116,11 @@ instrumentation. The same bounded worker counters remain on both variants.
 `--cubature` selects a frozen candidate without changing accepted pins.
 `--workload` selects a validated named workload; `--port` must be free.
 `--no-distant-horizons` leaves DH off both sides. `--client-mod <jar>` (repeatable) adds an
-extra mod to the client only.
+extra mod to the client only. Without a client mod the capture sets
+`cubature.clientWithoutRenderer=true`, since Cubature's client otherwise stops at loading without
+Quadrature: the game's own renderer then draws only heights 0 to 255 of the cubic world, so such a
+capture times the server and the client's frames, not the picture. `--render-ready` reads the
+game's render chunks, which a client with Quadrature does not have, so it never becomes ready there.
 `--render-ready` additionally requires native renderer demand and the GPU
 marker; a timeout is retained as failure. `--storage` adds storage spans and
 requires diagnostic mode. Do not build or run other experiments during a
