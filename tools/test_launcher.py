@@ -64,6 +64,9 @@ class LauncherTests(unittest.TestCase):
             [str(ROOT / "tools/setup.py"), "--check"],
         )
 
+    def test_build_needs_no_instance(self):
+        self.assertEqual(self.invoke("build"), [str(ROOT / "tools/runtime.py"), "build"])
+
     def test_runtime_named_parameters_preserve_port_and_text(self):
         self.assertEqual(
             self.invoke(

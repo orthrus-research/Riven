@@ -17,6 +17,9 @@ try {
         $wb = if ($env:WB_CLI) { $env:WB_CLI } else { Join-Path $PSScriptRoot '..\WorkbenchReloaded\bin\wb.cmd' }
         $commit = if ($Action -eq 'quick') { 'worktree' } else { 'HEAD' }
         & $wb run ci.run project=riven "commit=$commit" "workflow=$Action" @Rest
+    } elseif ($Action -eq 'build') {
+        # Building uses no instance.
+        & python "$PSScriptRoot/tools/runtime.py" build
     } else {
         if (-not $Name) { throw "riven.ps1 $Action needs -Name <instance>" }
         $runtimeArgs=@("$PSScriptRoot/tools/runtime.py",$Action,'--name',$Name,'--port',"$Port")

@@ -814,7 +814,9 @@ def tour_views(directory, m, views, server, client, client_messages, username):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("command", choices=["build", "prepare", "play", "command"])
-    p.add_argument("--name", required=True, help="instance name under .local/cubic-standalone")
+    p.add_argument(
+        "--name", help="prepare, play, command: the instance name under .local/cubic-standalone"
+    )
     p.add_argument("--port", type=int, default=25870)
     p.add_argument("--seed", type=int, default=8675309, help="World seed for prepare")
     p.add_argument(
@@ -997,6 +999,8 @@ def main():
     )
     p.add_argument("--window", help="play: client window WIDTHxHEIGHT (default 1280x720)")
     a = p.parse_args()
+    if a.command != "build" and not a.name:
+        p.error(a.command + " needs --name <instance>")
     if a.command == "build":
         build()
     elif a.command == "prepare":
