@@ -113,18 +113,9 @@ def main(argv=None):
         help="The client draws only DH LODs (DH lodOnlyMode); a rendering diagnostic",
     )
     capture.add_argument(
-        "--shaders",
-        action="store_true",
-        help="Add the optional shader pins to the client, so Celeritas draws near terrain",
-    )
-    capture.add_argument(
         "--no-distant-horizons",
         action="store_true",
         help="Leave DH off both sides: near terrain only",
-    )
-    capture.add_argument(
-        "--shader-pack",
-        help="With --shaders: a pinned shader pack to install and enable (runtime.lock.json)",
     )
     capture.add_argument(
         "--client-mod",
@@ -277,12 +268,8 @@ def main(argv=None):
             options.append("--dh-visited-only")
         if args.dh_lod_only:
             options.append("--dh-lod-only")
-        if args.shaders:
-            options.append("--shaders")
         if args.no_distant_horizons:
             options.append("--no-distant-horizons")
-        if args.shader_pack:
-            options += ["--shader-pack", args.shader_pack]
         for mod in args.client_mod or []:
             options += ["--client-mod", mod]
         try:

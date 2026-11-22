@@ -24,7 +24,9 @@ THICKNESSES = ["tip_merge", "tip", "frustum", "middle", "base"]
 
 
 def png(image: Image) -> bytes:
-    """A minimal RGBA PNG; byte-identical for identical pixels."""
+    """A minimal RGBA PNG; byte-identical for identical pixels under one zlib. zlib builds pack
+    the same data differently (Python on Windows ships zlib-ng), so the check compares what a
+    PNG holds (png_content), not its bytes."""
     height, width = len(image), len(image[0])
     raw = b"".join(b"\x00" + bytes(c for pixel in row for c in pixel) for row in image)
 
@@ -40,6 +42,38 @@ def png(image: Image) -> bytes:
         + chunk(b"IDAT", zlib.compress(raw, 9))
         + chunk(b"IEND", b"")
     )
+
+
+def png_content(data: bytes) -> tuple[bytes, bytes] | None:
+    """A PNG's header and decompressed image data: its pixels, apart from how zlib packed them;
+    None for bytes that are not a readable PNG."""
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return None
+    header, packed, at = b"", b"", 8
+    while at + 8 <= len(data):
+        (length,) = struct.unpack(">I", data[at : at + 4])
+        kind, body = data[at + 4 : at + 8], data[at + 8 : at + 8 + length]
+        if kind == b"IHDR":
+            header = body
+        elif kind == b"IDAT":
+            packed += body
+        at += 12 + length
+    try:
+        return header, zlib.decompress(packed)
+    except zlib.error:
+        return None
+
+
+def holds(path: Path, wanted: bytes) -> bool:
+    """Whether a committed asset is already what the definitions produce: the same bytes, or for a
+    PNG the same pixels."""
+    if not path.is_file():
+        return False
+    have = path.read_bytes()
+    if have == wanted:
+        return True
+    content = png_content(have) if path.suffix == ".png" else None
+    return content is not None and content == png_content(wanted)
 
 
 def text(data: Any) -> bytes:
@@ -519,9 +553,7 @@ def main() -> int:
     check = parser.parse_args().check
     wanted = assets()
     present = {p.relative_to(ASSETS).as_posix() for p in ASSETS.rglob("*") if p.is_file()}
-    differ = sorted(
-        k for k, v in wanted.items() if not (ASSETS / k).is_file() or (ASSETS / k).read_bytes() != v
-    )
+    differ = sorted(k for k, v in wanted.items() if not holds(ASSETS / k, v))
     stale = sorted(present - wanted.keys())
     if check:
         for path in differ:

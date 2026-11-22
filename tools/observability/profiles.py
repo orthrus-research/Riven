@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
+import jdks
 from checkouts import LAB_OBSERVER
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -115,7 +116,7 @@ def configuration():
 def doctor(riven, cubature=None, observer=None, check_java=True):
     pins = read_json(ROOT / "runtime.lock.json")
     cc_pin = read_json(ROOT / "dev/cc.lock.json")
-    settings = read_json(ROOT / ".local/settings.json")
+    java26 = str(jdks.java(26))
     sources = {
         "riven": Path(riven).resolve(),
         "cubature": Path(cubature).resolve() if cubature else ROOT / cc_pin["artifact"],
@@ -180,9 +181,7 @@ def doctor(riven, cubature=None, observer=None, check_java=True):
                 )
     java_version = None
     if check_java:
-        process = subprocess.run(
-            [settings["java26"], "-version"], capture_output=True, text=True, timeout=20
-        )
+        process = subprocess.run([java26, "-version"], capture_output=True, text=True, timeout=20)
         java_version = (process.stdout + process.stderr).strip()
         checks.append(
             {
@@ -195,7 +194,7 @@ def doctor(riven, cubature=None, observer=None, check_java=True):
         "passed": all(c["passed"] for c in checks),
         "checks": checks,
         "artifacts": artifacts,
-        "java": settings["java26"],
+        "java": java26,
         "javaVersion": java_version,
         "limits": [
             "Packaged method presence does not prove runtime transformation or observed activity.",

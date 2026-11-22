@@ -25,7 +25,7 @@ import java.util.TreeMap;
 
 /**
  * Sends each joining player the client-side part of the world's definitions: its fingerprint and
- * the riven: biome colours DH, Celeritas and shader packs read on the client. Generation stays on
+ * the riven: biome colours DH reads on the client. Generation stays on
  * the server; clients need no mapping files.
  */
 final class RivenNetwork {
@@ -36,13 +36,7 @@ final class RivenNetwork {
     static void init() {
         channel = NetworkRegistry.INSTANCE.newSimpleChannel("riven");
         channel.registerMessage(Handler.class, Definitions.class, 0, Side.CLIENT);
-        channel.registerMessage(ShaderPropsHandler.class, ShaderPropsRequest.class, 1, Side.CLIENT);
         MinecraftForge.EVENT_BUS.register(RivenNetwork.class);
-    }
-
-    /** Asks a player's client to write its Riven copy of the active shader pack. */
-    static void shaderProps(EntityPlayerMP player) {
-        channel.sendTo(new ShaderPropsRequest(), player);
     }
 
     @SubscribeEvent
@@ -93,29 +87,6 @@ final class RivenNetwork {
                 buf.writeInt(e.getValue()[0]);
                 buf.writeInt(e.getValue()[1]);
             }
-        }
-    }
-
-    /** /riven shaderprops: the work happens on the client, where the shader packs are. */
-    public static final class ShaderPropsRequest implements IMessage {
-        public ShaderPropsRequest() {}
-
-        @Override
-        public void fromBytes(ByteBuf buf) {}
-
-        @Override
-        public void toBytes(ByteBuf buf) {}
-    }
-
-    public static final class ShaderPropsHandler
-            implements IMessageHandler<ShaderPropsRequest, IMessage> {
-        @Override
-        public IMessage onMessage(ShaderPropsRequest message, MessageContext ctx) {
-            // A method reference, so dedicated servers never load the client-only class.
-            FMLCommonHandler.instance()
-                    .getWorldThread(ctx.netHandler)
-                    .addScheduledTask(ShaderProps::run);
-            return null;
         }
     }
 

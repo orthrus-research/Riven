@@ -25,7 +25,7 @@
   "mods": [
     {
       "file": "dev/pins/Cubature-cleanroom.jar",
-      "sha256": "e9fb80d4083e0aaed601c5a68f244c1da740032c20cebe669c711a501b1e631d",
+      "sha256": "d982ff7eccf0d9ca93d3018cd0e283aeeff7cedc49dfcb0bda5c3c15758dea40",
       "reason": "Cubature owns cubic scheduling, lighting, lifetime, storage and DH runtime compatibility/optimization patches; Riven owns generated content",
       "name": "Cubature",
       "sourcePin": "dev/cc.lock.json"
@@ -89,10 +89,18 @@
     {
       "file": "dev/pins/gtceu-reloaded-3.0.0-reloaded.1-alpha.1.jar",
       "version": "3.0.0-reloaded.1-alpha.1",
-      "sha256": "5bcc7b4288edd6dabcef091945797bf5b92c1f0414d380c3a56dc805d9204d0b",
+      "sha256": "fb44886ca15e7dd5074d11a2850b045c1c7a06d882f6a2863567f0d0ca7ddf8b",
       "source": "https://github.com/orthrus-research/GTCEu-Reloaded",
-      "sourceCommit": "58e4e76faaecacdac7678fae2095886d1e336692",
+      "sourceCommit": "796d41ac2c8bcf9707c00660bf193a330e6218e8",
       "distribution": "built-from-source",
+      "build": {
+        "checkout": "../GTCEuR",
+        "java": 26,
+        "tasks": [
+          "assemble"
+        ],
+        "artifact": "build/libs/gtceu-reloaded-3.0.0-reloaded.1-alpha.1.jar"
+      },
       "sides": [
         "server",
         "client"
@@ -106,6 +114,14 @@
       "source": "https://github.com/orthrus-research/OrthLib",
       "sourceCommit": "84a58e84e4dd2683ce8d0365a911f315771b7d21",
       "distribution": "built-from-source",
+      "build": {
+        "checkout": "../OrthLib",
+        "java": 26,
+        "tasks": [
+          "assemble"
+        ],
+        "artifact": "build/libs/orthlib-0.5.0-dev.jar"
+      },
       "sides": [
         "server",
         "client"
@@ -119,49 +135,25 @@
       "source": "https://github.com/orthrus-research/OrthLib",
       "sourceCommit": "94e973db5c9c1d73bbee97b8deb1bafe4ce9ae70",
       "distribution": "built-from-source",
+      "build": {
+        "checkout": "../OrthLib",
+        "java": 26,
+        "tasks": [
+          "reobfCubatureJar"
+        ],
+        "properties": {
+          "orthlibCubatureJar": {
+            "cubature": "c3e240d12da170d3e3df33fa0644828d40d0b6f5",
+            "sha256": "a8709af51acbd5f1b8d8d17f2e22e2563906d3ded190c6e9eeab54f4846bab18"
+          }
+        },
+        "artifact": "build/libs/orthlib-0.5.0-dev-cubature.jar"
+      },
       "sides": [
         "server",
         "client"
       ],
       "reason": "OrthLib's Cubature adapter (mod orthlib_cubature): drives OrthLib's random-tick participation through Cubature's ICubicRandomTickListener, binding a listener only while a participant is registered. The exact adapter artifact of OrthLib's T1 native qualification. Private, all rights reserved; local use only, never redistributed"
-    },
-    {
-      "file": "dev/pins/Demonica-0.9.0.jar",
-      "sha256": "241632b96fa241b670d7c5c29110d8e7c870bda9693d2967e680cf357e1a619d",
-      "download": "https://github.com/ndellagrotte/Demonica/releases/download/v0.9.0/Demonica-0.9.0.jar",
-      "sides": [
-        "client"
-      ],
-      "optional": "shaders",
-      "version": "0.9.0",
-      "source": "https://github.com/ndellagrotte/Demonica/releases/tag/v0.9.0",
-      "purpose": "Iris shader pipeline on Celeritas for Cleanroom 0.7.4+; binds DH 3.3.3's shader accessor. Installed only by runtime.py prepare --shaders."
-    }
-  ],
-  "shaderPacks": [
-    {
-      "name": "bsl",
-      "file": "dev/pins/shaderpacks/BSL_v10.1.8.zip",
-      "version": "10.1.8",
-      "sha256": "36b0a50ff7918bf10e9422c401d93779f9d0088a26acea975b435243f96930b5",
-      "source": "https://modrinth.com/shader/bsl-shaders/version/Y68yiql9",
-      "license": "All rights reserved; local use only, never redistributed"
-    },
-    {
-      "name": "complementary-reimagined",
-      "file": "dev/pins/shaderpacks/ComplementaryReimagined_r5.9.3.zip",
-      "version": "r5.9.3",
-      "sha256": "fed6c879e732cf7fc7bc6570ebb1def43235aa7e96f62859fbdbdbfa0b484b38",
-      "source": "https://modrinth.com/shader/complementary-reimagined/version/Bqen1mJX",
-      "license": "Complementary License Agreement 1.7; used unmodified, never redistributed"
-    },
-    {
-      "name": "complementary-unbound",
-      "file": "dev/pins/shaderpacks/ComplementaryUnbound_r5.9.3.zip",
-      "version": "r5.9.3",
-      "sha256": "98ac741dee294d2a3c82d153349148c3bb7fb688c30eb3b49c3b9ac37e968c5a",
-      "source": "https://modrinth.com/shader/complementary-unbound/version/B1kyfoUZ",
-      "license": "Complementary License Agreement 1.7; used unmodified, never redistributed"
     }
   ],
   "sourceMod": "riven",

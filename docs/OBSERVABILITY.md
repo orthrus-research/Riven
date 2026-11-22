@@ -87,7 +87,7 @@ full-detail tiles from the database wait behind its 2,000 KB/s delivery limit.
 
 ## Commands
 
-Python 3.11 or later is required for the host tools; native qualification uses
+Python 3.14 or later is required for the host tools; native qualification uses
 the separately pinned Java 26 runtime. With the Cubature checkout and runtime
 pins prepared, create a local plotting environment once:
 
@@ -115,11 +115,12 @@ python -B tools/riven_observe.py capture --name <fresh-name> --riven <frozen-riv
 instrumentation. The same bounded worker counters remain on both variants.
 `--cubature` selects a frozen candidate without changing accepted pins.
 `--workload` selects a validated named workload; `--port` must be free.
-`--shaders` adds the optional shader pins to the client, so Celeritas draws near terrain
-instead of the vanilla renderer; `--no-distant-horizons` leaves DH off both sides. The
-telemetry record's `setup.clientRenderer` names the renderer (`vanilla` or `celeritas`).
-`--shader-pack <name>` (with `--shaders`) installs and enables a pinned shader pack, recorded
-as `setup.shaderPack`. `--client-mod <jar>` (repeatable) adds an extra mod to the client only.
+`--no-distant-horizons` leaves DH off both sides. `--client-mod <jar>` (repeatable) adds an
+extra mod to the client only. Without a client mod the capture sets
+`cubature.clientWithoutRenderer=true`, since Cubature's client otherwise stops at loading without
+Quadrature: the game's own renderer then draws only heights 0 to 255 of the cubic world, so such a
+capture times the server and the client's frames, not the picture. `--render-ready` reads the
+game's render chunks, which a client with Quadrature does not have, so it never becomes ready there.
 `--render-ready` additionally requires native renderer demand and the GPU
 marker; a timeout is retained as failure. `--storage` adds storage spans and
 requires diagnostic mode. Do not build or run other experiments during a
@@ -245,8 +246,8 @@ names instances and artifacts and stays local.
 
 `telemetry tables --output <directory>` writes four flat JSON row tables for the run ledger
 dashboard: `runs.json` (one row per ledger record), `scenarios.json` (one per scenario: tick and
-frame percentiles, cubes, saves, LOD coverage), `ci-runs.json` (one per `tools/actions.py` run, read
-from its `summary.json`) and `ci-jobs.json` (one per job of those runs). Unlike the export these rows
+frame percentiles, cubes, saves, LOD coverage), `ci-runs.json` (one per actions run kept in `.local/actions`,
+read from its `summary.json`) and `ci-jobs.json` (one per job of those runs). Unlike the export these rows
 are private: they name instances, builds, commits and failure messages. Times are UTC; CI run ids
 are local time and are converted.
 

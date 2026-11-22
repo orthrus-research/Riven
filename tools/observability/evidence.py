@@ -14,7 +14,9 @@ from checkouts import CUBATURE_TOOLS
 
 from .profiles import read_json, sha
 
-sys.path.insert(0, str(CUBATURE_TOOLS))
+# After Riven's own modules: a Cubature tool of the same name never stands in for Riven's.
+if str(CUBATURE_TOOLS) not in sys.path:
+    sys.path.append(str(CUBATURE_TOOLS))
 from analyze_cubic_profile import timestamp_ns
 from lab_repeated_statistics import paired_interval
 

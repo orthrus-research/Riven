@@ -5,7 +5,7 @@ summary.json. This module flattens both into four JSON arrays of plain rows, one
 
     runs.json       one row per capture, smoke or pregeneration in the ledger
     scenarios.json  one row per scenario of those runs (tick, frame, cubes, saves, LOD coverage)
-    ci-runs.json    one row per tools/actions.py run (targets, verdict, job counts, trees)
+    ci-runs.json    one row per actions run kept in .local/actions (targets, verdict, job counts, trees)
     ci-jobs.json    one row per job of those runs (status, step time, first failing step)
 
 Unlike the website export these rows are private: they name instances, builds, commits and failure

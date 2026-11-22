@@ -6,6 +6,5 @@
   {"label": "sky-night-close", "x": 40.5, "y": 231.5, "z": 43.5, "yaw": 180, "pitch": 50},
   {"label": "deep-arrive", "x": 40.5, "y": -690, "z": 62.5, "yaw": 180, "pitch": 30},
   {"label": "deep-chamber", "x": 40.5, "y": -695, "z": 47.5, "yaw": 180, "pitch": 40, "commands": ["fill 31 -701 32 47 -693 48 minecraft:air", "fill 34 -702 35 36 -702 37 minecraft:lava", "fill 38 -702 35 40 -702 37 minecraft:magma", "fill 42 -702 35 44 -702 37 minecraft:glowstone", "fill 34 -702 39 36 -702 41 riven:molten_seams", "fill 38 -702 39 40 -702 41 riven:moonstone_bright", "fill 42 -702 39 44 -702 41 riven:beneath_infernal_transition", "fill 38 -702 43 40 -702 45 minecraft:sea_lantern", "fill 42 -702 43 44 -702 45 riven:soul_ash", "setblock 35 -701 44 minecraft:torch"]},
-  {"label": "deep-chamber-west", "x": 31.5, "y": -695, "z": 40.5, "yaw": 270, "pitch": 40},
-  {"label": "export-shaderprops", "x": 40.5, "y": -680, "z": 70.5, "yaw": 180, "pitch": 0, "commands": ["riven shaderprops {player}"]}
+  {"label": "deep-chamber-west", "x": 31.5, "y": -695, "z": 40.5, "yaw": 270, "pitch": 40}
 ]

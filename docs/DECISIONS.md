@@ -297,23 +297,6 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
 
 ## Adopted 2026-10-28
 
-- **Shader packs.** Riven targets three packs under Demonica, each pinned by hash in
-  `runtime.lock.json` (`shaderPacks`) to an official release: BSL 10.1.8, Complementary
-  Reimagined r5.9.3 and Complementary Unbound r5.9.3. A targeted pack
-  lists Minecraft 1.12.2 in the pinned release itself (one zip often spans 1.7.10 to 26.3 and
-  branches on `MC_VERSION`, and later releases may drop 1.12.2), carries DH programs
-  (`dh_terrain`, `dh_water`) so the same pack shades distant terrain, and passes
-  `tools/tours/shader-packs-8675309.json` before its pin moves. Pack zips stay local, never
-  committed or redistributed. Complementary's license (1.7) allows no modified copy, block
-  property additions included, so its packs run unmodified. Its cave fog follows depth below a
-  constant Y61.9 that no uniform reaches; Cubature carries an opt-in patch (`complementaryCaveFog`,
-  off by default) that follows the camera's depth below its column's surface instead. Development
-  instances turn it on; nothing distributed enables it until Complementary's authors permit it.
-  Shader support adds no mods: Euphoria Patches, a Forge mod on 1.12.2, and other pack add-ons are
-  out. Solas 3.8 is the reserve; it keys biome effects to named `BIOME_*` constants, which
-  `/riven shaderprops` leaves alone. Excluded: Bliss, Photon, Rethinking Voxels and Super Duper
-  Vanilla (no 1.12.2 release), Miniature and Lux (no DH programs), and MakeUp Ultra Fast 9.6 (its
-  1.12 `block.properties` has no entry for flowers, saplings, vines, lily pads or glowing blocks).
 - **2026-11-17. Traversal.** Land should be walkable without building: outside ranges, no
   generated form on its own climbs more than about a block per block (a step of two blocks stops a
   walker), so risers, pass forms, dune slip faces (0.65, sand's angle of repose), valley sides and

@@ -40,7 +40,7 @@ def main() -> None:
         *args.arguments,
     ]
     code = subprocess.run(command).returncode
-    # tools/actions.py keeps "timing " lines in the run summary for tools/ci_timing.py.
+    # The actions runner keeps "timing " lines in the run summary.
     seconds = {
         "compile": round(compiled - started, 1),
         "run": round(time.monotonic() - compiled, 1),

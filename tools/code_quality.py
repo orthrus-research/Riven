@@ -12,6 +12,8 @@ import urllib.request
 from pathlib import Path
 from typing import Literal
 
+import jdks
+
 ROOT = Path(__file__).resolve().parents[1]
 FORMATTER_VERSION = "1.35.0"
 FORMATTER_SHA256 = "bfb7f9ead6cd328389bc2da53860443bc0e805dfd08cc889bfdf43b26cb2a6e8"
@@ -28,26 +30,15 @@ def run(arguments: list[str], environment: dict[str, str] | None = None) -> None
     print("Running: " + " ".join(display), flush=True)
     started = time.monotonic()
     subprocess.run(arguments, cwd=ROOT, env=environment, check=True)
-    # tools/actions.py keeps "timing " lines in the run summary for tools/ci_timing.py.
+    # The actions runner keeps "timing " lines in the run summary (its report shows them).
     name = " ".join(Path(a).name if i == 0 else a for i, a in enumerate(arguments[:4]))
     timing = {"command": name, "seconds": round(time.monotonic() - started, 1)}
     print("timing " + json.dumps(timing), flush=True)
 
 
 def settings() -> dict[str, str]:
-    path = ROOT / ".local/settings.json"
-    if not path.is_file():
-        raise ValueError("Configure .local/settings.json with java25 and java26 JDK executables")
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise ValueError("Local settings must be a JSON object")
-    result = {}
-    for key in ("java25", "java26"):
-        value = data.get(key)
-        if not isinstance(value, str) or not Path(value).is_file():
-            raise ValueError("Missing local JDK executable: " + key)
-        result[key] = value
-    return result
+    """The JDK the checks use (tools/jdks.py): Temurin 26 for Gradle and google-java-format alike."""
+    return {"java26": str(jdks.java(26))}
 
 
 def python_tools() -> None:
@@ -102,8 +93,8 @@ def java_format(java: str, apply: bool) -> None:
 
 def check_java(local: dict[str, str]) -> None:
     environment = os.environ.copy()
-    environment["JAVA_HOME"] = str(Path(local["java25"]).parent.parent)
     java26 = Path(local["java26"]).parent.parent
+    environment["JAVA_HOME"] = str(java26)
     wrapper = ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")
     run(
         [
@@ -113,7 +104,7 @@ def check_java(local: dict[str, str]) -> None:
             "--console=plain",
             "--no-daemon",
             "-PrivenJavaVersion=26",
-            f"-Dorg.gradle.java.installations.paths={java26}",
+            "-D" + jdks.installations_property(),
         ],
         environment,
     )

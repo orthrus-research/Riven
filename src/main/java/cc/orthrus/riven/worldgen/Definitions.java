@@ -47,7 +47,6 @@ public final class Definitions {
                             "riven-provinces.json",
                             "riven-realms.json",
                             "riven-rivers.json",
-                            "riven-shaderprops.json",
                             "riven-substrate.json",
                             "riven-subsurface-climate.json",
                             "riven-surface-carvers.json",

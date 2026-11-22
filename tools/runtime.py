@@ -15,11 +15,15 @@ import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 
+import jdks
 from checkouts import CUBATURE_TOOLS, LAB_OBSERVER
 from observability.profiles import sha
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(CUBATURE_TOOLS))
+# After Riven's own modules, so a Cubature tool of the same name (test_frozen_manifest) never stands in
+# for Riven's; the lab's modules are Cubature's alone and are found here.
+if str(CUBATURE_TOOLS) not in sys.path:
+    sys.path.append(str(CUBATURE_TOOLS))
 import cubic_lab as lab
 import cubic_standalone as standalone
 import lab_files
@@ -41,18 +45,16 @@ def target(name):
 
 
 def build():
-    settings = load_json(ROOT / ".local/settings.json")
     env = os.environ.copy()
-    env["JAVA_HOME"] = str(Path(settings["java25"]).parent.parent)
-    # As tools/build_riven.py: the Java 26 compiler reads GTCEu: Reloaded's Java 26 classes; bytecode stays 25.
-    java26 = Path(settings["java26"]).parent.parent
+    java26 = jdks.home(26)  # as tools/build_riven.py: Gradle and the compiler both run on Java 26
+    env["JAVA_HOME"] = str(java26)
     subprocess.run(
         [
-            str(ROOT / "gradlew.bat"),
+            str(ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")),
             "assemble",
             "--console=plain",
             "-PrivenJavaVersion=26",
-            f"-Dorg.gradle.java.installations.paths={java26}",
+            "-D" + jdks.installations_property(),
         ],
         cwd=ROOT,
         env=env,
@@ -62,9 +64,9 @@ def build():
 
 def native_runtime():
     """This machine's runtime identity: the pinned Cleanroom release (dev/native-runtime.json)
-    plus the Java 26 named in .local/settings.json, with the hashes of its critical files."""
+    plus the Java 26 tools/jdks.py finds, with the hashes of its critical files."""
     template = load_json(ROOT / "dev/native-runtime.json")
-    java = Path(load_json(ROOT / ".local/settings.json")["java26"]).resolve()
+    java = jdks.java(26).resolve()
     identity = lab_instance.inspect_java26(java)
     reviewed = template["javaRuntime"]["version"]
     if identity["version"] != reviewed:
@@ -91,29 +93,6 @@ def world_height(config):
     config.write_text(text, encoding="utf-8")
 
 
-def shader_packs(pins, entries):
-    """prepare's --shader-pack entries as (path, record): a pinned pack's name (shaderPacks in
-    runtime.lock.json), held to its hash, or a zip or folder such as a /riven shaderprops copy."""
-    pinned = {pack["name"]: pack for pack in pins.get("shaderPacks", [])}
-    packs = []
-    for entry in entries or []:
-        if entry in pinned:
-            pack = pinned[entry]
-            path = ROOT / pack["file"]
-            if not path.is_file():
-                raise RuntimeError(f"Pinned shader pack missing: {pack['file']} ({pack['source']})")
-            if sha(path) != pack["sha256"]:
-                raise RuntimeError("Pinned shader pack changed: " + pack["file"])
-            record = {"name": entry, "version": pack["version"], "sha256": pack["sha256"]}
-        else:
-            path = Path(entry).resolve()
-            if not path.exists():
-                raise RuntimeError(f"Not a pinned pack ({', '.join(pinned)}) or a path: {entry}")
-            record = {"path": str(path), "sha256": sha(path) if path.is_file() else None}
-        packs.append((path, {**record, "installedAs": path.name}))
-    return packs
-
-
 LOD_OBSERVER = LAB_OBSERVER
 
 
@@ -123,14 +102,6 @@ def lod_trace_directory(path):
     if any(c.isspace() for c in resolved):
         raise ValueError("A LOD trace directory cannot contain spaces: " + resolved)
     return resolved
-
-
-def enable_shader_pack(home, pack):
-    """Demonica reads its active pack from config/shaders.properties; None turns shaders off."""
-    (home / "config/shaders.properties").write_text(
-        f"enableShaders=true\nshaderPack={pack}\n" if pack else "enableShaders=false\n",
-        encoding="utf-8",
-    )
 
 
 def prepare(
@@ -155,10 +126,7 @@ def prepare(
     cubature_delivery="prefetch",
     seed=8675309,
     spawn_animals=False,
-    shaders=False,
-    shader_pack=None,
     player_effects=None,
-    complementary_cave_fog=False,
     lod_observer=None,
     preview_threads=None,
     arrival_plan=True,
@@ -203,11 +171,6 @@ def prepare(
     for mod in pins["mods"]:
         if sha(ROOT / mod["file"]) != mod["sha256"]:
             raise RuntimeError("Pinned mod changed: " + mod["file"])
-    packs = shader_packs(pins, shader_pack)
-    if packs and not shaders:
-        raise ValueError("--shader-pack needs --shaders")
-    # The patch only matters under Demonica; local instances turn it on, nothing distributed does.
-    complementary_cave_fog = complementary_cave_fog and shaders
     artifact = (
         Path(selected_artifact).resolve()
         if selected_artifact
@@ -241,9 +204,6 @@ def prepare(
         if cubic.name != "cubicchunks.jar":
             (home / "mods/cubicchunks.jar").rename(home / "mods" / cubic.name)
         for mod in pins["mods"][1:]:
-            # Optional pins (the shader stack) join only when prepare asks for them.
-            if mod.get("optional") == "shaders" and not shaders:
-                continue
             if not distant_horizons and mod["file"].startswith("dev/pins/DistantHorizons-"):
                 continue
             if (
@@ -264,15 +224,6 @@ def prepare(
         if lod_observer:
             # The lab observer stays idle without a workload; play turns on its LOD trace.
             shutil.copy2(lod_observer, home / "mods/cubicchunks-lab.jar")
-        if side == "client" and packs:
-            (home / "shaderpacks").mkdir(exist_ok=True)
-            for pack, _ in packs:
-                if pack.is_dir():
-                    shutil.copytree(pack, home / "shaderpacks" / pack.name)
-                else:
-                    shutil.copy2(pack, home / "shaderpacks" / pack.name)
-            # The first pack is active; play --shader-pack switches between the others.
-            enable_shader_pack(home, packs[0][0].name)
         if side == "client":
             # The lab's fast graphics make leaves opaque cubes, so the faces beneath them are culled
             # and a pack's waving leaves open holes to nothing. Riven instances show what players see.
@@ -298,11 +249,6 @@ def prepare(
                 )
                 + ("" if arrival_plan else "\n    B:distantHorizonsArrivalPlan=false")
                 + ("" if keep_fine_columns else "\n    B:distantHorizonsKeepFineColumns=false")
-                + (
-                    "\n    B:complementaryCaveFog=true"
-                    if complementary_cave_fog and side == "client"
-                    else ""
-                )
                 + "\n    S:deliveryMode="
                 + cubature_delivery.upper(),
                 1,
@@ -313,6 +259,10 @@ def prepare(
         (home / "config/forge_early.cfg").write_text(
             "general {\n    B:DISABLE_PATCH_MOD_CHECK=false\n}\n"
         )
+        if side == "client":
+            # Forge's splash screen draws from a thread of its own, and with Quadrature loaded it
+            # crashes the client natively in LWJGL's SDL3.dll. It only shows loading progress.
+            (home / "config/splash.properties").write_text("enabled=false\n")
         if distant_horizons and (side == "client" or distant_generation):
             # The optional CC adapter supplies seed-only SURFACE data on DH's executor.
             # The legacy visited-only lane remains available for comparison.
@@ -451,9 +401,7 @@ def prepare(
         }
         if distant_horizons
         else None,
-        shaderPacks=[record for _, record in packs],
         clientMods=[{"path": str(mod), "sha256": sha(mod)} for mod in client_mods],
-        complementaryCaveFog=complementary_cave_fog,
         lodTrace={
             "observer": str(lod_observer),
             "sha256": sha(lod_observer),
@@ -665,7 +613,7 @@ def load_tour(path):
     return views
 
 
-def play(name, tour=None, window=None, shader_pack=None, distances=None):
+def play(name, tour=None, window=None, distances=None):
     directory, m = load(name)
     views = load_tour(tour) if tour else None
     # The lab's baseline unless the run or its tour raises a distance; recorded before the launch.
@@ -687,13 +635,6 @@ def play(name, tour=None, window=None, shader_pack=None, distances=None):
         + json.dumps(profile),
         flush=True,
     )
-    if shader_pack:
-        installed = {
-            r.get("name", r["installedAs"]): r["installedAs"] for r in m.get("shaderPacks", [])
-        }
-        if shader_pack != "off" and shader_pack not in installed:
-            raise ValueError(f"Prepared shader packs: {', '.join(installed) or 'none'} (or off)")
-        enable_shader_pack(Path(m["client"]), installed.get(shader_pack))
     messages: queue.Queue[str] = queue.Queue()
     client_messages: queue.Queue[str] = queue.Queue()
     with lab.native_measurement_lease(ROOT, "flat-" + name):
@@ -876,25 +817,6 @@ def main():
     p.add_argument("--name", required=True, help="instance name under .local/cubic-standalone")
     p.add_argument("--port", type=int, default=25870)
     p.add_argument("--seed", type=int, default=8675309, help="World seed for prepare")
-    p.add_argument(
-        "--shaders",
-        action="store_true",
-        help="prepare: add the optional shader stack (Demonica) to the client",
-    )
-    p.add_argument(
-        "--shader-pack",
-        nargs="+",
-        help="prepare: pinned shader packs (shaderPacks in runtime.lock.json) or zips/folders to place in "
-        "the client's shaderpacks, the first enabled (needs --shaders); play: the prepared pack to enable, or off",
-    )
-    p.add_argument(
-        "--complementary-cave-fog",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="prepare: with --shaders, turn on Cubature's opt-in Complementary cave fog patch on the client "
-        "(default: on for local instances only; Cubature ships it off, since Complementary's license grants "
-        "no change to its code)",
-    )
     p.add_argument(
         "--player-effects",
         help="prepare: the server's config/riven/player-effects.json (default: Riven writes its shipped one)",
@@ -1100,10 +1022,7 @@ def main():
             a.cubature_delivery,
             seed=a.seed,
             spawn_animals=a.spawn_animals,
-            shaders=a.shaders,
-            shader_pack=a.shader_pack,
             player_effects=a.player_effects,
-            complementary_cave_fog=a.complementary_cave_fog,
             lod_observer=a.lod_trace,
             preview_threads=a.preview_threads,
             arrival_plan=not a.no_arrival_plan,
@@ -1114,13 +1033,10 @@ def main():
             view_profile=a.view_profile,
         )
     elif a.command == "play":
-        if a.shader_pack and len(a.shader_pack) != 1:
-            raise ValueError("play takes one --shader-pack")
         play(
             a.name,
             a.tour,
             a.window,
-            a.shader_pack[0] if a.shader_pack else None,
             {
                 "horizontal": a.view_distance,
                 "vertical": a.vertical_view_distance,

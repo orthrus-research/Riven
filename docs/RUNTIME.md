@@ -13,10 +13,8 @@
 | Distant Horizons | 3.3.3-1.12.2, official upstream (`dev/dh.lock.json`) | Distant terrain renderer and delivery, both sides |
 | Fugue | 0.25.5 | Modern-Java compatibility layer |
 | Scalar Legacy | 1.0.1 | Scala 2.11 provider |
-| GTCEu: Reloaded | 3.0.0-reloaded.1-alpha.1, built from its published `master` (`runtime.lock.json`), with CodeChickenLib CRE 3.3.10 and ModularUI 3.1.6 | Optional ore provider (prototype): Orthrus Research's GTCEu continuation, mod ID `gregtech`. `riven-ores.json` transcribes its overworld vein catalog, Riven places the bodies, and GregTech supplies the ore block for each mineral and host stone type; its own world generator never runs. Riven compiles against it with the Java 26 compiler, since its classes are Java 26 |
-| OrthLib | 0.5.0-dev with its Cubature adapter, built from source (`runtime.lock.json`) | Orthrus Research's shared library: random-tick participation through Cubature's listener API, and services for Orthrus mods; the adapter is the exact artifact of its native random-tick qualification, the library a later build that registers its Mixin through a CleanMix connector |
-| Demonica | 0.9.0, official release (`runtime.lock.json`, optional `shaders`) | Client shader stack: Iris on its bundled Celeritas d94ec1e5; installed only by `prepare --shaders` |
-| Shader packs | BSL 10.1.8, Complementary Reimagined r5.9.3, Complementary Unbound r5.9.3, official Modrinth releases (`runtime.lock.json` `shaderPacks`) | The targeted packs under Demonica (docs/DECISIONS.md, Shader packs); local zips in `dev/pins/shaderpacks`, never committed or redistributed |
+| GTCEu: Reloaded | 3.0.0-reloaded.1-alpha.1, built from its published `master` by `tools/setup.py` (`runtime.lock.json`), with CodeChickenLib CRE 3.3.10 and ModularUI 3.1.6 | Optional ore provider (prototype): Orthrus Research's GTCEu continuation, mod ID `gregtech`. `riven-ores.json` transcribes its overworld vein catalog, Riven places the bodies, and GregTech supplies the ore block for each mineral and host stone type; its own world generator never runs. Riven compiles against it with the Java 26 compiler, since its classes are Java 26 |
+| OrthLib | 0.5.0-dev with its Cubature adapter, built from source by `tools/setup.py` (`runtime.lock.json`; the adapter compiles against the Cubature it was qualified with, c3e240d, which setup builds for it) | Orthrus Research's shared library: random-tick participation through Cubature's listener API, and services for Orthrus mods; the adapter is the exact artifact of its native random-tick qualification, the library a later build that registers its Mixin through a CleanMix connector |
 | Riven | `build/libs/riven-0.0.1-cleanroom.jar` | Terrain, water, biomes and block content |
 
 A Riven world spans Y-1664 to Y383: the crust down to Y-512, then the realms
@@ -114,95 +112,17 @@ dark band on smooth-lit faces on both renderers (`tools/tours/sky-light-band-867
 view to the client's `riven-light/`, to compare with the saved world. Open: the first capture after
 such an edit sometimes shows a ring of stretched distant-terrain walls around the edited columns
 (seen with the pinned Cubature), gone by the next view a few seconds later.
-Under Demonica, Celeritas replaces the vanilla terrain renderer. It reads 16 sections per column
-from `Chunk.getBlockStorageArray()` and learns columns from `ChunkProviderClient.loadChunk`, which
-Cubature's client cache overrides, so unpatched it drew no terrain near the player in a cubic world.
-Cubature gives its section manager the world's full height (sections -104 to 23 in Riven), clones
-section blocks and tile entities from cubes and reports columns to its chunk tracker; the vanilla
-vertical-render-distance mixins stand aside when Celeritas is present. A cube without storage is all
-air with implicit sky light, none below its column's top; Celeritas read it as its own empty section,
-which has full sky light at any depth, so cave walls beside such a cube drew a daylit rectangle one
-cube wide (Riven's caverns hold many: 239 below the ground within 384 blocks of spawn on seed
-8675309). Cubature gives it a section holding its implicit sky light, and those walls are dark as on
-the vanilla renderer (`tools/tours/celeritas-empty-cubes-8675309.json`, checked 2026-10-27 with and
-without BSL). Celeritas gathers the entities it draws from each column's 16 entity lists, which stay
-empty in a cubic world, so mobs were missing from the main pass while Iris's shadow pass, which reads
-the world's entity list, still drew their shadows; Cubature hands the gatherer the world's list.
-Celeritas's renderer also starts its build height at 0 and treats boxes outside it as visible, so
-entities below Y 0 escaped occlusion culling; Cubature starts it at the world's floor. Unpatched,
-Celeritas creates a render section for every section of a column it learns about, loaded or not:
-128 per column since the realms, 67,712 at the 12-chunk view against 15,625 loaded cubes, and its
-occlusion search could wander through unloaded sections, which read as empty. Cubature gives a
-ready column sections only for its loaded cubes and adds or removes a cube's section where
-Celeritas applies its own column events (13,225 at that view). Frame rate did not change: on one
-persisted world (seed 8675309, shaders off, five surface views, 15-second averages) both ran at
-330-608 fps, and retained heap was about 75 MB lower. Fresh worlds measure lower and
-noisier, because the server on the same machine is still generating DH tiles (one view ran at
-228 fps fresh and 584 persisted), so compare frame rates on persisted worlds. The targeted packs
-(DECISIONS.md, Shader packs) shade near terrain and DH LODs under Demonica: BSL 10.1.8 (its
-`block.properties` lists 1.12 names) since 2026-10-25 with the woodland tour, and Complementary
-Reimagined r5.9.3 and Complementary Unbound r5.9.3 on 2026-10-28
-(`tools/tours/shader-packs-8675309.json`: coast and high horizons, woodland, a chasm at Y-60,
-night horizon and lights, one persisted instance, every pinned pack and no pack). Every pack
-captured all six views without a shader compile error, drew the far islands and water in its own
-fog and color, and lit the sky slit above the chasm; frame rates held the 120 fps cap except on
-the woodland canopy (Unbound 102, Reimagined 114) and BSL's first view. Complementary drops one
-custom uniform, `inSulfurCaves`, which names a biome 1.12.2 lacks. DH logs "Unexpected; somehow
-the Opaque + Translucent pass ran with shaders on" once per run with any pack, as on every
-earlier BSL instance. Complementary places its clouds at `cloudHeight` (Riven's Y256, and a
-second layer 96 above) and reads the same world uniforms as BSL, which Cubature already gives the
-cubic world; its license allows no modified copy, so `/riven shaderprops` must not be used on it
-and Riven's plants and glowing rocks keep vanilla handling there.
-Complementary sets its cave fog by depth below a constant Y61.9 (`GetCaveFactor`,
-`oceanAltitude`), capped by the eye's sky light, not by enclosure. Riven caves above sea level get
-none and those below get its gray fog: on `tools/tours/shader-caves-8675309.json` the dripstone
-cave at Y137 is as clear as under BSL, the great cavern at Y-54 is fogged. No world uniform
-reaches that constant. Cubature's opt-in `complementaryCaveFog` (`prepare
---complementary-cave-fog`) rewrites that one line as Demonica reads it to use `cubicSurfaceDepth`,
-the camera's depth below its column's top block. Toggled on one persisted instance (2026-10-28,
-two runs each way), the dripstone cave's far contrast halves
-(standard deviation 15.5 to 8.0, identical across runs) while the great cavern's stays 8.5, frame
-rates hold the 120 fps cap either way, and the six surface views of the shader-packs tour are
-unchanged. Open: Riven's local
-instances run with it on; nothing distributed enables it until Complementary's authors permit
-the change, since its license grants none (contact: https://www.complementary.dev/contact).
 
 Riven's cloud base is Y256 (`atmosphere.cloudBaseY` in the height reference) through
-`WorldType.getCloudHeight`, which vanilla clouds and Iris's `cloudHeight` uniform both read: BSL's
-default clouds sit above ordinary terrain and below high peaks. BSL keys its 1.12 biome effects
-(`isCold`, `isDesert`, `isSwamp` and others) to vanilla biome IDs, not `biome_category`, and lists
-no modded blocks. `/riven shaderprops [player]` asks that player's client to write
-`shaderpacks/<pack>-riven`, a copy of the active pack. In the copy, `block.properties` gives each
-modded block the entry of the vanilla block it behaves like, and every numeric biome list holds
-the riven: biomes whose vanilla twin it lists. Riven biomes using IDs the pack lists for other
-biomes (BSL's 48 and 49 under `isJungle`) leave those lists. Rules and twins are in
-`riven-shaderprops.json`, and the copy carries a `riven-shaderprops.txt` report. Rain hills, taiga
-and stone beaches have no twin, because BSL marks their vanilla twins cold above Y93 and Y123.
-On BSL 10.1.8 the export maps Riven's plants, flowers, double plants, leaves, vines, lily pads,
-saplings and ground cover, GTCEu's rubber trees and ores, and every full cube that gives light,
-which joins glowstone (`lightAtLeast`): the deep realms' moonstone, molten seams, soul ash and
-heat-cracked eclogite, and GTCEu's 32 lamps (414 block names on 2026-10-27, when Biomes O'
-Plenty's blocks were installed too). BSL lights an
-emissive pixel by its brightness and saturation, so those rocks glow along their streaks and cracks
-while the rock around them stays dark (`tools/tours/lighting-8675309.json`, night and sealed-chamber
-views). It adds 32 biome IDs, and Demonica gives all 73 riven: biomes their intended
-`biome_category`. Leaves wave: on the woodland view of
-`tools/tours/shaders-8675309.json`, two frames from one camera differ only on leaf canopies and
-plant tufts (0.8% of pixels), while terrain, trunks and shadows stay identical. With the
-`-riven` copy active, the modded flowers and plants on that view wave too (1.0%), and the copy loads
-without block-name warnings. `prepare` gives Riven clients fancy graphics (the lab's benchmark
-default is fast): fast leaves are opaque cubes, so the faces beneath them are culled and waving
-leaves open holes to nothing. `tools/tours/render-check-8675309.json` builds a grass platform with
+`WorldType.getCloudHeight`, which vanilla clouds read, so they sit above ordinary terrain and below
+high peaks. `prepare` gives Riven clients fancy graphics (the lab's benchmark
+default is fast), so instances show leaves as players see them. `tools/tours/render-check-8675309.json` builds a grass platform with
 a leaf hedge and four animals at Y200, then an animal pocket at Y-700 in solid Beneath rock, seen
 from a pocket one full section away and again through a tunnel; prepare with `--spawn-animals`,
 because a server without it removes summoned animals. Each tour capture logs the F3 counters
-(`Riven view stats`: frame rate, Celeritas sections visible/total, entities rendered/total, loaded
+(`Riven view stats`: frame rate, sections visible/total, entities rendered/total, loaded
 cubes/columns) and the heap after a collection.
-Demonica reports `bedrockLevel` as 0, and BSL fades sky, fog, clouds and sun within six blocks
-below it. Cubature replaces that uniform with the cubic world's floor (Y-1664 in Riven), so a
-camera at Y-60 in a chasm sees the sky, which was black before (`tools/tours/shaders-depth-8675309.json`).
-Cubes wholly under the ground report Riven's depth biomes (FEATURES.md, Realms and depth biomes),
-which Demonica's biome uniforms follow at the camera; their void parent has no shader twin. Vanilla
+Cubes wholly under the ground report Riven's depth biomes (FEATURES.md, Realms and depth biomes). Vanilla
 reads a column's rain or snow, and a snow golem's melting, from the biome at Y 0, so Cubature reads
 them at the precipitation height and where the golem stands in cubic worlds, and surface weather
 is unchanged.
@@ -230,8 +150,7 @@ retired. Their fixes are absent from the official artifact and their measurement
 the current runtime.
 
 Riven worlds need Riven on client and server alike: chunks report `riven:` biomes, and each
-joining client receives the world's definitions packet (fingerprint, biome colors) that DH,
-Celeritas and shader packs read.
+joining client receives the world's definitions packet (fingerprint, biome colors) that DH reads.
 
 ## Launching
 
@@ -250,15 +169,9 @@ daylight and weather and teleports on first join; `--scale` sets Riven's layout 
 400 client ticks. `--spawn-animals` allows animals (off for terrain captures).
 `--no-distant-horizons` leaves Distant Horizons off both sides, so the client draws native cubes
 only; it excludes `--dh-lod-only` and `--lod-trace`. `--client-mod <jar>` (repeatable) adds
-an extra mod to the client only and records it with the instance. `--shaders` adds the
-optional shader pins (Demonica) to the client, and `--shader-pack <pack> [<pack> ...]` copies packs
-into its `shaderpacks` and enables the first in Demonica's `config/shaders.properties`: a pinned
-pack by name (`bsl`, `complementary-reimagined`, `complementary-unbound`),
-refused unless its zip matches the pin, or any zip or folder by path (a `-riven` copy). `play
---shader-pack <pack|off>` enables another prepared pack, or none, for that run, so packs compare
-on one instance whose DH tiles have persisted. With `--shaders`, `prepare` also turns on
-Cubature's opt-in Complementary cave fog patch in the client's `cubicchunks.cfg` (see Distant
-Horizons below) for local work; `--no-complementary-cave-fog` leaves it off, as Cubature ships it. `/riven` in game
+an extra mod to the client only and records it with the instance. The client draws cubic worlds
+through Quadrature, which takes over the game's chunk system there: Cubature's client stops at
+loading without it, so a client that is to draw is prepared with `--client-mod <Quadrature jar>`. `/riven` in game
 prints climate, terrain, biome and feature diagnostics at the player's position. `/riven digest
 [radius [x z]]` hashes the world's blocks around a point by state name, one line per chunk column
 whose band (32 blocks under its lowest surface to 48 over its highest, from the generator's
@@ -275,6 +188,29 @@ Cubature checkout must be present. `prepare` writes the local runtime identity t
 `.local/native-runtime.json`: the pinned Cleanroom release from `dev/native-runtime.json` plus the
 Java 26 named in `.local/settings.json` and the hashes of its critical files. A Java 26 other than
 the reviewed build is noted, not refused.
+
+### On Linux
+
+`prepare` and `play` run on Linux as on Windows: the client takes the Linux natives of its
+libraries (`prepare` fetches them for the system it runs on) and Cleanroom's `unix_args.txt`, and
+the lease and the queue lock with `fcntl`. Checked 2026-11-20 on Ubuntu 26.04 with Temurin
+26.0.2.1+1 for Linux: a fresh instance prepared and a two-view tour played and captured. A machine
+that only runs, preparing with frozen jars (`--artifact`, `--cubic-artifact`, `--client-mod`) and
+building nothing, needs:
+
+- Python 3.14 and a Java 26 named as `java26` in `.local/settings.json`; Java 25, the
+  tools' virtual environments and a Cubature clone serve building and checking only.
+- `dev/pins` as `tools/setup.py` leaves it; its jars are the same on every system, so a set made
+  elsewhere may be copied.
+- Cubature's `tools` at the commit `dev/cc.lock.json` pins, as the sibling `../Cubature`.
+- A display with OpenGL 4.6 in the compatibility profile on the GPU. A machine with no monitor,
+  such as a rented GPU in a container, gets one from a virtual display (`Xvfb`) and VirtualGL's
+  EGL back end (`vglrun -d egl`), which renders on the GPU through the driver's EGL library.
+- Optionally the game's cache (`.local/cubic-lab/cache`): its assets, client jar and libraries are
+  the same on every system, so carrying them spares `prepare` thousands of downloads.
+
+`tools/setup.py` looks for Java under `/usr/lib/jvm`, `/opt/java` and `~/.jdks` there, and
+`--check` reports what a Linux machine lacks.
 
 ### The measurement lease and the GPU queue
 
@@ -308,52 +244,49 @@ old and its process runs, so a request whose writer has gone holds nobody back; 
 such entries and exits 1. From a linked worktree the tool uses the main checkout's lease and
 queue.
 
-## Building and local actions
+## Building and CI
 
-`tools/actions.py` runs the workflows in `tools/actions.toml`, with a log per step under
-`.local/actions/<run-id>/` and a `summary.json`. Jobs run concurrently once the jobs they need have
-passed, as long as their declared core `share`, `memory` and `locks` fit the machine; longer jobs
-start first (`priority`). `--jobs 1` runs them one at a time. After a failed job no new job starts
-unless `--keep-going`; jobs that need it are skipped.
+Riven's checks are the jobs in `actions.toml`. Workbench runs them, `wb run ci.run project=riven`
+(or `riven.ps1 ci`), from a clean clone of the commit with Cubature cloned at the commit
+`dev/cc.lock.json` pins, on Temurin 26, with `{python}` the environment made from
+`tools/requirements-quality.txt`, `tools/requirements-atlas.txt` and
+`tools/observability/requirements.txt`. A log per step and a `summary.json` stay in Workbench's
+run records. Jobs run concurrently once the jobs they need have passed, as long as their declared
+core `share`, `memory` and `locks` fit the machine; longer jobs start first (`priority`). After a
+failed job no new job starts unless `keep_going=true`; jobs that need it are skipped.
 
 A job with `inputs` is a pure check. Its key hashes its steps, every file its input globs match
-and the JDK release and Gson it runs with. A pass for the same key, recorded under
-`.local/actions/cache/`, stands for the job, so a commit that leaves worldgen and a check
-untouched does not run the check again. A failure is never cached, and `--no-cache` runs
-everything. A job's inputs must list every file its verdict reads.
+and the JDK release it runs with. A pass for the same key stands for the job, so a commit that
+leaves worldgen and a check untouched does not run the check again. A failure is never cached. A
+job's inputs must list every file its verdict reads.
 
-`riven.ps1 profile` runs `ci` with the golden windows resampled and timed, then `tools/ci_timing.py`
-writes `timing.md` beside the run's summary: when each job began and ended, each step, and for
-the golden windows the map building, sampling, plan building, site decisions and painting.
+Each run records the trees it tested: the commit's, and the tree of the Cubature commit its pin
+names, which `cubature-build` builds in a worktree of its own (`tools/build_cubature_pin.py`) and
+checks against the pinned bytes. A run skips the jobs that already passed for the same trees. The
+pre-push hook (`wb run ci.hook project=riven`) refuses a push whose tip has not passed every `ci`
+job on its own tree together with its pinned Cubature tree; `git push --no-verify` skips it.
+Cubature's pushes are checked by Cubature's own CI and gate, so a Cubature change needs no Riven
+run until Riven moves its pin.
 
-Each `summary.json` records the Riven and Cubature trees the run tested, hashed as `git add --all`
-would commit them (through a scratch copy of the index; the real index is untouched), and whether
-either changed while it ran. A pass recorded before a commit therefore names that commit's tree.
-`--if-needed` skips the jobs that already passed for the current trees and keeps the jobs a
-remaining job needs. The record assumes the tool environments, `.local/settings.json` and the
-pinned JARs are unchanged between runs.
-
-`python tools/push_gate.py install` writes a pre-push hook into Riven and Cubature; it
-stays local, since git never commits `.git/hooks`. The hook refuses a push whose tip has not
-passed every `ci` job: a Riven commit on its own tree together with the tree of the Cubature
-commit its `dev/cc.lock.json` pins, a Cubature commit on its tree with one Riven tree. Running
-`ci --if-needed` with the pushed commits checked out and nothing uncommitted supplies the missing
-jobs; `git push --no-verify` skips the check.
+The `inputs` job fetches the pinned third-party files the offline checks compile against
+(`pins.lock.json`: Gson), so a check never depends on what a Gradle cache holds. Tools find JDKs
+through `tools/jdks.py`: this checkout's `.local/settings.json` first, then `JAVA_HOME_<major>_X64`,
+which Workbench and CI set, and Gradle is given every one of them, one per major.
 
 | Command | Runs |
 | --- | --- |
-| `python tools/setup.py` (`riven.ps1 setup`) | One-time preparation of a clone: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports |
-| `riven.ps1 quick` | Before a commit: the `ci` jobs the changes since HEAD (Riven's and Cubature's) can affect, by the `[quick]` rules in `tools/actions.toml`; a path no rule matches takes every `ci` job |
-| `riven.ps1 check` | `quality`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions` and `sample-history` |
-| `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history` |
-| `python tools/actions.py ci --if-needed` | The `ci` jobs that have not passed for the current trees |
-| `riven.ps1 full` | `ci` plus `smoke`, a native timing capture of the run's frozen artifacts |
-| `riven.ps1 profile` | `ci` with timed golden windows, then a `timing.md` report |
-| `python tools/actions.py --list` / `<job> ...` / `--dry-run` | Inspect or run individual jobs |
+| `python tools/setup.py` (`riven.ps1 setup`) | Preparation of a clone, each step skipped when done: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports. A pin `runtime.lock.json` marks built from source carries a `build` recipe (the sibling checkout, Java version, Gradle tasks, artifact and any properties; a property may name a Cubature JAR by commit and SHA-256, which setup builds and keeps under `.local/source-inputs`); setup builds it at its `sourceCommit` in a worktree of that checkout under `.local/source-builds` and places it only if it is the pinned bytes. Moving such a pin is a new `sourceCommit` and `sha256`; setup builds the rest. The Cubature artifacts `dev/cc.lock.json` pins are built the same way at its `commit`, with that commit's own compile-only inputs, so the Cubature checkout's own state plays no part |
+| `riven.ps1 quick` | Before a commit: the `ci` jobs this working tree's changes can affect, by the `[quick]` rules in `actions.toml` (Workbench, `commit=worktree`); a path no rule matches takes every `ci` job, so a moved Cubature pin runs them all |
+| `riven.ps1 check` | `inputs`, `quality`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history` and `variant-coverage` |
+| `riven.ps1 ci` | The `ci` workflow at HEAD: `check` plus `riven-build` and `cubature-build` |
+| `riven.ps1 profile` | `ci` with the golden windows resampled and timed; each step's timing lines are in the run's summary |
+| `wb run ci.status project=riven` | What HEAD has passed, and what the push gate still needs |
+| `wb run ci.run project=riven workflow=<job>` | One job (or several: `jobs=[...]`); `dry_run=true` lists the steps |
 
-The PowerShell launcher forwards workflow options, so `riven.ps1 full --if-needed`
-reuses jobs already passed for the same source trees. Runtime commands take named
-`-Name`, `-Port` and `-Text` parameters.
+A native timing capture needs the GPU host, so it is not part of CI: run
+`tools/riven_observe.py capture` through Workbench's lab (`wb run lab.script`, with the tools folder
+allow-listed in `modules.lab.scripts`). Runtime commands take named `-Name`, `-Port` and `-Text`
+parameters.
 
 The lab's `deliveryTickCosts` records exclusive server-thread phase times for every captured
 tick, alongside installed-cube counts and the share installed without block storage. Its
@@ -376,9 +309,9 @@ records both JVMs with JFR's profile settings for attributing a phase further.
 
 - `tools/build_riven.py [--diagnostics] [--freeze LABEL]` builds Riven for Cleanroom and
   writes `.local/builds/riven-latest.json`.
-- `../Cubature/tools/build_cubature.py [--workspace RIVEN] [--skip-tests] [--no-lab] [--freeze LABEL]`
-  builds Cubature with its Java 26 tests, then the lab observer against that exact artifact, and
-  writes `.local/builds/cubature-latest.json` with test counts.
+- `tools/build_cubature_pin.py [--freeze LABEL]` builds the pinned Cubature at its commit in a
+  worktree of the Cubature checkout, with its Java 26 tests, then the lab observer against that exact
+  JAR, and fails unless the Cubature JARs are the pinned bytes (ci's `cubature-build`).
 - `--freeze LABEL` copies both projects' artifacts into `.local/frozen/LABEL/` with a shared
   `manifest.json`; action runs freeze under their run id.
 - `tools/atlas_golden.py check|update [--verify]` compares four fixed atlas windows

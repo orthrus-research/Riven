@@ -168,7 +168,14 @@ class Query:
             raise QueryError("a categorical raster compares only with names")
         if value.names is None and any(named):
             raise QueryError("names compare only with a categorical raster")
-        codes = [self.code(value, item) if isinstance(item, str) else item for item in items]
+        codes: list[int | float] = []
+        for item in items:
+            if isinstance(item, str):
+                codes.append(self.code(value, item))
+            elif isinstance(item, (int, float)) and not isinstance(item, bool):
+                codes.append(item)
+            else:
+                raise QueryError("`in` needs a literal tuple or list of names or numbers")
         return np.isin(value.array, codes)
 
     def code(self, value: Value, label: str) -> int:

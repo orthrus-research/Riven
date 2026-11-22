@@ -188,7 +188,7 @@
     "ESTUARY": "estuary"
   },
   "categories": {
-    "about": "Intended biome_category for each parent: its vanilla kind. Demonica decides by Forge BiomeDictionary type first (SAVANNA, JUNGLE, OCEAN, RIVER, MESA, FOREST, PLAINS, MOUNTAIN, SWAMP, SANDY as DESERT), then by vanilla class; /riven shaderprops reports where it differs. BSL keys its 1.12 biome effects to biome IDs, not categories.",
+    "about": "Intended category for each parent: its vanilla kind, which mods that classify biomes by class read.",
     "snow": "ICY",
     "taiga": "TAIGA",
     "plains": "PLAINS",

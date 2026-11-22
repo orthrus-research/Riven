@@ -13,9 +13,9 @@ import gzip
 import hashlib
 import importlib
 import json
-import os
 import shutil
 import struct
+import sys
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
@@ -209,7 +209,7 @@ def journal_directory(manifest):
 @contextmanager
 def keep_system_awake():
     """Hold a thread-owned sleep request only while this bulk controller runs."""
-    if os.name != "nt":
+    if sys.platform != "win32":
         yield
         return
     setter = ctypes.WinDLL("kernel32", use_last_error=True).SetThreadExecutionState

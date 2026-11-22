@@ -10,6 +10,9 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tools/, for jdks
+import jdks  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / ".local/terrain-atlas"
 SAMPLER = ROOT / "tools/checks/TerrainAtlas.java"
@@ -31,20 +34,34 @@ class Source:
         return label
 
 
-def settings():
-    return json.loads((ROOT / ".local/settings.json").read_text(encoding="utf-8"))
-
-
 def java():
-    return Path(settings()["java26"])
+    return jdks.java(26)
+
+
+def javac():
+    return jdks.javac(26)
+
+
+GSON = "gson-2.14.0.jar"  # pinned in pins.lock.json; the inputs job fetches it
 
 
 def gson():
-    base = Path.home() / ".gradle/caches/modules-2/files-2.1/com.google.code.gson/gson"
-    jars = [j for j in sorted(base.rglob("gson-*.jar")) if "sources" not in j.name]
-    if not jars:
-        raise RuntimeError("Gson not found in the Gradle cache; run riven.ps1 build once")
-    return jars[-1]
+    """The pinned Gson: fetched by `python -m orthrus_tools pins fetch` (CI's inputs job), else the same
+    version from the Gradle cache, never whichever version a cache happens to hold."""
+    pinned = ROOT / ".local/pins" / GSON
+    if pinned.is_file():
+        return pinned
+    version = GSON[len("gson-") : -len(".jar")]
+    cached = sorted(
+        (jdks.gradle_caches() / "modules-2/files-2.1/com.google.code.gson/gson" / version).glob(
+            f"*/{GSON}"
+        )
+    )
+    if cached:
+        return cached[0]
+    raise RuntimeError(
+        f"{GSON} is not fetched: run `python -m orthrus_tools pins fetch` (pins.lock.json)"
+    )
 
 
 def source_tree(ref):
@@ -98,7 +115,7 @@ def compile_sampler(source_dir, check=SAMPLER):
     argfile.write_text("\n".join(f'"{p.as_posix()}"' for p in [*java_files, sampler]))
     started = time.monotonic()
     result = subprocess.run(
-        [str(java().with_name("javac.exe")), "--release", "25", "-nowarn"]
+        [str(jdks.javac(26)), "--release", "26", "-nowarn"]
         + ["-cp", str(gson()), "-d", str(staging), "@" + str(argfile)],
         capture_output=True,
         text=True,

@@ -26,12 +26,12 @@ final class RivenCommand extends CommandBase {
 
     @Override
     public String getUsage(ICommandSender sender) {
-        return "/riven [x z] | /riven find <biome|variant:id> [radius] | /riven trees [radius] | /riven cover [radius] | /riven boulders [radius] | /riven digest [radius [x z]] | /riven animals [radius] | /riven biomes | /riven mappings | /riven shaderprops [player] | /riven effects [reload]";
+        return "/riven [x z] | /riven find <biome|variant:id> [radius] | /riven trees [radius] | /riven cover [radius] | /riven boulders [radius] | /riven digest [radius [x z]] | /riven animals [radius] | /riven biomes | /riven mappings | /riven effects [reload]";
     }
 
     /**
      * Riven's biomes with their numeric IDs, parent classes and intended shader category, and the
-     * biome ID budget. /riven shaderprops reports the category Demonica actually gives each.
+     * biome ID budget.
      */
     private static void biomes(ICommandSender sender) {
         int used = 0;
@@ -800,19 +800,6 @@ final class RivenCommand extends CommandBase {
         }
         if (args.length >= 1 && args[0].equals("mappings")) {
             mappings(sender, world);
-            return;
-        }
-        if (args.length >= 1 && args[0].equals("shaderprops")) {
-            net.minecraft.entity.player.EntityPlayerMP player =
-                    args.length >= 2
-                            ? getPlayer(server, sender, args[1])
-                            : getCommandSenderAsPlayer(sender);
-            RivenNetwork.shaderProps(player);
-            sender.sendMessage(
-                    new TextComponentString(
-                            "Asked "
-                                    + player.getName()
-                                    + "'s client for a Riven copy of its shader pack"));
             return;
         }
         if (args.length >= 1 && args[0].equals("entities")) {

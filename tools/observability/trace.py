@@ -12,7 +12,9 @@ from checkouts import CUBATURE_TOOLS
 from .evidence import timestamp_ns
 from .profiles import ROOT, configuration, read_json, sha
 
-sys.path.insert(0, str(CUBATURE_TOOLS))
+# After Riven's own modules: a Cubature tool of the same name never stands in for Riven's.
+if str(CUBATURE_TOOLS) not in sys.path:
+    sys.path.append(str(CUBATURE_TOOLS))
 from analyze_cubic_profile import duration_ns, iter_jfr_events, methods
 
 EVENTS = ",".join(

@@ -126,7 +126,7 @@ def write_json(path: Path, value) -> None:
 def pid_alive(pid) -> bool:
     if not isinstance(pid, int) or pid <= 0:
         return False
-    if os.name != "nt":
+    if sys.platform != "win32":
         try:
             os.kill(pid, 0)
         except ProcessLookupError:
@@ -403,7 +403,7 @@ def detach(argv: list[str], queue: Queue, lane: str) -> dict:
     own.remove("--detach")  # only this tool's flag; the turn's command keeps all of its arguments
     command = [sys.executable, "-B", str(Path(__file__).resolve())] + own + list(argv[split:])
     flags = 0
-    if os.name == "nt":
+    if sys.platform == "win32":
         flags = (
             subprocess.DETACHED_PROCESS
             | subprocess.CREATE_NEW_PROCESS_GROUP
