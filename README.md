@@ -80,8 +80,9 @@ folders; pass `--java25` and `--java26` to choose), clones Cubature beside Riven
 downloads the third-party JARs pinned in [runtime.lock.json](runtime.lock.json) and checks each
 against its SHA-256, builds the Cubature artifacts that [dev/cc.lock.json](dev/cc.lock.json) pins,
 and creates the Python environments for the checks and the atlas. `--check` reports what is
-missing without changing anything. A Cubature build that differs from the pinned bytes still
-builds Riven; native instances need the pinned artifact.
+missing without changing anything. A source build that is not the pinned bytes places nothing,
+and setup says where verified bytes can come from: `WB_PIN_CACHE`, a folder of pinned files named
+by their SHA-256, such as Workbench's pin cache.
 
 To see what the generator selects without starting the game:
 

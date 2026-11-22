@@ -151,6 +151,15 @@ class SourcePinTest(unittest.TestCase):
         ).stdout.splitlines()
         self.assertEqual(len(worktrees), 1)
 
+    def test_a_mismatch_names_where_verified_bytes_come_from(self):
+        folder = str(self.base / "pins")
+        self.assertIn(f"WB_PIN_CACHE ({folder}) holds no abc", setup.verified_bytes_hint("abc"))
+        with mock.patch.dict(os.environ):
+            del os.environ["WB_PIN_CACHE"]
+            hint = setup.verified_bytes_hint("abc")
+        self.assertIn("WB_PIN_CACHE is not set", hint)
+        self.assertIn("pin cache Workbench keeps on its host", hint)
+
     def test_build_of_other_bytes_leaves_dev_pins_unchanged(self):
         _, commit = self.source()
         target = self.root / "dev/pins/out.jar"
@@ -160,6 +169,7 @@ class SourcePinTest(unittest.TestCase):
         with self.assertRaises(SystemExit) as refused:
             setup.source_pins(argparse.Namespace(check=False))
         self.assertIn("nothing was placed", str(refused.exception))
+        self.assertIn("WB_PIN_CACHE", str(refused.exception))
         self.assertEqual(target.read_bytes(), b"previous")
         self.assertEqual(list((self.root / ".local/source-builds").iterdir()), [])
 

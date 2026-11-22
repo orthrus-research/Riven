@@ -287,15 +287,26 @@ def source_worktree(checkout: Path, source: str, commit: str, name: str) -> Iter
         drop_worktree(checkout, work)
 
 
+def verified_bytes_hint(expected: str) -> str:
+    """Where the pinned bytes can come from when this machine's build does not reproduce them."""
+    folder = os.environ.get("WB_PIN_CACHE")
+    found = f"WB_PIN_CACHE ({folder}) holds no {expected}" if folder else "WB_PIN_CACHE is not set"
+    return (
+        f"{found}. Verified bytes come from a pin cache: set WB_PIN_CACHE to a folder of pinned "
+        "files named by their SHA-256, such as the pin cache Workbench keeps on its host for CI "
+        "jobs, and run setup again"
+    )
+
+
 def place_pinned(built: list[tuple[Path, Path, str]], what: str) -> None:
     """Copy each built file to its pinned target, but only once every one is the pinned bytes;
-    otherwise nothing is placed."""
+    otherwise nothing is placed, and the refusal says where verified bytes can come from."""
     for source, target, expected in built:
         actual = sha256(source)
         if actual != expected:
             raise SystemExit(
                 f"{target.relative_to(ROOT)}: {what} builds to SHA-256 {actual}, not the pinned "
-                f"{expected}; nothing was placed"
+                f"{expected}; nothing was placed. {verified_bytes_hint(expected)}"
             )
     for source, target, expected in built:
         target.parent.mkdir(parents=True, exist_ok=True)
