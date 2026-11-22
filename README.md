@@ -109,11 +109,8 @@ To see what the generator selects without starting the game:
 
 Questions and discussion: [Discord](https://discord.gg/qCVqhXtSzR). Bugs and requests: this
 repository's issues. Security and private matters: admin@orthrus.cc. Pull requests are welcome;
-see [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Orthrus Research develops with AI assistance (Claude Code and Codex). Every change meets the same
-verification gates whatever its origin. See
-[AI usage](https://github.com/orthrus-research/.github/blob/main/AI.md).
+see [CONTRIBUTING.md](CONTRIBUTING.md). More about Riven:
+[orthrus.cc/projects/riven](https://orthrus.cc/projects/riven).
 
 ## License
 
@@ -144,3 +141,9 @@ The broader direction draws conceptual inspiration from
 [FT's Geology](https://github.com/Jelada-Studios/fts-geology) by
 [Jelada Studios](https://github.com/Jelada-Studios). Riven contains none of its implementation or
 assets. Riven targets 1.12.2; players on newer versions should explore FT's Geology.
+
+---
+
+<sub>Riven is an [Orthrus Research](https://orthrus.cc) project ·
+[All projects](https://orthrus.cc/projects) · [Texts](https://orthrus.cc/texts) ·
+[Discord](https://discord.gg/qCVqhXtSzR)</sub>
