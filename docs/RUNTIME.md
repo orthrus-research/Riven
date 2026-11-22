@@ -10,7 +10,7 @@
 | Cleanroom | 0.7.14-alpha, official and unchanged | Loader; supplies MixinBooter and ConfigAnytime |
 | Java | 26.0.2.1, 8 GiB heap, ZGC per JVM | Native runtime and development compiler |
 | Cubature | `dev/pins/Cubature-cleanroom.jar` (`dev/cc.lock.json`) | The Orthrus Research CubicChunks fork: scheduling, lighting, lifetime, storage, delivery, DH integration |
-| Distant Horizons | 3.3.3-1.12.2, official upstream (`dev/dh.lock.json`) | Distant terrain renderer and delivery, both sides |
+| Distant Horizons | 3.3.3-1.12.2, official upstream (`dev/dh.lock.json`) | Distant terrain renderer and delivery, both sides, in instances prepared with `--distant-horizons` |
 | Fugue | 0.25.5 | Modern-Java compatibility layer |
 | Scalar Legacy | 1.0.1 | Scala 2.11 provider |
 | GTCEu: Reloaded | 3.0.0-reloaded.1-alpha.1, built from its published `master` by `tools/setup.py` (`runtime.lock.json`), with CodeChickenLib CRE 3.3.10 and ModularUI 3.1.6 | Optional ore provider (prototype): Orthrus Research's GTCEu continuation, mod ID `gregtech`. `riven-ores.json` transcribes its overworld vein catalog, Riven places the bodies, and GregTech supplies the ore block for each mineral and host stone type; its own world generator never runs. Riven compiles against it with the Java 26 compiler, since its classes are Java 26 |
@@ -51,7 +51,8 @@ held value directly, and a later memory miss can rebuild a missing file.
 
 ## Distant Horizons
 
-DH is installed byte-for-byte from the official release on client and server. Cubature binds a
+An instance prepared with `--distant-horizons` installs DH byte-for-byte from the official release
+on client and server; without it, DH is left out (Launching). Cubature binds a
 seed-only surface provider (`ICubicTerrainPreview`) to DH's executor and normal server delivery;
 Riven supplies the sampler, which shares native block rules and maps; the sampler learns each
 preview cell's footprint and may emit light-filtering blocks such as leaves (sky light falls by
@@ -156,19 +157,25 @@ joining client receives the world's definitions packet (fingerprint, biome color
 
 ```powershell
 riven.ps1 build
-python tools/runtime.py prepare --name <fresh-name> [--scale 0.5-8] [--start X Y Z YAW PITCH] [--spectator] [--capture]
+python tools/runtime.py prepare --name <fresh-name> --client-mod <Quadrature jar> [--preset canonical | --seed N --scale 0.5-8] [--distant-horizons] [--start X Y Z YAW PITCH] [--spectator] [--capture]
 python tools/runtime.py play --name <fresh-name>
 python tools/runtime.py command --name <fresh-name> --text "<server command>"
 ```
 
-Instances live under `.local/cubic-standalone/<name>` (seed 8675309, port 25870). `prepare`
+Instances live under `.local/cubic-standalone/<name>` (port 25870). `prepare`
 records the runtime profile, exact mod hashes and every generator fingerprint; `play` refuses an
 instance whose frozen inputs changed. Changed definitions need a fresh instance. `--start` fixes
-daylight and weather and teleports on first join; `--scale` sets Riven's layout scale through
-`generator-settings` (0.5-8: 1 = 8 km tuning, 0.5 = 4 km, 4 = 32 km worlds; see FEATURES.md); `--capture` saves one native screenshot after
+daylight and weather and teleports on first join. Without options the world is seed 8675309 at
+layout scale 1 (the 8 km tuning world); `--seed` and `--scale` choose another, the scale through
+`generator-settings` (0.5-8: 1 = 8 km, 0.5 = 4 km, 4 = 32 km worlds; see FEATURES.md).
+`--preset canonical` is the canonical world, seed 2485331 at scale 4 (32 km), and takes no
+`--seed` or `--scale`. `--capture` saves one native screenshot after
 400 client ticks. `--spawn-animals` allows animals (off for terrain captures).
-`--no-distant-horizons` leaves Distant Horizons off both sides, so the client draws native cubes
-only; it excludes `--dh-lod-only` and `--lod-trace`. `--client-mod <jar>` (repeatable) adds
+By default an instance has no Distant Horizons, and every `play` starts the client with
+`-Dquadrature.distant=own`, so Quadrature draws distant terrain itself from Riven's preview (the
+instance records this as `clientProperties`). `--distant-horizons` installs DH on both sides
+instead, with Quadrature's own distant terrain off; `--dh-lod-only` and `--lod-trace` need it.
+`--client-mod <jar>` (repeatable) adds
 an extra mod to the client only and records it with the instance. The client draws cubic worlds
 through Quadrature, which takes over the game's chunk system there: Cubature's client stops at
 loading without it, so a client that is to draw is prepared with `--client-mod <Quadrature jar>`. `/riven` in game

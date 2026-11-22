@@ -1,10 +1,13 @@
 """Exercise the PowerShell entry point with Python replaced by an argument recorder."""
 
+import inspect
 import json
 import shutil
 import subprocess
+import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 POWERSHELL = shutil.which("pwsh") or shutil.which("powershell")
 ROOT = Path(__file__).resolve().parents[1]
@@ -83,6 +86,54 @@ class LauncherTests(unittest.TestCase):
                 "say hello",
             ],
         )
+
+    def test_prepare_forwards_its_options(self):
+        self.assertEqual(
+            self.invoke("prepare", "-Name", "test-instance", "--preset", "canonical"),
+            [
+                str(ROOT / "tools/runtime.py"),
+                "prepare",
+                "--name",
+                "test-instance",
+                "--port",
+                "25870",
+                "--preset",
+                "canonical",
+            ],
+        )
+
+
+class PrepareDefaultsTests(unittest.TestCase):
+    """runtime.py prepare's world and distant terrain, with prepare itself replaced by a recorder."""
+
+    def prepared(self, *arguments):
+        import runtime
+
+        signature = inspect.signature(runtime.prepare)
+        argv = ["runtime.py", "prepare", "--name", "test-instance", *arguments]
+        with mock.patch.object(sys, "argv", argv), mock.patch.object(runtime, "prepare") as called:
+            runtime.main()
+        given = signature.bind(*called.call_args.args, **called.call_args.kwargs).arguments
+        return {**given, "scale": given["layout_scale"]}
+
+    def test_default_is_quadratures_distant_terrain_without_dh(self):
+        given = self.prepared()
+        self.assertFalse(given["distant_horizons"])
+        self.assertTrue(given["own_distant"])
+        self.assertEqual((given["seed"], given["scale"]), (8675309, 1.0))
+
+    def test_distant_horizons_turns_quadratures_distant_terrain_off(self):
+        given = self.prepared("--distant-horizons")
+        self.assertTrue(given["distant_horizons"])
+        self.assertFalse(given["own_distant"])
+
+    def test_canonical_preset_is_the_32_km_world(self):
+        given = self.prepared("--preset", "canonical")
+        self.assertEqual((given["seed"], given["scale"]), (2485331, 4.0))
+
+    def test_a_preset_refuses_its_own_seed_or_scale(self):
+        with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
+            self.prepared("--preset", "canonical", "--seed", "1")
 
 
 if __name__ == "__main__":

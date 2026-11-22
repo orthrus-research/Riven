@@ -24,7 +24,7 @@ try {
         if (-not $Name) { throw "riven.ps1 $Action needs -Name <instance>" }
         $runtimeArgs=@("$PSScriptRoot/tools/runtime.py",$Action,'--name',$Name,'--port',"$Port")
         if ($Text) { $runtimeArgs+=@('--text',$Text) }
-        & python @runtimeArgs
+        & python @runtimeArgs @Rest
     }
     if ($LASTEXITCODE -ne 0) { throw "Riven $Action failed ($LASTEXITCODE)" }
 } finally { Pop-Location }

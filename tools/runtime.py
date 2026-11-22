@@ -33,6 +33,11 @@ import lab_profiles
 # Cubature's delivery modes in stage order, as command lines spell them.
 DELIVERY_MODES = tuple(mode.lower() for mode in lab_profiles.DELIVERY_MODES)
 
+# prepare's world without a preset: the 8 km tuning scale on the lab seed.
+DEFAULT_WORLD = {"seed": 8675309, "scale": 1.0}
+# Named worlds for prepare --preset; canonical is the 32 km world terrain is judged in.
+WORLD_PRESETS = {"canonical": {"seed": 2485331, "scale": 4.0}}
+
 
 def load_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
@@ -135,6 +140,7 @@ def prepare(
     distant_horizons=True,
     client_mods=None,
     view_profile=None,
+    own_distant=False,
 ):
     # Extra client-side mods (a renderer under test, for example), recorded with the instance.
     client_mods = [Path(mod).resolve() for mod in client_mods or []]
@@ -142,10 +148,12 @@ def prepare(
         if not mod.is_file():
             raise RuntimeError("Client mod not found: " + str(mod))
     if not distant_horizons:
-        # A near-terrain-only instance: DH is left off both sides, so nothing distant is drawn.
+        # DH is left off both sides; distant terrain is Quadrature's own (own_distant) or none.
         if dh_lod_only or lod_observer is not None:
-            raise ValueError("--no-distant-horizons excludes --dh-lod-only and --lod-trace")
+            raise ValueError("An instance without DH excludes --dh-lod-only and --lod-trace")
         distant_generation = False
+    elif own_distant:
+        raise ValueError("Quadrature's own distant terrain and DH exclude each other")
     if lod_observer is not None:
         lod_observer = Path(lod_observer).resolve()
         if not lod_observer.is_file():
@@ -402,6 +410,8 @@ def prepare(
         if distant_horizons
         else None,
         clientMods=[{"path": str(mod), "sha256": sha(mod)} for mod in client_mods],
+        # System properties every play gives the client JVM.
+        clientProperties={"quadrature.distant": "own"} if own_distant else {},
         lodTrace={
             "observer": str(lod_observer),
             "sha256": sha(lod_observer),
@@ -665,6 +675,7 @@ def play(name, tour=None, window=None, distances=None):
             client_args[1:1] = ["-Driven.tour=true"]
         if m.get("dhDetailTrace"):
             client_args[1:1] = ["-Ddistanthorizons.traceDetail=true"]
+        client_args[1:1] = [f"-D{k}={v}" for k, v in m.get("clientProperties", {}).items()]
         server = lab.spawn(
             server_args, Path(m["server"]), directory / "server-console.log", messages
         )
@@ -818,7 +829,14 @@ def main():
         "--name", help="prepare, play, command: the instance name under .local/cubic-standalone"
     )
     p.add_argument("--port", type=int, default=25870)
-    p.add_argument("--seed", type=int, default=8675309, help="World seed for prepare")
+    p.add_argument(
+        "--preset",
+        choices=sorted(WORLD_PRESETS),
+        help="prepare: a named world; canonical is seed 2485331 at scale 4 (32 km)",
+    )
+    p.add_argument(
+        "--seed", type=int, help=f"World seed for prepare (default {DEFAULT_WORLD['seed']})"
+    )
     p.add_argument(
         "--player-effects",
         help="prepare: the server's config/riven/player-effects.json (default: Riven writes its shipped one)",
@@ -831,8 +849,7 @@ def main():
     p.add_argument(
         "--scale",
         type=float,
-        default=1.0,
-        help="Riven layout scale, 0.5-8 (1 = 8 km tuning, 0.5 = 4 km, 4 = 32 km worlds)",
+        help="Riven layout scale, 0.5-8 (default 1 = 8 km tuning, 0.5 = 4 km, 4 = 32 km worlds)",
     )
     p.add_argument(
         "--start",
@@ -872,10 +889,10 @@ def main():
     )
     p.set_defaults(distant_generation=True)
     p.add_argument(
-        "--no-distant-horizons",
-        action="store_false",
-        dest="distant_horizons",
-        help="prepare: leave DH off both sides, for near-terrain-only captures",
+        "--distant-horizons",
+        action="store_true",
+        help="prepare: DH on both sides draws distant terrain; without it, DH is left out and the "
+        "client runs Quadrature's own distant terrain (-Dquadrature.distant=own)",
     )
     p.add_argument(
         "--client-mod",
@@ -1001,6 +1018,13 @@ def main():
     a = p.parse_args()
     if a.command != "build" and not a.name:
         p.error(a.command + " needs --name <instance>")
+    world = DEFAULT_WORLD
+    if a.preset:
+        if a.seed is not None or a.scale is not None:
+            p.error(f"--preset {a.preset} fixes the seed and scale")
+        world = WORLD_PRESETS[a.preset]
+    seed = world["seed"] if a.seed is None else a.seed
+    scale = world["scale"] if a.scale is None else a.scale
     if a.command == "build":
         build()
     elif a.command == "prepare":
@@ -1018,13 +1042,13 @@ def main():
             a.dh_request_limit,
             a.dh_workers,
             a.dh_pause_when_moving,
-            a.scale,
+            scale,
             a.dh_ignore_server_health,
             a.dh_adaptive_transfer,
             a.dh_progress_log,
             a.dh_native_feed,
             a.cubature_delivery,
-            seed=a.seed,
+            seed=seed,
             spawn_animals=a.spawn_animals,
             player_effects=a.player_effects,
             lod_observer=a.lod_trace,
@@ -1035,6 +1059,7 @@ def main():
             distant_horizons=a.distant_horizons,
             client_mods=a.client_mod,
             view_profile=a.view_profile,
+            own_distant=not a.distant_horizons,
         )
     elif a.command == "play":
         play(
