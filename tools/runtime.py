@@ -259,6 +259,10 @@ def prepare(
         (home / "config/forge_early.cfg").write_text(
             "general {\n    B:DISABLE_PATCH_MOD_CHECK=false\n}\n"
         )
+        if side == "client":
+            # Forge's splash screen draws from a thread of its own, and with Quadrature loaded it
+            # crashes the client natively in LWJGL's SDL3.dll. It only shows loading progress.
+            (home / "config/splash.properties").write_text("enabled=false\n")
         if distant_horizons and (side == "client" or distant_generation):
             # The optional CC adapter supplies seed-only SURFACE data on DH's executor.
             # The legacy visited-only lane remains available for comparison.
