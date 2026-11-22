@@ -89,14 +89,15 @@
     {
       "file": "dev/pins/gtceu-reloaded-3.0.0-reloaded.1-alpha.1.jar",
       "version": "3.0.0-reloaded.1-alpha.1",
-      "sha256": "fb44886ca15e7dd5074d11a2850b045c1c7a06d882f6a2863567f0d0ca7ddf8b",
+      "sha256": "68bf1939911fecaf79272490257f338da345daba0fa75452c6f214e6f8da94d6",
       "source": "https://github.com/orthrus-research/GTCEu-Reloaded",
-      "sourceCommit": "796d41ac2c8bcf9707c00660bf193a330e6218e8",
+      "sourceCommit": "7c46b20e611781e39ab06adb04992a186d2a7185",
       "distribution": "built-from-source",
       "build": {
         "checkout": "../GTCEuR",
         "java": 26,
         "tasks": [
+          "refreshOrthLib",
           "assemble"
         ],
         "artifact": "build/libs/gtceu-reloaded-3.0.0-reloaded.1-alpha.1.jar"
@@ -105,14 +106,14 @@
         "server",
         "client"
       ],
-      "reason": "Optional ore catalogue provider: Riven reads the vein and deposit definitions of GTCEu: Reloaded (Orthrus Research's GTCEu continuation, mod ID gregtech, replacing GTCEu) and places ore with its own geology-driven generators; GregTech's own world generator never runs (vanilla chunk generators stay off). Built from the published master commit. LGPL-3.0; not redistributed"
+      "reason": "Optional ore catalogue provider: Riven reads the vein and deposit definitions of GTCEu: Reloaded (Orthrus Research's GTCEu continuation, mod ID gregtech, replacing GTCEu) and places ore with its own geology-driven generators; GregTech's own world generator never runs (vanilla chunk generators stay off). Built from the named commit, master with the render interface merged. LGPL-3.0; not redistributed"
     },
     {
       "file": "dev/pins/orthlib-0.5.0-dev.jar",
       "version": "0.5.0-dev",
-      "sha256": "53d0bfd0a4ca054e7bef46da5aa49a3212e87daf2f5dee8acb44e87f431166bc",
+      "sha256": "8d4c5445ac263ceb0cba7faefe97d010678c14339e169eede1a965205d849f83",
       "source": "https://github.com/orthrus-research/OrthLib",
-      "sourceCommit": "84a58e84e4dd2683ce8d0365a911f315771b7d21",
+      "sourceCommit": "0c2995e6c1d838be8c2b4975eec68b923eb0f1c4",
       "distribution": "built-from-source",
       "build": {
         "checkout": "../OrthLib",
@@ -126,7 +127,7 @@
         "server",
         "client"
       ],
-      "reason": "Orthrus Research's shared library: random-tick participation (its vanilla adapter Mixin, registered through a CleanMix connector) and services for Orthrus mods. Built from the named commit; the adapter beside it is unchanged since OrthLib's T1 native qualification. Private, all rights reserved; local use only, never redistributed"
+      "reason": "Orthrus Research's shared library: random-tick participation (its vanilla adapter Mixin, registered through a CleanMix connector), the render interface (version 1.0) GTCEu: Reloaded's emissive layer and glow go through, whose absence answers draw that mod's emissive geometry plainly where no renderer provides the interface, and services for Orthrus mods. Built from the named commit; the adapter beside it is unchanged since OrthLib's T1 native qualification. Apache-2.0; not redistributed"
     },
     {
       "file": "dev/pins/orthlib-0.5.0-dev-cubature.jar",
