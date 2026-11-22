@@ -187,7 +187,7 @@ def main():
         entry["paint"] = round(seconds, 1)
     timing["seconds"] = round(time.monotonic() - run_started, 1)
     (OUT / "timing.json").write_text(json.dumps(timing, indent=2), encoding="utf-8")
-    # tools/actions.py keeps "timing " lines in the run summary for tools/ci_timing.py.
+    # The actions runner keeps "timing " lines in the run summary.
     print("timing " + json.dumps({"atlasGolden": timing}))
 
     changed = []

@@ -1,8 +1,8 @@
 # Riven's checks, in the shared actions format. Workbench runs them from a clean clone, with Cubature
 # at the commit dev/cc.lock.json pins (`wb run ci.run project=riven`), keeps the passes, and its
 # pre-push hook refuses a tip whose trees have not passed every ci job. Without Workbench:
-# `orthrus-tools actions run ci` in a checkout. `full` adds `smoke`, a native capture on a Windows
-# GPU host, which runs outside the container.
+# `orthrus-tools actions run ci` in a checkout. A native capture needs the GPU host, so it is not CI:
+# run it through Workbench's lab (tools/riven_observe.py under lab.script).
 # Placeholders: {python} the interpreter (in Workbench, the environment made from the three
 # tools/**/requirements*.txt files), {run_id} the run's identifier, {run_dir} its folder, {frozen}
 # the run's frozen artifacts, {riven} Riven's root.
@@ -10,7 +10,7 @@
 # Jobs run concurrently once the jobs they need have passed. A job claims `share` of the cores
 # (default 0.25), `memory` GiB (default 4) and its `locks`; jobs start, highest `priority` first,
 # while the running claims fit the machine (cores, three quarters of its memory) and no two
-# running jobs hold the same lock. `native` jobs run alone. actions.py --jobs 1 runs serially.
+# running jobs hold the same lock. `--jobs 1` runs them serially.
 #
 # `inputs` makes a job a pure check: globs of every file its verdict depends on, beside its steps
 # and the JDK. A job whose exact inputs passed before is not run again; list every file it reads.
@@ -34,8 +34,8 @@ frozen = "{run_dir}/frozen"
 check = ["inputs", "quality", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
 build = ["riven-build", "cubature-build"]
 ci = ["inputs", "quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
-full = ["inputs", "quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage", "smoke"]
-# ci with the golden windows resampled and timed; tools/ci_timing.py reports the run (riven.ps1 profile).
+# ci with the golden windows resampled and timed (riven.ps1 profile); each step's timing lines are in the
+# run's summary.
 profile = ["inputs", "quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden-profile", "definitions", "sample-history", "variant-coverage"]
 
 [jobs.inputs]
@@ -171,16 +171,6 @@ inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc
 memory = 8
 steps = [
   { name = "variant coverage", run = ["{python}", "tools/run_check.py", "VariantCoverageCheck", "8", "4"] },
-]
-
-[jobs.smoke]
-description = "Native client/server timing capture of this run's frozen Riven and observer"
-needs = ["riven-build", "cubature-build"]
-native = true
-steps = [
-  { name = "doctor", run = ["{python}", "-B", "tools/riven_observe.py", "doctor", "--riven", "{frozen}/riven-cleanroom.jar", "--observer", "{frozen}/lab-cleanroom.jar"] },
-  { name = "timing capture", run = ["{python}", "-B", "tools/riven_observe.py", "capture", "--name", "smoke-{run_id}", "--riven", "{frozen}/riven-cleanroom.jar", "--observer", "{frozen}/lab-cleanroom.jar", "--mode", "timing"] },
-  { name = "inspect", run = ["{python}", "-B", "tools/riven_observe.py", "inspect", ".local/cubic-standalone/smoke-{run_id}", "--output", "{run_dir}/smoke-inspect"] },
 ]
 
 [quick]

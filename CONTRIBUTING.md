@@ -40,8 +40,8 @@ Supersymmetry is not imported. Adapted material states its source, its license a
 | Command | When |
 | --- | --- |
 | `riven.ps1 quick` | Before each commit: the `ci` jobs its changes can affect |
-| `riven.ps1 ci` | Before every push or pull request (the pre-push hook from `python tools/push_gate.py install` refuses a tip without it): formatting, lint and types, Riven's tool tests, Riven's build, the pinned Cubature built at its commit with its tests and the lab observer, golden atlas digests rendered twice for determinism |
-| `riven.ps1 full` | Changes to runtime behavior: `ci` plus a native client and server smoke capture |
+| `riven.ps1 ci` | Before every push or pull request, in Workbench (the pre-push hook from `wb run ci.hook project=riven` refuses a tip without it): the pinned inputs, formatting, lint and types, Riven's tool tests, Riven's build, the pinned Cubature built at its commit with its tests and the lab observer, golden atlas digests rendered twice for determinism |
+| Native capture | Changes to runtime behavior: a native client and server timing capture (`tools/riven_observe.py capture`), through Workbench's lab |
 | `.local/quality-venv/Scripts/python tools/code_quality.py format` | Applies the pinned Java and Python formatting |
 | `tools/terrain_atlas.py compare` | Before updating golden digests: shows what changed and where |
 
@@ -54,5 +54,5 @@ one line to [CHANGELOG.md](CHANGELOG.md), and proves itself with
 - One reviewed change per commit. The message says what was run and what it showed.
 - Documentation describes the current system: update the owning document rather than adding a
   new one. History is one line in `CHANGELOG.md`; decisions go in `docs/DECISIONS.md`.
-- Run output and evidence stay under `.local`, which git ignores. Editor and assistant
+- Run output and evidence stay under `.local`, which git ignores. Editor and tool
   configuration stays local as well (see `.gitignore`).

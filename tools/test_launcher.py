@@ -21,6 +21,9 @@ class LauncherTests(unittest.TestCase):
         command = (
             "function global:python { "
             "ConvertTo-Json -InputObject @($args) -Compress; $global:LASTEXITCODE = 0 }; "
+            "function global:wb { "
+            "ConvertTo-Json -InputObject @(@('wb') + $args) -Compress; $global:LASTEXITCODE = 0 }; "
+            "$env:WB_CLI = 'wb'; "
             f"& {quote(ROOT / 'riven.ps1')} " + " ".join(arguments) + "; if (-not $?) { exit 1 }"
         )
         result = subprocess.run(
@@ -31,25 +34,28 @@ class LauncherTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         recorded = json.loads(result.stdout)
-        recorded[0] = str(Path(recorded[0]))
+        if recorded[0] != "wb":
+            recorded[0] = str(Path(recorded[0]))
         return recorded
 
-    def test_full_forwards_multiple_options_without_binding_name_or_port(self):
+    def test_ci_runs_in_workbench_from_head(self):
         self.assertEqual(
-            self.invoke("full", "--if-needed", "--dry-run"),
-            [str(ROOT / "tools/actions.py"), "full", "--if-needed", "--dry-run"],
+            self.invoke("ci", "keep_going=true"),
+            [
+                "wb",
+                "run",
+                "ci.run",
+                "project=riven",
+                "commit=HEAD",
+                "workflow=ci",
+                "keep_going=true",
+            ],
         )
 
-    def test_quick_forwards_its_option(self):
+    def test_quick_runs_the_working_tree(self):
         self.assertEqual(
-            self.invoke("quick", "--if-needed"),
-            [str(ROOT / "tools/actions.py"), "quick", "--if-needed"],
-        )
-
-    def test_actions_forwards_a_subcommand_and_options(self):
-        self.assertEqual(
-            self.invoke("actions", "ci", "--if-needed", "--dry-run"),
-            [str(ROOT / "tools/actions.py"), "ci", "--if-needed", "--dry-run"],
+            self.invoke("quick"),
+            ["wb", "run", "ci.run", "project=riven", "commit=worktree", "workflow=quick"],
         )
 
     def test_setup_forwards_its_option(self):

@@ -20,7 +20,7 @@ from checkouts import CUBATURE_TOOLS, LAB_OBSERVER
 from observability.profiles import sha
 
 ROOT = Path(__file__).resolve().parents[1]
-# After Riven's own modules, so a Cubature tool of the same name (push_gate, test_frozen_manifest) never stands in
+# After Riven's own modules, so a Cubature tool of the same name (test_frozen_manifest) never stands in
 # for Riven's; the lab's modules are Cubature's alone and are found here.
 if str(CUBATURE_TOOLS) not in sys.path:
     sys.path.append(str(CUBATURE_TOOLS))

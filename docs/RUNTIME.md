@@ -244,54 +244,49 @@ old and its process runs, so a request whose writer has gone holds nobody back; 
 such entries and exits 1. From a linked worktree the tool uses the main checkout's lease and
 queue.
 
-## Building and local actions
+## Building and CI
 
-`tools/actions.py` runs the workflows in `tools/actions.toml`, with a log per step under
-`.local/actions/<run-id>/` and a `summary.json`. Jobs run concurrently once the jobs they need have
-passed, as long as their declared core `share`, `memory` and `locks` fit the machine; longer jobs
-start first (`priority`). `--jobs 1` runs them one at a time. After a failed job no new job starts
-unless `--keep-going`; jobs that need it are skipped.
+Riven's checks are the jobs in `actions.toml`. Workbench runs them, `wb run ci.run project=riven`
+(or `riven.ps1 ci`), from a clean clone of the commit with Cubature cloned at the commit
+`dev/cc.lock.json` pins, on Temurin 26, with `{python}` the environment made from
+`tools/requirements-quality.txt`, `tools/requirements-atlas.txt` and
+`tools/observability/requirements.txt`. A log per step and a `summary.json` stay in Workbench's
+run records. Jobs run concurrently once the jobs they need have passed, as long as their declared
+core `share`, `memory` and `locks` fit the machine; longer jobs start first (`priority`). After a
+failed job no new job starts unless `keep_going=true`; jobs that need it are skipped.
 
 A job with `inputs` is a pure check. Its key hashes its steps, every file its input globs match
-and the JDK release and Gson it runs with. A pass for the same key, recorded under
-`.local/actions/cache/`, stands for the job, so a commit that leaves worldgen and a check
-untouched does not run the check again. A failure is never cached, and `--no-cache` runs
-everything. A job's inputs must list every file its verdict reads.
+and the JDK release it runs with. A pass for the same key stands for the job, so a commit that
+leaves worldgen and a check untouched does not run the check again. A failure is never cached. A
+job's inputs must list every file its verdict reads.
 
-`riven.ps1 profile` runs `ci` with the golden windows resampled and timed, then `tools/ci_timing.py`
-writes `timing.md` beside the run's summary: when each job began and ended, each step, and for
-the golden windows the map building, sampling, plan building, site decisions and painting.
+Each run records the trees it tested: the commit's, and the tree of the Cubature commit its pin
+names, which `cubature-build` builds in a worktree of its own (`tools/build_cubature_pin.py`) and
+checks against the pinned bytes. A run skips the jobs that already passed for the same trees. The
+pre-push hook (`wb run ci.hook project=riven`) refuses a push whose tip has not passed every `ci`
+job on its own tree together with its pinned Cubature tree; `git push --no-verify` skips it.
+Cubature's pushes are checked by Cubature's own CI and gate, so a Cubature change needs no Riven
+run until Riven moves its pin.
 
-Each `summary.json` records the trees the run tested: Riven's, hashed as `git add --all` would
-commit it (through a scratch copy of the index; the real index is untouched), and the tree of the
-Cubature commit `dev/cc.lock.json` pins, which `cubature-build` builds in a worktree of its own
-(`tools/build_cubature_pin.py`), whatever the Cubature checkout has out; and whether either changed
-while it ran. A pass recorded before a commit therefore names that commit's tree.
-`--if-needed` skips the jobs that already passed for the current trees and keeps the jobs a
-remaining job needs. The record assumes the tool environments, `.local/settings.json` and the
-pinned JARs are unchanged between runs.
-
-`python tools/push_gate.py install` writes Riven's pre-push hook; it stays local, since git never
-commits `.git/hooks`. The hook refuses a push whose tip has not passed every `ci` job on its own
-tree together with the tree of the Cubature commit its `dev/cc.lock.json` pins. Running
-`ci --if-needed` with the pushed commit checked out and nothing uncommitted supplies the missing
-jobs; `git push --no-verify` skips the check. Cubature's pushes are checked by Cubature's own CI
-and gate, so a Cubature change needs no Riven run until Riven moves its pin.
+The `inputs` job fetches the pinned third-party files the offline checks compile against
+(`pins.lock.json`: Gson), so a check never depends on what a Gradle cache holds. Tools find JDKs
+through `tools/jdks.py`: this checkout's `.local/settings.json` first, then `JAVA_HOME_<major>_X64`,
+which Workbench and CI set, and Gradle is given every one of them, one per major.
 
 | Command | Runs |
 | --- | --- |
 | `python tools/setup.py` (`riven.ps1 setup`) | Preparation of a clone, each step skipped when done: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports. A pin `runtime.lock.json` marks built from source carries a `build` recipe (the sibling checkout, Java version, Gradle tasks, artifact and any properties; a property may name a Cubature JAR by commit and SHA-256, which setup builds and keeps under `.local/source-inputs`); setup builds it at its `sourceCommit` in a worktree of that checkout under `.local/source-builds` and places it only if it is the pinned bytes. Moving such a pin is a new `sourceCommit` and `sha256`; setup builds the rest. The Cubature artifacts `dev/cc.lock.json` pins are built the same way at its `commit`, with that commit's own compile-only inputs, so the Cubature checkout's own state plays no part |
-| `riven.ps1 quick` | Before a commit: the `ci` jobs Riven's changes since HEAD can affect, by the `[quick]` rules in `tools/actions.toml`; a path no rule matches takes every `ci` job, so a moved Cubature pin runs them all |
-| `riven.ps1 check` | `quality`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions` and `sample-history` |
-| `riven.ps1 ci` | `quality`, `riven-build`, `cubature-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history` |
-| `python tools/actions.py ci --if-needed` | The `ci` jobs that have not passed for the current trees |
-| `riven.ps1 full` | `ci` plus `smoke`, a native timing capture of the run's frozen artifacts |
-| `riven.ps1 profile` | `ci` with timed golden windows, then a `timing.md` report |
-| `python tools/actions.py --list` / `<job> ...` / `--dry-run` | Inspect or run individual jobs |
+| `riven.ps1 quick` | Before a commit: the `ci` jobs this working tree's changes can affect, by the `[quick]` rules in `actions.toml` (Workbench, `commit=worktree`); a path no rule matches takes every `ci` job, so a moved Cubature pin runs them all |
+| `riven.ps1 check` | `inputs`, `quality`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history` and `variant-coverage` |
+| `riven.ps1 ci` | The `ci` workflow at HEAD: `check` plus `riven-build` and `cubature-build` |
+| `riven.ps1 profile` | `ci` with the golden windows resampled and timed; each step's timing lines are in the run's summary |
+| `wb run ci.status project=riven` | What HEAD has passed, and what the push gate still needs |
+| `wb run ci.run project=riven workflow=<job>` | One job (or several: `jobs=[...]`); `dry_run=true` lists the steps |
 
-The PowerShell launcher forwards workflow options, so `riven.ps1 full --if-needed`
-reuses jobs already passed for the same source trees. Runtime commands take named
-`-Name`, `-Port` and `-Text` parameters.
+A native timing capture needs the GPU host, so it is not part of CI: run
+`tools/riven_observe.py capture` through Workbench's lab (`wb run lab.script`, with the tools folder
+allow-listed in `modules.lab.scripts`). Runtime commands take named `-Name`, `-Port` and `-Text`
+parameters.
 
 The lab's `deliveryTickCosts` records exclusive server-thread phase times for every captured
 tick, alongside installed-cube counts and the share installed without block storage. Its
