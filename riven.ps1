@@ -4,7 +4,7 @@ param(
     [string]$Name,
     [int]$Port=25870,
     [string]$Text,
-    [Parameter(ValueFromRemainingArguments=$true)][string[]]$Rest
+    [Parameter(ValueFromRemainingArguments=$true)][string[]]$Rest=@()
 )
 $ErrorActionPreference='Stop'
 Push-Location $PSScriptRoot
