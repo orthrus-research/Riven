@@ -151,6 +151,17 @@ class SourcePinTest(unittest.TestCase):
         ).stdout.splitlines()
         self.assertEqual(len(worktrees), 1)
 
+    def test_a_cache_it_may_not_write_still_places_the_pinned_bytes(self):
+        _, commit = self.source()
+        self.write_lock(self.mod(commit, digest(PAYLOAD)))
+        # A cache path no file can be written under, on every system: it is a file, not a folder.
+        blocked = self.base / "not-a-folder"
+        blocked.write_bytes(b"")
+        with mock.patch.dict(os.environ, {"WB_PIN_CACHE": str(blocked)}):
+            self.assertTrue(setup.source_pins(argparse.Namespace(check=False)))
+        self.assertEqual((self.root / "dev/pins/out.jar").read_bytes(), PAYLOAD)
+        self.assertEqual(blocked.read_bytes(), b"")
+
     def test_a_mismatch_names_where_verified_bytes_come_from(self):
         folder = str(self.base / "pins")
         self.assertIn(f"WB_PIN_CACHE ({folder}) holds no abc", setup.verified_bytes_hint("abc"))

@@ -68,17 +68,24 @@ def from_cache(target: Path, expected: str) -> bool:
 
 
 def to_cache(path: Path, digest: str) -> None:
-    """Keep a verified pinned file in the pin cache under its digest, so it is made once."""
+    """Keep a verified pinned file in the pin cache under its digest, so it is made once. A cache
+    this process may not write (Workbench gives CI jobs a read-only one) is left as it is: the
+    file is already placed, and only the next run's build is saved."""
     folder = os.environ.get("WB_PIN_CACHE")
     if not folder:
         return
     stored = Path(folder) / digest
     if stored.is_file():
         return
-    stored.parent.mkdir(parents=True, exist_ok=True)
     partial = stored.with_name(f".{digest}.{os.getpid()}.part")
-    shutil.copyfile(path, partial)
-    partial.replace(stored)
+    try:
+        stored.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(path, partial)
+        partial.replace(stored)
+    except OSError as error:
+        with contextlib.suppress(OSError):
+            partial.unlink(missing_ok=True)
+        print(f"note     {path.name} not kept in WB_PIN_CACHE ({error})")
 
 
 def java_major(java: Path) -> int | None:
