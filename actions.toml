@@ -55,7 +55,9 @@ steps = [{ name = "pins", run = ["{python}", "-m", "orthrus_tools", "pins", "fet
 [jobs.setup]
 description = "The pinned JARs the build and checks compile against (dev/pins), from the pin cache or built"
 needs = ["inputs"]
-locks = ["riven-gradle"]
+# source-builds: setup and cubature-build build in worktrees under .local/source-builds, and each
+# sweeps what it finds there before building, so they must not run at once.
+locks = ["riven-gradle", "source-builds"]
 steps = [{ name = "pins", run = ["{python}", "-B", "tools/setup.py", "--inputs-only"] }]
 
 [jobs.quality]
@@ -79,6 +81,7 @@ steps = [
 [jobs.cubature-build]
 description = "Build the pinned Cubature at its commit with its Java 26 tests and the lab observer, check the pinned bytes and freeze them"
 priority = 5
+locks = ["source-builds"]
 steps = [
   { name = "build pinned cubature", run = ["{python}", "tools/build_cubature_pin.py", "--freeze", "{run_id}"] },
 ]
