@@ -290,7 +290,14 @@ def source_worktree(checkout: Path, source: str, commit: str, name: str) -> Iter
 def verified_bytes_hint(expected: str) -> str:
     """Where the pinned bytes can come from when this machine's build does not reproduce them."""
     folder = os.environ.get("WB_PIN_CACHE")
-    found = f"WB_PIN_CACHE ({folder}) holds no {expected}" if folder else "WB_PIN_CACHE is not set"
+    stored = Path(folder) / expected if folder else None
+    if stored is None:
+        found = "WB_PIN_CACHE is not set"
+    elif stored.is_file() and sha256(stored) == expected:
+        # Files built together are taken from the cache only together.
+        found = f"WB_PIN_CACHE ({folder}) holds {expected} but not every file built with it"
+    else:
+        found = f"WB_PIN_CACHE ({folder}) holds no {expected}"
     return (
         f"{found}. Verified bytes come from a pin cache: set WB_PIN_CACHE to a folder of pinned "
         "files named by their SHA-256, such as the pin cache Workbench keeps on its host for CI "

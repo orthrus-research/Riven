@@ -154,6 +154,12 @@ class SourcePinTest(unittest.TestCase):
     def test_a_mismatch_names_where_verified_bytes_come_from(self):
         folder = str(self.base / "pins")
         self.assertIn(f"WB_PIN_CACHE ({folder}) holds no abc", setup.verified_bytes_hint("abc"))
+        (self.base / "pins").mkdir(exist_ok=True)
+        (self.base / "pins" / digest(PAYLOAD)).write_bytes(PAYLOAD)
+        self.assertIn(
+            f"holds {digest(PAYLOAD)} but not every file built with it",
+            setup.verified_bytes_hint(digest(PAYLOAD)),
+        )
         with mock.patch.dict(os.environ):
             del os.environ["WB_PIN_CACHE"]
             hint = setup.verified_bytes_hint("abc")
