@@ -42,12 +42,26 @@ def javac():
     return jdks.javac(26)
 
 
+GSON = "gson-2.14.0.jar"  # pinned in pins.lock.json; the inputs job fetches it
+
+
 def gson():
-    base = jdks.gradle_caches() / "modules-2/files-2.1/com.google.code.gson/gson"
-    jars = [j for j in sorted(base.rglob("gson-*.jar")) if "sources" not in j.name]
-    if not jars:
-        raise RuntimeError("Gson not found in the Gradle cache; run riven.ps1 build once")
-    return jars[-1]
+    """The pinned Gson: fetched by `python -m orthrus_tools pins fetch` (CI's inputs job), else the same
+    version from the Gradle cache, never whichever version a cache happens to hold."""
+    pinned = ROOT / ".local/pins" / GSON
+    if pinned.is_file():
+        return pinned
+    version = GSON[len("gson-") : -len(".jar")]
+    cached = sorted(
+        (jdks.gradle_caches() / "modules-2/files-2.1/com.google.code.gson/gson" / version).glob(
+            f"*/{GSON}"
+        )
+    )
+    if cached:
+        return cached[0]
+    raise RuntimeError(
+        f"{GSON} is not fetched: run `python -m orthrus_tools pins fetch` (pins.lock.json)"
+    )
 
 
 def source_tree(ref):

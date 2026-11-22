@@ -98,7 +98,10 @@ class SourcePinTest(unittest.TestCase):
     def test_command_names_tasks_java_and_properties(self):
         recipe = {"tasks": ["a", "b"]}
         home, work = Path("/jdk"), Path("/w")
-        command = setup.build_command(recipe, {"input": "x.jar"}, home, work)
+        with mock.patch.object(
+            setup.jdks, "installations", return_value=[]
+        ):  # only the recipe's JDK here
+            command = setup.build_command(recipe, {"input": "x.jar"}, home, work)
         self.assertEqual(Path(command[0]).name, "gradlew.bat" if os.name == "nt" else "gradlew")
         self.assertEqual(
             command[1:],

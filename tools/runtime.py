@@ -54,7 +54,7 @@ def build():
             "assemble",
             "--console=plain",
             "-PrivenJavaVersion=26",
-            f"-Dorg.gradle.java.installations.paths={java26}",
+            "-D" + jdks.installations_property(),
         ],
         cwd=ROOT,
         env=env,

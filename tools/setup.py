@@ -215,7 +215,8 @@ def build_command(
         str(wrapper),
         *recipe["tasks"],
         *GRADLE_ONCE,
-        f"-Dorg.gradle.java.installations.paths={java_home}",
+        "-Dorg.gradle.java.installations.paths="
+        + ",".join(dict.fromkeys(str(home) for home in [java_home, *jdks.installations()])),
         *(f"-P{name}={value}" for name, value in properties.items()),
     ]
 
@@ -273,7 +274,9 @@ def java_home(settings: dict, major: int, what: str) -> Path:
     try:
         return jdks.home(major)
     except SystemExit:
-        raise SystemExit(f"{what}: no Java {major} recorded in {SETTINGS} or in the environment") from None
+        raise SystemExit(
+            f"{what}: no Java {major} recorded in {SETTINGS} or in the environment"
+        ) from None
 
 
 def build_source_pin(mod: dict, settings: dict) -> None:
@@ -337,7 +340,8 @@ def cubature_command(work: Path, java_homes: list[Path], tests: bool = False) ->
         str(wrapper),
         *(["-PcubicTestJava=26", "build"] if tests else ["assemble"]),
         *GRADLE_ONCE,
-        "-Porg.gradle.java.installations.paths=" + ",".join(str(home) for home in java_homes),
+        "-Porg.gradle.java.installations.paths="
+        + ",".join(dict.fromkeys(str(home) for home in [*java_homes, *jdks.installations()])),
         f"-PcubicBuildInputs={work / 'cleanroom/build-inputs'}",
     ]
 
@@ -349,7 +353,8 @@ def lab_command(work: Path, java_homes: list[Path], artifact: Path) -> list[str]
         str(wrapper),
         "build",
         *GRADLE_ONCE,
-        "-Porg.gradle.java.installations.paths=" + ",".join(str(home) for home in java_homes),
+        "-Porg.gradle.java.installations.paths="
+        + ",".join(dict.fromkeys(str(home) for home in [*java_homes, *jdks.installations()])),
         f"-PcubicArtifact={artifact}",
         f"-PcubicBuildInputs={work / 'cleanroom/build-inputs'}",
     ]

@@ -141,7 +141,7 @@ def main():
             "--console=plain",
             *(["--no-daemon"] if args.no_daemon else []),
             "-PrivenJavaVersion=26",
-            f"-Dorg.gradle.java.installations.paths={java26_home}",
+            "-D" + jdks.installations_property(),
         ]
         print(f"== Riven {loader}: {' '.join(tasks)}", flush=True)
         if subprocess.run(command, cwd=ROOT, env=environment).returncode != 0:

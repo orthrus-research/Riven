@@ -181,9 +181,7 @@ def doctor(riven, cubature=None, observer=None, check_java=True):
                 )
     java_version = None
     if check_java:
-        process = subprocess.run(
-            [java26, "-version"], capture_output=True, text=True, timeout=20
-        )
+        process = subprocess.run([java26, "-version"], capture_output=True, text=True, timeout=20)
         java_version = (process.stdout + process.stderr).strip()
         checks.append(
             {
