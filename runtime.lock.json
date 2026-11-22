@@ -89,9 +89,9 @@
     {
       "file": "dev/pins/gtceu-reloaded-3.0.0-reloaded.1-alpha.1.jar",
       "version": "3.0.0-reloaded.1-alpha.1",
-      "sha256": "68bf1939911fecaf79272490257f338da345daba0fa75452c6f214e6f8da94d6",
+      "sha256": "59421e45c55810615530a734a3b3e9afe70c3300b400fcde7f7634711a5ab53e",
       "source": "https://github.com/orthrus-research/GTCEu-Reloaded",
-      "sourceCommit": "7c46b20e611781e39ab06adb04992a186d2a7185",
+      "sourceCommit": "d1ebb832347c1b78091647e371bf0a1a14f8348d",
       "distribution": "built-from-source",
       "build": {
         "checkout": "../GTCEuR",
