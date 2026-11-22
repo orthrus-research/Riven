@@ -41,6 +41,9 @@ class SourcePinTest(unittest.TestCase):
         patches = [
             mock.patch.object(setup, "ROOT", self.root),
             mock.patch.object(setup, "SETTINGS", self.settings),
+            # A pin cache of the test's own: the machine's (WB_PIN_CACHE in CI) may hold these test pins already,
+            # and a pin taken from it is never built.
+            mock.patch.dict(os.environ, {"WB_PIN_CACHE": str(self.base / "pins")}),
         ]
         for patch in patches:
             patch.start()
@@ -217,8 +220,10 @@ class CubaturePinTest(unittest.TestCase):
             patch = mock.patch.object(setup, name, value)
             patch.start()
             self.addCleanup(patch.stop)
-        # Riven's tools export this; the Cubature build must not see it.
-        environment = mock.patch.dict(os.environ, {"RIVEN_WORKSPACE": str(self.root)})
+        # Riven's tools export this; the Cubature build must not see it. The pin cache is the test's own, as above.
+        environment = mock.patch.dict(
+            os.environ, {"RIVEN_WORKSPACE": str(self.root), "WB_PIN_CACHE": str(self.base / "pins")}
+        )
         environment.start()
         self.addCleanup(environment.stop)
 
