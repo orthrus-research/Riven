@@ -273,12 +273,17 @@ def build_properties(recipe: dict, settings: dict) -> dict[str, str]:
     }
 
 
+def clone_checkout(checkout: Path, source: str) -> None:
+    """Clone a source checkout from its source where it is missing."""
+    if not (checkout / ".git").exists():
+        subprocess.run(["git", "clone", source, str(checkout)], check=True)
+
+
 @contextlib.contextmanager
 def source_worktree(checkout: Path, source: str, commit: str, name: str) -> Iterator[Path]:
     """A worktree of checkout at commit, removed afterwards; the checkout is cloned from source,
     or the commit fetched from it, when missing. The checkout itself is never changed."""
-    if not (checkout / ".git").exists():
-        subprocess.run(["git", "clone", source, str(checkout)], check=True)
+    clone_checkout(checkout, source)
     if git(checkout, "cat-file", "-e", f"{commit}^{{commit}}").returncode != 0:
         subprocess.run(["git", "-C", str(checkout), "fetch", source, commit], check=True)
     sweep_source_builds()
@@ -363,9 +368,18 @@ def source_pins(args: argparse.Namespace) -> bool:
     bytes, else built from their source checkouts."""
     settings = load(SETTINGS) if SETTINGS.is_file() else {}
     ready = True
-    for mod in load(ROOT / "runtime.lock.json")["mods"]:
-        if "build" not in mod:
-            continue
+    mods = [mod for mod in load(ROOT / "runtime.lock.json")["mods"] if "build" in mod]
+    if not args.check and any(
+        not (ROOT / mod["file"]).is_file() or sha256(ROOT / mod["file"]) != mod["sha256"]
+        for mod in mods
+    ):
+        # Every source checkout first: one pin's build may read another's (GTCEu: Reloaded's
+        # refreshOrthLib builds its OrthLib from ../OrthLib), even when that pin is present.
+        for mod in mods:
+            clone_checkout(
+                (main_checkout(ROOT) / mod["build"]["checkout"]).resolve(), mod["source"]
+            )
+    for mod in mods:
         target = ROOT / mod["file"]
         commit = mod["sourceCommit"][:12]
         if target.is_file() and sha256(target) == mod["sha256"]:

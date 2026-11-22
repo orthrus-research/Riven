@@ -162,6 +162,19 @@ class SourcePinTest(unittest.TestCase):
         self.assertEqual((self.root / "dev/pins/out.jar").read_bytes(), PAYLOAD)
         self.assertEqual(blocked.read_bytes(), b"")
 
+    def test_every_source_checkout_is_cloned_before_a_build(self):
+        checkout, commit = self.source()
+        present = self.root / "dev/pins/present.jar"
+        present.parent.mkdir(parents=True)
+        present.write_bytes(b"present")
+        other = dict(self.mod(commit, digest(b"present"), "dev/pins/present.jar"))
+        other["build"] = dict(other["build"], checkout="../Other")
+        # A pin whose checkout is missing although its bytes are here.
+        other["source"] = str(checkout)
+        self.write_lock(other, self.mod(commit, digest(PAYLOAD)))
+        self.assertTrue(setup.source_pins(argparse.Namespace(check=False)))
+        self.assertTrue((self.base / "Other/payload.bin").is_file())
+
     def test_a_mismatch_names_where_verified_bytes_come_from(self):
         folder = str(self.base / "pins")
         self.assertIn(f"WB_PIN_CACHE ({folder}) holds no abc", setup.verified_bytes_hint("abc"))
