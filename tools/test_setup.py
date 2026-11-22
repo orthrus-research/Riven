@@ -102,9 +102,11 @@ class SourcePinTest(unittest.TestCase):
             setup.jdks, "installations", return_value=[]
         ):  # only the recipe's JDK here
             command = setup.build_command(recipe, {"input": "x.jar"}, home, work)
-        self.assertEqual(Path(command[0]).name, "gradlew.bat" if os.name == "nt" else "gradlew")
+        wrapper = setup.gradle_wrapper(work)  # through sh off Windows: a pinned wrapper may lack +x
+        self.assertEqual(command[: len(wrapper)], wrapper)
+        self.assertEqual(Path(wrapper[-1]).name, "gradlew.bat" if os.name == "nt" else "gradlew")
         self.assertEqual(
-            command[1:],
+            command[len(wrapper) :],
             [
                 "a",
                 "b",

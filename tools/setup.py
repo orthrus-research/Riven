@@ -55,6 +55,32 @@ def load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def from_cache(target: Path, expected: str) -> bool:
+    """Place a pinned file from the machine's pin cache (WB_PIN_CACHE: files named by their SHA-256,
+    which Workbench gives every CI job), checked again before use; False when it has none."""
+    folder = os.environ.get("WB_PIN_CACHE")
+    stored = Path(folder) / expected if folder else None
+    if stored is None or not stored.is_file() or sha256(stored) != expected:
+        return False
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(stored, target)
+    return True
+
+
+def to_cache(path: Path, digest: str) -> None:
+    """Keep a verified pinned file in the pin cache under its digest, so it is made once."""
+    folder = os.environ.get("WB_PIN_CACHE")
+    if not folder:
+        return
+    stored = Path(folder) / digest
+    if stored.is_file():
+        return
+    stored.parent.mkdir(parents=True, exist_ok=True)
+    partial = stored.with_name(f".{digest}.{os.getpid()}.part")
+    shutil.copyfile(path, partial)
+    partial.replace(stored)
+
+
 def java_major(java: Path) -> int | None:
     try:
         completed = subprocess.run(
@@ -71,6 +97,8 @@ def find_java(major: int, given: Path | None, recorded: str | None) -> Path | No
     candidates = [given] if given else []
     if recorded:
         candidates.append(Path(recorded))
+    if os.environ.get(f"JAVA_HOME_{major}_X64"):
+        candidates.append(Path(os.environ[f"JAVA_HOME_{major}_X64"]) / "bin" / JAVA)
     if os.environ.get("JAVA_HOME"):
         candidates.append(Path(os.environ["JAVA_HOME"]) / "bin" / JAVA)
     for root in JDK_ROOTS:
@@ -147,9 +175,12 @@ def third_party_pins(args: argparse.Namespace) -> bool:
         elif args.check:
             print(f"missing  {mod['file']}")
             ready = False
+        elif from_cache(target, mod["sha256"]):
+            print(f"cached   {mod['file']}")
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             download(mod["download"], target, mod["sha256"])
+            to_cache(target, mod["sha256"])
             print(f"fetched  {mod['file']}")
     return ready
 
@@ -206,13 +237,18 @@ def sweep_source_builds() -> None:
             print(f"note     {stale} is still held ({error})")
 
 
+def gradle_wrapper(folder: Path) -> list[str]:
+    """A checkout's Gradle wrapper as a command; off Windows through sh, so a wrapper committed
+    without its executable bit (as some pinned commits are) still runs."""
+    return [str(folder / "gradlew.bat")] if os.name == "nt" else ["sh", str(folder / "gradlew")]
+
+
 def build_command(
     recipe: dict, properties: dict[str, str], java_home: Path, work: Path
 ) -> list[str]:
     """The Gradle command a recipe names, run in work, with its resolved properties."""
-    wrapper = work / ("gradlew.bat" if os.name == "nt" else "gradlew")
     return [
-        str(wrapper),
+        *gradle_wrapper(work),
         *recipe["tasks"],
         *GRADLE_ONCE,
         "-Dorg.gradle.java.installations.paths="
@@ -261,9 +297,10 @@ def place_pinned(built: list[tuple[Path, Path, str]], what: str) -> None:
                 f"{target.relative_to(ROOT)}: {what} builds to SHA-256 {actual}, not the pinned "
                 f"{expected}; nothing was placed"
             )
-    for source, target, _ in built:
+    for source, target, expected in built:
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
+        to_cache(target, expected)
 
 
 def java_home(settings: dict, major: int, what: str) -> Path:
@@ -311,6 +348,8 @@ def source_pins(args: argparse.Namespace) -> bool:
         elif args.check:
             print(f"missing  {mod['file']}: run setup without --check to build it at {commit}")
             ready = False
+        elif from_cache(target, mod["sha256"]):
+            print(f"cached   {mod['file']}")
         else:
             print(f"building {mod['file']} from {mod['build']['checkout']} at {commit}", flush=True)
             build_source_pin(mod, settings)
@@ -335,9 +374,8 @@ def cubature_command(work: Path, java_homes: list[Path], tests: bool = False) ->
     """The Cleanroom build of a Cubature worktree from the inputs fetched into it: assembled, or
     built with its regression tests on Java 26. Naming the inputs folder keeps an older commit's
     build from reading Riven's dev/pins."""
-    wrapper = work / "cleanroom" / ("gradlew.bat" if os.name == "nt" else "gradlew")
     return [
-        str(wrapper),
+        *gradle_wrapper(work / "cleanroom"),
         *(["-PcubicTestJava=26", "build"] if tests else ["assemble"]),
         *GRADLE_ONCE,
         "-Porg.gradle.java.installations.paths="
@@ -348,9 +386,8 @@ def cubature_command(work: Path, java_homes: list[Path], tests: bool = False) ->
 
 def lab_command(work: Path, java_homes: list[Path], artifact: Path) -> list[str]:
     """The lab observer's build and checks, against exactly the Cubature JAR just built."""
-    wrapper = work / "cleanroom" / ("gradlew.bat" if os.name == "nt" else "gradlew")
     return [
-        str(wrapper),
+        *gradle_wrapper(work / "cleanroom"),
         "build",
         *GRADLE_ONCE,
         "-Porg.gradle.java.installations.paths="
@@ -392,7 +429,7 @@ def cubature_input(spec: dict, settings: dict) -> Path:
     that commit and kept under .local/source-inputs once it is those bytes."""
     commit, expected = spec["cubature"], spec["sha256"]
     target = ROOT / SOURCE_INPUTS / f"Cubature-{commit[:12]}-cleanroom.jar"
-    if target.is_file() and sha256(target) == expected:
+    if target.is_file() and sha256(target) == expected or from_cache(target, expected):
         return target
     repository = load(ROOT / "dev/cc.lock.json")["repository"]
     print(f"building Cubature at {commit[:12]} as a build input", flush=True)
@@ -424,6 +461,9 @@ def build_cubature(args: argparse.Namespace) -> bool:
     pins = cubature_pins()
     if all(path.is_file() and sha256(path) == expected for path, expected, _ in pins):
         print("present  Cubature artifacts (dev/cc.lock.json)")
+        return True
+    if not args.check and all(from_cache(path, expected) for path, expected, _ in pins):
+        print("cached   Cubature artifacts (dev/cc.lock.json)")
         return True
     pin = load(ROOT / "dev/cc.lock.json")
     if args.check:
@@ -469,6 +509,11 @@ def main() -> None:
         "--cubature-url", help="clone Cubature from here instead of dev/cc.lock.json's repository"
     )
     parser.add_argument("--check", action="store_true", help="report only; change nothing")
+    parser.add_argument(
+        "--inputs-only",
+        action="store_true",
+        help="only the pinned JARs the build and checks compile against (CI, in a clean clone)",
+    )
     args = parser.parse_args()
     if sys.version_info < (3, 14):
         raise SystemExit("Riven's tools need Python 3.14 or newer")
@@ -479,7 +524,8 @@ def main() -> None:
     ready &= third_party_pins(args)
     ready &= source_pins(args)
     ready &= build_cubature(args)
-    ready &= environments(args)
+    if not args.inputs_only:
+        ready &= environments(args)
     if not ready:
         raise SystemExit("Setup is incomplete; see the lines marked missing.")
     print(

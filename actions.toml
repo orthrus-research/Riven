@@ -26,24 +26,41 @@ identity_files = ["{env.JAVA_HOME}/release"]
 path = "../Cubature"
 pin = { file = "dev/cc.lock.json", key = "commit" }
 
+# The checkouts the source-built pins (runtime.lock.json) are built from, at their sourceCommit and
+# checked by SHA-256, so their own trees are not what a run tests.
+[repositories.gtceur]
+path = "../GTCEuR"
+tested = false
+
+[repositories.orthlib]
+path = "../OrthLib"
+tested = false
+
 [placeholders]
 frozen = "{run_dir}/frozen"
 
 
 [workflows]
-check = ["inputs", "quality", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
-build = ["riven-build", "cubature-build"]
-ci = ["inputs", "quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
+check = ["inputs", "setup", "quality", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
+build = ["inputs", "setup", "riven-build", "cubature-build"]
+ci = ["inputs", "setup", "quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
 # ci with the golden windows resampled and timed (riven.ps1 profile); each step's timing lines are in the
 # run's summary.
-profile = ["inputs", "quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden-profile", "definitions", "sample-history", "variant-coverage"]
+profile = ["inputs", "setup", "quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden-profile", "definitions", "sample-history", "variant-coverage"]
 
 [jobs.inputs]
 description = "Fetch the pinned third-party files (pins.lock.json: Gson for the offline checks), checked by SHA-256"
 steps = [{ name = "pins", run = ["{python}", "-m", "orthrus_tools", "pins", "fetch"] }]
 
+[jobs.setup]
+description = "The pinned JARs the build and checks compile against (dev/pins), from the pin cache or built"
+needs = ["inputs"]
+locks = ["riven-gradle"]
+steps = [{ name = "pins", run = ["{python}", "-B", "tools/setup.py", "--inputs-only"] }]
+
 [jobs.quality]
 description = "Formatting, lint, types, both-loader compile, content assets and the Riven tool tests"
+needs = ["setup"]
 locks = ["riven-gradle"]
 steps = [
   { name = "code quality", run = ["{python}", "tools/code_quality.py", "check"] },
@@ -53,6 +70,7 @@ steps = [
 
 [jobs.riven-build]
 description = "Build Riven for Cleanroom and freeze the artifact for this run"
+needs = ["setup"]
 locks = ["riven-gradle"]
 steps = [
   { name = "build riven", run = ["{python}", "tools/build_riven.py", "--diagnostics", "--no-daemon", "--freeze", "{run_id}"] },
