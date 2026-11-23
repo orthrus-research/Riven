@@ -136,5 +136,20 @@ class PrepareDefaultsTests(unittest.TestCase):
             self.prepared("--preset", "canonical", "--seed", "1")
 
 
+class BuildTests(unittest.TestCase):
+    def test_build_leaves_no_gradle_daemon(self):
+        import runtime
+
+        with (
+            mock.patch.object(runtime.jdks, "home", return_value=Path("jdk")),
+            mock.patch.object(runtime.jdks, "installations_property", return_value="x=y"),
+            mock.patch.object(runtime.subprocess, "run") as run,
+        ):
+            runtime.build()
+        command = run.call_args.args[0]
+        self.assertIn("--no-daemon", command)
+        self.assertIn("--no-watch-fs", command)
+
+
 if __name__ == "__main__":
     unittest.main()

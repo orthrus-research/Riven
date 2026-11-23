@@ -58,6 +58,10 @@ def build():
             str(ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")),
             "assemble",
             "--console=plain",
+            # No daemon left behind: a daemon inherits this process's output handles, so a caller
+            # reading them (Workbench's lab.inputs) waits until the daemon idles out, hours later.
+            "--no-daemon",
+            "--no-watch-fs",
             "-PrivenJavaVersion=26",
             "-D" + jdks.installations_property(),
         ],
