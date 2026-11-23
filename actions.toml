@@ -20,11 +20,13 @@ name = "riven"
 workflow = "ci"
 identity_files = ["{env.JAVA_HOME}/release"]
 
-# Cubature is built at the commit Riven pins (cubature-build); a push needs Riven's tree to have
-# passed together with that commit's tree.
+# A push needs Riven's tree to have passed together with the tree of the Cubature commit Riven pins,
+# and that Cubature commit to have passed Cubature's own checks (passed): Riven does not build and
+# test Cubature again. setup places the pinned bytes, checked by SHA-256.
 [repositories.cubature]
 path = "../Cubature"
 pin = { file = "dev/cc.lock.json", key = "commit" }
+passed = "cubature"
 
 # The checkouts the source-built pins (runtime.lock.json) are built from, at their sourceCommit and
 # checked by SHA-256, so their own trees are not what a run tests.
@@ -42,11 +44,11 @@ frozen = "{run_dir}/frozen"
 
 [workflows]
 check = ["inputs", "setup", "quality", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
-build = ["inputs", "setup", "riven-build", "cubature-build"]
-ci = ["inputs", "setup", "quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
+build = ["inputs", "setup", "riven-build"]
+ci = ["inputs", "setup", "quality", "riven-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden", "definitions", "sample-history", "variant-coverage"]
 # ci with the golden windows resampled and timed (riven.ps1 profile); each step's timing lines are in the
 # run's summary.
-profile = ["inputs", "setup", "quality", "riven-build", "cubature-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden-profile", "definitions", "sample-history", "variant-coverage"]
+profile = ["inputs", "setup", "quality", "riven-build", "regional-store", "drainage-prune", "regional-bake", "atlas-golden-profile", "definitions", "sample-history", "variant-coverage"]
 
 [jobs.inputs]
 description = "Fetch the pinned third-party files (pins.lock.json: Gson for the offline checks), checked by SHA-256"
@@ -55,8 +57,8 @@ steps = [{ name = "pins", run = ["{python}", "-m", "orthrus_tools", "pins", "fet
 [jobs.setup]
 description = "The pinned JARs the build and checks compile against (dev/pins), from the pin cache or built"
 needs = ["inputs"]
-# source-builds: setup and cubature-build build in worktrees under .local/source-builds, and each
-# sweeps what it finds there before building, so they must not run at once.
+# source-builds: setup builds in worktrees under .local/source-builds and sweeps what it finds there
+# before building, so two setups must not run at once.
 locks = ["riven-gradle", "source-builds"]
 steps = [{ name = "pins", run = ["{python}", "-B", "tools/setup.py", "--inputs-only"] }]
 
@@ -74,16 +76,10 @@ steps = [
 description = "Build Riven for Cleanroom and freeze the artifact for this run"
 needs = ["setup"]
 locks = ["riven-gradle"]
+# What it builds: kept by Workbench with its SHA-256 once the job passes, so the lab takes these bytes.
+artifacts = ["build/libs/*.jar"]
 steps = [
   { name = "build riven", run = ["{python}", "tools/build_riven.py", "--diagnostics", "--no-daemon", "--freeze", "{run_id}"] },
-]
-
-[jobs.cubature-build]
-description = "Build the pinned Cubature at its commit with its Java 26 tests and the lab observer, check the pinned bytes and freeze them"
-priority = 5
-locks = ["source-builds"]
-steps = [
-  { name = "build pinned cubature", run = ["{python}", "tools/build_cubature_pin.py", "--freeze", "{run_id}"] },
 ]
 
 [jobs.atlas-golden]
@@ -218,6 +214,6 @@ riven = [
     ], jobs = ["quality", "riven-build"] },
   { paths = ["tools/atlas/**", "tools/atlas_golden.py", "tools/terrain_atlas.py", "tools/run_check.py", "tools/checks/**", "tools/atlas-golden.json"], jobs = ["quality", "atlas-golden", "definitions", "sample-history", "variant-coverage"] },
   { paths = ["tools/build_riven.py"], jobs = ["quality", "riven-build"] },
-  { paths = ["tools/build_cubature_pin.py", "tools/setup.py"], jobs = ["quality", "cubature-build"] },
+  { paths = ["tools/setup.py"], jobs = ["quality", "setup"] },
   { paths = ["tools/**/*.py", "tools/content/**", "tools/strict-math-baseline.json", "pyproject.toml"], jobs = ["quality"] },
 ]

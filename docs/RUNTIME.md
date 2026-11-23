@@ -268,8 +268,9 @@ leaves worldgen and a check untouched does not run the check again. A failure is
 job's inputs must list every file its verdict reads.
 
 Each run records the trees it tested: the commit's, and the tree of the Cubature commit its pin
-names, which `cubature-build` builds in a worktree of its own (`tools/build_cubature_pin.py`) and
-checks against the pinned bytes. A run skips the jobs that already passed for the same trees. The
+names. That Cubature commit must have passed Cubature's own checks in Workbench's records
+(`passed = "cubature"`), so Riven does not build and test it again; setup places its pinned bytes,
+checked by SHA-256. A run skips the jobs that already passed for the same trees. The
 pre-push hook (`wb run ci.hook project=riven`) refuses a push whose tip has not passed every `ci`
 job on its own tree together with its pinned Cubature tree; `git push --no-verify` skips it.
 Cubature's pushes are checked by Cubature's own CI and gate, so a Cubature change needs no Riven
@@ -285,7 +286,7 @@ which Workbench and CI set, and Gradle is given every one of them, one per major
 | `python tools/setup.py` (`riven.ps1 setup`) | Preparation of a clone, each step skipped when done: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports. A pin `runtime.lock.json` marks built from source carries a `build` recipe (the sibling checkout, Java version, Gradle tasks, artifact and any properties; a property may name a Cubature JAR by commit and SHA-256, which setup builds and keeps under `.local/source-inputs`); setup builds it at its `sourceCommit` in a worktree of that checkout under `.local/source-builds` and places it only if it is the pinned bytes; otherwise it places nothing and names the pin cache verified bytes can come from (`WB_PIN_CACHE`: pinned files named by their SHA-256, which Workbench keeps on its host and setup reads before building). Moving such a pin is a new `sourceCommit` and `sha256`; setup builds the rest. The Cubature artifacts `dev/cc.lock.json` pins are built the same way at its `commit`, with that commit's own compile-only inputs, so the Cubature checkout's own state plays no part |
 | `riven.ps1 quick` | Before a commit: the `ci` jobs this working tree's changes can affect, by the `[quick]` rules in `actions.toml` (Workbench, `commit=worktree`); a path no rule matches takes every `ci` job, so a moved Cubature pin runs them all |
 | `riven.ps1 check` | `inputs`, `quality`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history` and `variant-coverage` |
-| `riven.ps1 ci` | The `ci` workflow at HEAD: `check` plus `riven-build` and `cubature-build` |
+| `riven.ps1 ci` | The `ci` workflow at HEAD: `check` plus `riven-build` |
 | `riven.ps1 profile` | `ci` with the golden windows resampled and timed; each step's timing lines are in the run's summary |
 | `wb run ci.status project=riven` | What HEAD has passed, and what the push gate still needs |
 | `wb run ci.run project=riven workflow=<job>` | One job (or several: `jobs=[...]`); `dry_run=true` lists the steps |
@@ -316,9 +317,6 @@ records both JVMs with JFR's profile settings for attributing a phase further.
 
 - `tools/build_riven.py [--diagnostics] [--freeze LABEL]` builds Riven for Cleanroom and
   writes `.local/builds/riven-latest.json`.
-- `tools/build_cubature_pin.py [--freeze LABEL]` builds the pinned Cubature at its commit in a
-  worktree of the Cubature checkout, with its Java 26 tests, then the lab observer against that exact
-  JAR, and fails unless the Cubature JARs are the pinned bytes (ci's `cubature-build`).
 - `--freeze LABEL` copies both projects' artifacts into `.local/frozen/LABEL/` with a shared
   `manifest.json`; action runs freeze under their run id.
 - `tools/atlas_golden.py check|update [--verify]` compares four fixed atlas windows
