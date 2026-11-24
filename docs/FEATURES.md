@@ -9,7 +9,7 @@ least one block in the default atlas render of seed 8675309 (8 km square, 16 blo
 
 - **Layout scale** (`WorldScale`, v66): the definitions are tuned for 8 km worlds. A per-world
   factor of 0.5-8 from the generator options (`scale=4`; `generator-settings` in
-  server.properties, `runtime.py prepare --scale`, `terrain_atlas.py render --scale`) multiplies
+  server.properties, `wb play --param scale=4`, `terrain_atlas.py render --scale`) multiplies
   the continental layout: the continent lattice, radius, warp, bridges, bays, shelter reach and
   strait blend (crests and crest nodes follow in continent radii); temperature and
   moisture wavelengths and belt; plate cells and volcanic provinces; climate forcing's upwind
@@ -801,12 +801,12 @@ rather than moved. `/riven animals [radius]` compares the plan with the world (p
 found by origin, creatures without one) and counts what population has done since the server
 started (cubes, members in them, fitting, spawned, refused); `/riven digest` also writes the digested
 chunk columns' animals by origin with what they keep for life. Instances keep animals off for
-terrain captures (`spawn-animals=false`, which removes every animal on its first tick); prepare with
-`--spawn-animals` to see them. `runtime.py play --tour
-tools/tours/standard-8675309.json` captures nine labeled views and closes the client; prepare
-tour instances with `--capture-ticks 900`, since populated chunks take longer to arrive.
+terrain captures (`spawn-animals=false`, which removes every animal on its first tick); build an
+instance with `--param spawn_animals=true` to see them. `wb play --tour
+tools/tours/standard-8675309.json` captures nine labeled views and closes the client; give a tour
+`--jvm client:-Driven.captureTicks=900`, since populated chunks take longer to arrive.
 `tools/tours/separation-2485331.json` runs `/riven cover`, `/riven trees`, `/riven animals` and
-`/riven digest` at seven stops of seed 2485331 at 32 km (prepare with `--scale 4`).
+`/riven digest` at seven stops of seed 2485331 at 32 km (`--param seed=2485331 --param scale=4`).
 
 **Riven biomes** (prototype, terrain-v84, `riven-biome-registry.json`, `RivenBiomeTable`, `RivenBiomes`, `RivenBiomeTypes`): every column reports one of 76 `riven:` biomes, chosen from its habitat key: 45 inland by climate region and calm elevation (lowland for LOW and MID, upland for UPLAND, highland for HIGH; the elevation cores split 43, 66 and 100 blocks above the sea, UPLAND since terrain-v145), 10 rugged by temperature band (hills below UPLAND, peaks from it up), 13 coast and water biomes and 8 river mouths. Each extends the vanilla class of its kind (snow, taiga, plains, forest, savanna, jungle, desert, hills, mesa, beach, stone beach, swamp, ocean, river), which other mods test with `instanceof`; names avoid substrings shader packs misread ("end", "ice", "nether"); temperature, rainfall and precipitation drive vanilla weather; grass and foliage colors follow the vanilla color maps unless the world's mappings override them. They empty their decorators and surface hooks: Riven places every block itself. Every surface biome names a spawn table (`spawns`); a kind of mob its table lists (creature, monster, ambient) replaces its parent class's list, and the surface tables list creatures, starting as vanilla's lists for each parent class (savannas without llamas, as Riven's biomes keep vanilla's base height), which Population and natural spawning both read. Spawn search uses the 55 inland biomes. Underground, cubes report the 12 realm and depth biomes below (88 `riven:` biomes in all). A Riven world uses 150 of 256 biome IDs (62 vanilla, 88 Riven). `/riven biomes` lists them with IDs, parents and categories; `tools/checks/BiomeTableCheck.java` proves all 193 habitat keys select a biome.
 

@@ -71,18 +71,17 @@ The tooling targets Windows (PowerShell) and needs JDK 25, Java 26, Python 3.14 
 ```powershell
 git clone https://github.com/orthrus-research/Riven.git
 cd Riven
-python tools/setup.py
 .\riven.ps1 build
 .\riven.ps1 ci
+.\riven.ps1 play
 ```
 
-`tools/setup.py` records the Java paths in `.local/settings.json` (it looks in the usual install
-folders; pass `--java25` and `--java26` to choose), clones Cubature beside Riven into `../Cubature`
-(its lab tools prepare game instances), and creates the Python environments for the checks and the atlas.
-`--check` reports what is missing without changing anything. The build compiles against the Cubature
-and GTCEuR a revision of [orthrus-set](https://github.com/orthrus-research/orthrus-set) names: with Workbench,
-`wb work sync` chooses it; without, pass `-Pset.dir=<a clone of orthrus-set>` to Gradle. A game instance takes
-every mod from a launch file resolved from the same set ([docs/RUNTIME.md](docs/RUNTIME.md), Launching).
+The tools find Java 25 and 26 through `JAVA_HOME_25_X64` and `JAVA_HOME_26_X64` (which Workbench sets), or the
+`java25` and `java26` paths in `.local/settings.json`. The build compiles against the Cubature and GTCEuR a revision
+of [orthrus-set](https://github.com/orthrus-research/orthrus-set) names: with Workbench, `wb work sync` chooses it;
+without, pass `-Pset.dir=<a clone of orthrus-set>` to Gradle. `ci` runs the checks in Workbench, and `play` is
+Workbench's `wb play`: it resolves the launch from the same set, builds the game instance and starts it
+([docs/RUNTIME.md](docs/RUNTIME.md), Launching).
 
 To see what the generator selects without starting the game:
 

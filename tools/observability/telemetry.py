@@ -1,10 +1,11 @@
 """Lightweight telemetry: one dated JSON record per native run, an ordered index, a website export.
 
-Every capture and pregeneration leaves a large evidence tree under .local/cubic-standalone. This
-module distils each run into one compact record (server tick, frame time, cube delivery, save
+Every capture and pregeneration is a Workbench driver session whose folder holds session.json, the lab's record
+of the instance it ran on (lab.json) and a large evidence tree (runs/). This module distils each run into one
+compact record (server tick, frame time, cube delivery, save
 stalls, memory, LOD delivery) and files it by date and kind:
 
-    .local/telemetry/runs/<YYYY>/<MM-DD>/<HHMMSS>Z-<kind>-<instance>.json
+    .local/telemetry/runs/<YYYY>/<MM-DD>/<HHMMSS>Z-<kind>-<instance>-<session>.json
     .local/telemetry/index.json        every record in run order, numbered
 
 Records are private (instance names, artifact names, hashes); `export` writes the sanitized
@@ -14,18 +15,20 @@ Times are milliseconds unless a key says otherwise. Percentiles are the lab's ne
 
 import json
 import math
+import os
 import subprocess
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from checkouts import CUBATURE
+import cubature_tools
 
 from observability.profiles import ROOT
 
 SCHEMA = "riven.telemetry.v1"
 LEDGER = ROOT / ".local/telemetry"
-INSTANCES = ROOT / ".local/cubic-standalone"
+RECORD = "lab.json"
+SESSION = "session.json"
 # DH's MEDIUM quality: 1-block cells to 2 x 192 blocks, then each doubling of distance doubles them.
 DH_UNIT, DH_BASE, NATIVE_HALF = 192.0, 2.0, 200
 COVERAGE_BANDS = [(200, 384), (384, 768), (768, 1536), (1536, 3072), (3072, 4096)]
@@ -71,6 +74,11 @@ def _artifact(entry):
     """A frozen artifact as its build name (the frozen folder, e.g. native-ground-ca52295d)."""
     if not entry:
         return None
+    if entry.get("member"):  # a launch member: its Store file name
+        return {
+            "build": entry.get("file") or entry["member"],
+            "sha256": (entry.get("sha256") or "")[:12] or None,
+        }
     path = Path(entry.get("path") or entry.get("source") or "")
     folder = path.parent.name
     # dev/pins holds the accepted pin; other folders name a frozen build.
@@ -320,14 +328,39 @@ def _lod_windows(trace_dir, scenarios):
 # --- records -------------------------------------------------------------------------------------
 
 
-def capture_record(instance, commits=None):
-    """The record of an instance's native capture, or None when it has none."""
-    result_path = instance / "runs/write/result.json"
-    manifest_path = instance / "standalone.json"
-    if not result_path.is_file() or not manifest_path.is_file():
+def sessions_root(environ=os.environ):
+    """Where Workbench keeps sessions: beside the one this process runs in, else under the lab home."""
+    if environ.get("WB_SESSION"):
+        return Path(environ["WB_SESSION"]).parent
+    if environ.get("WB_LAB_HOME"):
+        return Path(environ["WB_LAB_HOME"]) / "sessions"
+    raise ValueError("No sessions folder: run this in a driver session, or set WB_LAB_HOME")
+
+
+def _read(folder):
+    """(the lab's record, session.json) of a session folder; None for a folder that is no Riven driver session."""
+    record, session = folder / RECORD, folder / SESSION
+    if not record.is_file() or not session.is_file():
+        return None
+    session_value = json.loads(session.read_text(encoding="utf-8"))
+    if (session_value.get("launch") or {}).get("project") != "riven":
+        return None
+    return json.loads(record.read_text(encoding="utf-8")), session_value
+
+
+def _instance_name(manifest, session):
+    return (session.get("instance") or {}).get("name") or manifest.get("name")
+
+
+def capture_record(folder, commits=None):
+    """The record of a session's native capture, or None when it has none."""
+    result_path = folder / "runs/write/result.json"
+    read = _read(folder)
+    if not result_path.is_file() or read is None:
         return None
     result = json.loads(result_path.read_text(encoding="utf-8"))
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest, session = read
+    instance = folder
     scenarios = result.get("scenarios") or []
     sequence = result.get("scenarioSequence") or [s.get("scenario") for s in scenarios]
     lod = {}
@@ -345,10 +378,11 @@ def capture_record(instance, commits=None):
     client = first.get("client") or {}
     runtime = (first.get("server") or {}).get("runtime") or client.get("runtime") or {}
     dh = manifest.get("distantHorizons") or {}
-    name = manifest.get("name") or instance.name
+    name = _instance_name(manifest, session)
     record = {
         "schema": SCHEMA,
         "kind": "smoke" if name.startswith("smoke-") else "capture",
+        "run": session.get("id") or folder.name,
         # A timing capture's manifest names no mode; its scenarios name their measurement.
         "mode": (manifest.get("observability") or {}).get("mode")
         or ((first.get("server") or {}).get("measurementMode")),
@@ -414,22 +448,23 @@ def capture_record(instance, commits=None):
     return record
 
 
-def pregeneration_records(instance):
-    """One record per pregeneration run of an instance (runs/pregenerate-*/result.json)."""
+def pregeneration_records(folder):
+    """One record per pregeneration run of a session (runs/pregenerate-*/result.json); the journal and the reports
+    are the pregenerated instance's."""
     import gzip
 
-    manifest_path = instance / "standalone.json"
-    if not manifest_path.is_file():
+    read = _read(folder)
+    if read is None:
         return []
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest, session = read
     plan = manifest.get("pregeneration") or {}
-    journal = (
-        Path(manifest.get("server", instance / "server"))
-        / "cubiclab-pregeneration"
-        / str(plan.get("id"))
-    )
+    if not plan:
+        return []
+    server = Path(manifest["server"])
+    instance = server.parent
+    journal = server / "cubiclab-pregeneration" / str(plan.get("id"))
     batches = []
-    for path in sorted(journal.glob("batch-*.json.gz")) if plan else []:
+    for path in sorted(journal.glob("batch-*.json.gz")):
         with gzip.open(path, "rt", encoding="utf-8") as stream:
             batches.append(json.load(stream))
     checkpoint = journal / "checkpoint.json"
@@ -437,7 +472,7 @@ def pregeneration_records(instance):
     reports = sorted(instance.glob("pregeneration-report-*.json"), key=lambda p: p.stat().st_mtime)
     report = json.loads(reports[-1].read_text(encoding="utf-8")) if reports else {}
     out = []
-    for run in sorted((instance / "runs").glob("pregenerate-*/result.json")):
+    for run in sorted((folder / "runs").glob("pregenerate-*/result.json")):
         result = json.loads(run.read_text(encoding="utf-8"))
         process = run.parent / "server-process.json"
         lifecycle = json.loads(process.read_text(encoding="utf-8")) if process.is_file() else {}
@@ -451,8 +486,8 @@ def pregeneration_records(instance):
                 "schema": SCHEMA,
                 "kind": "pregeneration",
                 "mode": "pregeneration",
-                "instance": manifest.get("name") or instance.name,
-                "run": run.parent.name,
+                "instance": _instance_name(manifest, session),
+                "run": (session.get("id") or folder.name) + "-" + run.parent.name,
                 "startedUtc": started,
                 "workload": plan.get("id"),
                 "seed": manifest.get("seed"),
@@ -520,33 +555,35 @@ def write(record):
     return path
 
 
-def collect(instance, commits=True):
-    """Record an instance's runs in the ledger and refresh the index; returns the written paths."""
-    instance = Path(instance)
-    tools = {"riven": _git(ROOT), "cubature": _git(CUBATURE)} if commits else None
-    records = [capture_record(instance, tools)] + pregeneration_records(instance)
+def collect(folder, commits=True):
+    """Record a session's runs in the ledger and refresh the index; returns the written paths."""
+    folder = Path(folder)
+    cubature = (cubature_tools.COMMIT or "")[:8] or _git(cubature_tools.CUBATURE_TOOLS.parent)
+    tools = {"riven": _git(ROOT), "cubature": cubature} if commits else None
+    records = [capture_record(folder, tools)] + pregeneration_records(folder)
     paths = [write(r) for r in records if r]
     build_index()
     return paths
 
 
-def collect_quietly(name):
-    """The harness's end-of-run hook: record, and report instead of failing the run."""
+def collect_quietly(folder):
+    """A driver's end-of-run hook: record the session, and report instead of failing the run."""
     try:
-        for path in collect(INSTANCES / name):
+        for path in collect(folder):
             print("Telemetry: " + str(path))
     except Exception as error:  # noqa: BLE001 - telemetry must never change a run's outcome
         print("Telemetry not recorded: " + repr(error))
 
 
-def backfill():
-    """Record every instance under .local/cubic-standalone; existing records are rewritten."""
+def backfill(root=None):
+    """Record every Riven driver session in the sessions folder; existing records are rewritten."""
     written, skipped = 0, []
-    for instance in sorted(p for p in INSTANCES.iterdir() if p.is_dir()):
+    root = Path(root) if root else sessions_root()
+    for folder in sorted(p for p in root.iterdir() if p.is_dir()) if root.is_dir() else []:
         try:
-            records = [capture_record(instance)] + pregeneration_records(instance)
+            records = [capture_record(folder)] + pregeneration_records(folder)
         except (OSError, ValueError, KeyError, TypeError) as error:
-            skipped.append(f"{instance.name}: {error!r}")
+            skipped.append(f"{folder.name}: {error!r}")
             continue
         for record in records:
             if record:

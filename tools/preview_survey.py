@@ -6,13 +6,15 @@ writes rasters of each cell's top, ground top, water top and the kind of its top
 tile's CPU time. Two surveys of one window prove a change left the preview identical (`compare`
 exits 1 if any raster differs), and their CPU per column measures what it cost.
 
-  .local/observability-venv/Scripts/python tools/preview_survey.py run SOURCE RIVEN_JAR NAME
+  .local/observability-venv/Scripts/python tools/preview_survey.py run SOURCE RIVEN_JAR TARGET
   .local/observability-venv/Scripts/python tools/preview_survey.py compare SURVEY_A SURVEY_B
 
-SOURCE is a capture under .local/cubic-standalone (`riven_observe.py capture`); its server, world
-and launch command are copied to .local/cubic-standalone/NAME with RIVEN_JAR as its riven.jar, and
-the survey lands in server/cubiclab-surveys/NAME there. By default the window is the land route's
-2,048 blocks at (3120, -26032), footprints 64 to 1, on 16 threads.
+SOURCE is a capture's session folder (`wb play --driver capture` or `--driver pipeline`): the server of the
+instance copy it measured, with its world and the command it was started with (runs/write/server-process.json), is
+copied to the new folder TARGET with RIVEN_JAR as its riven.jar, and the survey lands in
+server/cubiclab-surveys/<TARGET's name> there. The survey starts only a server, which draws nothing, so it takes no
+GPU turn. By default the window is the land route's 2,048 blocks at (3120, -26032), footprints 64 to 1, on 16
+threads.
 """
 
 import argparse
@@ -26,16 +28,16 @@ import time
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
-STANDALONE = ROOT / ".local/cubic-standalone"
 RASTERS = (("top", "i16", 2), ("ground", "i16", 2), ("water", "i16", 2), ("kind", "u8", 1))
 
 
-def run(source: str, riven: Path, name: str, window: str, footprints: str, threads: int) -> int:
-    origin, target = STANDALONE / source, STANDALONE / name
+def run(source: Path, riven: Path, target: Path, window: str, footprints: str, threads: int) -> int:
+    session, target = source.resolve(), target.resolve()
+    name = target.name
+    origin = session / "instance"
     if target.exists():
-        sys.exit(f"{target} exists; choose a fresh name")
-    command: list[str] = json.loads((origin / "runs/write/server-process.json").read_text())[
+        sys.exit(f"{target} exists; choose a fresh folder")
+    command: list[str] = json.loads((session / "runs/write/server-process.json").read_text())[
         "command"
     ]
     shutil.copytree(
@@ -153,9 +155,9 @@ def main() -> int:
     )
     commands = parser.add_subparsers(dest="command", required=True)
     survey = commands.add_parser("run", help="survey a copy of a capture's server with a Riven jar")
-    survey.add_argument("source", help="capture name under .local/cubic-standalone")
+    survey.add_argument("source", type=Path, help="a capture's session folder")
     survey.add_argument("riven", type=Path, help="the Riven jar to survey")
-    survey.add_argument("name", help="a fresh name for the copy and its survey")
+    survey.add_argument("target", type=Path, help="a new folder for the copy and its survey")
     survey.add_argument("--window", default="3120,-26032,2048", help="minX,minZ,size in blocks")
     survey.add_argument("--footprints", default="64,32,16,8,4,2,1")
     survey.add_argument("--threads", type=int, default=16)
@@ -164,7 +166,7 @@ def main() -> int:
     diff.add_argument("b", type=Path)
     args = parser.parse_args()
     if args.command == "run":
-        return run(args.source, args.riven, args.name, args.window, args.footprints, args.threads)
+        return run(args.source, args.riven, args.target, args.window, args.footprints, args.threads)
     lines = compare(args.a, args.b)
     print("\n".join(lines))
     return 0 if all("differ" not in line for line in lines) else 1

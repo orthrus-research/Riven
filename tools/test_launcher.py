@@ -1,13 +1,10 @@
-"""Exercise the PowerShell entry point with Python replaced by an argument recorder."""
+"""Exercise the PowerShell entry point with Python and wb replaced by argument recorders."""
 
-import inspect
 import json
 import shutil
 import subprocess
-import sys
 import unittest
 from pathlib import Path
-from unittest import mock
 
 POWERSHELL = shutil.which("pwsh") or shutil.which("powershell")
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,118 +38,23 @@ class LauncherTests(unittest.TestCase):
             recorded[0] = str(Path(recorded[0]))
         return recorded
 
-    def test_ci_runs_in_workbench_from_head(self):
-        self.assertEqual(
-            self.invoke("ci", "keep_going=true"),
-            [
-                "wb",
-                "run",
-                "ci.run",
-                "project=riven",
-                "commit=HEAD",
-                "workflow=ci",
-                "keep_going=true",
-            ],
-        )
+    def test_check_runs_the_gate_in_workbench(self):
+        self.assertEqual(self.invoke("ci", "--quiet"), ["wb", "check", "--quiet"])
+        self.assertEqual(self.invoke("quick"), ["wb", "check"])
 
-    def test_quick_runs_the_working_tree(self):
+    def test_play_is_wb_play_from_this_worktree(self):
+        self.assertEqual(self.invoke(), ["wb", "play"])
         self.assertEqual(
-            self.invoke("quick"),
-            ["wb", "run", "ci.run", "project=riven", "commit=worktree", "workflow=quick"],
-        )
-
-    def test_setup_forwards_its_option(self):
-        self.assertEqual(
-            self.invoke("setup", "--check"),
-            [str(ROOT / "tools/setup.py"), "--check"],
+            self.invoke("play", "--driver", "pipeline"), ["wb", "play", "--driver", "pipeline"]
         )
 
     def test_build_needs_no_instance(self):
-        self.assertEqual(self.invoke("build"), [str(ROOT / "tools/runtime.py"), "build"])
+        self.assertEqual(self.invoke("build"), [str(ROOT / "tools/build_riven.py")])
 
-    def test_runtime_named_parameters_preserve_port_and_text(self):
-        self.assertEqual(
-            self.invoke(
-                "command", "-Name", "test-instance", "-Port", "25999", "-Text", quote("say hello")
-            ),
-            [
-                str(ROOT / "tools/runtime.py"),
-                "command",
-                "--name",
-                "test-instance",
-                "--port",
-                "25999",
-                "--text",
-                "say hello",
-            ],
-        )
-
-    def test_prepare_forwards_its_options(self):
-        self.assertEqual(
-            self.invoke("prepare", "-Name", "test-instance", "--preset", "canonical"),
-            [
-                str(ROOT / "tools/runtime.py"),
-                "prepare",
-                "--name",
-                "test-instance",
-                "--port",
-                "25870",
-                "--preset",
-                "canonical",
-            ],
-        )
-
-
-class PrepareDefaultsTests(unittest.TestCase):
-    """runtime.py prepare's launch file and world, with prepare itself replaced by a recorder."""
-
-    def prepared(self, *arguments):
-        import runtime
-
-        signature = inspect.signature(runtime.prepare)
-        argv = ["runtime.py", "prepare", "--name", "test-instance", *arguments]
-        with mock.patch.object(sys, "argv", argv), mock.patch.object(runtime, "prepare") as called:
-            runtime.main()
-        given = signature.bind(*called.call_args.args, **called.call_args.kwargs).arguments
-        return {**given, "scale": given["layout_scale"]}
-
-    def test_the_launch_file_reaches_prepare_and_the_default_world_stands(self):
-        given = self.prepared("--launch", "launch.json")
-        self.assertEqual(given["launch"], Path("launch.json"))
-        self.assertEqual((given["seed"], given["scale"]), (8675309, 1.0))
-
-    def test_canonical_preset_is_the_32_km_world(self):
-        given = self.prepared("--preset", "canonical")
-        self.assertEqual((given["seed"], given["scale"]), (2485331, 4.0))
-
-    def test_a_preset_refuses_its_own_seed_or_scale(self):
-        with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
-            self.prepared("--preset", "canonical", "--seed", "1")
-
-
-class PrepareRefusalTests(unittest.TestCase):
-    """prepare builds an instance only from a launch file."""
-
-    def test_without_a_launch_file_prepare_names_how_to_make_one(self):
-        import runtime
-
-        with self.assertRaisesRegex(RuntimeError, "wb run lab.resolve"):
-            runtime.prepare("test-instance", 25565)
-
-
-class BuildTests(unittest.TestCase):
-    def test_build_leaves_no_gradle_daemon(self):
-        import runtime
-
-        with (
-            mock.patch.object(runtime.jdks, "home", return_value=Path("jdk")),
-            mock.patch.object(runtime.jdks, "installations_property", return_value="x=y"),
-            mock.patch.object(runtime.subprocess, "run") as run,
-        ):
-            runtime.build()
-        command = run.call_args.args[0]
-        self.assertIn("--no-daemon", command)
-        self.assertIn("--no-watch-fs", command)
+    def test_the_launcher_verbs_are_gone(self):
+        for verb in ("prepare", "command", "setup"):
+            with self.assertRaises(AssertionError):
+                self.invoke(verb)
 
 
 if __name__ == "__main__":

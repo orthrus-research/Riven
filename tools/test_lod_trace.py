@@ -175,7 +175,7 @@ class LodTraceTest(unittest.TestCase):
             trace = instance / "lod-trace"
             trace.mkdir()
             write(trace, "client", client, 0)
-            (instance / "standalone.json").write_text(
+            (instance / "lab.json").write_text(
                 json.dumps({"viewDistance": {"horizontal": 12}}), encoding="utf-8"
             )
             result = lod_report(trace, instance / "out", "all", charts=False)

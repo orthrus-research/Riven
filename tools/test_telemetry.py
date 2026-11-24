@@ -52,11 +52,8 @@ class Ledger(unittest.TestCase):
         base.mkdir(parents=True, exist_ok=True)
         self.temporary = tempfile.TemporaryDirectory(prefix="telemetry-", dir=base)
         home = Path(self.temporary.name)
-        self.instances, self.ledger = home / "instances", home / "ledger"
-        patches = [
-            mock.patch.object(telemetry, "INSTANCES", self.instances),
-            mock.patch.object(telemetry, "LEDGER", self.ledger),
-        ]
+        self.sessions, self.ledger = home / "sessions", home / "ledger"
+        patches = [mock.patch.object(telemetry, "LEDGER", self.ledger)]
         for patch in patches:
             patch.start()
             self.addCleanup(patch.stop)
@@ -65,7 +62,8 @@ class Ledger(unittest.TestCase):
         self.temporary.cleanup()
 
     def instance(self, name, start, passed=True):
-        directory = self.instances / name
+        """A driver session's folder: session.json, the lab's record and a capture's result."""
+        directory = self.sessions / ("s-" + name)
         (directory / "runs/write").mkdir(parents=True)
         result = {
             "passed": passed,
@@ -84,13 +82,21 @@ class Ledger(unittest.TestCase):
             },
         }
         (directory / "runs/write/result.json").write_text(json.dumps(result), encoding="utf-8")
-        (directory / "standalone.json").write_text(json.dumps(manifest), encoding="utf-8")
+        (directory / "lab.json").write_text(json.dumps(manifest), encoding="utf-8")
+        session = {
+            "id": directory.name,
+            "launch": {"project": "riven", "launch": "default"},
+            "instance": {"name": name},
+        }
+        (directory / "session.json").write_text(json.dumps(session), encoding="utf-8")
         return directory
 
     def test_a_capture_becomes_one_dated_compact_record(self):
         directory = self.instance("riven-a-001", "2026-11-01T04:57:58.884096800Z")
         (path,) = telemetry.collect(directory, commits=False)
-        self.assertEqual(path, self.ledger / "runs/2026/11-01/045758Z-capture-riven-a-001.json")
+        self.assertEqual(
+            path, self.ledger / "runs/2026/11-01/045758Z-capture-riven-a-001-s-riven-a-001.json"
+        )
         record = json.loads(path.read_text(encoding="utf-8"))
         self.assertEqual(record["schema"], telemetry.SCHEMA)
         self.assertEqual(
@@ -103,6 +109,27 @@ class Ledger(unittest.TestCase):
         self.assertEqual(full["cubes"]["payloadMiB"], 1.0)
         self.assertEqual(full["save"]["submission"], 2.0)
         self.assertLess(path.stat().st_size, 4096)
+
+    def test_backfill_records_riven_sessions_only(self):
+        self.instance("riven-b-001", "2026-11-01T04:57:58Z")
+        other = self.instance("cubature-lab", "2026-11-01T05:00:00Z")
+        session = json.loads((other / "session.json").read_text(encoding="utf-8"))
+        session["launch"]["project"] = "cubature"
+        (other / "session.json").write_text(json.dumps(session), encoding="utf-8")
+        (self.sessions / "not-a-session").mkdir()
+        result = telemetry.backfill(self.sessions)
+        self.assertEqual((result["written"], result["indexed"], result["skipped"]), (1, 1, []))
+
+    def test_the_sessions_folder_is_the_running_sessions_or_the_lab_homes(self):
+        self.assertEqual(
+            telemetry.sessions_root({"WB_SESSION": "/srv/lab/sessions/x"}),
+            Path("/srv/lab/sessions"),
+        )
+        self.assertEqual(
+            telemetry.sessions_root({"WB_LAB_HOME": "/srv/lab"}), Path("/srv/lab/sessions")
+        )
+        with self.assertRaises(ValueError):
+            telemetry.sessions_root({})
 
     def test_offsets_are_normalized_to_utc(self):
         self.assertEqual(telemetry._utc("2026-11-01T00:30:00-04:00"), "2026-11-01T04:30:00Z")

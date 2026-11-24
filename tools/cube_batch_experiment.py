@@ -1,13 +1,27 @@
-"""Run a sealed, serial packet-count screen through the existing native observer."""
+"""Run a sealed, serial packet-count screen through the existing native observer.
+
+Each case is its own Workbench driver session of the plan's launch file (`wb play --from <launch> --name <case>
+--driver capture`), its options passed in LAB_DRIVER_ARGS, so every case measures a fresh copy of the same instance
+under the GPU lease. The plan's inputs name the launch file, the observer and the workload by path and SHA-256.
+WB_CLI names another wb launcher.
+"""
 
 import argparse
 import json
+import os
+import re
+import shlex
 import subprocess
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 from observability.profiles import ROOT, sha
+
+SESSION = re.compile(r"^session\s+(\S.*?)\s+\(driver\)\s*$", re.M)
+
+
+def wb():
+    return os.environ.get("WB_CLI") or "wb"
 
 
 def main(argv=None):
@@ -29,26 +43,9 @@ def main(argv=None):
         for name, digest in plan["inputHashes"].items():
             if sha(ROOT / name) != digest:
                 raise ValueError("Sealed experiment input changed: " + name)
-        output = ROOT / ".local/cubic-standalone" / case["name"]
-        if output.exists():
-            raise ValueError(
-                "Case already allocated; preserve it and use a declared replacement: " + str(output)
-            )
-        command = [
-            sys.executable,
-            "-B",
-            str(ROOT / "tools/riven_observe.py"),
-            "capture",
-            "--name",
-            case["name"],
+        options = [
             "--mode",
             plan.get("mode", "timing"),
-            "--port",
-            str(plan["port"]),
-            "--riven",
-            str(ROOT / plan["inputs"]["riven"]),
-            "--cubature",
-            str(ROOT / plan["inputs"]["cubature"]),
             "--observer",
             str(ROOT / plan["inputs"]["observer"]),
             "--workload",
@@ -58,22 +55,41 @@ def main(argv=None):
             "--cube-packet-bytes",
             str(plan["cubePacketBytes"]),
         ]
+        command = [
+            wb(),
+            "play",
+            "--from",
+            str(ROOT / plan["inputs"]["launch"]),
+            "--name",
+            case["name"],
+            "--driver",
+            "capture",
+        ]
         log = args.plan.parent / (case["name"] + ".log")
+        if log.exists():
+            raise ValueError(
+                "Case already ran; preserve it and use a declared replacement: " + str(log)
+            )
         event = {
             "name": case["name"],
             "index": case["index"],
             "command": command,
+            "options": options,
             "startedUtc": datetime.now(timezone.utc).isoformat(),
             "planSha256": sha(args.plan),
         }
         print(json.dumps(dict(event, event="start")), flush=True)
+        environment = {**os.environ, "LAB_DRIVER_ARGS": shlex.join(options)}
         with log.open("x", encoding="utf-8") as stream:
-            completed = subprocess.run(command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT)
+            completed = subprocess.run(
+                command, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT, env=environment
+            )
+        found = SESSION.search(log.read_text(encoding="utf-8", errors="replace"))
         event.update(
             returncode=completed.returncode,
             endedUtc=datetime.now(timezone.utc).isoformat(),
             log=str(log),
-            result=str(output / "runs/write/result.json"),
+            result=str(Path(found.group(1)) / "runs/write/result.json") if found else None,
         )
         with journal.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(event) + "\n")

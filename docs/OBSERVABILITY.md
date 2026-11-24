@@ -7,16 +7,20 @@ draws cubic worlds, distant terrain included. Diagnostic recording must not
 change terrain, suppress failed work, edit upstream JARs or replace the
 launch's mods.
 
-`tools/riven_observe.py` is the command-line entry point. It uses the existing
-owned runtime and native lab instead of maintaining another launcher.
-Evidence remains under `.local`, including unsuccessful attempts.
+`tools/riven_observe.py` is the command-line entry point. Its captures, and the
+measurements and pregenerations below, are Workbench driver sessions of Riven's
+launch (RUNTIME.md, Drivers): Workbench builds the instance and holds the GPU
+lease, and the driver starts its JVMs through Cubature's native lab instead of
+maintaining another launcher. Evidence stays in the session folder, including
+unsuccessful attempts.
 
 The accepted Cubature artifact predates the configurable cube-count field, so
 the observer reports that field as unavailable; nondefault cube-count
 experiments need a runtime that exposes it. Doctor rejects a stale observer.
 
-For startup-wide JVM sampling, `tools/measure_pipeline.py --jfr` starts JFR
-on both JVM command lines. It can be combined with `--lifecycle-diagnostics`
+For startup-wide JVM sampling, `wb play --driver pipeline` with
+`LAB_DRIVER_ARGS=--jfr` (`tools/measure_pipeline.py --jfr`) starts JFR on both
+JVM command lines. It can be combined with `--lifecycle-diagnostics`
 and `--delivery-trace` without method instrumentation or NBT queue-byte
 accounting. These remain instrumented diagnostic runs. JFR files, crash
 logs and any recovered repository chunks stay local; a partial profile is
@@ -24,16 +28,18 @@ not a successful flight, storage or rendering result.
 
 For an owned terrain inspection map, `tools/pregenerate_map.py` adapts this
 same runtime to the lab's `pregenerate` command. It does not use the historical
-schema-8 ore census or introduce another terrain generator. Prepare a fresh
-instance with frozen `--artifact` and `--lab-artifact` paths, then run a pilot:
+schema-8 ore census or introduce another terrain generator. A pregeneration
+works on its instance itself, so give the map an instance of its own; the first
+session prepares it (the Store's observer, the plan in the instance's
+`riven-pregeneration.json`) and every later session resumes the journal. Run a
+pilot first:
 
 ```powershell
-python tools/pregenerate_map.py prepare --name riven-map-10k --artifact <riven.jar> --lab-artifact <observer.jar>
-python tools/pregenerate_map.py run --name riven-map-10k --max-columns 256 --jfr
-python tools/pregenerate_map.py verify --name riven-map-10k --allow-partial
-python tools/pregenerate_map.py run --name riven-map-10k
-python tools/pregenerate_map.py status --name riven-map-10k
-python tools/pregenerate_map.py verify --name riven-map-10k
+$env:LAB_DRIVER_ARGS = "--max-columns 256 --jfr"; wb play --name riven-map-10k --driver pregenerate
+$env:LAB_DRIVER_ARGS = "--allow-partial"; wb play --name riven-map-10k --driver pregenerate-verify
+$env:LAB_DRIVER_ARGS = ""; wb play --name riven-map-10k --driver pregenerate
+python tools/pregenerate_map.py status --instance <lab home>/instances/riven-map-10k
+wb play --name riven-map-10k --driver pregenerate-verify
 ```
 
 The retained square is `[-10000,10000)` in both horizontal block coordinates:
@@ -52,17 +58,17 @@ allow recovery if a process stops before publishing its next checkpoint;
 changed generation fingerprints or bounds require a fresh world. This is
 ordinary Minecraft storage durability, not power-loss qualification. A
 successful bounded session can still leave the map incomplete. `verify`
-takes the workspace's native measurement lock (one native run at a time),
+is a driver session too, so the GPU lease keeps every server off the world; it
 counts all target region slots and decodes up to 64 complete columns of
 saved cube NBT independently. Full payload validation,
 terrain correctness and client visual acceptance remain separate. Only after completion and saved coverage checks should the same
-owned instance be opened with `tools/runtime.py play --name <name>`.
+owned instance be opened with `wb play --name <name>`.
 
-`--map world-8k` is a player's fully pregenerated world, for testing a world
+`--map world-8k` (in `LAB_DRIVER_ARGS`) is a player's fully pregenerated world, for testing a world
 whose terrain is mostly fetched: the 8192 by 8192 block square about spawn,
 262,144 columns of every cube from the world floor to the terrain allocation's
 top (Y -1664 to 384, 33,554,432 cubes; sky cubes above are made on demand).
-`prepare` gives the server 16 generation workers (`--workers`) and a queue for
+Its first session gives the server 16 generation workers (`--workers`) and a queue for
 the 24 columns it schedules ahead (`--ahead`); the storage settings stay the
 player's. The pregenerator flushes the storage writer every 4 batches, so it
 writes while later columns generate. `report` gives the stopped world's bytes
@@ -71,7 +77,7 @@ by kind (cubes, columns, other world files) and the job's throughput; `verify` n
 when the world still fed Distant Horizons) took 8.4 hours at 8.65 columns a
 second and holds 33.5 GB: 31.5 GB of cubes (939 bytes a cube), 0.39 GB of
 columns and 1.64 GB of DH data (6.3 KB a column). Captures fly on a copy of it with `riven_observe.py capture
---world-from <instance>`.
+--world-from <instance folder>`.
 
 On that copy a 16 b/s flight along z -1500 runs a server tick p95 of 38 ms
 (a fresh world: 47 ms) and reaches the full view in 200 ticks (fresh: 660),
@@ -83,33 +89,33 @@ flight ran 77 ms. Open: joining still costs one tick of about 5 s.
 ## Commands
 
 Python 3.14 or later is required for the host tools; native qualification uses
-the separately pinned Java 26 runtime. With the Cubature checkout present and a
-launch file resolved (RUNTIME.md, Launching), create a local plotting environment once:
+the launch's Java 26 build. Captures run as driver sessions (RUNTIME.md,
+Drivers); for the analysis commands, create a local plotting environment once:
 
 ```powershell
 python -m venv .local/observability-venv
 .local/observability-venv/Scripts/python.exe -m pip install -r tools/observability/requirements.txt
 ```
 
-Build the optional lab observer from Cubature's `lab` with the existing
-`../cleanroom/gradlew.bat test assemble -PcubicArtifact=<frozen-cubature.jar>`.
-Use a fixed copy of that observer for an entire comparison. A changed
-observer starts a new comparison.
-
-Building the observer does not change the launch's Cubature.
+A capture takes the lab observer from the Store, built by Cubature's `lab`
+check at the commit the launch names, unless `--observer` gives a frozen copy.
+Use one observer for an entire comparison. A changed observer starts a new
+comparison. Building the observer does not change the launch's Cubature.
 
 ```powershell
-python -B tools/riven_observe.py doctor --launch .local/launch/default.json --riven <frozen-riven.jar> --observer <frozen-observer.jar>
-python -B tools/riven_observe.py capture --name <fresh-name> --launch .local/launch/default.json --riven <frozen-riven.jar> --observer <frozen-observer.jar> --mode diagnostic
-.local/observability-venv/Scripts/python.exe -B tools/riven_observe.py inspect <owned-instance> --output <new-local-directory>
-.local/observability-venv/Scripts/python.exe -B tools/riven_observe.py trace <owned-instance> --output <another-new-local-directory>
+python -B tools/riven_observe.py doctor --launch <launch.json> --riven <riven.jar> [--observer <frozen-observer.jar>]
+$env:LAB_DRIVER_ARGS = "--mode diagnostic"; wb play --driver capture
+.local/observability-venv/Scripts/python.exe -B tools/riven_observe.py inspect <session folder> --output <new-local-directory>
+.local/observability-venv/Scripts/python.exe -B tools/riven_observe.py trace <session folder> --output <another-new-local-directory>
 ```
 
 `capture --mode timing` disables JFR and additional packet/render stage
 instrumentation. The same bounded worker counters remain on both variants.
-`--launch` names the launch file every mod comes from; `doctor` checks each of its
-members in the Store. `--cubature` selects a frozen candidate in place of the launch's
-Cubature. `--workload` selects a validated named workload; `--port` must be free.
+`doctor` checks each member of the launch file in the Store, without starting
+anything; a capture runs it on the session's own files first. A candidate Riven or
+Cubature is a stand-in of the launch (`wb play --with <project>=<folder>`), not a
+capture option. `--workload` selects a validated named workload; the session
+chooses a free port.
 Without Quadrature in the launch the capture sets
 `cubature.clientWithoutRenderer=true`, since Cubature's client otherwise stops at loading without
 Quadrature: the game's own renderer then draws only heights 0 to 255 of the cubic world, so such a
@@ -161,7 +167,8 @@ record. `compare --treatment packet-cubes` permits only the single verified
 `maxCubePacketCubes` value to differ. Exact snapshot hashes are checked before
 canonicalizing that field; byte caps, artifacts, controller sources and all
 other input bytes remain controls. `tools/cube_batch_experiment.py --plan <plan.json>` runs a
-sealed plan's cases through `capture` serially, checking its input hashes before each case and
+sealed plan's cases serially, each a `capture` session of the plan's launch file
+(`wb play --from <launch> --name <case> --driver capture`), checking its input hashes before each case and
 journaling every start and finish beside the plan. The 1024-cube default is unchanged. Short
 screening runs remain exploratory and do not change the launch.
 
@@ -193,25 +200,23 @@ single-artifact strict comparator automatically.
 
 ### View distance
 
-Instances are prepared at the lab's baseline view distance, 12 for the server's horizontal and
-vertical distances and for the client's render distance, so runs compare. `runtime.py play` may
-raise any of them, freely, with `--view-distance`, `--vertical-view-distance` and
-`--client-render-distance`, and a tour may ask for raised distances itself as an object,
-`{"viewDistance": {"clientRender": 20}, "views": [...]}`; an option wins over the tour, and
-whatever neither raises stays at the baseline. Below the baseline is refused. Each play sets the
-instance to the run's distances before the launch, the baseline for a run that asks for nothing,
-records them in `standalone.json` (`viewDistance`, and `viewDistanceLabel`: `baseline` or what was
-raised), prints them, and files them as `view-distance.json` beside a tour's captures.
+Instances are built at the lab's baseline view distance, 12 for the server's horizontal and
+vertical distances and for the client's render distance, so runs compare. A session may raise
+any of them, freely, with `wb play --view horizontal=<n>` (also `vertical` and `client_render`),
+and a tour may ask for raised distances itself as an object,
+`{"viewDistance": {"clientRender": 20}, "views": [...]}`; whatever neither raises stays at the
+baseline. The session sets the instance to its distances before the launch and records them in
+`session.json`; a driver's record (`lab.json`) takes the distances the files hold into
+`viewDistance`, and a capture below the baseline is refused before its JVMs start.
 
-Below the baseline, `runtime.py prepare --view-profile near-8` prepares an instance with a named
-reduced profile (all three distances 8), recorded as `viewProfile`. Its distances are fixed: its
-plays refuse view-distance options and a tour's `viewDistance`, and `riven_observe compare` will
-not compare it with a run of another profile.
+Instances prepared before Workbench's sessions with the reduced profile `near-8` (all three
+distances 8) record it as `viewProfile`; `riven_observe compare` will not compare them with a
+run of another profile.
 
 ## Telemetry ledger
 
 Every capture and pregeneration, passed or failed, ends by writing one compact JSON record
-(about 4 KB) to `.local/telemetry/runs/<YYYY>/<MM-DD>/<HHMMSS>Z-<kind>-<instance>.json`, and
+(about 4 KB) to `.local/telemetry/runs/<YYYY>/<MM-DD>/<HHMMSS>Z-<kind>-<instance>-<session>.json`, and
 refreshes `.local/telemetry/index.json`, which lists every record in the order the runs started,
 numbered, with counts by kind and workload. The kinds are `capture`, `smoke` (the ci smoke
 capture) and `pregeneration`. A failure to record is printed and never changes the run's result.
@@ -226,11 +231,12 @@ the job's throughput, save time, peak heap and world size.
 
 ```powershell
 .local/observability-venv/Scripts/python.exe -B tools/riven_observe.py telemetry backfill
-.local/observability-venv/Scripts/python.exe -B tools/riven_observe.py telemetry record --name <instance>
+.local/observability-venv/Scripts/python.exe -B tools/riven_observe.py telemetry record --session <session folder>
 .local/observability-venv/Scripts/python.exe -B tools/riven_observe.py telemetry export --output <harness-runs.json>
 ```
 
-`backfill` rewrites the records of every instance under `.local/cubic-standalone`; `export`
+`backfill` rewrites the records of every Riven driver session in the lab home's `sessions`
+folder (`WB_LAB_HOME`); `export`
 writes the sanitized dataset the website's harness charts read: one record per scenario with
 dates, an anonymous run number, workload and scenario names and numbers only. The ledger itself
 names instances and artifacts and stays local.
@@ -286,7 +292,7 @@ top, topmost kind) and each tile's CPU time. `tools/preview_survey.py` runs it o
 capture's server with a chosen Riven jar, so the source capture is never touched:
 
 ```
-.local/observability-venv/Scripts/python tools/preview_survey.py run <capture> <riven.jar> <fresh-name>
+.local/observability-venv/Scripts/python tools/preview_survey.py run <capture session folder> <riven.jar> <new folder>
 .local/observability-venv/Scripts/python tools/preview_survey.py compare <survey-a> <survey-b>
 ```
 
@@ -299,7 +305,7 @@ preview-path change left distant terrain unchanged; the atlas digests do not cov
 
 1. **Doctor:** verify exact runtime/mod inputs, Java 26, observer availability
    and the version-specific trace targets before allocating a native instance.
-2. **Capture:** prepare a fresh isolated client/server pair with a frozen
+2. **Capture:** a fresh copy of the session's instance with a frozen
    workload and observer. Retain complete prepared config bytes, artifact
    hashes, controller sources, effective runtime/distances, process ownership
    and failure logs.

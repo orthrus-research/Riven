@@ -1,7 +1,6 @@
 """The JDKs Riven's tools build and run with: Temurin 26 for everything (one JDK across our projects, 2026-11-21).
 
-A JDK is this checkout's choice first, ``java<major>`` in ``.local/settings.json`` (the java executable
-``tools/setup.py`` records; instances remember the resolved path, so a machine keeps using the one it prepared with),
+A JDK is this checkout's choice first, ``java<major>`` in ``.local/settings.json`` (a java executable's path),
 then the environment CI and Workbench give every job: ``JAVA_HOME_<major>_X64``, else ``JAVA_HOME`` when it is that
 major. A clean clone has no settings file, so its jobs use the environment.
 """
@@ -43,7 +42,7 @@ def home(major: int = MAJOR) -> Path:
         ):
             return Path(value)
     raise SystemExit(
-        f"No JDK {major}: record java{major} in .local/settings.json (tools/setup.py does) or set "
+        f"No JDK {major}: record java{major} in .local/settings.json or set "
         f"JAVA_HOME_{major}_X64 (Workbench and CI set it)"
     )
 

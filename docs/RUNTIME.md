@@ -3,8 +3,8 @@
 ## Profile
 
 The launch is the complete mod input list: `[launch.default]` in `project.toml` names its members, and
-Workbench's `lab.resolve` turns it into `.local/launch/default.json`, every member by SHA-256 from the set this
-worktree builds against (its `.set`) and Riven itself from the Store, by the tree CI built.
+`wb play` resolves it into a launch file, every member by SHA-256 from the set this worktree builds against (its
+`.set`) and Riven itself from the Store, by the tree CI built.
 
 | Component | Version | Role |
 | --- | --- | --- |
@@ -22,8 +22,8 @@ A Riven world spans Y-1664 to Y383: the crust down to Y-512, then the realms
 (`allocation` in `riven-terrain-height-reference.json`, realms in `riven-realms.json`).
 Cubature fixes a new world's height range, including where out-of-world damage starts, from
 `defaultMinHeight` and `defaultMaxHeight` in the server's `config/cubicchunks.cfg`, not from
-Riven's generation range: set them to -1664 and 384 before creating a world. `runtime.py prepare`
-writes them from the height reference; with the old -128 a test player teleported to Y-500 took out-of-world damage and died.
+Riven's generation range: set them to -1664 and 384 before creating a world. `launch/configure.py`
+writes them from the height reference when Workbench builds an instance; with the old -128 a test player teleported to Y-500 took out-of-world damage and died.
 
 Distances are 12 on all four native axes (server horizontal and vertical, client render and
 vertical). Cubature development in its checkout may be ahead of the set; the launch's Cubature is
@@ -31,11 +31,10 @@ what instances use.
 
 Cubature keeps `cubicchunks`/`cubicchunkscore` mod IDs, `io.github.opencubicchunks` packages,
 registry IDs and save formats as compatibility interfaces. It is published as
-`orthrus-research/Cubature`, a GitHub fork of OpenCubicChunks/CubicChunks, and checked out beside
-Riven at `../Cubature`, beside the main checkout. Riven's tools find it through `tools/checkouts.py`
-and export `RIVEN_WORKSPACE`, which Cubature's tools and Gradle build read to find
-Riven (without it they assume a sibling `../Riven`). Cubature never lives inside Riven, so nothing
-that cleans or deletes Riven's ignored files can reach it.
+`orthrus-research/Cubature`, a GitHub fork of OpenCubicChunks/CubicChunks. Riven's tools use Cubature's
+lab tools at an exact commit, never a working tree (`tools/cubature_tools.py`): a driver session exports them from
+Cubature's repository at the commit its launch names, and a check finds them laid beside its clone at the commit the
+set names. Cubature never lives inside Riven, so nothing that cleans or deletes Riven's ignored files can reach it.
 
 ## Derived regional cache
 
@@ -82,10 +81,11 @@ gone by the next view a few seconds later.
 
 Riven's cloud base is Y256 (`atmosphere.cloudBaseY` in the height reference) through
 `WorldType.getCloudHeight`, which vanilla clouds read, so they sit above ordinary terrain and below
-high peaks. `prepare` gives Riven clients fancy graphics (the lab's benchmark
+high peaks. `launch/configure.py` gives Riven clients fancy graphics (the lab's benchmark
 default is fast), so instances show leaves as players see them. `tools/tours/render-check-8675309.json` builds a grass platform with
 a leaf hedge and four animals at Y200, then an animal pocket at Y-700 in solid Beneath rock, seen
-from a pocket one full section away and again through a tunnel; prepare with `--spawn-animals`,
+from a pocket one full section away and again through a tunnel; build its instance with
+`--param spawn_animals=true`,
 because a server without it removes summoned animals. Each tour capture logs the F3 counters
 (`Riven view stats`: frame rate, sections visible/total, entities rendered/total, loaded
 cubes/columns) and the heap after a collection.
@@ -99,31 +99,37 @@ joining client receives the world's definitions packet (fingerprint, biome color
 
 ## Launching
 
+Workbench plays the game, from this worktree at its `.set` (`riven.ps1 play` is the same):
+
 ```powershell
 riven.ps1 check                                    # CI builds this tree; the Store keeps its JAR
-wb run lab.resolve folder=.                        # writes .local/launch/default.json
-python tools/runtime.py prepare --name <fresh-name> --launch .local/launch/default.json [--preset canonical | --seed N --scale 0.5-8] [--start X Y Z YAW PITCH] [--spectator] [--capture]
-python tools/runtime.py play --name <fresh-name>
-python tools/runtime.py command --name <fresh-name> --text "<server command>"
+wb play                                            # resolve the launch, build or reuse its instance, play
+wb play --name canonical --param seed=2485331 --param scale=4    # the canonical 32 km world, an instance of its own
+wb play --tour tools/tours/<tour>.json             # each view captured into the session folder
+wb play --driver pipeline                          # a driver session (Drivers, below)
+wb play --from <launch.json> --name <instance>     # replay a launch file's exact bytes
 ```
 
-`riven.ps1 prepare -Name <fresh-name>` resolves the launch and prepares in one step. `prepare` takes every mod
-from the launch file, each re-hashed from the Store, and refuses to run without one, so an instance loads one build
-of each mod, the one the set names, and Riven compiled against the same Cubature and GTCEuR. A launch is resolved for
-a committed tree CI has built; `--artifact` or `--cubic-artifact` puts a frozen candidate in place of the launch's
-Riven or Cubature, recorded with the instance as a stand-in.
+`wb play` resolves `[launch.default]` into a launch file once: every mod by SHA-256, each re-hashed from the Store,
+so an instance loads one build of each mod, the one the set names, and Riven compiled against the same Cubature and
+GTCEuR. A launch is resolved for a committed tree CI has built; `--with <project>=<folder>` puts a stand-in in place
+of a member and marks the session as not evidence. The instance starts from Cubature's standalone world, and
+`launch/configure.py` makes Riven's changes on a machine whose `[lab] trusted` names Riven: the world's height range,
+Riven's level type and layout scale, Cubature's delivery settings, fancy graphics, no splash screen. `--param` sets the
+launch's typed params for an instance (`seed`, `scale`, `delivery`, `preview_threads`, `spawn_animals`, `capture`).
+Without params the world is seed 8675309 at layout scale 1 (the 8 km tuning world); `scale` travels in
+`generator-settings` (0.5-8: 1 = 8 km, 0.5 = 4 km, 4 = 32 km worlds; see FEATURES.md), and the canonical world is
+seed 2485331 at scale 4. `capture` gives a 2560x1440 client; `spawn_animals` allows animals (off for terrain
+captures).
 
-Instances live under `.local/cubic-standalone/<name>` (port 25870). `prepare`
-records the runtime profile, exact mod hashes and every generator fingerprint; `play` refuses an
-instance whose frozen inputs changed. Changed definitions need a fresh instance. `--start` fixes
-daylight and weather and teleports on first join. Without options the world is seed 8675309 at
-layout scale 1 (the 8 km tuning world); `--seed` and `--scale` choose another, the scale through
-`generator-settings` (0.5-8: 1 = 8 km, 0.5 = 4 km, 4 = 32 km worlds; see FEATURES.md).
-`--preset canonical` is the canonical world, seed 2485331 at scale 4 (32 km), and takes no
-`--seed` or `--scale`. `--capture` saves one native screenshot after
-400 client ticks. `--spawn-animals` allows animals (off for terrain captures).
-An instance has no Distant Horizons, which is not carried forward. The launch's JVM arguments
-become the instance's `clientProperties` and `serverProperties`, which every `play` passes: the
+Workbench keeps the instances in its lab home, each with its receipt (`instance.json`: every file by SHA-256 and the
+server's and client's command lines), and a folder per session with `session.json` (the members, the JDK build, the
+GPU and its driver, the session's inputs) and the consoles. A session refuses an instance whose files differ from its
+receipt; changed definitions need a fresh instance. Lines appended to an open session's `commands.txt` go to the
+server's console. A tour's views (`label`, `x`, `y`, `z`, `yaw`, `pitch`, and optional `commands` run before the
+teleport) are filed as `tour/NN-<label>.png`; a tour's `viewDistance` raises the session's distances.
+
+An instance has no Distant Horizons, which is not carried forward. The launch's JVM arguments reach both sides: the
 client runs with `-Dquadrature.distant=own`, so Quadrature draws distant terrain itself from Riven's
 preview. The client draws cubic worlds through Quadrature, which takes over the game's chunk system
 there; Cubature's client stops at loading without it, and the launch names it for the client. `/riven` in game
@@ -136,47 +142,42 @@ origin, with what each keeps for life, into `<x>_<z>_r<radius>_animals.txt` and 
 `/riven animals [radius]` compares the first animals planned near the player with the world. A tour view's `commands` run before its teleport,
 so `execute {player} ~ ~ ~ riven digest 48 <x> <z>` there digests the previous view.
 
-`tools/runtime.py` imports `cubic_lab` and `cubic_standalone` from Cubature's `tools`, so the
-Cubature checkout must be present. `prepare` writes the local runtime identity to
-`.local/native-runtime.json`: the pinned Cleanroom release from `dev/native-runtime.json` plus the
-Java 26 named in `.local/settings.json` and the hashes of its critical files. A Java 26 other than
-the reviewed build is noted, not refused.
+### Drivers
+
+A driver is a program of Riven's that starts its own server and client from the instance's receipt. They are declared
+in `[launch.default].drivers` and run as `wb play --driver <name>`:
+
+| Driver | Runs |
+| --- | --- |
+| `pipeline` | `tools/measure_pipeline.py`: the terrain-pipeline workload on a fresh copy of the instance |
+| `capture` | `tools/riven_observe.py capture`: the same workload with a timing, diagnostic or lifecycle mode's instrumentation |
+| `pregenerate` | `tools/pregenerate_map.py run`: a bounded pregeneration on the instance itself, which each session resumes |
+| `pregenerate-verify` | `tools/pregenerate_map.py verify`: the pregeneration's saved coverage, counted with every server stopped |
+
+Workbench builds the instance, takes the GPU lease and quiet for the whole session and runs the driver with
+`WB_INSTANCE` (the receipt), `WB_SESSION` (the session folder) and `WB_LAUNCH` (the launch file). The driver runs
+Cubature's lab tools exported at the commit its launch names, fills the receipt's `{instance}`, `{cache}`,
+`{jdk:N}` and `{port}` in, and keeps the lab's record of the instance (`lab.json`) and every result (`runs/`) in the
+session folder. A driver's further options go in `LAB_DRIVER_ARGS`, for example `--diagnostic` or `--map world-8k`.
+Drivers run only on a machine whose `[lab] trusted` names Riven. [OBSERVABILITY.md](OBSERVABILITY.md) covers the
+measurements.
 
 ### On Linux
 
-`prepare` and `play` run on Linux as on Windows: the client takes the Linux natives of its
-libraries (`prepare` fetches them for the system it runs on) and Cleanroom's `unix_args.txt`, and
-the lease and the queue lock with `fcntl`. Checked 2026-11-20 on Ubuntu 26.04 with Temurin
-26.0.2.1+1 for Linux: a fresh instance prepared and a two-view tour played and captured. A machine
-that only runs, preparing with frozen jars (`--artifact`, `--cubic-artifact`) and building
-nothing, needs:
+Workbench's sessions run on Linux as on Windows: the client takes the Linux natives of its libraries and Cleanroom's
+`unix_args.txt`. (Checked 2026-11-20 on Ubuntu 26.04 with Temurin 26.0.2.1+1 for Linux, with the launcher before
+Workbench's sessions: a fresh instance prepared and a two-view tour played and captured.) A machine that only plays
+needs Workbench with its lab, a launch file and the Store files it names, and a display with OpenGL 4.6 in the
+compatibility profile on the GPU. A machine with no monitor, such as a rented GPU in a container, gets one from a
+virtual display (`Xvfb`) and VirtualGL's EGL back end (`vglrun -d egl`), which renders on the GPU through the
+driver's EGL library.
 
-- Python 3.14 and a Java 26 named as `java26` in `.local/settings.json`; Java 25, the
-  tools' virtual environments and a Cubature clone serve building and checking only.
-- A launch file and the Store files it names: `prepare` reads each member from the launch's
-  `store` folder and checks its SHA-256.
-- Cubature's `tools` as the sibling `../Cubature`, at a commit whose `lab/runtime.properties` names
-  the launch's Cleanroom.
-- A display with OpenGL 4.6 in the compatibility profile on the GPU. A machine with no monitor,
-  such as a rented GPU in a container, gets one from a virtual display (`Xvfb`) and VirtualGL's
-  EGL back end (`vglrun -d egl`), which renders on the GPU through the driver's EGL library.
-- Optionally the game's cache (`.local/cubic-lab/cache`): its assets, client jar and libraries are
-  the same on every system, so carrying them spares `prepare` thousands of downloads.
+### The GPU lease and the GPU queue
 
-`tools/setup.py` looks for Java under `/usr/lib/jvm`, `/opt/java` and `~/.jdks` there, and
-`--check` reports what a Linux machine lacks.
-
-### The measurement lease and the GPU queue
-
-One native game runs at a time per workspace. `play`, `measure_pipeline.py` and
-`pregenerate_map.py` take the measurement lease, an OS lock on byte 0 of
-`.local/cubic-lab/native-measurement.lock` (Cubature's `cubic_lab.native_measurement_lease`), and
-fail at once if it is held. The OS drops the lock when its holder exits, so a crashed run never
-keeps it. The JSON from byte 1 is the holder's record (`pid`, `name`, `startedUtc`), stamped with
-`releasedUtc` as it lets go; it stays after release, so it names the last holder, not a current
-one. To test the lease, read byte 0: the holder's lock makes it unreadable to every other handle.
-Never take the lock to test it, even for an instant, since a launch that starts at that moment
-fails.
+One native game runs at a time per machine. Every `wb play` session holds Workbench's GPU lease from before its
+first JVM starts until its last one ends, and a driver's JVMs run inside that turn; nothing of Riven's takes the
+lease itself. The lease is an OS lock on byte 0 of Workbench's lease file, which the OS drops when its holder
+exits, so a crashed run never keeps it.
 
 Work that shares the GPU goes through `tools/gpu_queue.py`:
 
@@ -191,8 +192,7 @@ Each lane (one line of work) publishes `.local/coordination/<lane>.json` with it
 `waiting`, `running`), `waiting_since`, its writer's `pid` and a heartbeat (`updatedUtc`, every
 30 s). `turn` queues, waits until the lease has been free for 15 s and no live lane is
 running or has waited longer (a waiter ahead that has not moved for 10 minutes of free lease is
-passed), then holds the lease for the whole command: launchers under it join that lease through
-`CUBIC_LAB_TURN_LEASE` instead of taking it per run, so nothing starts between a turn's runs. A
+passed), then holds the lease for the whole command, so nothing starts between a turn's runs. A
 turn longer than an hour is stopped. An entry counts only while its heartbeat is under 5 minutes
 old and its process runs, so a request whose writer has gone holds nobody back; `stuck` names
 such entries and exits 1. From a linked worktree the tool uses the main checkout's lease and
@@ -226,16 +226,15 @@ which Workbench and CI set, and Gradle is given every one of them, one per major
 
 | Command | Runs |
 | --- | --- |
-| `python tools/setup.py` (`riven.ps1 setup`) | Preparation of a clone, each step skipped when done: Java paths, the Cubature checkout beside Riven, Python environments; `--check` only reports. It builds and places no mods: an instance takes every mod from a launch file (Launching) |
+| `riven.ps1 play` | `wb play` from this worktree, its options passed on (Launching) |
+| `riven.ps1 build` | `tools/build_riven.py`: Riven built here, its artifact recorded in `.local/builds` |
 | `riven.ps1 check` (also `quick`, `ci`) | `wb check`: the gate (`inputs`, `quality`, `riven-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history`, `variant-coverage`) from this worktree; pure checks whose inputs passed before do not run again |
 | `riven.ps1 profile` | `atlas-golden-profile`: the golden windows resampled and timed; each step's timing lines are in the run's summary |
 | `wb run ci.status project=riven` | What HEAD has passed, and what the push gate still needs |
 | `wb run ci.run project=riven workflow=<job>` | One job (or several: `jobs=[...]`); `dry_run=true` lists the steps |
 
-A native timing capture needs the GPU host, so it is not part of CI: run
-`tools/riven_observe.py capture` through Workbench's lab (`wb run lab.script`, with the tools folder
-allow-listed in `modules.lab.scripts`). Runtime commands take named `-Name`, `-Port` and `-Text`
-parameters.
+A native timing capture needs the GPU host, so it is not part of CI: it is a driver session,
+`wb play --driver capture` (Drivers).
 
 The lab's `deliveryTickCosts` records exclusive server-thread phase times for every captured
 tick, alongside installed-cube counts and the share installed without block storage. Its
@@ -388,9 +387,12 @@ records both JVMs with JFR's profile settings for attributing a phase further.
 Riven and Cubature build for Cleanroom only, as Java 25 bytecode run on Java 25 or 26; the Java 8
 Forge fallback was retired on 2026-10-30 (docs/DECISIONS.md), so code may use any Java 25 API.
 
-`tools/setup.py` creates the pinned tool environments; static checks then run with:
+With the pinned tool environment made from `tools/requirements-quality.txt` (as Workbench makes `{python}`), static
+checks run with:
 
 ```powershell
+python -m venv .local/quality-venv
+.local/quality-venv/Scripts/python.exe -m pip install -r tools/requirements-quality.txt
 .local/quality-venv/Scripts/python.exe tools/code_quality.py check
 ```
 

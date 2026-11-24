@@ -8,7 +8,6 @@ import zipfile
 from pathlib import Path
 
 import jdks
-from checkouts import LAB_OBSERVER
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -121,6 +120,8 @@ def launch_files(launch):
 
 
 def doctor(riven, cubature=None, observer=None, check_java=True, launch=None):
+    """A read-only preflight of the artifacts a capture would use. Without an observer it takes the Store's, built
+    at the launch's Cubature commit."""
     members = launch_files(launch) if launch else []
     if cubature is None:
         named = [path for _, name, path, _ in members if name == "cubature"]
@@ -129,7 +130,15 @@ def doctor(riven, cubature=None, observer=None, check_java=True, launch=None):
         cubature = named[0]
     java26 = str(jdks.java(26))
     sources = {"riven": Path(riven).resolve(), "cubature": Path(cubature).resolve()}
-    observer = Path(observer).resolve() if observer else LAB_OBSERVER
+    if observer is None:
+        if not launch:
+            raise ValueError(
+                "Select a lab observer or a launch file whose Cubature the Store built"
+            )
+        from cubature_tools import lab_observer
+
+        observer = lab_observer(read_json(launch))
+    observer = Path(observer).resolve()
     checks, artifacts = [], {}
     for member, _, path, digest in members:
         checks.append(

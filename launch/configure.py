@@ -1,8 +1,8 @@
 """Riven's changes to Cubature's standalone world, run by Workbench's lab once per instance template.
 
 lab.build runs this script (``[launch.default] configure``) after the launch's members are placed and its base
-(``cubature:standalone``) is written, and only on a machine whose ``[lab] trusted`` names Riven. It does what
-``tools/runtime.py prepare`` does after the base: the world's height range from the height reference packaged in
+(``cubature:standalone``) is written, and only on a machine whose ``[lab] trusted`` names Riven. It makes Riven's
+own changes to the base: the world's height range from the height reference packaged in
 riven.jar, Riven's level type and layout scale, Cubature's delivery settings, fancy graphics, no splash screen, and
 Forge's normal compatibility check.
 

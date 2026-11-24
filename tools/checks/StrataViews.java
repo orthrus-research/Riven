@@ -8,7 +8,7 @@ import java.util.Locale;
  * <p>For each face column, finds the direction of steepest fall over 4 blocks among 16, prints the
  * ground profile along it, and places a camera DISTANCE blocks out on the low side, above the
  * ground there and at the face's middle height, looking back at the face. Prints one tour entry
- * per face (runtime.py play --tour).
+ * per face (wb play --tour).
  */
 public final class StrataViews {
     public static void main(String[] args) {

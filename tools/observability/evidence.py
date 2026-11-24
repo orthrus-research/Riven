@@ -5,18 +5,14 @@ import csv
 import hashlib
 import math
 import re
-import sys
 from pathlib import Path
 from statistics import mean
 from typing import Any
 
-from checkouts import CUBATURE_TOOLS
+import cubature_tools  # noqa: F401 - puts Cubature's lab tools on the path
 
 from .profiles import read_json, sha
 
-# After Riven's own modules: a Cubature tool of the same name never stands in for Riven's.
-if str(CUBATURE_TOOLS) not in sys.path:
-    sys.path.append(str(CUBATURE_TOOLS))
 from analyze_cubic_profile import timestamp_ns
 from lab_repeated_statistics import paired_interval
 

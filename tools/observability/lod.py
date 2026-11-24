@@ -438,10 +438,10 @@ COS_45 = math.sqrt(0.5)
 
 
 def native_view_cubes(directory):
-    """The server's horizontal view distance in cubes, from the instance that holds the trace
-    (<instance>/lod-trace or <instance>/lod-traces/<start>); None when it records none."""
+    """The server's horizontal view distance in cubes, from the lab's record of the session that holds the trace
+    (<session>/lod-trace or <session>/lod-traces/<start>, with lab.json); None when it records none."""
     for parent in (directory.parent, directory.parent.parent):
-        manifest = parent / "standalone.json"
+        manifest = parent / "lab.json"
         if manifest.is_file():
             try:
                 view = json.loads(manifest.read_text(encoding="utf-8"))["viewDistance"]

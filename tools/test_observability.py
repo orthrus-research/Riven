@@ -373,8 +373,9 @@ class TraceTests(unittest.TestCase):
             aggregate([event, event], [("all", 0, 2**63 - 1, [])], "server", limit=1)
 
     def test_client_thread_is_identified_by_methods_after_jfr_name_changes(self):
-        from analyze_cubic_profile import compact_event
         from observability.evidence import timestamp_ns
+
+        from analyze_cubic_profile import compact_event
 
         start = timestamp_ns("2026-10-20T01:00:00Z")
         events = [

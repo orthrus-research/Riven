@@ -1,8 +1,8 @@
 # Riven's checks, the files its build makes and how it is launched. Workbench runs the checks from a clean clone with
 # the set's Gradle and JDKs ({gradle}) and {python} the environment made from the three requirements files; a push
 # needs the gate's checks passed. Cubature and GTCEuR reach the build as the files the set names, from the Store by
-# their SHA-256 (or a stand-in). A native capture needs the GPU host, so it is not a check: run it through Workbench's
-# lab (tools/riven_observe.py under lab.script). Placeholders: {python}, {gradle}, {run_id} the run's identifier,
+# their SHA-256 (or a stand-in). A native capture needs the GPU host, so it is not a check: it is a driver session of
+# [launch.default] below (wb play --driver capture). Placeholders: {python}, {gradle}, {run_id} the run's identifier,
 # {run_dir} its folder, {riven} Riven's root.
 #
 # `inputs` makes a check pure: globs of every file its verdict depends on, beside its steps and the JDK. A check whose
@@ -46,9 +46,8 @@ steps = [["{python}", "-m", "orthrus_tools", "pins", "fetch"]]
 [checks.quality]
 description = "Formatting, lint, types, the compile, content assets and the Riven tool tests"
 needs = ["inputs"]
-# The launcher's tests import Cubature's lab tools and read one of its tours, laid beside the clone at the commit
-# the set names.
-tools = ["cubature:tools/**", "cubature:lab/runtime.properties", "cubature:lab/tours/*.json"]
+# Riven's tool tests import Cubature's lab tools, laid beside the clone at the commit the set names.
+tools = ["cubature:tools/**"]
 locks = ["riven-gradle"]
 steps = [
   ["{python}", "tools/code_quality.py", "check"],
@@ -193,15 +192,33 @@ spawn_animals = { type = "bool", default = false }
 capture = { type = "bool", default = false, summary = "a 2560x1440 client for captures" }
 
 # How lab.run drives a tour (`wb play --tour <file>`): the server's setup, the client's capture switches and the line
-# the client prints for each captured view, as tools/runtime.py play does.
+# the client prints for each captured view.
 [launch.default.tour]
 setup = ["gamerule spawnRadius 0", "gamerule doDaylightCycle false", "time set 6000", "weather clear 1000000"]
 client_jvm = ["-Driven.tour=true", "-Driven.capture=true", "-Driven.captureTicks=400"]
 captured = "Riven view captured"
 
-# Programs that start their own JVMs from the launch (`wb play --driver <name>`), under the GPU lease Workbench holds.
+# Programs that start their own JVMs from the instance's receipt (`wb play --driver <name>`), under the GPU lease
+# Workbench holds for the session. {root} is Riven's tree the driver runs from; each driver reads the instance from
+# WB_INSTANCE (instance.json) and the session from WB_SESSION (session.json), runs Cubature's lab tools at the commit
+# the launch names, and keeps what it measures in the session folder. A driver's further options go in
+# LAB_DRIVER_ARGS (for example "--diagnostic", or "--map world-8k").
 [launch.default.drivers.pipeline]
-summary = "tools/measure_pipeline.py: the terrain-pipeline workload in a fresh instance of this launch's Riven"
-command = ["{python}", "{root}/tools/measure_pipeline.py", "--name", "pipeline-{session_id}", "--launch", "{launch}",
-           "--artifact", "{instance}/server/mods/riven.jar"]
+summary = "tools/measure_pipeline.py: the terrain-pipeline workload on a fresh copy of the instance"
+command = ["{python}", "{root}/tools/measure_pipeline.py"]
+cwd = "{root}"
+
+[launch.default.drivers.capture]
+summary = "tools/riven_observe.py capture: the pipeline workload with a diagnostic, lifecycle or timing mode's instrumentation"
+command = ["{python}", "{root}/tools/riven_observe.py", "capture"]
+cwd = "{root}"
+
+[launch.default.drivers.pregenerate]
+summary = "tools/pregenerate_map.py run: a bounded terrain pregeneration on the instance itself, resumed by every session (give it --name <map>)"
+command = ["{python}", "{root}/tools/pregenerate_map.py", "run"]
+cwd = "{root}"
+
+[launch.default.drivers.pregenerate-verify]
+summary = "tools/pregenerate_map.py verify: every saved target slot of the instance's pregeneration counted, a sample decoded"
+command = ["{python}", "{root}/tools/pregenerate_map.py", "verify"]
 cwd = "{root}"

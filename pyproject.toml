@@ -7,11 +7,13 @@ extend-exclude = [".local", "build", "dev"]
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
 
-# These entry points intentionally resolve the owned lab/tool paths before imports.
-[tool.ruff.lint.per-file-ignores]
-"tools/runtime.py" = ["E402"]
-"tools/measure_pipeline.py" = ["E402"]
-"tools/pregenerate_map.py" = ["E402"]
+# Cubature's lab modules are found on the path tools/cubature_tools.py adds, so they are imported last, after it.
+[tool.ruff.lint.isort]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder", "cubature-lab"]
+
+[tool.ruff.lint.isort.sections]
+"cubature-lab" = ["analyze_cubic_profile", "cubic_lab", "inspect_cubic_lab_world", "lab_files", "lab_profiles",
+                  "lab_repeated_statistics", "lab_session", "lab_workload"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -34,7 +36,7 @@ show_error_codes = true
 # type-checking boundary. Missing imports in Riven's own modules remain errors.
 [[tool.mypy.overrides]]
 module = [
-    "cubic_lab", "cubic_standalone", "lab_files", "lab_instance", "lab_profiles", "lab_workload", "analyze_cubic_profile",
+    "cubic_lab", "lab_files", "lab_profiles", "lab_session", "lab_workload", "analyze_cubic_profile",
     "lab_repeated_statistics",
     "matplotlib", "matplotlib.*", "numpy", "PIL",
 ]

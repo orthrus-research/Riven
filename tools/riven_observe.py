@@ -1,4 +1,9 @@
-"""Debug and observe the owned Riven/Cubature runtime."""
+"""Debug and observe the owned Riven/Cubature runtime.
+
+capture is a Workbench driver session (wb play --driver capture): measure_pipeline.py on a fresh copy of the
+session's instance, with the mode's instrumentation; its options go in LAB_DRIVER_ARGS. doctor checks the artifacts a
+capture would use without starting anything; inspect, trace, compare and lod read retained evidence, and telemetry
+keeps the run ledger."""
 
 import argparse
 import json
@@ -31,23 +36,25 @@ def artifact_args(parser):
 
 
 def main(argv=None):
-    from runtime import DELIVERY_MODES
+    from measure_pipeline import DELIVERY_MODES, driver_args
 
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("doctor", help="Read-only input and instrumentation preflight")
     artifact_args(check)
     check.add_argument("--output", type=Path, help="New JSON record; does not overwrite")
-    capture = commands.add_parser("capture", help="Run a fresh owned native client/server capture")
-    artifact_args(capture)
-    capture.add_argument("--name", required=True)
+    capture = commands.add_parser(
+        "capture", help="A native client/server capture on a fresh copy of the session's instance"
+    )
+    capture.add_argument(
+        "--observer", type=Path, help="Frozen lab observer; use identical bytes across comparisons"
+    )
     capture.add_argument(
         "--mode", choices=["timing", "diagnostic", "lifecycle"], default="diagnostic"
     )
     capture.add_argument(
         "--workload", type=Path, default=ROOT / "dev/benchmarks/terrain-pipeline.json"
     )
-    capture.add_argument("--port", type=int, default=25940)
     capture.add_argument("--render-ready", action="store_true")
     capture.add_argument(
         "--jfr",
@@ -80,7 +87,7 @@ def main(argv=None):
     )
     capture.add_argument(
         "--world-from",
-        help="start from a full copy of this stopped instance's world (a pregenerated world)",
+        help="start from a full copy of this stopped instance's world (a pregenerated instance's folder)",
     )
     for name, description in [
         ("inspect", "Reconcile raw samples, inputs, failures and native captures"),
@@ -132,21 +139,24 @@ def main(argv=None):
         "rebuild the ordered index, export the sanitized website dataset, or write the private "
         "row tables of every native and CI run for the run ledger dashboard",
     )
-    telemetry.add_argument("--name", help="record: the instance under .local/cubic-standalone")
+    telemetry.add_argument("--session", type=Path, help="record: a driver session's folder")
     telemetry.add_argument(
         "--output",
         type=Path,
         help="export: the website dataset to write; tables: the directory for the four tables",
     )
-    args = parser.parse_args(argv)
+    given = list(sys.argv[1:] if argv is None else argv)
+    if argv is None and given[:1] == ["capture"]:
+        given = driver_args()
+    args = parser.parse_args(given)
     if args.command == "telemetry":
         from observability import telemetry as ledger
 
         result: dict[str, Any]
         if args.action == "record":
-            if not args.name:
-                raise ValueError("telemetry record needs --name")
-            result = {"written": [str(p) for p in ledger.collect(ledger.INSTANCES / args.name)]}
+            if not args.session:
+                raise ValueError("telemetry record needs --session")
+            result = {"written": [str(p) for p in ledger.collect(args.session)]}
         elif args.action == "backfill":
             result = ledger.backfill()
         elif args.action == "index":
@@ -165,7 +175,18 @@ def main(argv=None):
         print(json.dumps(result, indent=2))
         return 0
     if args.command in ("doctor", "capture"):
-        result = doctor(args.riven, args.cubature, args.observer, launch=args.launch)
+        if args.command == "capture":
+            from measure_pipeline import session
+
+            current = session()
+            result = doctor(
+                current.member("riven")["placed"][0],
+                current.member("cubature")["placed"][0],
+                args.observer,
+                launch=current.launch_path,
+            )
+        else:
+            result = doctor(args.riven, args.cubature, args.observer, launch=args.launch)
         if args.command == "doctor":
             if args.output:
                 args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -180,12 +201,6 @@ def main(argv=None):
         import measure_pipeline
 
         options = [
-            "--name",
-            args.name,
-            "--artifact",
-            str(args.riven),
-            "--port",
-            str(args.port),
             "--workload",
             str(args.workload),
             "--cube-packet-cubes",
@@ -193,10 +208,6 @@ def main(argv=None):
             "--cube-packet-bytes",
             str(args.cube_packet_bytes),
         ]
-        if args.launch:
-            options += ["--launch", str(args.launch)]
-        if args.cubature:
-            options += ["--cubic-artifact", str(args.cubature)]
         if args.observer:
             options += ["--lab-artifact", str(args.observer)]
         if args.mode == "diagnostic":
@@ -213,16 +224,13 @@ def main(argv=None):
         if args.preview_threads is not None:
             options += ["--preview-threads", str(args.preview_threads)]
         if args.world_from:
-            options += ["--world-from", args.world_from]
+            options += ["--world-from", str(args.world_from)]
         if args.storage:
             options.append("--storage-diagnostics")
         try:
             return measure_pipeline.main(options)
         finally:
-            print(
-                "Native evidence: "
-                + str(ROOT / ".local/cubic-standalone" / args.name / "runs/write")
-            )
+            print("Native evidence: " + str(current.folder / "runs/write"))
     from observability.evidence import compare_runs, inspect_run, public_summary
 
     if args.output.exists():
