@@ -24,8 +24,8 @@ Accepted on October 19, 2026.
   outside the active profile. SeedGen-like capabilities will be independently
   implemented from Riven's requirements and existing terrain model.
 
-The exact versions and hashes live in `runtime.lock.json`, `dev/cc.lock.json`
-and `dev/dh.lock.json`. New official DH releases require a reviewed pin update.
+The exact versions and hashes are the launch file's, resolved from the set
+(RUNTIME.md, Launching).
 The former DH fork and its patch chain are historical evidence. Moving any
 of its work into Cubature requires explicit implementation, preserved
 provenance and license review, and new qualification; the architecture

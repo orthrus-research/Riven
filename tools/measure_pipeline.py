@@ -1,4 +1,4 @@
-"""Run the existing native lab observers in a fresh minimal Riven/DH instance."""
+"""Run the existing native lab observers in a fresh minimal Riven instance."""
 
 import argparse
 import json
@@ -110,7 +110,7 @@ def main(argv=None):
     parser.add_argument(
         "--cubic-artifact",
         type=Path,
-        help="Frozen Cubature candidate; defaults to the committed runtime pin",
+        help="Frozen Cubature candidate; defaults to the launch's Cubature",
     )
     parser.add_argument("--port", type=int, default=25940)
     parser.add_argument(
@@ -129,7 +129,7 @@ def main(argv=None):
     parser.add_argument(
         "--diagnostic",
         action="store_true",
-        help="Trace Riven, Cubature and DH methods on both JVMs, plus packet/render stages",
+        help="Trace Riven and Cubature methods on both JVMs, plus packet/render stages",
     )
     parser.add_argument(
         "--render-ready",
@@ -166,14 +166,6 @@ def main(argv=None):
         help="Soft whole-cube packet byte target; zero disables",
     )
     parser.add_argument(
-        "--lod-trace",
-        action="store_true",
-        help="Stream DH LOD stage events on both JVMs to <instance>/lod-trace for the whole run",
-    )
-    parser.add_argument("--dh-workers", type=int, default=4)
-    parser.add_argument("--dh-ignore-server-health", action="store_true")
-    parser.add_argument("--dh-native-feed", choices=["all", "edits"], default="all")
-    parser.add_argument(
         "--preview-threads",
         type=int,
         choices=range(-1, 17),
@@ -185,46 +177,12 @@ def main(argv=None):
         help="start from a full copy of this stopped instance's world (a pregenerated world)",
     )
     parser.add_argument(
-        "--no-arrival-plan",
-        action="store_true",
-        help="Cubature: keep DH's nearest-first request order",
-    )
-    parser.add_argument(
-        "--no-keep-fine-columns",
-        action="store_true",
-        help="Cubature: DH's merge rule, where coarse answers replace fine-built columns",
-    )
-    parser.add_argument(
-        "--dh-visited-only",
-        action="store_true",
-        help="DH on the client only, fed by native cubes; no distant generation (native floor)",
-    )
-    parser.add_argument(
-        "--dh-lod-only",
-        action="store_true",
-        help="The client draws only DH LODs (DH lodOnlyMode); a rendering diagnostic",
-    )
-    parser.add_argument(
-        "--no-distant-horizons",
-        action="store_false",
-        dest="distant_horizons",
-        help="Leave DH off both sides: near terrain only",
-    )
-    parser.add_argument(
         "--launch",
         type=Path,
         required=True,
         help="The launch file every mod comes from (wb run lab.resolve folder=<worktree>)",
     )
     args = parser.parse_args(argv)
-    # Distant Horizons is not carried forward: Quadrature draws distant terrain.
-    args.distant_horizons = False
-    if args.lod_trace or args.dh_visited_only or args.dh_lod_only:
-        parser.error(
-            "--lod-trace, --dh-visited-only and --dh-lod-only need Distant Horizons, which is gone"
-        )
-    if args.dh_visited_only and args.lod_trace:
-        parser.error("--lod-trace observes server-side DH; a visited-only server has none")
     if not 0 <= args.cube_packet_bytes <= 2147483647:
         parser.error("Packet byte target must be 0..2147483647")
     if args.lifecycle_diagnostics:
@@ -257,14 +215,7 @@ def main(argv=None):
             selected_artifact=args.artifact.resolve(),
             cubic_artifact=args.cubic_artifact.resolve() if args.cubic_artifact else None,
             spectator=True,
-            distant_generation=not args.dh_visited_only,
-            dh_workers=args.dh_workers,
-            dh_ignore_server_health=args.dh_ignore_server_health,
-            dh_native_feed=args.dh_native_feed,
             preview_threads=args.preview_threads,
-            arrival_plan=not args.no_arrival_plan,
-            dh_lod_only=args.dh_lod_only,
-            keep_fine_columns=not args.no_keep_fine_columns,
             # The config file selects the delivery mode; Cubature reads it as the server starts.
             cubature_delivery=args.delivery_experiment,
             launch=args.launch,
@@ -322,12 +273,8 @@ def main(argv=None):
         manifest["labProperties"]["cubiclab.fullViewTimeoutSeconds"] = str(
             workload.get("timeoutSeconds", 300)
         )
-        if args.lod_trace:
-            manifest["labProperties"]["cubiclab.lodTrace"] = runtime.lod_trace_directory(
-                directory / "lod-trace"
-            )
         manifest["purpose"] = (
-            "Measured minimal Riven/DH pipeline; optional observer is outside the normal runtime profile"
+            "Measured minimal Riven pipeline; optional observer is outside the normal runtime profile"
         )
         trace_settings = None
         if args.lifecycle_diagnostics:
@@ -387,16 +334,14 @@ def main(argv=None):
                 )
             for captured in [server, client]:
                 counters = captured.get("threadCosts", {})
-                if args.dh_visited_only and captured is server and not counters.get("threads"):
-                    continue  # A visited-only server runs no DH threads to count.
-                if not args.distant_horizons and not counters.get("threads"):
-                    continue  # Without DH neither side runs DH threads to count.
+                if not counters.get("threads"):
+                    continue  # Neither side runs worker threads the observer counts.
                 if (
                     not counters.get("enabled")
                     or not counters.get("threads")
                     or any(not row.get("available") for row in counters["threads"])
                 ):
-                    raise RuntimeError("DH worker CPU/allocation counters were unavailable")
+                    raise RuntimeError("Worker CPU/allocation counters were unavailable")
             if server["scenario"] == "full-view":
                 geometry = client["fullView"]["geometry"]
                 actual = [geometry[key] for key in ["x", "y", "z", "yaw", "pitch"]]

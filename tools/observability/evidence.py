@@ -424,13 +424,10 @@ def controls(report, treatment, diagnostic_screen=False):
                     "viewDistance",
                     "labProperties",
                     "generator",
-                    "distantHorizons",
                 ]
             }
         )
     )
-    # Candidate designation explains provenance, not runtime behavior.
-    values["distantHorizons"].pop("qualification", None)
     # A Riven treatment carries its own definition fingerprints; they are not a separate control.
     if treatment == "riven":
         values.pop("generator", None)

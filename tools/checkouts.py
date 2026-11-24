@@ -1,17 +1,18 @@
 """Where Riven finds the Cubature checkout it builds and tests against.
 
-dev/cc.lock.json's "checkout" names it relative to the main Riven checkout (a sibling clone,
-../Cubature). A linked worktree, wherever it sits, resolves it from the main checkout its .git
-file names, so every worktree finds the same Cubature without a link of its own. Importing this
-module also exports RIVEN_WORKSPACE, so Cubature's tools, whether imported here or run as child
-processes, find this Riven root instead of guessing from their own location.
+It is the sibling clone ../Cubature, beside the main Riven checkout. A linked worktree,
+wherever it sits, resolves it from the main checkout its .git file names, so every worktree
+finds the same Cubature without a link of its own. Importing this module also exports
+RIVEN_WORKSPACE, so Cubature's tools, whether imported here or run as child processes, find
+this Riven root instead of guessing from their own location.
 """
 
-import json
 import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# Cubature's checkout, relative to the main Riven checkout.
+CUBATURE_CHECKOUT = "../Cubature"
 
 
 def main_checkout(root: Path = ROOT) -> Path:
@@ -31,9 +32,8 @@ def main_checkout(root: Path = ROOT) -> Path:
 
 
 def cubature_checkout(root: Path = ROOT) -> Path:
-    """The Cubature checkout that root's dev/cc.lock.json names."""
-    lock = json.loads((root / "dev/cc.lock.json").read_text(encoding="utf-8"))
-    return (main_checkout(root) / lock["checkout"]).resolve()
+    """The Cubature checkout beside root's main checkout."""
+    return (main_checkout(root) / CUBATURE_CHECKOUT).resolve()
 
 
 CUBATURE = cubature_checkout()

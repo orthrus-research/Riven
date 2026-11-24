@@ -1,4 +1,4 @@
-"""Debug and observe the owned Riven/Cubature/official-DH runtime."""
+"""Debug and observe the owned Riven/Cubature runtime."""
 
 import argparse
 import json
@@ -18,7 +18,12 @@ def save(path, value):
 def artifact_args(parser):
     parser.add_argument("--riven", type=Path, required=True, help="Frozen Riven Cleanroom JAR")
     parser.add_argument(
-        "--cubature", type=Path, help="Frozen candidate; otherwise the accepted pin"
+        "--cubature", type=Path, help="Frozen candidate; otherwise the launch's Cubature"
+    )
+    parser.add_argument(
+        "--launch",
+        type=Path,
+        help="The launch file every mod comes from (wb run lab.resolve folder=<worktree>)",
     )
     parser.add_argument(
         "--observer", type=Path, help="Frozen lab observer; use identical bytes across comparisons"
@@ -67,10 +72,6 @@ def main(argv=None):
     )
     capture.add_argument("--cube-packet-bytes", type=int, default=0)
     capture.add_argument(
-        "--dh-workers", type=int, default=4, help="Shared DH worker budget per JVM (1..16)"
-    )
-    capture.add_argument("--dh-native-feed", choices=["all", "edits"], default="all")
-    capture.add_argument(
         "--preview-threads",
         type=int,
         choices=range(-1, 17),
@@ -80,47 +81,6 @@ def main(argv=None):
     capture.add_argument(
         "--world-from",
         help="start from a full copy of this stopped instance's world (a pregenerated world)",
-    )
-    capture.add_argument(
-        "--no-arrival-plan",
-        action="store_true",
-        help="Cubature: keep DH's nearest-first request order (distantHorizonsArrivalPlan=false)",
-    )
-    capture.add_argument(
-        "--no-keep-fine-columns",
-        action="store_true",
-        help="Cubature: DH's merge rule, where coarse answers replace fine-built columns "
-        "(distantHorizonsKeepFineColumns=false)",
-    )
-    capture.add_argument(
-        "--dh-ignore-server-health",
-        action="store_true",
-        help="Turn off DH's limitIfServerUnhealthy world-generation pause",
-    )
-    capture.add_argument(
-        "--lod-trace",
-        action="store_true",
-        help="Stream DH LOD stage events from both JVMs; read them with the lod command",
-    )
-    capture.add_argument(
-        "--dh-visited-only",
-        action="store_true",
-        help="DH on the client only, fed by native cubes; no distant generation (native floor)",
-    )
-    capture.add_argument(
-        "--dh-lod-only",
-        action="store_true",
-        help="The client draws only DH LODs (DH lodOnlyMode); a rendering diagnostic",
-    )
-    capture.add_argument(
-        "--no-distant-horizons",
-        action="store_true",
-        help="Leave DH off both sides: near terrain only",
-    )
-    capture.add_argument(
-        "--client-mod",
-        action="append",
-        help="An extra mod JAR for the client only; repeat for several",
     )
     for name, description in [
         ("inspect", "Reconcile raw samples, inputs, failures and native captures"),
@@ -205,7 +165,7 @@ def main(argv=None):
         print(json.dumps(result, indent=2))
         return 0
     if args.command in ("doctor", "capture"):
-        result = doctor(args.riven, args.cubature, args.observer)
+        result = doctor(args.riven, args.cubature, args.observer, launch=args.launch)
         if args.command == "doctor":
             if args.output:
                 args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -233,6 +193,8 @@ def main(argv=None):
             "--cube-packet-bytes",
             str(args.cube_packet_bytes),
         ]
+        if args.launch:
+            options += ["--launch", str(args.launch)]
         if args.cubature:
             options += ["--cubic-artifact", str(args.cubature)]
         if args.observer:
@@ -248,30 +210,12 @@ def main(argv=None):
         if args.delivery_trace:
             options.append("--delivery-trace")
         options += ["--delivery-experiment", args.delivery_experiment]
-        options += ["--dh-workers", str(args.dh_workers)]
-        options += ["--dh-native-feed", args.dh_native_feed]
         if args.preview_threads is not None:
             options += ["--preview-threads", str(args.preview_threads)]
-        if args.no_arrival_plan:
-            options.append("--no-arrival-plan")
-        if args.no_keep_fine_columns:
-            options.append("--no-keep-fine-columns")
         if args.world_from:
             options += ["--world-from", args.world_from]
-        if args.dh_ignore_server_health:
-            options.append("--dh-ignore-server-health")
         if args.storage:
             options.append("--storage-diagnostics")
-        if args.lod_trace:
-            options.append("--lod-trace")
-        if args.dh_visited_only:
-            options.append("--dh-visited-only")
-        if args.dh_lod_only:
-            options.append("--dh-lod-only")
-        if args.no_distant_horizons:
-            options.append("--no-distant-horizons")
-        for mod in args.client_mod or []:
-            options += ["--client-mod", mod]
         try:
             return measure_pipeline.main(options)
         finally:
@@ -279,10 +223,6 @@ def main(argv=None):
                 "Native evidence: "
                 + str(ROOT / ".local/cubic-standalone" / args.name / "runs/write")
             )
-            if args.lod_trace:
-                print(
-                    "LOD trace: " + str(ROOT / ".local/cubic-standalone" / args.name / "lod-trace")
-                )
     from observability.evidence import compare_runs, inspect_run, public_summary
 
     if args.output.exists():

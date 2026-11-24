@@ -14,13 +14,12 @@ import shutil
 import subprocess
 import sys
 import time
-import tomllib
 import zipfile
 from pathlib import Path
 from types import SimpleNamespace
 
 import jdks
-from checkouts import CUBATURE_TOOLS, LAB_OBSERVER
+from checkouts import CUBATURE_TOOLS
 from observability.profiles import sha
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -161,17 +160,6 @@ def world_height(config):
     config.write_text(text, encoding="utf-8")
 
 
-LOD_OBSERVER = LAB_OBSERVER
-
-
-def lod_trace_directory(path):
-    """The lab reads cubiclab.lodTrace from a space-separated JVM argument line."""
-    resolved = str(Path(path).resolve())
-    if any(c.isspace() for c in resolved):
-        raise ValueError("A LOD trace directory cannot contain spaces: " + resolved)
-    return resolved
-
-
 def prepare(
     name,
     port,
@@ -180,30 +168,14 @@ def prepare(
     capture=False,
     cubic_artifact=None,
     spectator=False,
-    distant_generation=True,
     capture_ticks=400,
-    dh_bandwidth_kbps=2000,
-    dh_request_limit=40,
-    dh_workers=8,
-    dh_pause_when_moving=False,
     layout_scale=1.0,
-    dh_ignore_server_health=False,
-    dh_adaptive_transfer=False,
-    dh_progress_log=False,
-    dh_native_feed="all",
     cubature_delivery="prefetch",
     seed=8675309,
     spawn_animals=False,
     player_effects=None,
-    lod_observer=None,
     preview_threads=None,
-    arrival_plan=True,
-    dh_lod_only=False,
-    keep_fine_columns=True,
-    distant_horizons=False,
-    client_mods=None,
     view_profile=None,
-    own_distant=False,
     launch=None,
 ):
     if launch is None:
@@ -211,49 +183,13 @@ def prepare(
             "prepare takes every mod from a launch file: wb run lab.resolve folder=<this worktree>, then "
             "--launch <worktree>/.local/launch/default.json"
         )
-    if distant_horizons:
-        raise ValueError(
-            "Distant Horizons is not carried forward: Quadrature draws distant terrain"
-        )
-    if client_mods:
-        raise ValueError(
-            "A launch names every mod; a client mod is a member of the launch's definition"
-        )
     launch_file, launch_doc, members = launch_members(launch)
-    # Extra client-side mods (a renderer under test, for example), recorded with the instance.
-    client_mods = [Path(mod).resolve() for mod in client_mods or []]
-    for mod in client_mods:
-        if not mod.is_file():
-            raise RuntimeError("Client mod not found: " + str(mod))
-    if not distant_horizons:
-        # DH is left off both sides; distant terrain is Quadrature's own (own_distant) or none.
-        if dh_lod_only or lod_observer is not None:
-            raise ValueError("An instance without DH excludes --dh-lod-only and --lod-trace")
-        distant_generation = False
-    elif own_distant:
-        raise ValueError("Quadrature's own distant terrain and DH exclude each other")
-    if lod_observer is not None:
-        lod_observer = Path(lod_observer).resolve()
-        if not lod_observer.is_file():
-            raise RuntimeError(
-                "Build the lab observer first (Cubature's tools/build_cubature.py): "
-                + str(lod_observer)
-            )
-    if not 1 <= dh_bandwidth_kbps <= 1000000 or not 1 <= dh_request_limit <= 100:
-        raise ValueError("DH bandwidth must be 1..1000000 KB/s and request limit 1..100")
-    if not 1 <= dh_workers <= 16:
-        raise ValueError("DH workers must be 1..16 per JVM")
     if cubature_delivery not in DELIVERY_MODES:
         raise ValueError("Cubature delivery must be one of " + ", ".join(DELIVERY_MODES))
-    if dh_native_feed not in ("all", "edits"):
-        raise ValueError("DH native feed must be all or edits")
     if preview_threads is not None and not -1 <= preview_threads <= 16:
         raise ValueError("Cubature preview threads must be -1..16")
     if not 0.5 <= layout_scale <= 8:
         raise ValueError("Riven layout scale must be 0.5..8")
-    pins = load_json(ROOT / "runtime.lock.json")
-    if pins["profile"] != "cleanroom":
-        raise RuntimeError("Expected the Cleanroom runtime profile")
     product = next(m for m in members if m["kind"] == "product")
     cubature = next(m for m in members if m["name"] == "cubature")
     # A frozen candidate Riven or Cubature stands in for the launch's member, recorded with the instance.
@@ -293,12 +229,6 @@ def prepare(
             shutil.copy2(member["source"], home / "mods" / member["place"])
         shutil.copy2(artifact, home / "mods/riven.jar")
         if side == "client":
-            for mod in client_mods:
-                shutil.copy2(mod, home / "mods" / mod.name)
-        if lod_observer:
-            # The lab observer stays idle without a workload; play turns on its LOD trace.
-            shutil.copy2(lod_observer, home / "mods/cubicchunks-lab.jar")
-        if side == "client":
             # The lab's fast graphics make leaves opaque cubes, so the faces beneath them are culled
             # and a pack's waving leaves open holes to nothing. Riven instances show what players see.
             settings = home / "options.txt"
@@ -314,15 +244,11 @@ def prepare(
             text.replace(
                 "general {",
                 "general {\n    B:useVanillaChunkWorldGenerators=false"
-                # Only a non-default feed is written; older Cubature does not know the key.
-                + ("\n    S:distantHorizonsNativeFeed=EDITS" if dh_native_feed == "edits" else "")
                 + (
                     "\n    I:previewThreads=" + str(preview_threads)
                     if preview_threads is not None
                     else ""
                 )
-                + ("" if arrival_plan else "\n    B:distantHorizonsArrivalPlan=false")
-                + ("" if keep_fine_columns else "\n    B:distantHorizonsKeepFineColumns=false")
                 + "\n    S:deliveryMode="
                 + cubature_delivery.upper(),
                 1,
@@ -337,42 +263,6 @@ def prepare(
             # Forge's splash screen draws from a thread of its own, and with Quadrature loaded it
             # crashes the client natively in LWJGL's SDL3.dll. It only shows loading progress.
             (home / "config/splash.properties").write_text("enabled=false\n")
-        if distant_horizons and (side == "client" or distant_generation):
-            # The optional CC adapter supplies seed-only SURFACE data on DH's executor.
-            # The legacy visited-only lane remains available for comparison.
-            (home / "config/DistantHorizons.toml").write_text(
-                '[common.worldGenerator]\ngeneratorPlan = "'
-                + ("CHUNKS_ONLY" if distant_generation else "DISABLED")
-                + '"\n'
-                "pauseIfMovingQuickly = "
-                + str(dh_pause_when_moving).lower()
-                + "\nlimitIfServerUnhealthy = "
-                + str(not dh_ignore_server_health).lower()
-                + "\n"
-                + ('showGenerationProgress = "LOG"\n' if dh_progress_log else "")
-                + "[client.advanced.autoUpdater]\nenableAutoUpdater = false\nenableSilentUpdates = false\n"
-                "[common.multiThreading]\nnumberOfThreads = " + str(dh_workers) + "\n"
-                "[client.advanced.graphics.quality]\nlodChunkRenderDistanceRadius = "
-                + str(256 if distant_generation else 64)
-                + "\n"
-                "[client.advanced.graphics.genericRendering]\nenableCloudRendering = false\n"
-                '[client.advanced.graphics.fog]\nfarFogStart = "0.75"\nfarFogEnd = "1.0"\nfarFogFalloff = "LINEAR"\n'
-                # A rendering diagnostic: DH draws only LODs, with its near clip at half a block.
-                + (
-                    "[client.advanced.debugging]\nlodOnlyMode = true\n"
-                    if dh_lod_only and side == "client"
-                    else ""
-                )
-                # DH negotiates the lower client/server limits, so set both sides.
-                + (
-                    "[server]\nmaxGenerationRequestDistance = 256\n"
-                    "generationRequestRateLimit = " + str(dh_request_limit) + "\n"
-                    "playerBandwidthLimit = " + str(dh_bandwidth_kbps) + "\n"
-                    "enableAdaptiveTransferSpeed = " + str(dh_adaptive_transfer).lower() + "\n"
-                    if distant_generation
-                    else ""
-                )
-            )
         if side == "client" and capture:
             with (home / "options.txt").open("a") as options:
                 options.write("overrideWidth:2560\noverrideHeight:1440\n")
@@ -420,7 +310,7 @@ def prepare(
         if has_climate
         else "Riven base terrain and directional erosion inspection",
         modHashes=mods,
-        runtimeProfile=pins["profile"],
+        runtimeProfile="cleanroom",
         generator={
             "worldType": "riven",
             "layoutScale": layout_scale,
@@ -447,49 +337,15 @@ def prepare(
             "members": {m["member"]: m["sha256"] for m in members},
             "standIns": stand_ins,
         },
-        distantHorizons={
-            "version": "",
-            "side": "both" if distant_generation else "client",
-            "generatorPlan": "CHUNKS_ONLY" if distant_generation else "DISABLED",
-            "distribution": "",
-            "effectiveCubicPlan": "SURFACE_ONLY" if distant_generation else "DISABLED",
-            "workers": dh_workers,
-            "pauseIfMovingQuickly": dh_pause_when_moving,
-            "limitIfServerUnhealthy": not dh_ignore_server_health,
-            **({"showGenerationProgress": "LOG"} if dh_progress_log else {}),
-            "lodRadiusChunks": 256 if distant_generation else 64,
-            "deliveryBandwidthKBps": dh_bandwidth_kbps if distant_generation else None,
-            "generationRequestRateLimit": dh_request_limit if distant_generation else None,
-            "adaptiveTransferSpeed": dh_adaptive_transfer if distant_generation else None,
-            **({"cubatureNativeFeed": "EDITS"} if dh_native_feed == "edits" else {}),
-            **({"cubaturePreviewThreads": preview_threads} if preview_threads is not None else {}),
-            **({} if arrival_plan else {"cubatureArrivalPlan": False}),
-            **({} if keep_fine_columns else {"cubatureKeepFineColumns": False}),
-            **({"lodOnlyMode": True} if dh_lod_only else {}),
-            "qualification": "Explicit candidate CC; see native receipt"
-            if cubic_artifact
-            else "Pinned unmodified upstream DH; see dev/dh.lock.json and the instance native receipt",
-        }
-        if distant_horizons
-        else {},
         sourceArtifact={"path": str(artifact), "sha256": sha(artifact)},
         sourceCubicArtifact={
             "path": str(cubic),
             "sha256": sha(cubic),
             "candidate": cubic_artifact is not None,
         },
-        sourceDhArtifact=None,
-        clientMods=[{"path": str(mod), "sha256": sha(mod)} for mod in client_mods],
         # System properties every play gives the client JVM.
         clientProperties=launch_properties(launch_doc, "client"),
         serverProperties=launch_properties(launch_doc, "server"),
-        lodTrace={
-            "observer": str(lod_observer),
-            "sha256": sha(lod_observer),
-            "scope": "Diagnostic lab observer on both sides; each play writes lod-traces/<start time>",
-        }
-        if lod_observer
-        else None,
     )
     # A named reduced view profile is chosen here, last, once for the instance's whole life.
     lab_profiles.choose_view_profile(manifest, view_profile)
@@ -511,13 +367,6 @@ def load(name):
         actual = {p.name: sha(p) for p in (Path(m[side]) / "mods").glob("*.jar")}
         if actual != m["modHashes"][side]:
             raise RuntimeError("Prepared mod set changed: " + side)
-        feed = m.get("distantHorizons", {}).get("cubatureNativeFeed")
-        if feed and re.findall(
-            r"^\s*S:distantHorizonsNativeFeed=(.*?)\s*$",
-            (Path(m[side]) / "config/cubicchunks.cfg").read_text(),
-            re.MULTILINE,
-        ) != [feed]:
-            raise RuntimeError("Prepared Cubature DH native feed changed: " + side)
         delivery = m.get("cubatureDelivery")
         if delivery and re.findall(
             r"^\s*S:deliveryMode=(.*?)\s*$",
@@ -533,48 +382,6 @@ def load(name):
             raise RuntimeError(
                 "Riven requires vanilla chunk world generators to remain disabled: " + side
             )
-        dh = m.get("distantHorizons", {})
-        if dh and (side == "client" or dh.get("side") == "both"):
-            config = tomllib.loads(
-                (Path(m[side]) / "config/DistantHorizons.toml").read_text(encoding="utf-8-sig")
-            )
-            common = config.get("common", {})
-            if common.get("multiThreading", {}).get("numberOfThreads") != dh["workers"]:
-                raise RuntimeError("Prepared DH worker budget changed: " + side)
-            generator = common.get("worldGenerator", {})
-            for key in [
-                "generatorPlan",
-                "pauseIfMovingQuickly",
-                "limitIfServerUnhealthy",
-                "showGenerationProgress",
-            ]:
-                if key in dh and generator.get(key) != dh[key]:
-                    raise RuntimeError("Prepared DH generation policy changed: " + side + " " + key)
-            if "lodRadiusChunks" in dh:
-                quality = (
-                    config.get("client", {})
-                    .get("advanced", {})
-                    .get("graphics", {})
-                    .get("quality", {})
-                )
-                if quality.get("lodChunkRenderDistanceRadius") != dh["lodRadiusChunks"]:
-                    raise RuntimeError("Prepared DH render radius changed: " + side)
-                if (
-                    dh.get("side") == "both"
-                    and config.get("server", {}).get("maxGenerationRequestDistance")
-                    != dh["lodRadiusChunks"]
-                ):
-                    raise RuntimeError("Prepared DH generation radius changed: " + side)
-            if dh.get("deliveryBandwidthKBps") is not None:
-                expected = {
-                    "playerBandwidthLimit": dh["deliveryBandwidthKBps"],
-                    "generationRequestRateLimit": dh["generationRequestRateLimit"],
-                    "enableAdaptiveTransferSpeed": dh["adaptiveTransferSpeed"],
-                }
-                if any(
-                    config.get("server", {}).get(key) != value for key, value in expected.items()
-                ):
-                    raise RuntimeError("Prepared DH delivery settings changed: " + side)
     for relative, digest in m["serverRuntimeHashes"].items():
         if sha(Path(m["server"]) / relative) != digest:
             raise RuntimeError("Server runtime changed: " + relative)
@@ -599,8 +406,8 @@ def packaged_definitions(jar):
 
 def adopt_world(name, source):
     """Replaces a freshly prepared instance's empty world with a full copy of another stopped
-    instance's world (its region files, level data, Riven's recorded definitions and Distant
-    Horizons' database), so a run starts on terrain already generated. The source is only read.
+    instance's world (its region files, level data and Riven's recorded definitions), so a run
+    starts on terrain already generated. The source is only read.
     Both Riven artifacts must package the same definitions (every riven-*.json), so the copied
     world's definitions are the ones in use; a code change between them is the run's treatment."""
     directory, manifest = target(name), load_json(target(name) / "standalone.json")
@@ -721,17 +528,9 @@ def play(name, tour=None, window=None, distances=None):
     with lab.native_measurement_lease(ROOT, "flat-" + name):
         commands = directory / "commands.txt"
         commands.write_text("")
-        # A traced instance carries the lab observer, which needs the lab's loader flags.
-        traced = bool(m.get("lodTrace"))
-        server_args = [a for a in lab.argv(m, False) if traced or not a.startswith("-Dcubiclab.")]
-        client_args = [a for a in lab.argv(m, True) if traced or not a.startswith("-Dcubiclab.")]
-        lod_directory = None
-        if traced:
-            lod_directory = directory / "lod-traces" / time.strftime("%Y%m%d-%H%M%S")
-            flag = "-Dcubiclab.lodTrace=" + lod_trace_directory(lod_directory)
-            server_args[1:1] = [flag]
-            client_args[1:1] = [flag]
-            print("LOD trace: " + str(lod_directory), flush=True)
+        # A Riven instance carries no lab observer, so the lab's loader flags stay off.
+        server_args = [a for a in lab.argv(m, False) if not a.startswith("-Dcubiclab.")]
+        client_args = [a for a in lab.argv(m, True) if not a.startswith("-Dcubiclab.")]
         if window:
             # The lab launcher fixes 1280x720; a tour may want larger captures.
             width, height = window.lower().split("x")
@@ -744,8 +543,6 @@ def play(name, tour=None, window=None, distances=None):
             ]
         if views:
             client_args[1:1] = ["-Driven.tour=true"]
-        if m.get("dhDetailTrace"):
-            client_args[1:1] = ["-Ddistanthorizons.traceDetail=true"]
         client_args[1:1] = [f"-D{k}={v}" for k, v in m.get("clientProperties", {}).items()]
         server_args[1:1] = [f"-D{k}={v}" for k, v in m.get("serverProperties", {}).items()]
         server = lab.spawn(
@@ -819,15 +616,6 @@ def play(name, tour=None, window=None, distances=None):
                     client.kill()
             receipt.update(serverExit=server.poll(), clientExit=client.poll() if client else None)
             lab_files.write_json(directory / "processes.json", receipt)
-            if lod_directory:
-                print(
-                    "LOD trace written: "
-                    + str(lod_directory)
-                    + "\n  report: python tools/riven_observe.py lod "
-                    + str(lod_directory)
-                    + " --output <new directory>",
-                    flush=True,
-                )
 
 
 def descend(server, username, previous, view, step=32, pause=5.0):
@@ -949,18 +737,6 @@ def main():
         help="Start the owned first-join inspection in spectator mode",
     )
     p.add_argument(
-        "--distant-generation",
-        action="store_true",
-        help="Install DH on both sides and request CC surface previews to 256 chunks",
-    )
-    p.add_argument(
-        "--visited-only",
-        action="store_false",
-        dest="distant_generation",
-        help="Legacy client-only capture with background generation disabled",
-    )
-    p.set_defaults(distant_generation=True)
-    p.add_argument(
         "--launch",
         type=Path,
         help="prepare: the launch file every mod comes from (wb run lab.resolve folder=<worktree> writes "
@@ -970,25 +746,7 @@ def main():
         "--capture-ticks",
         type=int,
         default=400,
-        help="Delay the optional native screenshot for distant generation",
-    )
-    p.add_argument(
-        "--dh-bandwidth-kbps",
-        type=int,
-        default=2000,
-        help="Fresh-instance per-player DH transfer ceiling on both sides (decimal KB/s)",
-    )
-    p.add_argument(
-        "--dh-request-limit",
-        type=int,
-        default=40,
-        help="Fresh-instance DH requests/sec and outstanding request limit on both sides",
-    )
-    p.add_argument(
-        "--dh-workers",
-        type=int,
-        default=8,
-        help="Shared DH worker budget per JVM in a fresh instance (1..16)",
+        help="Client ticks before the optional native screenshot (at least 400)",
     )
     p.add_argument(
         "--cubature-delivery",
@@ -997,62 +755,11 @@ def main():
         help="Cubature delivery mode (deliveryMode); prefetch adds continuous saving and ahead preparation",
     )
     p.add_argument(
-        "--dh-pause-when-moving",
-        action="store_true",
-        help="Restore DH's movement pause in a fresh instance",
-    )
-    p.add_argument(
-        "--dh-ignore-server-health",
-        action="store_true",
-        help="Fresh instance with DH's limitIfServerUnhealthy off (experiment)",
-    )
-    p.add_argument(
-        "--dh-adaptive-transfer",
-        action="store_true",
-        help="Fresh instance with DH's enableAdaptiveTransferSpeed on (experiment)",
-    )
-    p.add_argument(
-        "--dh-progress-log",
-        action="store_true",
-        help="Fresh instance logging DH generation progress (observation)",
-    )
-    p.add_argument(
-        "--dh-native-feed",
-        choices=["all", "edits"],
-        default="all",
-        help="Cubature: hand DH every loaded column (all) or only edited ones (edits)",
-    )
-    p.add_argument(
         "--preview-threads",
         type=int,
         choices=range(-1, 17),
         metavar="-1..16",
         help="Cubature previewThreads, the server's preview pool; unset keeps Cubature's default",
-    )
-    p.add_argument(
-        "--no-arrival-plan",
-        action="store_true",
-        help="Cubature: keep DH's nearest-first request order (distantHorizonsArrivalPlan=false)",
-    )
-    p.add_argument(
-        "--no-keep-fine-columns",
-        action="store_true",
-        help="Cubature: DH's merge rule, where coarse answers replace fine-built columns "
-        "(distantHorizonsKeepFineColumns=false)",
-    )
-    p.add_argument(
-        "--dh-lod-only",
-        action="store_true",
-        help="Fresh instance whose client draws only DH LODs (DH lodOnlyMode; rendering diagnostic)",
-    )
-    p.add_argument(
-        "--lod-trace",
-        nargs="?",
-        type=Path,
-        const=LOD_OBSERVER,
-        metavar="OBSERVER_JAR",
-        help="prepare: install the lab observer (default: the Cleanroom lab build) so every play "
-        "streams DH LOD stage events to lod-traces/<start time> until the client closes",
     )
     p.add_argument("--text")
     p.add_argument(
@@ -1103,26 +810,13 @@ def main():
             a.capture,
             a.cubic_artifact,
             a.spectator,
-            a.distant_generation,
             a.capture_ticks,
-            a.dh_bandwidth_kbps,
-            a.dh_request_limit,
-            a.dh_workers,
-            a.dh_pause_when_moving,
             scale,
-            a.dh_ignore_server_health,
-            a.dh_adaptive_transfer,
-            a.dh_progress_log,
-            a.dh_native_feed,
             a.cubature_delivery,
             seed=seed,
             spawn_animals=a.spawn_animals,
             player_effects=a.player_effects,
-            lod_observer=a.lod_trace,
             preview_threads=a.preview_threads,
-            arrival_plan=not a.no_arrival_plan,
-            dh_lod_only=a.dh_lod_only,
-            keep_fine_columns=not a.no_keep_fine_columns,
             view_profile=a.view_profile,
             launch=a.launch,
         )

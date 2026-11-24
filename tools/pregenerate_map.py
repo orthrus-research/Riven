@@ -3,8 +3,8 @@
 Maps:
   map-10k   the 20000 by 20000 block inspection map, the lab band (Y -128 to 384)
   world-8k  a fully pregenerated 8192 by 8192 block world: every cube from the world floor to its
-            top, each column handed to Distant Horizons' server database, so a later flight mostly
-            fetches; `report` gives the world's size and the job's throughput
+            top, so a later flight mostly loads; `report` gives the world's size and the job's
+            throughput
 """
 
 import argparse
@@ -35,16 +35,14 @@ MAPS: dict[str, dict[str, Any]] = {
     "map-10k": {
         "radiusBlocks": 10000,
         "fullHeight": False,
-        "distantHorizons": False,
         "purpose": "Owned 20000 by 20000 block Riven inspection map",
-        "scope": "Native lit terrain cubes, ordinary save/unload. Whole-map DH data and visual acceptance remain separate.",
+        "scope": "Native lit terrain cubes, ordinary save/unload. Visual acceptance remains separate.",
     },
     "world-8k": {
         "radiusBlocks": 4096,
         "fullHeight": True,
-        "distantHorizons": True,
-        "purpose": "A fully pregenerated 8192 by 8192 block Riven world, cubes and DH data",
-        "scope": "Every native lit cube from the world floor to its top, ordinary save/unload; each column handed to DH's server level. Visual acceptance remains separate.",
+        "purpose": "A fully pregenerated 8192 by 8192 block Riven world",
+        "scope": "Every native lit cube from the world floor to its top, ordinary save/unload. Visual acceptance remains separate.",
     },
 }
 
@@ -74,7 +72,7 @@ def world_height():
 
 
 def extent(name):
-    """The plan values a map fixes: bounds, columns, height and DH feed."""
+    """The plan values a map fixes: bounds, columns and height."""
     profile = MAPS[name]
     radius = profile["radiusBlocks"]
     width = 2 * radius // 16
@@ -95,7 +93,6 @@ def extent(name):
         "maxYExclusive": high,
         "cubesPerColumn": (high - low) // 16,
         "targetCubes": width * width * (high - low) // 16,
-        "distantHorizonsFeed": profile["distantHorizons"],
     }
 
 
@@ -167,7 +164,6 @@ def prepare(args):
         **(
             {
                 "cubiclab.pregenFullHeight": "true",
-                "cubiclab.pregenDhFeed": "true",
                 "cubiclab.pregenAhead": str(args.ahead),
                 "cubiclab.pregenFlushBatches": "4",
             }
@@ -401,7 +397,7 @@ def verify(args):
             "savedTargetCubes": counts["cube"],
             "sampledCubeNbt": len(witnesses),
             "worldFileBytes": sum(p.stat().st_size for p in world.rglob("*") if p.is_file()),
-            "scope": "Complete target region-slot coverage and sampled NBT coordinates/LIGHT flags. Full payload validation, terrain correctness, complete DH data and client visual acceptance are separate.",
+            "scope": "Complete target region-slot coverage and sampled NBT coordinates/LIGHT flags. Full payload validation, terrain correctness and client visual acceptance are separate.",
             "headers": headers,
             "witnesses": witnesses,
         }
@@ -432,15 +428,11 @@ def report(args):
     server = Path(manifest["server"])
     world = server / "world"
     checkpoint = runtime.load_json(journal_directory(manifest) / "checkpoint.json")
-    dh = [p for p in server.rglob("*.sqlite*") if p.is_file()]
-    dh_bytes = sum(p.stat().st_size for p in dh)
     cubes, columns = tree_bytes(world / "region3d"), tree_bytes(world / "region2d")
-    in_world = sum(p.stat().st_size for p in dh if world in p.parents)
     sizes = {
         "cubes (region3d)": cubes,
         "columns (region2d)": columns,
-        "distantHorizons": dh_bytes,
-        "other world files": tree_bytes(world) - cubes - columns - in_world,
+        "other world files": tree_bytes(world) - cubes - columns,
     }
     sizes["total"] = sum(sizes.values())
     batches = []
@@ -458,14 +450,12 @@ def report(args):
         "cubes": saved_cubes,
         "bytes": sizes,
         "cubeBytesPerCube": round(cubes / max(1, saved_cubes), 1),
-        "distantHorizonsFiles": [str(p.relative_to(server)) for p in dh],
         "batchSeconds": round(seconds, 1),
         "columnsPerSecond": round(done / seconds, 2) if seconds else None,
         "cubesPerSecond": round(done * plan["cubesPerColumn"] / seconds, 1) if seconds else None,
         "generationSeconds": round(sum(b["generationNanos"] for b in batches) / 1e9, 1),
         "saveSeconds": round(sum(b["saveNanos"] for b in batches) / 1e9, 1),
-        "dhWaitTicks": max((b.get("dhWaitTicks", 0) for b in batches), default=0),
-        "scope": "Files on disk in the stopped instance; batch seconds exclude server start and the final DH drain.",
+        "scope": "Files on disk in the stopped instance; batch seconds exclude server start.",
     }
     output = directory / ("pregeneration-report-" + uuid.uuid4().hex[:8] + ".json")
     lab_files.write_json(output, result)

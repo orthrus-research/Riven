@@ -26,14 +26,14 @@ Riven's generation range: set them to -1664 and 384 before creating a world. `ru
 writes them from the height reference; with the old -128 a test player teleported to Y-500 took out-of-world damage and died.
 
 Distances are 12 on all four native axes (server horizontal and vertical, client render and
-vertical). Cubature development in its checkout may be ahead of the pinned artifact; the pin is what
-instances use.
+vertical). Cubature development in its checkout may be ahead of the set; the launch's Cubature is
+what instances use.
 
 Cubature keeps `cubicchunks`/`cubicchunkscore` mod IDs, `io.github.opencubicchunks` packages,
 registry IDs and save formats as compatibility interfaces. It is published as
 `orthrus-research/Cubature`, a GitHub fork of OpenCubicChunks/CubicChunks, and checked out beside
-Riven at `../Cubature`, the path `dev/cc.lock.json`'s `checkout` names. Riven's tools find it through
-`tools/checkouts.py` and export `RIVEN_WORKSPACE`, which Cubature's tools and Gradle build read to find
+Riven at `../Cubature`, beside the main checkout. Riven's tools find it through `tools/checkouts.py`
+and export `RIVEN_WORKSPACE`, which Cubature's tools and Gradle build read to find
 Riven (without it they assume a sibling `../Riven`). Cubature never lives inside Riven, so nothing
 that cleans or deletes Riven's ignored files can reach it.
 
@@ -50,29 +50,9 @@ The directory is derived data: removing it makes later misses rebuild the same t
 remain until removal; the current cache has no automatic disk eviction. Memory hits return the
 held value directly, and a later memory miss can rebuild a missing file.
 
-## Distant Horizons
+## Generation and delivery
 
-An instance prepared with `--distant-horizons` installs DH byte-for-byte from the official release
-on client and server; without it, DH is left out (Launching). Cubature binds a
-seed-only surface provider (`ICubicTerrainPreview`) to DH's executor and normal server delivery;
-Riven supplies the sampler, which shares native block rules and maps; the sampler learns each
-preview cell's footprint and may emit light-filtering blocks such as leaves (sky light falls by
-their opacity per block), which Riven's tree sites use. Capable cubic levels
-negotiate SURFACE_ONLY; other cubic generators must not fall back to DH's vanilla chunk
-generator. Newer compatible DH releases are adopted by an explicit pin update.
-
-Fresh instances set, on both sides: 2,000 decimal KB/s per player, 40 generation requests per
-second and outstanding, eight shared DH workers per JVM, LOD radius 256 chunks, refinement active
-during movement, server-health guard on. `prepare` accepts `--dh-bandwidth-kbps`,
-`--dh-request-limit`, `--dh-workers` and `--dh-pause-when-moving`, and for experiments
-`--dh-ignore-server-health`, `--dh-adaptive-transfer`, `--dh-progress-log` (DH's 2-second
-generation progress in the server log) and `--dh-native-feed edits` (Cubature hands DH only edited
-columns); launch checks the recorded settings. `riven_observe.py
-capture` passes `--dh-workers`, `--dh-ignore-server-health` and `--dh-native-feed`, and
-`--dh-visited-only` installs DH on the client only, fed by native cubes with no distant generation
-(the native-only floor; it excludes `--lod-trace`). Existing instances keep their frozen settings.
-
-The pinned Cubature generates cubes and prepares columns on worker threads for Riven,
+Cubature generates cubes and prepares columns on worker threads for Riven,
 which declares concurrent generation (`concurrentGenerationThreads`: a quarter of the processors,
 1 to 4); the server thread installs them within `concurrentGenerationTickMillis` (20 ms).
 Interactive preparations set Cubature `deliveryMode=PREFETCH` (`--cubature-delivery`): incremental maintenance,
@@ -88,21 +68,6 @@ prepared data through installation. Generators without that capability keep thei
 readiness and failure path; worlds without generation workers arrive immediately. Respawn,
 portal and join arrivals still load their column at once.
 
-DH pauses its world-generation executor while the server is unhealthy (average tick 25 ms or more,
-or 99th-percentile tick 50 ms or more) or more than 1,000 chunk-to-LOD tasks are queued, and all
-of its executors share `--dh-workers` threads. Stationary measurements on 2026-10-23 (v56, 5 min
-after join): the horizon queue drained in about 42 s with defaults, 29 s with 8 workers and 24 s
-with 8 workers and the health pause off; bandwidth and request limits were not limiting, and
-adaptive transfer (start 50 KB/s, +50 KB/s per second, cut to received minus 25 KB/s) was slowest.
-
-Cubature corrects three DH rendering assumptions that hold only for vanilla height. DH's section
-frustum takes `min + getMaxHeight()` as its top, while its other callers read `getMaxHeight()` as
-the top Y; a client mixin passes `max - min` there, so sections are culled against the level's real
-span (the old box of Y -512..-128 dropped sections 300-570 blocks out when seen from altitude). While
-a cubic world is loaded, DH's `vanillaFadeMode` is overridden to NONE through its non-persistent API
-(the vanilla volume is vertically bounded, so the fade blended terrain into clipped LOD and sky);
-leaving restores the player's setting. Native-fed snapshots report each column's lowest received
-opaque block, or stone, below the received slice, so visited columns stay solid to the floor. DH names shader materials by block class and modern registry names, so 1.12 `minecraft:grass` and most modded rock, soil and plants reached shader packs' LOD passes as UNKNOWN; Cubature gives those the material their Minecraft material implies (grass, dirt, sand, stone, wood, metal, leaves, snow, water, lava).
 A cube with fewer than 64 changed blocks reaches the client as block changes, which the client
 relights itself; more resends the whole cube with the server's light. Cubature applies the blocks
 before taking the server's column heights, so a block that rises above its column's top relights
@@ -112,8 +77,8 @@ dark band on smooth-lit faces on both renderers (`tools/tours/sky-light-band-867
 `tools/tours/stones-8675309.json`). For such checks, `riven.lightDump=R` (passed through
 `JAVA_TOOL_OPTIONS` to `play`) writes the client's sky and block light within R blocks of each tour
 view to the client's `riven-light/`, to compare with the saved world. Open: the first capture after
-such an edit sometimes shows a ring of stretched distant-terrain walls around the edited columns
-(seen with the pinned Cubature), gone by the next view a few seconds later.
+such an edit sometimes shows a ring of stretched distant-terrain walls around the edited columns,
+gone by the next view a few seconds later.
 
 Riven's cloud base is Y256 (`atmosphere.cloudBaseY` in the height reference) through
 `WorldType.getCloudHeight`, which vanilla clouds read, so they sit above ordinary terrain and below
@@ -128,31 +93,9 @@ Cubes wholly under the ground report Riven's depth biomes (FEATURES.md, Realms a
 reads a column's rain or snow, and a snow golem's melting, from the biome at Y 0, so Cubature reads
 them at the precipitation height and where the golem stands in cubic worlds, and surface weather
 is unchanged.
-`tools/tours/dh-artifacts-8675309.json` captures the views that showed these faults (high-south,
-high-east-down, high-west, low-coast); compare like with like on instances whose LODs have
-persisted, since a fresh world fills about 500 tiles in its first three minutes.
-
-Flying fast toward terrain seen from afar tears DH's LOD terrain (reported 2026-10-25). Read from
-DH 3.3.3: its client quad tree counts a render section as ready once a buffer is uploaded, and a
-position with no stored data reads as `FullDataSourceV2.createEmpty` and uploads an empty one, so
-drawn terrain can be swapped for nothing until the data request returns; it requests data only for
-the sections it switches on; and it swaps a parent with all four children or none. The preview
-point-samples each coarse level at cell centers, while DH builds a coarse level from the one below
-by a per-slice vote over each 2x2 of columns. Neither fix tried was adopted: holding swaps until a
-section has geometry stalled refinement for minutes (one slow child keeps its quad coarse), and a
-3-second bound refined fully but showed walls at other moments; building coarse preview levels
-by DH's vote
-kept the walls, raised flat water at the horizon and slowed tile generation 2.5 times. Open: the
-vertical walls at boundaries between sections of different detail, which neither change removed,
-and a reproduction of continuous fast flight (a tour that teleports and settles shows the
-walls but not the flight tears).
-
-The former `3.3.3-riven.4` DH fork, its patch chain and the first DH queue-backoff candidate are
-retired. Their fixes are absent from the official artifact and their measurements do not qualify
-the current runtime.
 
 Riven worlds need Riven on client and server alike: chunks report `riven:` biomes, and each
-joining client receives the world's definitions packet (fingerprint, biome colors) that DH reads.
+joining client receives the world's definitions packet (fingerprint, biome colors).
 
 ## Launching
 
@@ -191,9 +134,7 @@ columns) is wholly loaded, into the save's `riven/digests/<x>_<z>_r<radius>.txt`
 two worlds of one seed compare block for block, and the first animals of those chunk columns by
 origin, with what each keeps for life, into `<x>_<z>_r<radius>_animals.txt` and their own total.
 `/riven animals [radius]` compares the first animals planned near the player with the world. A tour view's `commands` run before its teleport,
-so `execute {player} ~ ~ ~ riven digest 48 <x> <z>` there digests the previous view. `--lod-trace`
-installs the lab observer so every `play` records DH LOD stages (OBSERVABILITY.md, DH LOD stage
-trace).
+so `execute {player} ~ ~ ~ riven digest 48 <x> <z>` there digests the previous view.
 
 `tools/runtime.py` imports `cubic_lab` and `cubic_standalone` from Cubature's `tools`, so the
 Cubature checkout must be present. `prepare` writes the local runtime identity to
@@ -207,14 +148,15 @@ the reviewed build is noted, not refused.
 libraries (`prepare` fetches them for the system it runs on) and Cleanroom's `unix_args.txt`, and
 the lease and the queue lock with `fcntl`. Checked 2026-11-20 on Ubuntu 26.04 with Temurin
 26.0.2.1+1 for Linux: a fresh instance prepared and a two-view tour played and captured. A machine
-that only runs, preparing with frozen jars (`--artifact`, `--cubic-artifact`, `--client-mod`) and
-building nothing, needs:
+that only runs, preparing with frozen jars (`--artifact`, `--cubic-artifact`) and building
+nothing, needs:
 
 - Python 3.14 and a Java 26 named as `java26` in `.local/settings.json`; Java 25, the
   tools' virtual environments and a Cubature clone serve building and checking only.
-- `dev/pins` as `tools/setup.py` leaves it; its jars are the same on every system, so a set made
-  elsewhere may be copied.
-- Cubature's `tools` at the commit `dev/cc.lock.json` pins, as the sibling `../Cubature`.
+- A launch file and the Store files it names: `prepare` reads each member from the launch's
+  `store` folder and checks its SHA-256.
+- Cubature's `tools` as the sibling `../Cubature`, at a commit whose `lab/runtime.properties` names
+  the launch's Cleanroom.
 - A display with OpenGL 4.6 in the compatibility profile on the GPU. A machine with no monitor,
   such as a rented GPU in a container, gets one from a virtual display (`Xvfb`) and VirtualGL's
   EGL back end (`vglrun -d egl`), which renders on the GPU through the driver's EGL library.
@@ -284,7 +226,7 @@ which Workbench and CI set, and Gradle is given every one of them, one per major
 
 | Command | Runs |
 | --- | --- |
-| `python tools/setup.py` (`riven.ps1 setup`) | Preparation of a clone, each step skipped when done: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports. A pin `runtime.lock.json` marks built from source carries a `build` recipe (the sibling checkout, Java version, Gradle tasks, artifact and any properties; a property may name a Cubature JAR by commit and SHA-256, which setup builds and keeps under `.local/source-inputs`); setup builds it at its `sourceCommit` in a worktree of that checkout under `.local/source-builds` and places it only if it is the pinned bytes; otherwise it places nothing and names the pin cache verified bytes can come from (`WB_PIN_CACHE`: pinned files named by their SHA-256, which Workbench keeps on its host and setup reads before building). Moving such a pin is a new `sourceCommit` and `sha256`; setup builds the rest. The Cubature artifacts `dev/cc.lock.json` pins are built the same way at its `commit`, with that commit's own compile-only inputs, so the Cubature checkout's own state plays no part |
+| `python tools/setup.py` (`riven.ps1 setup`) | Preparation of a clone, each step skipped when done: Java paths, the Cubature checkout beside Riven, Python environments; `--check` only reports. It builds and places no mods: an instance takes every mod from a launch file (Launching) |
 | `riven.ps1 check` (also `quick`, `ci`) | `wb check`: the gate (`inputs`, `quality`, `riven-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history`, `variant-coverage`) from this worktree; pure checks whose inputs passed before do not run again |
 | `riven.ps1 profile` | `atlas-golden-profile`: the golden windows resampled and timed; each step's timing lines are in the run's summary |
 | `wb run ci.status project=riven` | What HEAD has passed, and what the push gate still needs |

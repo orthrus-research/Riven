@@ -104,7 +104,7 @@ class LauncherTests(unittest.TestCase):
 
 
 class PrepareDefaultsTests(unittest.TestCase):
-    """runtime.py prepare's world and distant terrain, with prepare itself replaced by a recorder."""
+    """runtime.py prepare's launch file and world, with prepare itself replaced by a recorder."""
 
     def prepared(self, *arguments):
         import runtime
@@ -121,10 +121,6 @@ class PrepareDefaultsTests(unittest.TestCase):
         self.assertEqual(given["launch"], Path("launch.json"))
         self.assertEqual((given["seed"], given["scale"]), (8675309, 1.0))
 
-    def test_distant_horizons_is_no_longer_an_option(self):
-        with mock.patch("sys.stderr"), self.assertRaises(SystemExit):
-            self.prepared("--distant-horizons")
-
     def test_canonical_preset_is_the_32_km_world(self):
         given = self.prepared("--preset", "canonical")
         self.assertEqual((given["seed"], given["scale"]), (2485331, 4.0))
@@ -135,21 +131,13 @@ class PrepareDefaultsTests(unittest.TestCase):
 
 
 class PrepareRefusalTests(unittest.TestCase):
-    """prepare builds an instance only from a launch file, without Distant Horizons or extra client mods."""
+    """prepare builds an instance only from a launch file."""
 
     def test_without_a_launch_file_prepare_names_how_to_make_one(self):
         import runtime
 
         with self.assertRaisesRegex(RuntimeError, "wb run lab.resolve"):
             runtime.prepare("test-instance", 25565)
-
-    def test_distant_horizons_and_extra_client_mods_are_refused(self):
-        import runtime
-
-        with self.assertRaisesRegex(ValueError, "not carried forward"):
-            runtime.prepare("test-instance", 25565, distant_horizons=True, launch="launch.json")
-        with self.assertRaisesRegex(ValueError, "names every mod"):
-            runtime.prepare("test-instance", 25565, client_mods=["q.jar"], launch="launch.json")
 
 
 class BuildTests(unittest.TestCase):

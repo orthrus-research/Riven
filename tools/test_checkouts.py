@@ -1,4 +1,3 @@
-import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -18,11 +17,6 @@ class CheckoutsTest(unittest.TestCase):
         (self.worktree / ".git").write_text(
             f"gitdir: {self.main / '.git/worktrees/side'}\n", encoding="utf-8"
         )
-        for root in (self.main, self.worktree):
-            (root / "dev").mkdir()
-            (root / "dev/cc.lock.json").write_text(
-                json.dumps({"checkout": "../Cubature"}), encoding="utf-8"
-            )
 
     def tearDown(self):
         self.temp.cleanup()

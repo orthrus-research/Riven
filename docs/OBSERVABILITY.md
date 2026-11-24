@@ -1,11 +1,11 @@
-# Debugging Riven, Cubature and Distant Horizons
+# Debugging Riven and Cubature
 
 The observability program is an optional developer workflow for the complete
 terrain pipeline. Riven owns terrain evaluation and block/biome content;
-Cubature owns cube generation, lighting, delivery and integration; official
-DH owns distant-data processing and rendering. Diagnostic recording must not
-change terrain, suppress failed work, edit upstream JARs or replace accepted
-runtime pins.
+Cubature owns cube generation, lighting, delivery and integration; Quadrature
+draws cubic worlds, distant terrain included. Diagnostic recording must not
+change terrain, suppress failed work, edit upstream JARs or replace the
+launch's mods.
 
 `tools/riven_observe.py` is the command-line entry point. It uses the existing
 owned runtime and native lab instead of maintaining another launcher.
@@ -55,41 +55,36 @@ successful bounded session can still leave the map incomplete. `verify`
 takes the workspace's native measurement lock (one native run at a time),
 counts all target region slots and decodes up to 64 complete columns of
 saved cube NBT independently. Full payload validation,
-terrain correctness, whole-map DH data and client visual acceptance remain
-separate. Only after completion and saved coverage checks should the same
+terrain correctness and client visual acceptance remain separate. Only after completion and saved coverage checks should the same
 owned instance be opened with `tools/runtime.py play --name <name>`.
 
 `--map world-8k` is a player's fully pregenerated world, for testing a world
 whose terrain is mostly fetched: the 8192 by 8192 block square about spawn,
 262,144 columns of every cube from the world floor to the terrain allocation's
-top (Y -1664 to 384, 33,554,432 cubes; sky cubes above are made on demand),
-each column handed to Distant Horizons' server level once
-all its cubes are lit, so DH's database holds native LOD data for the whole
-square. `prepare` takes `--cubic-artifact` (a Cubature with the immediate DH
-feed), and gives the server 16 generation workers (`--workers`) and a queue for
+top (Y -1664 to 384, 33,554,432 cubes; sky cubes above are made on demand).
+`prepare` gives the server 16 generation workers (`--workers`) and a queue for
 the 24 columns it schedules ahead (`--ahead`); the storage settings stay the
 player's. The pregenerator flushes the storage writer every 4 batches, so it
 writes while later columns generate. `report` gives the stopped world's bytes
-by kind (cubes, columns, DH database) and the job's throughput; `verify` needs
-`nbtlib` (`.local/observability-venv`). The complete map (2026-10-31, 13900K)
-took 8.4 hours at 8.65 columns a second and holds 33.5 GB: 31.5 GB of cubes
-(939 bytes a cube), 0.39 GB of columns and 1.64 GB of DH data (6.3 KB a
-column). Captures fly on a copy of it with `riven_observe.py capture
+by kind (cubes, columns, other world files) and the job's throughput; `verify` needs
+`nbtlib` (`.local/observability-venv`). The complete map (2026-10-31, 13900K,
+when the world still fed Distant Horizons) took 8.4 hours at 8.65 columns a
+second and holds 33.5 GB: 31.5 GB of cubes (939 bytes a cube), 0.39 GB of
+columns and 1.64 GB of DH data (6.3 KB a column). Captures fly on a copy of it with `riven_observe.py capture
 --world-from <instance>`.
 
 On that copy a 16 b/s flight along z -1500 runs a server tick p95 of 38 ms
 (a fresh world: 47 ms) and reaches the full view in 200 ticks (fresh: 660),
-with DH answering from its database instead of generating. Before population
+with DH then answering from its database instead of generating. Before population
 settled its surface cube with one-column queries, sky cubes above the
 pregenerated top built cold chunk columns on the server thread and the same
-flight ran 77 ms. Open: joining still costs one tick of about 5 s, and DH's
-full-detail tiles from the database wait behind its 2,000 KB/s delivery limit.
+flight ran 77 ms. Open: joining still costs one tick of about 5 s.
 
 ## Commands
 
 Python 3.14 or later is required for the host tools; native qualification uses
-the separately pinned Java 26 runtime. With the Cubature checkout and runtime
-pins prepared, create a local plotting environment once:
+the separately pinned Java 26 runtime. With the Cubature checkout present and a
+launch file resolved (RUNTIME.md, Launching), create a local plotting environment once:
 
 ```powershell
 python -m venv .local/observability-venv
@@ -101,22 +96,21 @@ Build the optional lab observer from Cubature's `lab` with the existing
 Use a fixed copy of that observer for an entire comparison. A changed
 observer starts a new comparison.
 
-Building the observer does not change the pinned production artifact in
-`dev/cc.lock.json`.
+Building the observer does not change the launch's Cubature.
 
 ```powershell
-python -B tools/riven_observe.py doctor --riven <frozen-riven.jar> --observer <frozen-observer.jar>
-python -B tools/riven_observe.py capture --name <fresh-name> --riven <frozen-riven.jar> --observer <frozen-observer.jar> --mode diagnostic
+python -B tools/riven_observe.py doctor --launch .local/launch/default.json --riven <frozen-riven.jar> --observer <frozen-observer.jar>
+python -B tools/riven_observe.py capture --name <fresh-name> --launch .local/launch/default.json --riven <frozen-riven.jar> --observer <frozen-observer.jar> --mode diagnostic
 .local/observability-venv/Scripts/python.exe -B tools/riven_observe.py inspect <owned-instance> --output <new-local-directory>
 .local/observability-venv/Scripts/python.exe -B tools/riven_observe.py trace <owned-instance> --output <another-new-local-directory>
 ```
 
 `capture --mode timing` disables JFR and additional packet/render stage
 instrumentation. The same bounded worker counters remain on both variants.
-`--cubature` selects a frozen candidate without changing accepted pins.
-`--workload` selects a validated named workload; `--port` must be free.
-`--no-distant-horizons` leaves DH off both sides. `--client-mod <jar>` (repeatable) adds an
-extra mod to the client only. Without a client mod the capture sets
+`--launch` names the launch file every mod comes from; `doctor` checks each of its
+members in the Store. `--cubature` selects a frozen candidate in place of the launch's
+Cubature. `--workload` selects a validated named workload; `--port` must be free.
+Without Quadrature in the launch the capture sets
 `cubature.clientWithoutRenderer=true`, since Cubature's client otherwise stops at loading without
 Quadrature: the game's own renderer then draws only heights 0 to 255 of the cubic world, so such a
 capture times the server and the client's frames, not the picture. `--render-ready` reads the
@@ -169,7 +163,7 @@ canonicalizing that field; byte caps, artifacts, controller sources and all
 other input bytes remain controls. `tools/cube_batch_experiment.py --plan <plan.json>` runs a
 sealed plan's cases through `capture` serially, checking its input hashes before each case and
 journaling every start and finish beside the plan. The 1024-cube default is unchanged. Short
-screening runs remain exploratory and do not promote runtime pins.
+screening runs remain exploratory and do not change the launch.
 
 `capture --mode lifecycle` uses the flight lifecycle workload to measure
 60 wall seconds of real client flight at 16 blocks/s, moving residency and
@@ -187,7 +181,7 @@ keeps all controls strict and never accepts a production optimization.
 
 `capture --mode lifecycle --delivery-trace` additionally records bounded
 coordinate events in per-side `delivery.csv`, native outstanding render sections
-at 5 Hz, DH section-selection transitions, and screenshots every five seconds
+at 5 Hz, and screenshots every five seconds
 during movement. JSON records carry operation dictionaries, clock origins and
 dropped counts. Packet fingerprints and process-local mesh identities are not
 revision IDs or cross-JVM latency measurements. Timing includes this overhead.
@@ -222,15 +216,12 @@ refreshes `.local/telemetry/index.json`, which lists every record in the order t
 numbered, with counts by kind and workload. The kinds are `capture`, `smoke` (the ci smoke
 capture) and `pregeneration`. A failure to record is printed and never changes the run's result.
 
-A capture's record holds its setup (delivery mode, view distance, DH workers and Cubature's DH
-options, a `--world-from` source), the machine, the frozen artifacts' build names, the server and
+A capture's record holds its setup (delivery mode, view distance, a `--world-from` source), the machine, the frozen artifacts' build names, the server and
 client processes' start time, peak working set and CPU, and per scenario: server tick and frame
 time (p50, p95, p99, max, mean and counts over 50 ms or 16.7 ms), client tick and render work,
 delivered cubes and payload, loads, unloads and saves, save submission and blocking flush with
-the storage spans' p99 and max where storage diagnostics ran, and, with `--lod-trace`, LOD
-delivery: requests, answers per second, request-to-answer time by detail, generated tiles and the
-share of the 200-4096 block ring (and of its 200-768 block near part) whose finest data is at
-DH's MEDIUM wanted detail at the scenario's end. A pregeneration record holds its run time and
+the storage spans' p99 and max where storage diagnostics ran, and, for a run that kept a DH LOD
+trace, LOD delivery (DH LOD stage trace). A pregeneration record holds its run time and
 the job's throughput, save time, peak heap and world size.
 
 ```powershell
@@ -253,18 +244,12 @@ are local time and are converted.
 
 ## DH LOD stage trace
 
-The lab's `LabLodTrace` records each DH section's path through generation, delivery and
-rendering, on both JVMs, from start until exit. Build the observer first
-(Cubature's `tools/build_cubature.py`, or the lab's Gradle build against the pinned Cubature).
+The lab's `LabLodTrace` recorded each DH section's path through generation, delivery and
+rendering, on both JVMs, while instances ran Distant Horizons. Distant Horizons is not carried
+forward, so no instance records one now; the report still reads the traces kept from then
+(`<instance>/lod-trace` from a capture, `<instance>/lod-traces/<start time>` from a play):
 
-- Directed route: `riven_observe.py capture ... --lod-trace` (any workload, such as
-  `dev/benchmarks/cube-flight-lifecycle.json`) writes `<instance>/lod-trace`. The lab job's
-  start and finish are marked, and the report windows to them.
-- Free flight: `python tools/runtime.py prepare --name <fresh> --lod-trace [OBSERVER_JAR]`
-  installs the observer on both sides of a fresh instance. Each
-  `python tools/runtime.py play --name <fresh>` (tours too) records to
-  `<instance>/lod-traces/<start time>` until you close the client.
-- Report: `python tools/riven_observe.py lod <trace-dir> --output <new-dir> [--window auto|all|lab]`
+- `python tools/riven_observe.py lod <trace-dir> --output <new-dir> [--window auto|all|lab]`
   writes `lod-report.json`, `lod-report.txt` and, with the observability venv, `lod-timeline.png`
   (throughput, client quad-tree queue depths, player speed) and `lod-stages.png`.
 
@@ -323,7 +308,7 @@ preview-path change left distant terrain unchanged; the atlas digests do not cov
 3. **Inspect:** reconcile chronological tick/frame samples with their reported
    totals, expose unavailable/truncated data, list failures and native
    captures, and produce readable charts from retained evidence.
-4. **Trace:** locate Riven generation, Cubature lighting/delivery, DH update,
+4. **Trace:** locate Riven generation, Cubature lighting/delivery,
    data conversion and rendering work on a common time axis. Show thread
    identity, method spans, sampled stacks, allocation estimates, GC pauses
    and overlaps with slow ticks/frames. Preserve original recordings.
@@ -349,7 +334,7 @@ cube-to-present request tracing.
 - A generated cube, client-resident cube, finished native mesh, submitted
   frame, completed GPU marker and physical screen presentation are distinct.
   The existing optional render-ready gate observes native renderer demand
-  and a deferred GPU marker. It does not prove complete DH coverage or
+  and a deferred GPU marker. It does not prove complete distant coverage or
   physical presentation.
 - Method spans include waiting and nested calls. Do not add inclusive spans
   to claim exclusive time. JFR stack samples are counts, not CPU duration;
@@ -370,6 +355,6 @@ performance acceptance. Freeze the plan and inputs before running; retain
 rejected pairs and their replacements. The program reports eligibility and
 evidence, and does not automatically promote an artifact.
 
-The accepted runtime continues to come from `runtime.lock.json` and
-`dev/cc.lock.json`. Diagnostic observers, custom JFR settings and candidate
+The accepted runtime is the launch file's: every mod by SHA-256 from the set
+(RUNTIME.md, Launching). Diagnostic observers, custom JFR settings and candidate
 artifacts are installed only in their new owned instances.

@@ -113,24 +113,30 @@ def configuration():
     return value
 
 
-def doctor(riven, cubature=None, observer=None, check_java=True):
-    pins = read_json(ROOT / "runtime.lock.json")
-    cc_pin = read_json(ROOT / "dev/cc.lock.json")
+def launch_files(launch):
+    """Each member of a launch file (Workbench's lab.resolve writes it): name, Store file, SHA-256."""
+    doc = read_json(launch)
+    store = Path(doc["store"])
+    return [(m["member"], m["name"], store / m["path"], m["sha256"]) for m in doc["members"]]
+
+
+def doctor(riven, cubature=None, observer=None, check_java=True, launch=None):
+    members = launch_files(launch) if launch else []
+    if cubature is None:
+        named = [path for _, name, path, _ in members if name == "cubature"]
+        if len(named) != 1:
+            raise ValueError("Select a Cubature artifact or a launch file that names Cubature once")
+        cubature = named[0]
     java26 = str(jdks.java(26))
-    sources = {
-        "riven": Path(riven).resolve(),
-        "cubature": Path(cubature).resolve() if cubature else ROOT / cc_pin["artifact"],
-        "dh": ROOT / next(m["file"] for m in pins["mods"] if "DistantHorizons-" in m["file"]),
-    }
+    sources = {"riven": Path(riven).resolve(), "cubature": Path(cubature).resolve()}
     observer = Path(observer).resolve() if observer else LAB_OBSERVER
     checks, artifacts = [], {}
-    for mod in pins["mods"]:
-        path = ROOT / mod["file"]
+    for member, _, path, digest in members:
         checks.append(
             {
-                "check": "accepted-pin",
-                "file": mod["file"],
-                "passed": path.is_file() and sha(path) == mod["sha256"],
+                "check": "launch-member",
+                "member": member,
+                "passed": path.is_file() and sha(path) == digest,
             }
         )
     for name, path in {**sources, "observer": observer}.items():

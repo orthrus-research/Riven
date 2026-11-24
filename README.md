@@ -77,15 +77,12 @@ python tools/setup.py
 ```
 
 `tools/setup.py` records the Java paths in `.local/settings.json` (it looks in the usual install
-folders; pass `--java25` and `--java26` to choose), clones Cubature beside Riven into `../Cubature`,
-downloads the third-party JARs pinned in [runtime.lock.json](runtime.lock.json) and checks each
-against its SHA-256, builds the Cubature artifacts that [dev/cc.lock.json](dev/cc.lock.json) pins,
-and creates the Python environments for the checks and the atlas. The build compiles against the Cubature
+folders; pass `--java25` and `--java26` to choose), clones Cubature beside Riven into `../Cubature`
+(its lab tools prepare game instances), and creates the Python environments for the checks and the atlas.
+`--check` reports what is missing without changing anything. The build compiles against the Cubature
 and GTCEuR a revision of [orthrus-set](https://github.com/orthrus-research/orthrus-set) names: with Workbench,
-`wb work sync` chooses it; without, pass `-Pset.dir=<a clone of orthrus-set>` to Gradle. `--check` reports what is
-missing without changing anything. A source build that is not the pinned bytes places nothing,
-and setup says where verified bytes can come from: `WB_PIN_CACHE`, a folder of pinned files named
-by their SHA-256, such as Workbench's pin cache.
+`wb work sync` chooses it; without, pass `-Pset.dir=<a clone of orthrus-set>` to Gradle. A game instance takes
+every mod from a launch file resolved from the same set ([docs/RUNTIME.md](docs/RUNTIME.md), Launching).
 
 To see what the generator selects without starting the game:
 
