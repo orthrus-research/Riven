@@ -131,9 +131,10 @@ teleport) are filed as `tour/NN-<label>.png`; a tour's `viewDistance` raises the
 A view is captured once the player has held still for `riven.captureTicks` (400) and, where Quadrature draws
 distant terrain, once Quadrature has called its picture settled for `riven.settlePasses` world passes in a row (40):
 every distant tile that can arrive stored and faded in, near terrain caught up and the cube source settled. The client
-logs `Riven view settled` with the ticks it waited past the hold; a view still unsettled `riven.settleLimitTicks`
-(2400) past the hold is not captured, and the client logs `Riven view unsettled` with what it waited on and quits, so
-the session fails at that view.
+logs `Riven view settled` with the ticks it waited past the hold. The first view after joining waits longest, since
+every distant tile is new: on the forest tour about 2,400 ticks past the hold, later views 0 to 400. A view still
+unsettled `riven.settleLimitTicks` (6000) past the hold is not captured, and the client logs `Riven view unsettled`
+with what it waited on and quits, so the session fails at that view.
 
 An instance has no Distant Horizons, which is not carried forward. The launch's JVM arguments reach both sides, with
 what each member's own `[launch.member]` adds: Quadrature's gives the client `-Dquadrature.distant=own`, so

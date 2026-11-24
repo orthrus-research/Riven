@@ -30,7 +30,7 @@ import java.lang.invoke.MethodType;
  * calls its picture settled (DistantHook.settledPasses: every distant tile that can arrive stored
  * and faded in, near terrain caught up, the cube source settled) for riven.settlePasses world passes
  * in a row (40; 0 waits for the hold alone). A view not settled riven.settleLimitTicks after the
- * hold (2400, two minutes) is not captured: the client logs "Riven view unsettled" with what it
+ * hold (6000, five minutes) is not captured: the client logs "Riven view unsettled" with what it
  * waited on and quits, so the session fails at that view.
  */
 @Mod.EventBusSubscriber(modid = "riven", value = Side.CLIENT)
@@ -42,7 +42,7 @@ public final class RivenClient {
     private static final int LIGHT_DUMP = Integer.getInteger("riven.lightDump", 0);
     private static final int SETTLE_PASSES = Integer.getInteger("riven.settlePasses", 40);
     private static final int SETTLE_LIMIT_TICKS =
-            Math.max(1, Integer.getInteger("riven.settleLimitTicks", 2400));
+            Math.max(1, Integer.getInteger("riven.settleLimitTicks", 6000));
 
     /** Quadrature's settled passes and what it waits on, or null where none is drawn. */
     private static MethodHandle settledPasses, unsettled;
