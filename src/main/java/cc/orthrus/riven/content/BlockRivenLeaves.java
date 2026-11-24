@@ -99,6 +99,7 @@ final class BlockRivenLeaves extends BlockLeaves {
     }
 
     /** Whether the game draws leaves fancy: it tells only its own leaves. */
+    @SuppressWarnings("deprecation") // Block's 1.12 API: the one way to ask how leaves are drawn.
     private static boolean fancy() {
         return !Blocks.LEAVES.isOpaqueCube(Blocks.LEAVES.getDefaultState());
     }

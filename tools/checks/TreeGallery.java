@@ -24,8 +24,8 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 
 /**
- * Side elevations of every tree species as the production shapes draw them (runDiagnostics with
- * -PrivenDiagnosticGameBootstrap=true). Usage: TreeGallery <out.png> [trees per species]. Each
+ * Side elevations of every tree species as the production shapes draw them (runDiagnostics).
+ * Usage: TreeGallery <out.png> [trees per species]. Each
  * species gets one row of sample trees across its own height band, shortest to tallest, seen from
  * the south with depth shading: logs brown, leaves green, darker further back.
  */

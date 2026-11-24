@@ -31,6 +31,15 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   `riven-volcanic.json`). Climate changes what grows on and around a volcano, never whether it
   stands.
 
+## Adopted 2026-11-23
+
+- **CleanroomGradle and the current Cleanroom.** Riven builds with CleanroomGradle 0.23.0, the
+  plugin Cubature, OrthLib, GTCEu: Reloaded and Quadrature build with, and compiles against the
+  Cleanroom it runs on (0.7.14-alpha). Cleanroom 0.7.x publishes no Unimined userdev, so the
+  development API had stayed on 0.6.13-alpha while the runtime moved on. Mods Riven compiles
+  against are deobfuscated by the plugin's transform, and the production JAR is reobfuscated by
+  its renamer; the artifact path, `build/libs/riven-0.0.1-cleanroom.jar`, is unchanged.
+
 ## Adopted 2026-11-11
 
 - **Tree growth forms and the leaf budget.** A tree's architecture is a growth form from a fixed

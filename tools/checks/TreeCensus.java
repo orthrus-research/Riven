@@ -32,8 +32,8 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
 
 /**
- * Tree census through the production tree sites (game bootstrap; runDiagnostics with
- * -PrivenDiagnosticGameBootstrap=true). Usage: TreeCensus <new output dir> [seed [layout [windows
+ * Tree census through the production tree sites (game bootstrap; runDiagnostics). Usage:
+ * TreeCensus <new output dir> [seed [layout [windows
  * per biome [window blocks]]]] (defaults: 2485331, 4, 5, 256). Samples each column's riven: biome
  * and variant on a 1024-block grid, takes up to the given number of windows per biome or variant
  * (chosen by hash, so the selection is a pure function of the seed), and in each window records

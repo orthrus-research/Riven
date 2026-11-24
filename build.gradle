@@ -1,246 +1,113 @@
 plugins {
     id 'java'
-    id 'xyz.wagyourtail.unimined' version '1.4.43-kappa'
+    id 'com.cleanroommc.cleanroomgradle'
 }
 group = 'cc.orthrus.riven'
 version = mod_version
 // Cleanroom on Java 25 or 26 is the only target (docs/DECISIONS.md, 2026-10-30).
 def compilerJavaVersion = providers.gradleProperty('rivenJavaVersion').getOrElse('26').toInteger()
-def diagnosticGameSetting = providers.gradleProperty('rivenDiagnosticGameBootstrap').getOrElse('false')
-if (!(diagnosticGameSetting in ['true', 'false'])) {
-    throw new GradleException('rivenDiagnosticGameBootstrap must be true or false')
-}
-def diagnosticGameBootstrap = diagnosticGameSetting == 'true'
-def diagnosticGameMods
-def diagnosticCubature
-def diagnosticCubatureHash
-def diagnosticInputJar
-def diagnosticInputCoordinates
-def diagnosticPinLock
-def diagnosticPinLockHash
-def diagnosticSha256 = { File artifact ->
-    java.security.MessageDigest.getInstance('SHA-256').digest(artifact.bytes).encodeHex().toString()
-}
-if (diagnosticGameBootstrap) {
-    diagnosticCubature = file(providers.gradleProperty('rivenCubicArtifact')
-        .getOrElse('dev/pins/Cubature-cleanroom.jar'))
-    if (!diagnosticCubature.isFile()) {
-        throw new GradleException('Game diagnostics require the selected pinned Cubature artifact')
-    }
-    diagnosticCubatureHash = diagnosticSha256(diagnosticCubature)
-    diagnosticPinLock = new groovy.json.JsonSlurper().parse(file('dev/cc.lock.json'))
-    diagnosticPinLockHash = diagnosticSha256(file('dev/cc.lock.json'))
-    if (diagnosticPinLock.sha256 != diagnosticCubatureHash || !diagnosticPinLock.commit) {
-        throw new GradleException('Game diagnostics Cubature artifact does not match its lock')
-    }
-    def inputVersion = 'cleanroom-' + diagnosticCubatureHash
-    def inputRepository = file('.gradle/diagnostic-mod-inputs')
-    diagnosticInputJar = new File(inputRepository,
-        "local/cubicchunks/CubicChunks/${inputVersion}/CubicChunks-${inputVersion}.jar")
-    if (!diagnosticInputJar.exists()) {
-        diagnosticInputJar.parentFile.mkdirs()
-        java.nio.file.Files.copy(diagnosticCubature.toPath(), diagnosticInputJar.toPath())
-    }
-    if (diagnosticSha256(diagnosticInputJar) != diagnosticCubatureHash) {
-        throw new GradleException('Game diagnostics Maven input does not match the selected pin')
-    }
-    repositories {
-        maven {
-            url = inputRepository
-            content { includeGroup 'local.cubicchunks' }
-            metadataSources { artifact() }
-        }
-    }
-    diagnosticGameMods = configurations.create('diagnosticGameMods') {
-        canBeConsumed = false
-    }
-    diagnosticInputCoordinates = "local.cubicchunks:CubicChunks:${inputVersion}"
-    dependencies.add(diagnosticGameMods.name, diagnosticInputCoordinates)
-}
-base {
-    archivesName = 'riven'
-}
+// The mods Riven compiles against, as the game loads them (SRG names); runtime.lock.json pins both.
+def cubatureJar = file(providers.gradleProperty('rivenCubicArtifact').getOrElse('dev/pins/Cubature-cleanroom.jar'))
+def gtceurJar = file('dev/pins/gtceu-reloaded-3.0.0-reloaded.1-alpha.1.jar')
+def sha256 = { File f -> java.security.MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString() }
+base { archivesName = 'riven' }
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(compilerJavaVersion)
-    }
+    toolchain { languageVersion = JavaLanguageVersion.of(compilerJavaVersion) }
     // A qualification compiler must not silently change the development bytecode pin.
     sourceCompatibility = JavaVersion.VERSION_26
     targetCompatibility = JavaVersion.VERSION_26
     withSourcesJar()
 }
 configurations {
-    modCompileOnly
-    compileOnly.extendsFrom(modCompileOnly)
+    // Mods in development names through CleanroomGradle's deobf transform: compiled against, never bundled.
+    mods { canBeConsumed = false; canBeResolved = false }
+    compileOnly.extendsFrom(mods)
+    modClasspath { canBeConsumed = false; extendsFrom(mods) }
 }
 dependencies {
+    implementation cleanroom.userdev(cleanroom_version)
     // Compile-time metadata for Gson; no additional runtime mod or bundled dependency.
     compileOnly 'com.google.errorprone:error_prone_annotations:2.41.0'
-    modCompileOnly files(providers.gradleProperty('rivenCubicArtifact')
-        .getOrElse('dev/pins/Cubature-cleanroom.jar'))
-    // Optional ore catalogue provider; compiled against, never bundled (runtime.lock.json pins it).
-    modCompileOnly files('dev/pins/gtceu-reloaded-3.0.0-reloaded.1-alpha.1.jar')
-    // ZenScript's annotations, which GTCEu's material classes carry; compiled against, never
-    // bundled. CraftTweaker2:ZenScript:4.1.20.700 from https://maven.blamejared.com, the version
-    // GTCEu builds with (sha256 1762abd341d6161826dcbefe027ae3ee3199611a122bae017788e9d8378e661c).
+    // The annotations GTCEu's classes carry (it compiles against 24.1.0), so javac reads them without [classfile] warnings.
+    compileOnly 'org.jetbrains:annotations:24.1.0'
+    mods deobf(files(cubatureJar))
+    mods deobf(files(gtceurJar))   // optional ore catalogue provider
+    // ZenScript's annotations, which GTCEu's material classes carry (CraftTweaker2:ZenScript:4.1.20.700).
     compileOnly files('dev/pins/ZenScript-4.1.20.700.jar')
-}
-unimined.minecraft {
-    version '1.12.2'
-    mappings {
-        mcp('stable', '39-1.12')
-    }
-    cleanroom {
-        loader cleanroom_api
-    }
-    defaultRemapJar = false
-    remap(tasks.named('jar').get())
-    mods {
-        remap(configurations.modCompileOnly)
-        if (diagnosticGameBootstrap) {
-            remap(diagnosticGameMods)
-        }
-    }
 }
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.compilerArgs.addAll(['-Xlint:all,-options', '-Werror'])
 }
-
 sourceSets {
     diagnostics {
         java.srcDir 'tools/checks'
         compileClasspath = sourceSets.main.output + sourceSets.main.compileClasspath
-        runtimeClasspath = output + compileClasspath
+        // Minecraft and Cleanroom as they run (the userdev's runtime view), plus the same deobfuscated mods
+        // and the game's own resources (client-extra: recipes, lang), which runClient adds the same way.
+        runtimeClasspath = output + sourceSets.main.runtimeClasspath + configurations.modClasspath +
+            configurations._cleanroomUserdevClientExtra
     }
 }
-
-// Compile the retained diagnostic entry points without executing their workloads.
 tasks.named('compileDiagnosticsJava', JavaCompile) {
     group = 'verification'
     description = 'Lint and type-check diagnostic helpers without running them.'
-    javaCompiler = javaToolchains.compilerFor {
-        languageVersion = JavaLanguageVersion.of(compilerJavaVersion)
-    }
-    sourceCompatibility = JavaVersion.VERSION_26.toString()
-    targetCompatibility = JavaVersion.VERSION_26.toString()
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(compilerJavaVersion) }
+    sourceCompatibility = '26'
+    targetCompatibility = '26'
 }
-
-// Select an entry point with -PrivenDiagnosticMain and pass its arguments with --args.
-// Game bootstrap additionally requires -PrivenDiagnosticGameBootstrap=true.
+// Select an entry point with -PrivenDiagnosticMain and pass its arguments with --args. Every run has the
+// game bootstrap's class path, so no separate switch is needed.
 tasks.register('runDiagnostics', JavaExec) {
     group = 'verification'
     description = 'Run an explicitly selected diagnostic entry point on Java 26.'
-    dependsOn tasks.named('classes'), tasks.named('diagnosticsClasses')
     classpath = sourceSets.diagnostics.runtimeClasspath
     mainClass = providers.gradleProperty('rivenDiagnosticMain')
-    javaLauncher = javaToolchains.launcherFor {
-        languageVersion = JavaLanguageVersion.of(26)
-    }
-    if (diagnosticGameBootstrap) {
-        // Unimined remaps this separate configuration without changing the main compile view.
-        classpath = sourceSets.diagnostics.runtimeClasspath.filter {
-            it.canonicalFile != diagnosticCubature.canonicalFile
-        } + diagnosticGameMods
-        // Cleanroom's mapped test bootstrap removes final modifiers from object-holder fields.
-        jvmArgs '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED'
-        doFirst {
-            if (diagnosticSha256(diagnosticCubature) != diagnosticCubatureHash
-                    || diagnosticSha256(diagnosticInputJar) != diagnosticCubatureHash
-                    || diagnosticSha256(file('dev/cc.lock.json')) != diagnosticPinLockHash) {
-                throw new GradleException('Game diagnostics Cubature input changed after configuration')
-            }
-            def runtimeFiles = classpath.files.toList()
-            if (runtimeFiles.any { it.canonicalFile == diagnosticCubature.canonicalFile }) {
-                throw new GradleException('Game diagnostics runtime still contains the raw Cubature pin')
-            }
-            def apiProviders = ['CubePrimer', 'ICubeGenerator'].collectEntries { type ->
-                def entryName = "io/github/opencubicchunks/cubicchunks/api/worldgen/${type}.class"
-                def artifacts = runtimeFiles.findAll { artifact ->
-                    if (artifact.isDirectory()) return new File(artifact, entryName).isFile()
-                    if (!artifact.isFile()) return false
-                    def archive = new java.util.zip.ZipFile(artifact)
-                    try {
-                        return archive.getEntry(entryName) != null
-                    } finally {
-                        archive.close()
-                    }
-                }
-                if (artifacts.size() != 1 || !artifacts.first().isFile()) {
-                    throw new GradleException("Game diagnostics require one mapped ${type} JAR: ${artifacts}")
-                }
-                [(type): artifacts.first().canonicalFile]
-            }
-            def mappedArtifacts = diagnosticGameMods.resolvedConfiguration.resolvedArtifacts.toList()
-            if (mappedArtifacts.size() != 1) {
-                throw new GradleException("Game diagnostics require one remapped dependency: ${mappedArtifacts}")
-            }
-            def mappedSelection = mappedArtifacts.first()
-            def mappedComponent = mappedSelection.moduleVersion.id
-            if (mappedComponent.group != 'remapped_local.cubicchunks'
-                    || mappedComponent.name != 'CubicChunks'
-                    || mappedComponent.version != 'cleanroom-' + diagnosticCubatureHash
-                    || mappedSelection.extension != 'jar' || mappedSelection.classifier != null) {
-                throw new GradleException("Unexpected game diagnostics remapped component: ${mappedSelection}")
-            }
-            def mappedArtifact = mappedSelection.file.canonicalFile
-            if (mappedArtifact != apiProviders.CubePrimer
-                    || mappedArtifact != apiProviders.ICubeGenerator) {
-                throw new GradleException('Game diagnostics Cubature API classes have different providers')
-            }
-            def mappedHash = diagnosticSha256(mappedArtifact)
-            if (mappedHash == diagnosticCubatureHash) {
-                throw new GradleException('Game diagnostics Cubature artifact was not remapped')
-            }
-            def evidence = [
-                plugin: 'xyz.wagyourtail.unimined:1.4.43-kappa',
-                mappings: 'mcp:stable:39-1.12',
-                loader: cleanroom_api,
-                lock: [path: file('dev/cc.lock.json').canonicalPath,
-                    sha256: diagnosticPinLockHash, commit: diagnosticPinLock.commit],
-                inputCoordinates: diagnosticInputCoordinates.toString(),
-                original: [path: diagnosticCubature.canonicalPath, sha256: diagnosticCubatureHash],
-                moduleCopy: [path: diagnosticInputJar.canonicalPath, sha256: diagnosticCubatureHash],
-                mapped: [component: mappedComponent.toString(),
-                    path: mappedArtifact.canonicalPath, sha256: mappedHash],
-                runtimeClasspath: runtimeFiles.collect { it.canonicalPath }
-            ]
-            def evidenceFile = layout.buildDirectory.file('diagnostics/cubature-mapping.json').get().asFile
-            evidenceFile.parentFile.mkdirs()
-            evidenceFile.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(evidence))
-                + System.lineSeparator(), 'UTF-8')
-            logger.lifecycle("Cubature diagnostics mapping: ${diagnosticCubatureHash} -> ${mappedHash}; ${evidenceFile}")
-        }
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(26) }
+    // Cleanroom's mapped test bootstrap removes final modifiers from object-holder fields.
+    jvmArgs '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED'
+    def evidence = layout.buildDirectory.file('diagnostics/cubature-mapping.json')
+    def plugin = 'com.cleanroommc.cleanroomgradle:' + com.cleanroommc.gradle.CleanroomGradle.getPackage().implementationVersion
+    def loader = cleanroom_version
+    def lockFile = file('dev/cc.lock.json')
+    doFirst {
+        def runtime = classpath.files.toList()
+        def lock = new groovy.json.JsonSlurper().parse(lockFile)
+        def original = sha256(cubatureJar)
+        if (lock.sha256 != original || !lock.commit) throw new GradleException('Cubature does not match dev/cc.lock.json')
+        if (runtime.any { it.canonicalFile == cubatureJar.canonicalFile }) throw new GradleException('The SRG-named Cubature is on the development class path')
+        def api = ['CubePrimer', 'ICubeGenerator'].collect { type ->
+            def entry = "io/github/opencubicchunks/cubicchunks/api/worldgen/${type}.class"
+            def found = runtime.findAll { it.isDirectory() ? new File(it, entry).isFile()
+                : it.isFile() && new java.util.zip.ZipFile(it).withCloseable { z -> z.getEntry(entry) != null } }
+            if (found.size() != 1 || !found[0].isFile()) throw new GradleException("One mapped ${type} JAR required: ${found}")
+            found[0].canonicalFile
+        }.unique()
+        if (api.size() != 1) throw new GradleException('Cubature API classes have different providers')
+        def mapped = sha256(api[0])
+        if (mapped == original) throw new GradleException('Cubature was not deobfuscated')
+        def out = evidence.get().asFile
+        out.parentFile.mkdirs()
+        out.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([plugin: plugin,
+            mappings: 'mcp:stable_39-1.12', loader: loader, lock: [path: lockFile.canonicalPath, commit: lock.commit],
+            original: [path: cubatureJar.canonicalPath, sha256: original], mapped: [path: api[0].path, sha256: mapped],
+            runtimeClasspath: runtime*.canonicalPath])) + System.lineSeparator(), 'UTF-8')
     }
 }
 processResources {
     inputs.property('version', project.version)
-    filesMatching('mcmod.info') {
-        expand(version: project.version)
-    }
+    filesMatching('mcmod.info') { expand(version: project.version) }
 }
 jar {
     archiveClassifier = 'dev'
-    manifest {
-        attributes('Implementation-Title': 'Riven', 'Implementation-Version': project.version,
-                'ModType': 'CRL')
-    }
-    finalizedBy tasks.named('remapJar')
+    manifest { attributes('Implementation-Title': 'Riven', 'Implementation-Version': project.version, 'ModType': 'CRL') }
 }
-tasks.named('remapJar') {
-    archiveClassifier = 'cleanroom'
-}
-
+// The production JAR in SRG names: build/libs/riven-<version>-cleanroom.jar, the file the launcher loads.
+tasks.named('reobfJar') { archiveClassifier = 'cleanroom' }
 // Keep the same license scope visible in binary and matching source distributions.
 ['jar', 'sourcesJar'].each { taskName ->
     tasks.named(taskName, Jar) {
-        from('LICENSE') {
-            into 'META-INF/licenses/riven'
-            rename { 'NRR-1.0.txt' }
-        }
-        from('NOTICE.md') {
-            into 'META-INF'
-            rename { 'NOTICE-RIVEN.md' }
-        }
+        from('LICENSE') { into 'META-INF/licenses/riven'; rename { 'NRR-1.0.txt' } }
+        from('NOTICE.md') { into 'META-INF'; rename { 'NOTICE-RIVEN.md' } }
     }
 }

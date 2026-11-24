@@ -323,16 +323,15 @@ records both JVMs with JFR's profile settings for attributing a phase further.
   (`tools/atlas-golden.json`) with their stored digests. A content-changing commit updates the
   goldens in the same commit, after reviewing `terrain_atlas.py compare`.
 - Gradle's `runDiagnostics -PrivenDiagnosticMain=<class> --args="<arguments>"` runs a selected
-  `tools/checks` entry point on Java 26. `compileDiagnosticsJava` compiles the helpers as Java 25
-  bytecode. Game API checks also need
-  `-PrivenDiagnosticGameBootstrap=true`, which remaps the locked Cubature artifact into development
-  names in a separate configuration and records its input, mapped artifact and ordered classpath in
+  `tools/checks` entry point on Java 26. `compileDiagnosticsJava` compiles the helpers as Java 26
+  bytecode. Every run has the game bootstrap's class path: Cleanroom's development runtime with the
+  pinned Cubature and GTCEuR deobfuscated into development names by CleanroomGradle. Each run
+  records the plugin, the loader, Cubature's input and mapped artifact and the ordered classpath in
   `build/diagnostics/cubature-mapping.json`.
 - `cc.orthrus.riven.CubePrimerBootstrapCheck` takes `<fixture parent> [registries|generate]`.
   Its `registries` mode validates real block and biome registrations and primer IDs. `generate`
   also checks the actual generator's sky, surface and realm cubes, scanning every block and biome
-  cell and recording an oracle receipt. Use a fresh fixture parent. Both modes require the mapped
-  game option. Ordinary CI compiles these bootstrap helpers; their exact paths have a
+  cell and recording an oracle receipt. Use a fresh fixture parent. Ordinary CI compiles these bootstrap helpers; their exact paths have a
   quality-and-build quick rule. Invoke their registry or generation workload explicitly.
 - `cc.orthrus.riven.TreeCensus` takes `<new output dir> [seed [layout [windows per key [window
   blocks]]]]` (defaults 2485331, 4, 5, 256) through `runDiagnostics` with the mapped game option.
@@ -497,4 +496,3 @@ driver memory); the server carries almost nothing beside the JVM. A stationary c
 pin showed saved blocks, storage and completed light unchanged, apart from surface water that
 random ticks froze or thawed differently. Existing refmap warnings and controlled-shutdown
 connection resets remain; client rendering and held maps are unqualified.
-Unimined prints deprecation notices.
