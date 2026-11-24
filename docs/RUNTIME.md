@@ -172,31 +172,25 @@ compatibility profile on the GPU. A machine with no monitor, such as a rented GP
 virtual display (`Xvfb`) and VirtualGL's EGL back end (`vglrun -d egl`), which renders on the GPU through the
 driver's EGL library.
 
-### The GPU lease and the GPU queue
+### The GPU lease
 
 One native game runs at a time per machine. Every `wb play` session holds Workbench's GPU lease from before its
 first JVM starts until its last one ends, and a driver's JVMs run inside that turn; nothing of Riven's takes the
 lease itself. The lease is an OS lock on byte 0 of Workbench's lease file, which the OS drops when its holder
 exits, so a crashed run never keeps it.
 
-Work that shares the GPU goes through `tools/gpu_queue.py`:
+Other work that shares the GPU takes a turn through Workbench:
 
 ```powershell
-python tools/gpu_queue.py status
-python tools/gpu_queue.py turn --lane <lane> --note "<purpose>" [--session <name>] [--detach] -- <command> ...
-python tools/gpu_queue.py stuck
-python tools/gpu_queue.py leave --lane <lane>
+wb gpu                                             # the holder, the waiters and stuck lanes
+wb gpu run --note "<purpose>" [--limit 2h] [--detach] -- <command> ...
+wb gpu stuck
+wb gpu leave <lane>
 ```
 
-Each lane (one line of work) publishes `.local/coordination/<lane>.json` with its state (`idle`,
-`waiting`, `running`), `waiting_since`, its writer's `pid` and a heartbeat (`updatedUtc`, every
-30 s). `turn` queues, waits until the lease has been free for 15 s and no live lane is
-running or has waited longer (a waiter ahead that has not moved for 10 minutes of free lease is
-passed), then holds the lease for the whole command, so nothing starts between a turn's runs. A
-turn longer than an hour is stopped. An entry counts only while its heartbeat is under 5 minutes
-old and its process runs, so a request whose writer has gone holds nobody back; `stuck` names
-such entries and exits 1. From a linked worktree the tool uses the main checkout's lease and
-queue.
+Each lane is one line of work with its own file; waiters are served in the order they asked, a restarted waiter
+keeps its place, a turn ends at its limit (an hour unless `--limit` says otherwise), `--detach` runs the command as a
+process of its own that outlives the shell, and `stuck` names lanes whose writer has gone.
 
 ## Building and CI
 
