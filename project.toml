@@ -167,7 +167,8 @@ steps = [{ name = "variant coverage", run = ["{python}", "tools/run_check.py", "
 # prepare --launch <launch.json> builds an instance from exactly those files.
 [launch.default]
 members = ["riven:mod@both", "cubature:mod@both", "orthlib:mod@both", "orthlib:cubature-adapter@both",
-           "gtceur:mod@both", "quadrature:mod@client", "modularui@both", "codechickenlib@both", "fugue@both"]
+           "gtceur:mod@both", "quadrature:mod@client", "modularui@both", "codechickenlib@both", "fugue@both",
+           "scalar@both"]
 runtime = "cleanroom"
 params = { seed = 8675309 }
 # Quadrature draws distant terrain itself (Distant Horizons is not carried forward); this moves into Quadrature's own
