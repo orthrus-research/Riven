@@ -14,7 +14,7 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
   with upstream. Compatibility IDs, packages and save formats keep their `cubicchunks` names. It
   is published as `orthrus-research/Cubature`, a GitHub fork of OpenCubicChunks/CubicChunks.
 - **2026-10-19. Runtime profile.** Fugue and Scalar Legacy (Scala 2.11 provider) stay in the
-  profile, both pinned in `runtime.lock.json`.
+  profile: both are third entries in the set and members of `[launch.default]`, by SHA-256.
 - **2026-10-19. Licensing.** Original Riven material is NRR-1.0. Contributed kernels keep MIT,
   the erosion file MPL-2.0, Forge-derived Cubature I/O LGPL-2.1. See [NOTICE.md](../NOTICE.md)
   and [THIRD-PARTY.md](../THIRD-PARTY.md).
