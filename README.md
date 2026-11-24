@@ -43,12 +43,13 @@ Every layer and its definition file: [docs/FEATURES.md](docs/FEATURES.md).
 | Minecraft | 1.12.2 | |
 | Cleanroom | 0.7.14-alpha, official | Required |
 | Java | 26 | The tested runtime |
-| Cubature | 0.1.4.0, pinned in [dev/cc.lock.json](dev/cc.lock.json) | Required |
-| Distant Horizons | 3.3.3-1.12.2, official | Optional: the distant view |
+| Cubature | 0.1.4.0 | Required |
+| Quadrature | 0.1.0-dev | Required on the client: draws cubic worlds and the distant view |
 | GTCEu: Reloaded | 3.0.0-reloaded.1-alpha.1 | Optional: the ore catalog |
 | Fugue, Scalar Legacy, OrthLib | 0.25.5, 1.0.1, 0.5.0-dev | In the tested profile |
 
-The complete tested profile, with every file's SHA-256, is [runtime.lock.json](runtime.lock.json).
+The tested profile is the launch in [project.toml](project.toml) (`[launch.default]`): every file by SHA-256 as
+a revision of [orthrus-set](https://github.com/orthrus-research/orthrus-set) names it.
 
 Before creating a world, set `defaultMinHeight=-1664` and `defaultMaxHeight=384` in the server's
 `config/cubicchunks.cfg`, then choose the **Riven** world type (`level-type=riven`). Cubature
@@ -79,7 +80,9 @@ python tools/setup.py
 folders; pass `--java25` and `--java26` to choose), clones Cubature beside Riven into `../Cubature`,
 downloads the third-party JARs pinned in [runtime.lock.json](runtime.lock.json) and checks each
 against its SHA-256, builds the Cubature artifacts that [dev/cc.lock.json](dev/cc.lock.json) pins,
-and creates the Python environments for the checks and the atlas. `--check` reports what is
+and creates the Python environments for the checks and the atlas. The build compiles against the Cubature
+and GTCEuR a revision of [orthrus-set](https://github.com/orthrus-research/orthrus-set) names: with Workbench,
+`wb work sync` chooses it; without, pass `-Pset.dir=<a clone of orthrus-set>` to Gradle. `--check` reports what is
 missing without changing anything. A source build that is not the pinned bytes places nothing,
 and setup says where verified bytes can come from: `WB_PIN_CACHE`, a folder of pinned files named
 by their SHA-256, such as Workbench's pin cache.

@@ -33,6 +33,11 @@ history lives in git and [CHANGELOG.md](../CHANGELOG.md).
 
 ## Adopted 2026-11-23
 
+- **Riven builds and launches from the set.** Riven compiles against the Cubature and GTCEuR the set's lines
+  name (`set.jar`, by SHA-256) and runs with exactly those builds: an instance is prepared only from a launch file
+  that Workbench's `lab.resolve` writes from `[launch.default]` in `project.toml`, so one build of each mod is
+  loaded by construction. Distant Horizons is not carried forward; Quadrature draws distant terrain.
+
 - **CleanroomGradle and the current Cleanroom.** Riven builds with CleanroomGradle 0.23.0, the
   plugin Cubature, OrthLib, GTCEu: Reloaded and Quadrature build with, and compiles against the
   Cleanroom it runs on (0.7.14-alpha). Cleanroom 0.7.x publishes no Unimined userdev, so the

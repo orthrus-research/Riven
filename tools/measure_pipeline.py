@@ -211,14 +211,17 @@ def main(argv=None):
         help="Leave DH off both sides: near terrain only",
     )
     parser.add_argument(
-        "--client-mod",
-        action="append",
-        help="An extra mod JAR for the client only; repeat for several",
+        "--launch",
+        type=Path,
+        required=True,
+        help="The launch file every mod comes from (wb run lab.resolve folder=<worktree>)",
     )
     args = parser.parse_args(argv)
-    if not args.distant_horizons and (args.lod_trace or args.dh_visited_only or args.dh_lod_only):
+    # Distant Horizons is not carried forward: Quadrature draws distant terrain.
+    args.distant_horizons = False
+    if args.lod_trace or args.dh_visited_only or args.dh_lod_only:
         parser.error(
-            "--no-distant-horizons excludes --lod-trace, --dh-visited-only and --dh-lod-only"
+            "--lod-trace, --dh-visited-only and --dh-lod-only need Distant Horizons, which is gone"
         )
     if args.dh_visited_only and args.lod_trace:
         parser.error("--lod-trace observes server-side DH; a visited-only server has none")
@@ -238,8 +241,8 @@ def main(argv=None):
         parser.error("Build or select the exact Riven and observer artifacts first")
     from observability.profiles import packet_policy_capabilities
 
-    selected_cubature = (
-        args.cubic_artifact or ROOT / runtime.load_json(ROOT / "dev/cc.lock.json")["artifact"]
+    selected_cubature = args.cubic_artifact or next(
+        m["source"] for m in runtime.launch_members(args.launch)[2] if m["name"] == "cubature"
     )
     packet_capabilities = packet_policy_capabilities(selected_cubature)
     if (
@@ -264,8 +267,7 @@ def main(argv=None):
             keep_fine_columns=not args.no_keep_fine_columns,
             # The config file selects the delivery mode; Cubature reads it as the server starts.
             cubature_delivery=args.delivery_experiment,
-            distant_horizons=args.distant_horizons,
-            client_mods=args.client_mod,
+            launch=args.launch,
         )
         if args.world_from:
             runtime.adopt_world(args.name, args.world_from)
@@ -305,7 +307,7 @@ def main(argv=None):
             "cubiclab.fullViewRenderReady": str(args.render_ready).lower(),
             "cubiclab.threadCosts": "true",
         }
-        if not args.client_mod:
+        if not any(m["name"] == "quadrature" for m in runtime.launch_members(args.launch)[2]):
             # Cubature's client stops at loading without Quadrature, which draws cubic worlds. A
             # capture without it times the game's own renderer, which then draws heights 0 to 255.
             manifest["labProperties"]["cubature.clientWithoutRenderer"] = "true"

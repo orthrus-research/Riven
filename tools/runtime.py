@@ -1,4 +1,8 @@
-"""Small owned launcher using the pinned CC loader/library resolver; no benchmark mod."""
+"""Small owned launcher using the pinned CC loader/library resolver; no benchmark mod.
+
+An instance is built from a launch file (Workbench's lab.resolve writes it: every mod by SHA-256 from the set
+this worktree builds against, Riven itself from the Store by the tree CI built), so every mod an instance loads
+is the one build the set names: `wb run lab.resolve folder=<worktree>`, then `prepare --launch <file>`."""
 
 import argparse
 import hashlib
@@ -41,6 +45,61 @@ WORLD_PRESETS = {"canonical": {"seed": 2485331, "scale": 4.0}}
 
 def load_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def launch_members(path):
+    """A launch file (schema 1) and its members, each its Store file re-hashed, with the name it is placed under."""
+    path = Path(path).resolve()
+    doc = load_json(path)
+    if doc.get("schema") != 1:
+        raise RuntimeError("Not a launch file (schema 1): " + str(path))
+    if (doc.get("runtime") or {}).get("kind") != "cleanroom":
+        raise RuntimeError("The launch's runtime is not Cleanroom: " + str(path))
+    properties = dict(
+        line.split("=", 1)
+        for line in (CUBATURE_TOOLS.parent / "lab/runtime.properties").read_text().splitlines()
+        if "=" in line and not line.startswith("#")
+    )
+    if doc["runtime"].get("version") != properties.get("runtime_version"):
+        raise RuntimeError(
+            f"The launch names Cleanroom {doc['runtime'].get('version')}, but Cubature's lab installs "
+            f"{properties.get('runtime_version')} (lab/runtime.properties)"
+        )
+    store = Path(doc["store"])
+    members = []
+    for member in doc["members"]:
+        source = store / member["path"]
+        if not source.is_file() or sha(source) != member["sha256"]:
+            raise RuntimeError(
+                f"Launch member {member['member']} is not in the Store as {member['sha256'][:12]}: {source}"
+            )
+        sides = ["server", "client"] if member["side"] == "both" else [member["side"]]
+        members.append(
+            {
+                **member,
+                "source": source,
+                "sides": sides,
+                "place": member.get("place") or member["file"],
+            }
+        )
+    for kind, test in (
+        ("Riven", lambda m: m["kind"] == "product"),
+        ("Cubature", lambda m: m["name"] == "cubature"),
+    ):
+        if len([m for m in members if test(m)]) != 1:
+            raise RuntimeError(f"The launch must name {kind} once: {path}")
+    return path, doc, members
+
+
+def launch_properties(doc, side):
+    """The launch's JVM arguments for one side as system properties (each -Dname=value)."""
+    found = {}
+    for argument in (doc.get("jvm") or {}).get(side, []):
+        if not argument.startswith("-D") or "=" not in argument:
+            raise RuntimeError("A launch's JVM arguments are -Dname=value properties: " + argument)
+        name, value = argument[2:].split("=", 1)
+        found[name] = value
+    return found
 
 
 def target(name):
@@ -141,11 +200,26 @@ def prepare(
     arrival_plan=True,
     dh_lod_only=False,
     keep_fine_columns=True,
-    distant_horizons=True,
+    distant_horizons=False,
     client_mods=None,
     view_profile=None,
     own_distant=False,
+    launch=None,
 ):
+    if launch is None:
+        raise RuntimeError(
+            "prepare takes every mod from a launch file: wb run lab.resolve folder=<this worktree>, then "
+            "--launch <worktree>/.local/launch/default.json"
+        )
+    if distant_horizons:
+        raise ValueError(
+            "Distant Horizons is not carried forward: Quadrature draws distant terrain"
+        )
+    if client_mods:
+        raise ValueError(
+            "A launch names every mod; a client mod is a member of the launch's definition"
+        )
+    launch_file, launch_doc, members = launch_members(launch)
     # Extra client-side mods (a renderer under test, for example), recorded with the instance.
     client_mods = [Path(mod).resolve() for mod in client_mods or []]
     for mod in client_mods:
@@ -180,23 +254,20 @@ def prepare(
     pins = load_json(ROOT / "runtime.lock.json")
     if pins["profile"] != "cleanroom":
         raise RuntimeError("Expected the Cleanroom runtime profile")
-    for mod in pins["mods"]:
-        if sha(ROOT / mod["file"]) != mod["sha256"]:
-            raise RuntimeError("Pinned mod changed: " + mod["file"])
-    artifact = (
-        Path(selected_artifact).resolve()
-        if selected_artifact
-        else ROOT / "build/libs/riven-0.0.1-cleanroom.jar"
-    )
+    product = next(m for m in members if m["kind"] == "product")
+    cubature = next(m for m in members if m["name"] == "cubature")
+    # A frozen candidate Riven or Cubature stands in for the launch's member, recorded with the instance.
+    artifact = Path(selected_artifact).resolve() if selected_artifact else product["source"]
     if not artifact.is_file():
-        raise RuntimeError("Build Riven first")
-    cubic = Path(cubic_artifact).resolve() if cubic_artifact else ROOT / pins["mods"][0]["file"]
-    distant_mod = next(
-        mod for mod in pins["mods"] if mod["file"].startswith("dev/pins/DistantHorizons-")
-    )
-    if distant_mod.get("distribution") != "unmodified-upstream":
-        raise RuntimeError("The runtime requires a pinned official upstream DH artifact")
-    distant_version = distant_mod["version"]
+        raise RuntimeError("The selected Riven artifact does not exist: " + str(artifact))
+    cubic = Path(cubic_artifact).resolve() if cubic_artifact else cubature["source"]
+    if not cubic.is_file():
+        raise RuntimeError("The selected Cubature artifact does not exist: " + str(cubic))
+    stand_ins = {
+        name: str(path)
+        for name, path in (("riven", selected_artifact), ("cubature", cubic_artifact))
+        if path
+    }
     standalone.prepare(
         SimpleNamespace(
             workspace=ROOT,
@@ -213,22 +284,13 @@ def prepare(
     mods = {}
     for side in ["server", "client"]:
         home = Path(manifest[side])
-        if cubic.name != "cubicchunks.jar":
-            (home / "mods/cubicchunks.jar").rename(home / "mods" / cubic.name)
-        for mod in pins["mods"][1:]:
-            if not distant_horizons and mod["file"].startswith("dev/pins/DistantHorizons-"):
+        placed = cubic.name if cubic_artifact else cubature["place"]
+        if placed != "cubicchunks.jar":
+            (home / "mods/cubicchunks.jar").rename(home / "mods" / placed)
+        for member in members:
+            if member is product or member is cubature or side not in member["sides"]:
                 continue
-            if (
-                side == "server"
-                and not distant_generation
-                and mod["file"].startswith("dev/pins/DistantHorizons-")
-            ):
-                continue
-            if side in mod.get("sides", ["server", "client"]) or (
-                distant_generation and mod["file"].startswith("dev/pins/DistantHorizons-")
-            ):
-                selected = ROOT / mod["file"]
-                shutil.copy2(selected, home / "mods" / selected.name)
+            shutil.copy2(member["source"], home / "mods" / member["place"])
         shutil.copy2(artifact, home / "mods/riven.jar")
         if side == "client":
             for mod in client_mods:
@@ -375,11 +437,21 @@ def prepare(
         inspectionSpectator=spectator,
         captureTicks=max(400, capture_ticks),
         cubatureDelivery=cubature_delivery.upper(),
+        launch={
+            "path": str(launch_file),
+            "sha256": sha(launch_file),
+            "project": launch_doc["project"],
+            "launch": launch_doc["launch"],
+            "commit": launch_doc["commit"],
+            "set": launch_doc["set"],
+            "members": {m["member"]: m["sha256"] for m in members},
+            "standIns": stand_ins,
+        },
         distantHorizons={
-            "version": distant_version,
+            "version": "",
             "side": "both" if distant_generation else "client",
             "generatorPlan": "CHUNKS_ONLY" if distant_generation else "DISABLED",
-            "distribution": distant_mod["distribution"],
+            "distribution": "",
             "effectiveCubicPlan": "SURFACE_ONLY" if distant_generation else "DISABLED",
             "workers": dh_workers,
             "pauseIfMovingQuickly": dh_pause_when_moving,
@@ -406,16 +478,11 @@ def prepare(
             "sha256": sha(cubic),
             "candidate": cubic_artifact is not None,
         },
-        sourceDhArtifact={
-            "path": str(ROOT / distant_mod["file"]),
-            "sha256": distant_mod["sha256"],
-            "candidate": False,
-        }
-        if distant_horizons
-        else None,
+        sourceDhArtifact=None,
         clientMods=[{"path": str(mod), "sha256": sha(mod)} for mod in client_mods],
         # System properties every play gives the client JVM.
-        clientProperties={"quadrature.distant": "own"} if own_distant else {},
+        clientProperties=launch_properties(launch_doc, "client"),
+        serverProperties=launch_properties(launch_doc, "server"),
         lodTrace={
             "observer": str(lod_observer),
             "sha256": sha(lod_observer),
@@ -680,6 +747,7 @@ def play(name, tour=None, window=None, distances=None):
         if m.get("dhDetailTrace"):
             client_args[1:1] = ["-Ddistanthorizons.traceDetail=true"]
         client_args[1:1] = [f"-D{k}={v}" for k, v in m.get("clientProperties", {}).items()]
+        server_args[1:1] = [f"-D{k}={v}" for k, v in m.get("serverProperties", {}).items()]
         server = lab.spawn(
             server_args, Path(m["server"]), directory / "server-console.log", messages
         )
@@ -868,12 +936,12 @@ def main():
     p.add_argument(
         "--artifact",
         type=Path,
-        help="Explicit frozen Riven artifact for a fresh diagnostic instance",
+        help="A frozen Riven artifact standing in for the launch's, recorded with the instance",
     )
     p.add_argument(
         "--cubic-artifact",
         type=Path,
-        help="Explicit candidate CC artifact; the accepted pin stays unchanged",
+        help="A candidate Cubature artifact standing in for the launch's, recorded with the instance",
     )
     p.add_argument(
         "--spectator",
@@ -893,15 +961,10 @@ def main():
     )
     p.set_defaults(distant_generation=True)
     p.add_argument(
-        "--distant-horizons",
-        action="store_true",
-        help="prepare: DH on both sides draws distant terrain; without it, DH is left out and the "
-        "client runs Quadrature's own distant terrain (-Dquadrature.distant=own)",
-    )
-    p.add_argument(
-        "--client-mod",
-        action="append",
-        help="prepare: an extra mod JAR for the client only; repeat for several",
+        "--launch",
+        type=Path,
+        help="prepare: the launch file every mod comes from (wb run lab.resolve folder=<worktree> writes "
+        "<worktree>/.local/launch/default.json)",
     )
     p.add_argument(
         "--capture-ticks",
@@ -1060,10 +1123,8 @@ def main():
             arrival_plan=not a.no_arrival_plan,
             dh_lod_only=a.dh_lod_only,
             keep_fine_columns=not a.no_keep_fine_columns,
-            distant_horizons=a.distant_horizons,
-            client_mods=a.client_mod,
             view_profile=a.view_profile,
-            own_distant=not a.distant_horizons,
+            launch=a.launch,
         )
     elif a.command == "play":
         play(

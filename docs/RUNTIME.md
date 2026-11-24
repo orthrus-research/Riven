@@ -2,19 +2,20 @@
 
 ## Profile
 
-`runtime.lock.json` is the complete mod input list; every external artifact is pinned by hash.
+The launch is the complete mod input list: `[launch.default]` in `project.toml` names its members, and
+Workbench's `lab.resolve` turns it into `.local/launch/default.json`, every member by SHA-256 from the set this
+worktree builds against (its `.set`) and Riven itself from the Store, by the tree CI built.
 
 | Component | Version | Role |
 | --- | --- | --- |
 | Minecraft | 1.12.2 | Target game |
 | Cleanroom | 0.7.14-alpha, official and unchanged | Loader; supplies MixinBooter and ConfigAnytime |
 | Java | 26.0.2.1, 8 GiB heap, ZGC per JVM | Native runtime and development compiler |
-| Cubature | `dev/pins/Cubature-cleanroom.jar` (`dev/cc.lock.json`) | The Orthrus Research CubicChunks fork: scheduling, lighting, lifetime, storage, delivery, DH integration |
-| Distant Horizons | 3.3.3-1.12.2, official upstream (`dev/dh.lock.json`) | Distant terrain renderer and delivery, both sides, in instances prepared with `--distant-horizons` |
-| Fugue | 0.25.5 | Modern-Java compatibility layer |
-| Scalar Legacy | 1.0.1 | Scala 2.11 provider |
-| GTCEu: Reloaded | 3.0.0-reloaded.1-alpha.1, built from source by `tools/setup.py` (`runtime.lock.json`), with CodeChickenLib CRE 3.3.10 and ModularUI 3.1.6 | Optional ore provider (prototype): Orthrus Research's GTCEu continuation, mod ID `gregtech`. `riven-ores.json` transcribes its overworld vein catalog, Riven places the bodies, and GregTech supplies the ore block for each mineral and host stone type; its own world generator never runs. Riven compiles against it with the Java 26 compiler, since its classes are Java 26. It requires OrthLib, through whose render interface it declares its emissive layer and submits its glowing geometry; it draws no bloom of its own |
-| OrthLib | 0.5.0-dev with its Cubature adapter, built from source by `tools/setup.py` (`runtime.lock.json`; the adapter compiles against the Cubature it was qualified with, c3e240d, which setup builds for it) | Orthrus Research's shared library: random-tick participation through Cubature's listener API, the render interface (version 1.0) through which mods declare emissive layers and glowing geometry for a renderer to draw (without one, OrthLib draws that geometry plainly), and services for Orthrus mods; the adapter is the exact artifact of its native random-tick qualification, the library a later build that registers its Mixin through a CleanMix connector |
+| Cubature | the set's `cubature` line | The Orthrus Research CubicChunks fork: scheduling, lighting, lifetime, storage, delivery |
+| Fugue | 0.25.5, the set's third entry `fugue`, placed as `+Fugue-0.25.5.jar` so it sorts first | Modern-Java compatibility layer |
+| Scalar Legacy | 1.0.1 | Scala 2.11 provider; not in the launch until the set names it |
+| GTCEu: Reloaded | 3.0.0-reloaded.1-alpha.1, the set's `gtceur` line, with the third entries CodeChickenLib CRE 3.3.10 and ModularUI 3.1.6 | Optional ore provider (prototype): Orthrus Research's GTCEu continuation, mod ID `gregtech`. `riven-ores.json` transcribes its overworld vein catalog, Riven places the bodies, and GregTech supplies the ore block for each mineral and host stone type; its own world generator never runs. Riven compiles against it with the Java 26 compiler, since its classes are Java 26. It requires OrthLib, through whose render interface it declares its emissive layer and submits its glowing geometry; it draws no bloom of its own |
+| OrthLib | 0.5.0-dev, the set's `orthlib` line, with its Cubature adapter through the set's hold `orthlib:cubature-adapter` (the artifact qualified against Cubature c3e240d) | Orthrus Research's shared library: random-tick participation through Cubature's listener API, the render interface (version 1.0) through which mods declare emissive layers and glowing geometry for a renderer to draw (without one, OrthLib draws that geometry plainly), and services for Orthrus mods; the adapter is the exact artifact of its native random-tick qualification, the library a later build that registers its Mixin through a CleanMix connector |
 | Riven | `build/libs/riven-0.0.1-cleanroom.jar` | Terrain, water, biomes and block content |
 
 A Riven world spans Y-1664 to Y383: the crust down to Y-512, then the realms
@@ -156,11 +157,18 @@ joining client receives the world's definitions packet (fingerprint, biome color
 ## Launching
 
 ```powershell
-riven.ps1 build
-python tools/runtime.py prepare --name <fresh-name> --client-mod <Quadrature jar> [--preset canonical | --seed N --scale 0.5-8] [--distant-horizons] [--start X Y Z YAW PITCH] [--spectator] [--capture]
+riven.ps1 check                                    # CI builds this tree; the Store keeps its JAR
+wb run lab.resolve folder=.                        # writes .local/launch/default.json
+python tools/runtime.py prepare --name <fresh-name> --launch .local/launch/default.json [--preset canonical | --seed N --scale 0.5-8] [--start X Y Z YAW PITCH] [--spectator] [--capture]
 python tools/runtime.py play --name <fresh-name>
 python tools/runtime.py command --name <fresh-name> --text "<server command>"
 ```
+
+`riven.ps1 prepare -Name <fresh-name>` resolves the launch and prepares in one step. `prepare` takes every mod
+from the launch file, each re-hashed from the Store, and refuses to run without one, so an instance loads one build
+of each mod, the one the set names, and Riven compiled against the same Cubature and GTCEuR. A launch is resolved for
+a committed tree CI has built; `--artifact` or `--cubic-artifact` puts a frozen candidate in place of the launch's
+Riven or Cubature, recorded with the instance as a stand-in.
 
 Instances live under `.local/cubic-standalone/<name>` (port 25870). `prepare`
 records the runtime profile, exact mod hashes and every generator fingerprint; `play` refuses an
@@ -171,14 +179,11 @@ layout scale 1 (the 8 km tuning world); `--seed` and `--scale` choose another, t
 `--preset canonical` is the canonical world, seed 2485331 at scale 4 (32 km), and takes no
 `--seed` or `--scale`. `--capture` saves one native screenshot after
 400 client ticks. `--spawn-animals` allows animals (off for terrain captures).
-By default an instance has no Distant Horizons, and every `play` starts the client with
-`-Dquadrature.distant=own`, so Quadrature draws distant terrain itself from Riven's preview (the
-instance records this as `clientProperties`). `--distant-horizons` installs DH on both sides
-instead, with Quadrature's own distant terrain off; `--dh-lod-only` and `--lod-trace` need it.
-`--client-mod <jar>` (repeatable) adds
-an extra mod to the client only and records it with the instance. The client draws cubic worlds
-through Quadrature, which takes over the game's chunk system there: Cubature's client stops at
-loading without it, so a client that is to draw is prepared with `--client-mod <Quadrature jar>`. `/riven` in game
+An instance has no Distant Horizons, which is not carried forward. The launch's JVM arguments
+become the instance's `clientProperties` and `serverProperties`, which every `play` passes: the
+client runs with `-Dquadrature.distant=own`, so Quadrature draws distant terrain itself from Riven's
+preview. The client draws cubic worlds through Quadrature, which takes over the game's chunk system
+there; Cubature's client stops at loading without it, and the launch names it for the client. `/riven` in game
 prints climate, terrain, biome and feature diagnostics at the player's position. `/riven digest
 [radius [x z]]` hashes the world's blocks around a point by state name, one line per chunk column
 whose band (32 blocks under its lowest surface to 48 over its highest, from the generator's
@@ -253,9 +258,10 @@ queue.
 
 ## Building and CI
 
-Riven's checks are the jobs in `actions.toml`. Workbench runs them, `wb run ci.run project=riven`
-(or `riven.ps1 ci`), from a clean clone of the commit with Cubature cloned at the commit
-`dev/cc.lock.json` pins, on Temurin 26, with `{python}` the environment made from
+Riven's checks are the `[checks]` in `project.toml`. Workbench runs them, `wb check` (or `riven.ps1 check`),
+from a clean clone with the set's Gradle and JDKs: the build takes Cubature and GTCEuR as the files the set names
+(`set.jar` in `build.gradle`), from the Store by their SHA-256, and a push needs the `gate`'s checks passed. Steps run
+on Temurin 26, with `{python}` the environment made from
 `tools/requirements-quality.txt`, `tools/requirements-atlas.txt` and
 `tools/observability/requirements.txt`. A log per step and a `summary.json` stay in Workbench's
 run records. Jobs run concurrently once the jobs they need have passed, as long as their declared
@@ -267,14 +273,9 @@ and the JDK release it runs with. A pass for the same key stands for the job, so
 leaves worldgen and a check untouched does not run the check again. A failure is never cached. A
 job's inputs must list every file its verdict reads.
 
-Each run records the trees it tested: the commit's, and the tree of the Cubature commit its pin
-names. That Cubature commit must have passed Cubature's own checks in Workbench's records
-(`passed = "cubature"`), so Riven does not build and test it again; setup places its pinned bytes,
-checked by SHA-256. A run skips the jobs that already passed for the same trees. The
-pre-push hook (`wb run ci.hook project=riven`) refuses a push whose tip has not passed every `ci`
-job on its own tree together with its pinned Cubature tree; `git push --no-verify` skips it.
-Cubature's pushes are checked by Cubature's own CI and gate, so a Cubature change needs no Riven
-run until Riven moves its pin.
+A Cubature or GTCEuR change reaches Riven when it lands in the set and this worktree moves to that revision
+(`wb work sync`); nothing in Riven names their commits. The pre-push hook refuses a push whose tip has not passed the
+gate; `git push --no-verify` skips it.
 
 The `inputs` job fetches the pinned third-party files the offline checks compile against
 (`pins.lock.json`: Gson), so a check never depends on what a Gradle cache holds. Tools find JDKs
@@ -284,10 +285,8 @@ which Workbench and CI set, and Gradle is given every one of them, one per major
 | Command | Runs |
 | --- | --- |
 | `python tools/setup.py` (`riven.ps1 setup`) | Preparation of a clone, each step skipped when done: Java paths, Cubature checkout, pinned JARs, Python environments; `--check` only reports. A pin `runtime.lock.json` marks built from source carries a `build` recipe (the sibling checkout, Java version, Gradle tasks, artifact and any properties; a property may name a Cubature JAR by commit and SHA-256, which setup builds and keeps under `.local/source-inputs`); setup builds it at its `sourceCommit` in a worktree of that checkout under `.local/source-builds` and places it only if it is the pinned bytes; otherwise it places nothing and names the pin cache verified bytes can come from (`WB_PIN_CACHE`: pinned files named by their SHA-256, which Workbench keeps on its host and setup reads before building). Moving such a pin is a new `sourceCommit` and `sha256`; setup builds the rest. The Cubature artifacts `dev/cc.lock.json` pins are built the same way at its `commit`, with that commit's own compile-only inputs, so the Cubature checkout's own state plays no part |
-| `riven.ps1 quick` | Before a commit: the `ci` jobs this working tree's changes can affect, by the `[quick]` rules in `actions.toml` (Workbench, `commit=worktree`); a path no rule matches takes every `ci` job, so a moved Cubature pin runs them all |
-| `riven.ps1 check` | `inputs`, `quality`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history` and `variant-coverage` |
-| `riven.ps1 ci` | The `ci` workflow at HEAD: `check` plus `riven-build` |
-| `riven.ps1 profile` | `ci` with the golden windows resampled and timed; each step's timing lines are in the run's summary |
+| `riven.ps1 check` (also `quick`, `ci`) | `wb check`: the gate (`inputs`, `quality`, `riven-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history`, `variant-coverage`) from this worktree; pure checks whose inputs passed before do not run again |
+| `riven.ps1 profile` | `atlas-golden-profile`: the golden windows resampled and timed; each step's timing lines are in the run's summary |
 | `wb run ci.status project=riven` | What HEAD has passed, and what the push gate still needs |
 | `wb run ci.run project=riven workflow=<job>` | One job (or several: `jobs=[...]`); `dry_run=true` lists the steps |
 

@@ -1,14 +1,17 @@
 plugins {
     id 'java'
     id 'com.cleanroommc.cleanroomgradle'
+    id 'set.cleanroom'
 }
 group = 'cc.orthrus.riven'
 version = mod_version
-// Cleanroom on Java 25 or 26 is the only target (docs/DECISIONS.md, 2026-10-30).
-def compilerJavaVersion = providers.gradleProperty('rivenJavaVersion').getOrElse('26').toInteger()
-// The mods Riven compiles against, as the game loads them (SRG names); runtime.lock.json pins both.
-def cubatureJar = file(providers.gradleProperty('rivenCubicArtifact').getOrElse('dev/pins/Cubature-cleanroom.jar'))
-def gtceurJar = file('dev/pins/gtceu-reloaded-3.0.0-reloaded.1-alpha.1.jar')
+// Cleanroom on Java 25 or 26 is the only target (docs/DECISIONS.md, 2026-10-30). The platform (Java, Cleanroom, the
+// JDK builds) comes from the set, which set.base reads; set.cleanroom sets cleanroom_version from it.
+def compilerJavaVersion = providers.gradleProperty('rivenJavaVersion').getOrElse(set.platform().java as String).toInteger()
+// The mods Riven compiles against, as the game loads them (SRG names): the files the set names, from the Store by
+// their SHA-256 (or a stand-in), so the build and the game read one JAR of each.
+def cubatureJar = set.jar('cubature')
+def gtceurJar = set.jar('gtceur')
 def sha256 = { File f -> java.security.MessageDigest.getInstance('SHA-256').digest(f.bytes).encodeHex().toString() }
 base { archivesName = 'riven' }
 java {
@@ -30,10 +33,8 @@ dependencies {
     compileOnly 'com.google.errorprone:error_prone_annotations:2.41.0'
     // The annotations GTCEu's classes carry (it compiles against 24.1.0), so javac reads them without [classfile] warnings.
     compileOnly 'org.jetbrains:annotations:24.1.0'
-    mods deobf(files(cubatureJar))
-    mods deobf(files(gtceurJar))   // optional ore catalogue provider
-    // ZenScript's annotations, which GTCEu's material classes carry (CraftTweaker2:ZenScript:4.1.20.700).
-    compileOnly files('dev/pins/ZenScript-4.1.20.700.jar')
+    mods deobf(cubatureJar)
+    mods deobf(gtceurJar)   // optional ore catalogue provider
 }
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
@@ -69,13 +70,12 @@ tasks.register('runDiagnostics', JavaExec) {
     def evidence = layout.buildDirectory.file('diagnostics/cubature-mapping.json')
     def plugin = 'com.cleanroommc.cleanroomgradle:' + com.cleanroommc.gradle.CleanroomGradle.getPackage().implementationVersion
     def loader = cleanroom_version
-    def lockFile = file('dev/cc.lock.json')
+    def revision = set.revision
     doFirst {
         def runtime = classpath.files.toList()
-        def lock = new groovy.json.JsonSlurper().parse(lockFile)
-        def original = sha256(cubatureJar)
-        if (lock.sha256 != original || !lock.commit) throw new GradleException('Cubature does not match dev/cc.lock.json')
-        if (runtime.any { it.canonicalFile == cubatureJar.canonicalFile }) throw new GradleException('The SRG-named Cubature is on the development class path')
+        def input = cubatureJar.singleFile
+        def original = sha256(input)
+        if (runtime.any { it.canonicalFile == input.canonicalFile }) throw new GradleException('The SRG-named Cubature is on the development class path')
         def api = ['CubePrimer', 'ICubeGenerator'].collect { type ->
             def entry = "io/github/opencubicchunks/cubicchunks/api/worldgen/${type}.class"
             def found = runtime.findAll { it.isDirectory() ? new File(it, entry).isFile()
@@ -89,8 +89,8 @@ tasks.register('runDiagnostics', JavaExec) {
         def out = evidence.get().asFile
         out.parentFile.mkdirs()
         out.setText(groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([plugin: plugin,
-            mappings: 'mcp:stable_39-1.12', loader: loader, lock: [path: lockFile.canonicalPath, commit: lock.commit],
-            original: [path: cubatureJar.canonicalPath, sha256: original], mapped: [path: api[0].path, sha256: mapped],
+            mappings: 'mcp:stable_39-1.12', loader: loader, set: revision,
+            original: [path: input.canonicalPath, sha256: original], mapped: [path: api[0].path, sha256: mapped],
             runtimeClasspath: runtime*.canonicalPath])) + System.lineSeparator(), 'UTF-8')
     }
 }

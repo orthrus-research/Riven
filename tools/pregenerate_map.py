@@ -126,6 +126,7 @@ def prepare(args):
         capture=True,
         capture_ticks=1200,
         spectator=True,
+        launch=args.launch,
     )
     directory = runtime.target(args.name)
     manifest = runtime.load_json(directory / "standalone.json")
@@ -491,6 +492,11 @@ def main():
     parser.add_argument("--lab-artifact", type=Path)
     parser.add_argument(
         "--cubic-artifact", type=Path, help="a Cubature JAR in place of the pinned one"
+    )
+    parser.add_argument(
+        "--launch",
+        type=Path,
+        help="prepare: the launch file every mod comes from (wb run lab.resolve)",
     )
     parser.add_argument("--max-columns", type=int, default=1562500)
     parser.add_argument("--jfr", action="store_true")
