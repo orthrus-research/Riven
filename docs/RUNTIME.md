@@ -128,6 +128,12 @@ GPU and its driver, the session's inputs) and the consoles. A session refuses an
 receipt; changed definitions need a fresh instance. Lines appended to an open session's `commands.txt` go to the
 server's console. A tour's views (`label`, `x`, `y`, `z`, `yaw`, `pitch`, and optional `commands` run before the
 teleport) are filed as `tour/NN-<label>.png`; a tour's `viewDistance` raises the session's distances.
+A view is captured once the player has held still for `riven.captureTicks` (400) and, where Quadrature draws
+distant terrain, once Quadrature has called its picture settled for `riven.settlePasses` world passes in a row (40):
+every distant tile that can arrive stored and faded in, near terrain caught up and the cube source settled. The client
+logs `Riven view settled` with the ticks it waited past the hold; a view still unsettled `riven.settleLimitTicks`
+(2400) past the hold is not captured, and the client logs `Riven view unsettled` with what it waited on and quits, so
+the session fails at that view.
 
 An instance has no Distant Horizons, which is not carried forward. The launch's JVM arguments reach both sides, with
 what each member's own `[launch.member]` adds: Quadrature's gives the client `-Dquadrature.distant=own`, so

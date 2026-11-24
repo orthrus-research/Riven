@@ -165,8 +165,9 @@ configure = "launch/configure.py"
 # Riven goes in as riven.jar, the name its tools and drivers find it by; Fugue is a coremod that must sort before the
 # other mod files, as its upstream name does.
 place = { "riven:mod@both" = "riven.jar", "fugue@both" = "+Fugue-0.25.5.jar" }
-# The game's own refusal of a join; Cubature's [launch.member] adds its own refusal line.
-failures = ["Failed to connect to server: .*"]
+# The game's own refusal of a join, and a tour view distant terrain never settled for; Cubature's [launch.member] adds
+# its own refusal line.
+failures = ["Failed to connect to server: .*", "Riven view unsettled: .*"]
 
 # What launch/configure.py reads; `wb play --param k=v` sets one for an instance, of the type given here.
 [launch.default.params]

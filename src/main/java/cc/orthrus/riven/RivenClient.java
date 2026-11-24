@@ -17,11 +17,21 @@ import org.apache.logging.log4j.LogManager;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 /**
  * Optional native captures for an owned inspection launch; never changes world state. A single
  * capture waits for the first settle; a tour (riven.tour) captures once after every teleport, when
  * the player has held still for the settle time, so a launcher can step through viewpoints.
+ *
+ * <p>Where Quadrature draws distant terrain, a capture also waits past the hold until Quadrature
+ * calls its picture settled (DistantHook.settledPasses: every distant tile that can arrive stored
+ * and faded in, near terrain caught up, the cube source settled) for riven.settlePasses world passes
+ * in a row (40; 0 waits for the hold alone). A view not settled riven.settleLimitTicks after the
+ * hold (2400, two minutes) is not captured: the client logs "Riven view unsettled" with what it
+ * waited on and quits, so the session fails at that view.
  */
 @Mod.EventBusSubscriber(modid = "riven", value = Side.CLIENT)
 public final class RivenClient {
@@ -30,7 +40,14 @@ public final class RivenClient {
     private static final int CAPTURE_TICKS =
             Math.max(100, Integer.getInteger("riven.captureTicks", 400));
     private static final int LIGHT_DUMP = Integer.getInteger("riven.lightDump", 0);
+    private static final int SETTLE_PASSES = Integer.getInteger("riven.settlePasses", 40);
+    private static final int SETTLE_LIMIT_TICKS =
+            Math.max(1, Integer.getInteger("riven.settleLimitTicks", 2400));
 
+    /** Quadrature's settled passes and what it waits on, or null where none is drawn. */
+    private static MethodHandle settledPasses, unsettled;
+
+    private static boolean distantLooked, unsettledSaid;
     private static boolean captured, due;
     private static int still, views, frames, settleFrames;
     private static long settleStart;
@@ -61,16 +78,94 @@ public final class RivenClient {
                     Double.isNaN(shotX)
                             || Math.abs(x - shotX) + Math.abs(z - shotZ) > 8
                             || Math.abs(y - shotY) > 8;
-            if (fresh && still >= CAPTURE_TICKS) {
+            if (fresh && still >= CAPTURE_TICKS && settled(mc, still - CAPTURE_TICKS)) {
                 shotX = x;
                 shotY = y;
                 shotZ = z;
                 due = true;
             }
-        } else if (!captured && mc.player.ticksExisted >= CAPTURE_TICKS) {
+        } else if (!captured
+                && mc.player.ticksExisted >= CAPTURE_TICKS
+                && settled(mc, mc.player.ticksExisted - CAPTURE_TICKS)) {
             captured = true;
             due = true;
         }
+    }
+
+    /**
+     * Whether the next view may be captured, the hold having passed {@code waited} ticks ago: at
+     * once without Quadrature's distant terrain, otherwise once its picture has been settled for the
+     * passes asked. Past the limit the view is given up and the client quits.
+     */
+    private static boolean settled(Minecraft mc, int waited) {
+        if (SETTLE_PASSES <= 0 || unsettledSaid || !lookUpDistant()) return !unsettledSaid;
+        long passes;
+        String waitingOn;
+        try {
+            passes = (long) settledPasses.invokeExact();
+            waitingOn = passes >= SETTLE_PASSES ? "" : (String) unsettled.invokeExact();
+        } catch (Throwable failure) {
+            throw new IllegalStateException(
+                    "Quadrature's settled passes could not be read", failure);
+        }
+        if (passes >= SETTLE_PASSES) {
+            LogManager.getLogger("Riven")
+                    .info(
+                            "Riven view settled: view {} after {} ticks past the hold ({} passes)",
+                            String.format("%02d", views),
+                            waited,
+                            passes);
+            return true;
+        }
+        if (waited >= SETTLE_LIMIT_TICKS) {
+            unsettledSaid = true;
+            LogManager.getLogger("Riven")
+                    .error(
+                            "Riven view unsettled: view {} not settled {} ticks past the hold: {}",
+                            String.format("%02d", views),
+                            waited,
+                            waitingOn);
+            mc.shutdown();
+        }
+        return false;
+    }
+
+    /** Finds Quadrature's distant terrain once; false where it is absent or not requested. */
+    private static boolean lookUpDistant() {
+        if (!distantLooked) {
+            distantLooked = true;
+            try {
+                Class<?> hook = Class.forName("cc.orthrus.quadrature.distant.DistantHook");
+                MethodHandles.Lookup lookup = MethodHandles.publicLookup();
+                boolean requested =
+                        (boolean)
+                                lookup.findStatic(
+                                                hook,
+                                                "requested",
+                                                MethodType.methodType(boolean.class))
+                                        .invokeExact();
+                if (requested) {
+                    MethodHandle passes =
+                            lookup.findStatic(
+                                    hook, "settledPasses", MethodType.methodType(long.class));
+                    unsettled =
+                            lookup.findStatic(
+                                    hook, "unsettled", MethodType.methodType(String.class));
+                    settledPasses = passes;
+                }
+            } catch (ClassNotFoundException absent) {
+                // No Quadrature: the hold alone.
+            } catch (NoSuchMethodException | IllegalAccessException older) {
+                LogManager.getLogger("Riven")
+                        .warn(
+                                "Quadrature draws distant terrain but says nothing of its settling;"
+                                        + " views wait for the hold alone");
+            } catch (Throwable failure) {
+                throw new IllegalStateException(
+                        "Quadrature's distant terrain could not be asked", failure);
+            }
+        }
+        return settledPasses != null;
     }
 
     @SubscribeEvent
