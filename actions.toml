@@ -18,7 +18,9 @@
 [settings]
 name = "riven"
 workflow = "ci"
-identity_files = ["{env.JAVA_HOME}/release"]
+# The production JAR is written by CleanroomGradle's renamer on Java 8, so a different Java 8 is a
+# different key.
+identity_files = ["{env.JAVA_HOME}/release", "{env.JAVA_HOME_8_X64}/release"]
 
 # A push needs Riven's tree to have passed together with the tree of the Cubature commit Riven pins,
 # and that Cubature commit to have passed Cubature's own checks (passed): Riven does not build and
