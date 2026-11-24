@@ -213,8 +213,9 @@ A Cubature or GTCEuR change reaches Riven when it lands in the set and this work
 (`wb work sync`); nothing in Riven names their commits. The pre-push hook refuses a push whose tip has not passed the
 gate; `git push --no-verify` skips it.
 
-The `inputs` job fetches the pinned third-party files the offline checks compile against
-(`pins.lock.json`: Gson), so a check never depends on what a Gradle cache holds. Every Gradle run, a
+The offline checks compile and run worldgen with Gson, the set's third entry `gson`: `tools/set_store.py`
+takes it from the Store by the SHA-256 the set gives it, so a check never depends on what a Gradle cache
+holds. Every Gradle run, a
 `{gradle}` step or the `./gradlew` that `tools/code_quality.py` starts, takes the set, the Store and the
 JDKs it may use from the job (`GRADLE_OPTS`), or by hand from the block `wb setup` writes in the Gradle
 home; the toolchain is the set's Java. The atlas and observability tools find a JDK through
@@ -225,7 +226,7 @@ Workbench and CI set.
 | --- | --- |
 | `riven.ps1 play` | `wb play` from this worktree, its options passed on (Launching) |
 | `riven.ps1 build` | `./gradlew assemble` here, further tasks passed on (`compileDiagnosticsJava`); CI's build is the `riven-build` check, whose files Workbench keeps with their SHA-256 |
-| `riven.ps1 check` (also `quick`, `ci`) | `wb check`: the gate (`inputs`, `quality`, `riven-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history`, `variant-coverage`) from this worktree; pure checks whose inputs passed before do not run again |
+| `riven.ps1 check` (also `quick`, `ci`) | `wb check`: the gate (`quality`, `riven-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history`, `variant-coverage`) from this worktree; pure checks whose inputs passed before do not run again |
 | `riven.ps1 profile` | `atlas-golden-profile`: the golden windows resampled and timed; each step's timing lines are in the run's summary |
 | `wb run ci.status project=riven` | What HEAD has passed, and what the push gate still needs |
 | `wb run ci.run project=riven workflow=<job>` | One job (or several: `jobs=[...]`); `dry_run=true` lists the steps |

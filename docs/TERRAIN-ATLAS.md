@@ -41,7 +41,8 @@ python -m venv .local/atlas-venv
 .local/atlas-venv/Scripts/python -m pip install -r tools/requirements-atlas.txt
 ```
 
-The Java toolchain and Gson are the ones `riven.ps1 build` already uses. Sources compile with
+The JDK comes from `tools/jdks.py`, and Gson is the set's third entry `gson`, from the Store
+(`tools/set_store.py`). Sources compile with
 `--release 25` into `.local/terrain-atlas/build/<source hash>`. Raw samples are reused only when
 compiled sources, overrides and window are identical (`--resample` forces a fresh sample).
 
