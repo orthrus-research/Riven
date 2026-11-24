@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FORMATTER_VERSION = "1.35.0"
 FORMATTER_SHA256 = "bfb7f9ead6cd328389bc2da53860443bc0e805dfd08cc889bfdf43b26cb2a6e8"
 PYTHON_TOOLS = {"ruff": "0.17.1", "mypy": "2.4.0"}
-PYTHON_PATHS = ["tools"]
+PYTHON_PATHS = ["tools", "launch"]
 
 
 def run(arguments: list[str], environment: dict[str, str] | None = None) -> None:

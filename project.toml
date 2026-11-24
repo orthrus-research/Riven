@@ -162,17 +162,46 @@ inputs = ["src/main/java/cc/orthrus/riven/worldgen/**/*.java", "src/main/java/cc
 memory = 8
 steps = [{ name = "variant coverage", run = ["{python}", "tools/run_check.py", "VariantCoverageCheck", "8", "4"] }]
 
-# The game Riven is played in, resolved once into launch.json by `wb run lab.resolve folder=<worktree>`: every member
-# by SHA-256 from this worktree's set revision, Riven itself from the Store by the tree CI built. tools/runtime.py
-# prepare --launch <launch.json> builds an instance from exactly those files.
+# The game Riven is played in, resolved once into launch.json by `wb play` (or `wb run lab.resolve folder=<worktree>`):
+# every member by SHA-256 from this worktree's set revision, Riven itself from the Store by the tree CI built. The
+# instance starts from Cubature's standalone world ([launch.standalone] in Cubature's project.toml, read at the commit
+# the set names for Cubature), and launch/configure.py makes Riven's own changes to it on a machine whose [lab]
+# trusted names Riven.
 [launch.default]
 members = ["riven:mod@both", "cubature:mod@both", "orthlib:mod@both", "orthlib:cubature-adapter@both",
            "gtceur:mod@both", "quadrature:mod@client", "modularui@both", "codechickenlib@both", "fugue@both",
            "scalar@both"]
 runtime = "cleanroom"
-params = { seed = 8675309 }
+base = "cubature:standalone"
+configure = "launch/configure.py"
 # Quadrature draws distant terrain itself (Distant Horizons is not carried forward); this moves into Quadrature's own
 # [launch.member] with its next landing.
 jvm = { client = ["-Dquadrature.distant=own"] }
-# Fugue is a coremod that must sort before the other mod files, as its upstream name does.
-place = { "fugue@both" = "+Fugue-0.25.5.jar" }
+# Riven goes in as riven.jar, the name its tools and drivers find it by; Fugue is a coremod that must sort before the
+# other mod files, as its upstream name does.
+place = { "riven:mod@both" = "riven.jar", "fugue@both" = "+Fugue-0.25.5.jar" }
+# The game's own refusal of a join; Cubature's [launch.member] adds its own refusal line.
+failures = ["Failed to connect to server: .*"]
+
+# What launch/configure.py reads; `wb play --param k=v` sets one for an instance, of the type given here.
+[launch.default.params]
+seed = 8675309
+scale = { type = "float", default = 1.0, min = 0.5, max = 8, summary = "the layout scale, kept in the world's generator settings" }
+delivery = { type = "string", default = "PREFETCH", choices = ["BASELINE", "MAINTENANCE", "SAVE", "PREFETCH"], summary = "Cubature's cube delivery mode" }
+preview_threads = { type = "int", min = -1, max = 16, summary = "Cubature's preview threads; unset keeps its own" }
+spawn_animals = { type = "bool", default = false }
+capture = { type = "bool", default = false, summary = "a 2560x1440 client for captures" }
+
+# How lab.run drives a tour (`wb play --tour <file>`): the server's setup, the client's capture switches and the line
+# the client prints for each captured view, as tools/runtime.py play does.
+[launch.default.tour]
+setup = ["gamerule spawnRadius 0", "gamerule doDaylightCycle false", "time set 6000", "weather clear 1000000"]
+client_jvm = ["-Driven.tour=true", "-Driven.capture=true", "-Driven.captureTicks=400"]
+captured = "Riven view captured"
+
+# Programs that start their own JVMs from the launch (`wb play --driver <name>`), under the GPU lease Workbench holds.
+[launch.default.drivers.pipeline]
+summary = "tools/measure_pipeline.py: the terrain-pipeline workload in a fresh instance of this launch's Riven"
+command = ["{python}", "{root}/tools/measure_pipeline.py", "--name", "pipeline-{session_id}", "--launch", "{launch}",
+           "--artifact", "{instance}/server/mods/riven.jar"]
+cwd = "{root}"

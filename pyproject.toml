@@ -20,7 +20,7 @@ line-ending = "lf"
 
 [tool.mypy]
 python_version = "3.14"
-files = ["tools"]
+files = ["tools", "launch"]
 mypy_path = ["$MYPY_CONFIG_FILE_DIR/tools"]
 cache_dir = ".local/mypy-cache"
 check_untyped_defs = true
