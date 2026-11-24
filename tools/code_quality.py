@@ -12,8 +12,6 @@ import urllib.request
 from pathlib import Path
 from typing import Literal
 
-import jdks
-
 ROOT = Path(__file__).resolve().parents[1]
 FORMATTER_VERSION = "1.35.0"
 FORMATTER_SHA256 = "bfb7f9ead6cd328389bc2da53860443bc0e805dfd08cc889bfdf43b26cb2a6e8"
@@ -36,9 +34,12 @@ def run(arguments: list[str], environment: dict[str, str] | None = None) -> None
     print("timing " + json.dumps(timing), flush=True)
 
 
-def settings() -> dict[str, str]:
-    """The JDK the checks use (tools/jdks.py): Temurin 26 for Gradle and google-java-format alike."""
-    return {"java26": str(jdks.java(26))}
+def java() -> str:
+    """google-java-format's Java: JAVA_HOME's, which a Workbench job sets to the set's JDK (Temurin 26)."""
+    home = os.environ.get("JAVA_HOME")
+    if not home:
+        raise ValueError("Set JAVA_HOME to a JDK 26 (a Workbench job sets the set's)")
+    return str(Path(home) / "bin" / ("java.exe" if os.name == "nt" else "java"))
 
 
 def python_tools() -> None:
@@ -91,29 +92,16 @@ def java_format(java: str, apply: bool) -> None:
     run(arguments)
 
 
-def check_java(local: dict[str, str]) -> None:
-    environment = os.environ.copy()
-    java26 = Path(local["java26"]).parent.parent
-    environment["JAVA_HOME"] = str(java26)
+def check_java() -> None:
+    # The set, the Store and the JDKs Gradle may use come from the job's GRADLE_OPTS, as for every {gradle} step
+    # (by hand, from the Gradle home's block that wb setup writes); the toolchain is the set's Java.
     wrapper = ROOT / ("gradlew.bat" if os.name == "nt" else "gradlew")
-    run(
-        [
-            str(wrapper),
-            "assemble",
-            "compileDiagnosticsJava",
-            "--console=plain",
-            "--no-daemon",
-            "-PrivenJavaVersion=26",
-            "-D" + jdks.installations_property(),
-        ],
-        environment,
-    )
+    run([str(wrapper), "assemble", "compileDiagnosticsJava", "--console=plain"])
 
 
 def quality(action: Literal["format", "check"]) -> None:
     python_tools()
-    local = settings()
-    java_format(local["java26"], action == "format")
+    java_format(java(), action == "format")
     python = sys.executable
     if action == "format":
         run([python, "-m", "ruff", "check", "--select", "I,E401", "--fix", *PYTHON_PATHS])
@@ -123,7 +111,7 @@ def quality(action: Literal["format", "check"]) -> None:
     run([python, "-m", "ruff", "format", "--check", *PYTHON_PATHS])
     run([python, "-m", "mypy", "--config-file", "pyproject.toml"])
     run([python, "tools/strict_math.py"])
-    check_java(local)
+    check_java()
     print("Code-quality checks passed; no tests or game launches were run.", flush=True)
 
 

@@ -20,8 +20,10 @@ try {
         # The golden windows resampled and timed; each step's timing lines are in the run's summary.
         & $wb check atlas-golden-profile @Rest
     } else {
-        # Building uses no instance.
-        & python "$PSScriptRoot/tools/build_riven.py" @Rest
+        # A build here by hand, for the set this worktree's .set names; the JDKs are the Gradle home's (wb setup).
+        # Building uses no instance. CI's build is the riven-build check.
+        $gradlew = Join-Path $PSScriptRoot $(if ($env:OS -eq 'Windows_NT') { 'gradlew.bat' } else { 'gradlew' })
+        & $gradlew assemble @Rest
     }
     if ($LASTEXITCODE -ne 0) { throw "Riven $Action failed ($LASTEXITCODE)" }
 } finally { Pop-Location }

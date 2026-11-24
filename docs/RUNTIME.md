@@ -214,14 +214,17 @@ A Cubature or GTCEuR change reaches Riven when it lands in the set and this work
 gate; `git push --no-verify` skips it.
 
 The `inputs` job fetches the pinned third-party files the offline checks compile against
-(`pins.lock.json`: Gson), so a check never depends on what a Gradle cache holds. Tools find JDKs
-through `tools/jdks.py`: this checkout's `.local/settings.json` first, then `JAVA_HOME_<major>_X64`,
-which Workbench and CI set, and Gradle is given every one of them, one per major.
+(`pins.lock.json`: Gson), so a check never depends on what a Gradle cache holds. Every Gradle run, a
+`{gradle}` step or the `./gradlew` that `tools/code_quality.py` starts, takes the set, the Store and the
+JDKs it may use from the job (`GRADLE_OPTS`), or by hand from the block `wb setup` writes in the Gradle
+home; the toolchain is the set's Java. The atlas and observability tools find a JDK through
+`tools/jdks.py`: this checkout's `.local/settings.json` first, then `JAVA_HOME_<major>_X64`, which
+Workbench and CI set.
 
 | Command | Runs |
 | --- | --- |
 | `riven.ps1 play` | `wb play` from this worktree, its options passed on (Launching) |
-| `riven.ps1 build` | `tools/build_riven.py`: Riven built here, its artifact recorded in `.local/builds` |
+| `riven.ps1 build` | `./gradlew assemble` here, further tasks passed on (`compileDiagnosticsJava`); CI's build is the `riven-build` check, whose files Workbench keeps with their SHA-256 |
 | `riven.ps1 check` (also `quick`, `ci`) | `wb check`: the gate (`inputs`, `quality`, `riven-build`, `regional-store`, `drainage-prune`, `regional-bake`, `atlas-golden`, `definitions`, `sample-history`, `variant-coverage`) from this worktree; pure checks whose inputs passed before do not run again |
 | `riven.ps1 profile` | `atlas-golden-profile`: the golden windows resampled and timed; each step's timing lines are in the run's summary |
 | `wb run ci.status project=riven` | What HEAD has passed, and what the push gate still needs |
@@ -249,10 +252,6 @@ there, because other mods may overwrite or move them. `OTHER` is about 2% of cre
 time. `riven_observe.py capture --jfr`
 records both JVMs with JFR's profile settings for attributing a phase further.
 
-- `tools/build_riven.py [--diagnostics] [--freeze LABEL]` builds Riven for Cleanroom and
-  writes `.local/builds/riven-latest.json`.
-- `--freeze LABEL` copies both projects' artifacts into `.local/frozen/LABEL/` with a shared
-  `manifest.json`; action runs freeze under their run id.
 - `tools/atlas_golden.py check|update [--verify]` compares four fixed atlas windows
   (`tools/atlas-golden.json`) with their stored digests. A content-changing commit updates the
   goldens in the same commit, after reviewing `terrain_atlas.py compare`.
@@ -391,8 +390,8 @@ python -m venv .local/quality-venv
 ```
 
 `check` verifies Google Java Format (AOSP) and Ruff formatting, runs Ruff and gradual Mypy, and
-compiles production and `tools/checks` Java with Java 26 with lint warnings as errors. It runs no tests or game. `.local/settings.json` supplies the `java25` and `java26`
-paths. The `quality` job adds `tools/content/build_content.py --check` and both projects' tool
+compiles production and `tools/checks` Java with Java 26 with lint warnings as errors. It runs no tests or game. The formatter runs on
+`JAVA_HOME`'s Java (a job's is the set's JDK 26); Gradle takes its JDKs from the job, or from the Gradle home by hand. The `quality` job adds `tools/content/build_content.py --check` and both projects' tool
 tests, `unittest discover` over `tools` and Cubature's `tools` in the observability
 environment.
 

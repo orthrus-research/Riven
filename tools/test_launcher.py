@@ -3,6 +3,8 @@
 import json
 import shutil
 import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -16,7 +18,7 @@ def quote(value):
 
 @unittest.skipUnless(POWERSHELL, "PowerShell is required to exercise its parameter binder")
 class LauncherTests(unittest.TestCase):
-    def invoke(self, *arguments):
+    def invoke(self, *arguments, root=ROOT):
         assert POWERSHELL is not None
         command = (
             "function global:python { "
@@ -24,7 +26,7 @@ class LauncherTests(unittest.TestCase):
             "function global:wb { "
             "ConvertTo-Json -InputObject @(@('wb') + $args) -Compress; $global:LASTEXITCODE = 0 }; "
             "$env:WB_CLI = 'wb'; "
-            f"& {quote(ROOT / 'riven.ps1')} " + " ".join(arguments) + "; if (-not $?) { exit 1 }"
+            f"& {quote(root / 'riven.ps1')} " + " ".join(arguments) + "; if (-not $?) { exit 1 }"
         )
         result = subprocess.run(
             [POWERSHELL, "-NoProfile", "-NonInteractive", "-Command", command],
@@ -48,8 +50,21 @@ class LauncherTests(unittest.TestCase):
             self.invoke("play", "--driver", "pipeline"), ["wb", "play", "--driver", "pipeline"]
         )
 
-    def test_build_needs_no_instance(self):
-        self.assertEqual(self.invoke("build"), [str(ROOT / "tools/build_riven.py")])
+    def test_build_is_gradle_here(self):
+        # A copy of the launcher beside a stand-in wrapper that prints the arguments it was given.
+        record = "import json, sys; print(json.dumps(['gradlew', *sys.argv[1:]]))"
+        with tempfile.TemporaryDirectory() as scratch:
+            folder = Path(scratch)
+            shutil.copy(ROOT / "riven.ps1", folder)
+            (folder / "gradlew.bat").write_text(f'@"{sys.executable}" -c "{record}" %*\n')
+            wrapper = folder / "gradlew"
+            wrapper.write_text(f'#!/bin/sh\nexec "{sys.executable}" -c "{record}" "$@"\n')
+            wrapper.chmod(0o755)
+            self.assertEqual(self.invoke("build", root=folder), ["gradlew", "assemble"])
+            self.assertEqual(
+                self.invoke("build", "compileDiagnosticsJava", root=folder),
+                ["gradlew", "assemble", "compileDiagnosticsJava"],
+            )
 
     def test_the_launcher_verbs_are_gone(self):
         for verb in ("prepare", "command", "setup"):
