@@ -60,7 +60,7 @@ steps = [
 description = "Build Riven for Cleanroom and compile the diagnostic helpers"
 locks = ["riven-gradle"]
 memory = 6
-steps = [["{gradle}", "assemble", "compileDiagnosticsJava", "--no-daemon", "--console=plain"]]
+steps = [["{gradle}", "assemble", "compileDiagnosticsJava", "--console=plain"]]
 
 [checks.atlas-golden]
 description = "Generated terrain matches the golden atlas digests, with determinism verified"
