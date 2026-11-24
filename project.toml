@@ -173,9 +173,6 @@ members = ["riven:mod@both", "cubature:mod@both", "orthlib:mod@both", "orthlib:c
 runtime = "cleanroom"
 base = "cubature:standalone"
 configure = "launch/configure.py"
-# Quadrature draws distant terrain itself (Distant Horizons is not carried forward); this moves into Quadrature's own
-# [launch.member] with its next landing.
-jvm = { client = ["-Dquadrature.distant=own"] }
 # Riven goes in as riven.jar, the name its tools and drivers find it by; Fugue is a coremod that must sort before the
 # other mod files, as its upstream name does.
 place = { "riven:mod@both" = "riven.jar", "fugue@both" = "+Fugue-0.25.5.jar" }

@@ -129,9 +129,9 @@ receipt; changed definitions need a fresh instance. Lines appended to an open se
 server's console. A tour's views (`label`, `x`, `y`, `z`, `yaw`, `pitch`, and optional `commands` run before the
 teleport) are filed as `tour/NN-<label>.png`; a tour's `viewDistance` raises the session's distances.
 
-An instance has no Distant Horizons, which is not carried forward. The launch's JVM arguments reach both sides: the
-client runs with `-Dquadrature.distant=own`, so Quadrature draws distant terrain itself from Riven's
-preview. The client draws cubic worlds through Quadrature, which takes over the game's chunk system
+An instance has no Distant Horizons, which is not carried forward. The launch's JVM arguments reach both sides, with
+what each member's own `[launch.member]` adds: Quadrature's gives the client `-Dquadrature.distant=own`, so
+Quadrature draws distant terrain itself from Riven's preview. The client draws cubic worlds through Quadrature, which takes over the game's chunk system
 there; Cubature's client stops at loading without it, and the launch names it for the client. `/riven` in game
 prints climate, terrain, biome and feature diagnostics at the player's position. `/riven digest
 [radius [x z]]` hashes the world's blocks around a point by state name, one line per chunk column
